@@ -6,7 +6,7 @@ from traitlets import (
 )
 
 from jupyter_core.application import JupyterApp
-from jupyter_core.paths import jupyter_runtime_dir
+# from jupyter_core.paths import jupyter_runtime_dir
 from jupyter_client.kernelspec import KernelSpecManager
 
 # Install the pyzmq ioloop. This has to be done before anything else from
@@ -43,6 +43,7 @@ class KernelGatewayApp(JupyterApp):
         super(KernelGatewayApp, self).initialize(argv)
         self.init_configurables()
         self.init_webapp()
+        self.init_http_server()
 
     def init_configurables(self):
         '''
@@ -51,18 +52,20 @@ class KernelGatewayApp(JupyterApp):
         self.kernel_manager = MappingKernelManager(
             parent=self,
             log=self.log,
-            connection_dir=jupyter_runtime_dir(),
+            connection_dir=self.runtime_dir,
             kernel_spec_manager=KernelSpecManager(parent=self)
         )
 
     def init_webapp(self):
         '''
-        Initialize tornado web application and http server.
+        Initialize tornado web application.
         '''
         self.web_app = web.Application(
             handlers=kernel_handlers.default_handlers,
             kernel_manager=self.kernel_manager
         )
+
+    def init_http_server(self):
         self.http_server = httpserver.HTTPServer(self.web_app)
         self.http_server.listen(self.port, self.ip)
 
