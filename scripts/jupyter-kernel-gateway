@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+import kernel_gateway
+
+if __name__ == '__main__':
+    kernel_gateway.launch_instance()
