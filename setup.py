@@ -16,7 +16,7 @@ setup(
         'kernel_gateway'
     ],
     scripts=[
-        'scripts/jupyter-kernel-gateway'
+        'scripts/jupyter-kernelgateway'
     ],
     install_requires=[
         'jupyter_core>=4.0, <5.0',
