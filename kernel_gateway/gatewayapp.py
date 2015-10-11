@@ -19,7 +19,8 @@ from tornado import httpserver
 from tornado import web
 # from tornado.log import LogFormatter, app_log, access_log, gen_log
 
-import notebook.services.kernels.handlers as kernel_handlers
+from .services.kernels.handlers import default_handlers as default_kernel_handlers
+# import notebook.services.kernels.handlers as kernel_handlers
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 
 class KernelGatewayApp(JupyterApp):
@@ -32,14 +33,22 @@ class KernelGatewayApp(JupyterApp):
     '''
 
     port = Integer(8888, config=True,
-        help="The port the notebook server will listen on."
+        help="Port on which to listen"
     )
 
     ip = Unicode('0.0.0.0', config=True,
-        help="The IP address the notebook server will listen on."
+        help="IP address on which to listen"
+    )
+
+    auth_token = Unicode('', config=True,
+        help='Authorization token required for all requests'
     )
 
     def initialize(self, argv=None):
+        '''
+        Initialize base class, configurable Jupyter instances, the tornado web 
+        app, and the tornado HTTP server.
+        '''
         super(KernelGatewayApp, self).initialize(argv)
         self.init_configurables()
         self.init_webapp()
@@ -47,7 +56,7 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         '''
-        Initialize cluster manager, kernel manager.
+        Initialize a kernel manager.
         '''
         self.kernel_manager = MappingKernelManager(
             parent=self,
@@ -58,18 +67,27 @@ class KernelGatewayApp(JupyterApp):
 
     def init_webapp(self):
         '''
-        Initialize tornado web application.
+        Initialize tornado web application with kernel handlers. Put the kernel
+        manager in settings to appease handlers that try to reference it there.
+        Include additional options in settings as well.
         '''
         self.web_app = web.Application(
-            handlers=kernel_handlers.default_handlers,
-            kernel_manager=self.kernel_manager
+            handlers=default_kernel_handlers,
+            kernel_manager=self.kernel_manager,
+            kg_auth_token=self.auth_token
         )
 
     def init_http_server(self):
+        '''
+        Initialize a HTTP server.
+        '''
         self.http_server = httpserver.HTTPServer(self.web_app)
         self.http_server.listen(self.port, self.ip)
 
     def start(self):
+        '''
+        Start an IO loop for the application.
+        '''
         super(KernelGatewayApp, self).start()
         self.log.info('The Jupyter Kernel Gateway is running at: http://{}:{}'.format(
             self.ip, self.port
@@ -83,6 +101,9 @@ class KernelGatewayApp(JupyterApp):
             self.log.info("Interrupted...")
 
     def stop(self):
+        '''
+        Stop the HTTP server and IO loop associated with the application.
+        '''
         def _stop():
             self.http_server.stop()
             self.io_loop.stop()

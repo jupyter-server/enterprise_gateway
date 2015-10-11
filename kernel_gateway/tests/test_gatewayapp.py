@@ -2,36 +2,29 @@
 # Distributed under the terms of the Modified BSD License.
 
 import shutil 
+import logging
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 
-from tempfile import mkdtemp
-from tornado.gen import sleep
 from tornado.websocket import websocket_connect
+from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
-from tornado.testing import AsyncHTTPTestCase
+from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 from tornado.escape import json_encode, json_decode, url_escape
 
-class TestGatewayApp(AsyncHTTPTestCase):
-    def setUp(self):
-        '''Create a temporary directory for runtime files'''
-        self.runtime_dir = mkdtemp()
-        super(TestGatewayApp, self).setUp()
-
-    def tearDown(self):
-        '''Cleanup the temp runtime directory'''
-        shutil.rmtree(self.runtime_dir)
-        super(TestGatewayApp, self).tearDown()
-
+class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
         '''Use a global zmq ioloop for tests.'''
         return ioloop.IOLoop.current()
 
     def get_app(self):
-        '''Instantiate the gateway app. Skip the http_server construction.'''
-        app = KernelGatewayApp(
-            runtime_dir=self.runtime_dir
-        )
+        '''
+        Instantiate the gateway app. Skip the http_server construction: the 
+        test base class provides one for us.
+        '''
+        if hasattr(self, '_app'):
+            return self._app
+        app = KernelGatewayApp(log_level=logging.CRITICAL)
         app.init_configurables()
         app.init_webapp()
         return app.web_app
@@ -56,7 +49,69 @@ class TestGatewayApp(AsyncHTTPTestCase):
         self.assertEqual(response.code, 404)
 
     @gen_test
-    def test_kernel(self):
+    def test_auth_token(self):
+        '''All kernel endpoints should check the configured auth token.'''
+        # Set token requirement
+        app = self.get_app()
+        app.settings['kg_auth_token'] = 'fake-token'
+
+        # Request a kernel without the token
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 401)
+
+        # Request with the token now
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            headers={'Authorization': 'Token fake-token'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 201)
+
+        kernel = json_decode(response.body)
+        # Request kernel info without the token
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 401)
+
+        # Now with it
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            method='GET',
+            headers={'Authorization': 'Token fake-token'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+
+        # Request websocket connection without the token
+        ws_url = 'ws://localhost:{}/api/kernels/{}/channels'.format(
+            self.get_http_port(),
+            url_escape(kernel['id'])
+        )
+        # No option to ignore errors so try/except
+        try:
+            ws = yield websocket_connect(ws_url)
+        except Exception as ex:
+            self.assertEqual(ex.code, 401)
+
+        # Now request the websocket with the token
+        ws_req = HTTPRequest(ws_url, 
+            headers={'Authorization': 'Token fake-token'}
+        )
+        ws = yield websocket_connect(ws_req)
+        ws.close()
+
+    @gen_test
+    def test_default_kernel(self):
         '''Default kernel should launch and accept commands.'''
         # Request a kernel
         response = yield self.http_client.fetch(
