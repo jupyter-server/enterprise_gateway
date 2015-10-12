@@ -35,10 +35,16 @@ These are in scope, but not yet implemented.
 
 ## Try It
 
-TODO: We're working on a PyPI package and/or Docker image.
+TODO: We're working on a PyPI package and/or Docker image. For now, you'll need to clone and install from the git repo.
 
 ```
-pip install kernel_gateway
+git clone https://github.com/jupyter-incubator/kernel_gateway.git
+cd kernel_gateway
+# install from clone
+pip install .
+# show all config options
+jupyter kernelgateway --help-all
+# run it with default options
 jupyter kernelgateway
 ```
 
