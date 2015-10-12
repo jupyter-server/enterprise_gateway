@@ -2,12 +2,9 @@
 # Distributed under the terms of the Modified BSD License.
 import os
 
-from traitlets import (
-    Unicode, Integer
-)
+from traitlets import Unicode, Integer
 
 from jupyter_core.application import JupyterApp
-# from jupyter_core.paths import jupyter_runtime_dir
 from jupyter_client.kernelspec import KernelSpecManager
 
 # Install the pyzmq ioloop. This has to be done before anything else from
@@ -18,10 +15,8 @@ ioloop.install()
 import tornado
 from tornado import httpserver
 from tornado import web
-# from tornado.log import LogFormatter, app_log, access_log, gen_log
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
-# import notebook.services.kernels.handlers as kernel_handlers
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 
 class KernelGatewayApp(JupyterApp):
@@ -44,7 +39,7 @@ class KernelGatewayApp(JupyterApp):
         help="IP address on which to listen (KG_IP env var)"
     )
     def _ip_default(self):
-        return os.getenv(self.ip_env, '0.0.0.0')
+        return os.getenv(self.ip_env, '127.0.0.1')
 
     auth_token_env = 'KG_AUTH_TOKEN'
     auth_token = Unicode(config=True,
