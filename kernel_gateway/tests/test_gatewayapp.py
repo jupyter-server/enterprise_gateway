@@ -1,7 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-import shutil 
 import logging
 import unittest
 import os
@@ -27,12 +26,24 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_PORT'] = '1234'
         os.environ['KG_IP'] = '1.1.1.1'
         os.environ['KG_AUTH_TOKEN'] = 'fake-token'
+        os.environ['KG_ALLOW_CREDENTIALS'] = 'true'
+        os.environ['KG_ALLOW_HEADERS'] = 'Authorization'
+        os.environ['KG_ALLOW_METHODS'] = 'GET'
+        os.environ['KG_ALLOW_ORIGIN'] = '*'
+        os.environ['KG_EXPOSE_HEADERS'] = 'X-Fake-Header'
+        os.environ['KG_MAX_AGE'] = '5'
 
         app = KernelGatewayApp()
+        
         self.assertEqual(app.port, 1234)
         self.assertEqual(app.ip, '1.1.1.1')
         self.assertEqual(app.auth_token, 'fake-token')
-
+        self.assertEqual(app.allow_credentials, 'true')
+        self.assertEqual(app.allow_headers, 'Authorization')
+        self.assertEqual(app.allow_methods, 'GET')
+        self.assertEqual(app.allow_origin, '*')
+        self.assertEqual(app.expose_headers, 'X-Fake-Header')
+        self.assertEqual(app.max_age, '5')
 
 class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
@@ -133,6 +144,31 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
         )
         ws = yield websocket_connect(ws_req)
         ws.close()
+
+    @gen_test
+    def test_cors_headers(self):
+        '''All kernel endpoints should respond with configured CORS headers.'''
+        app = self.get_app()
+        app.settings['kg_allow_credentials'] = 'false'
+        app.settings['kg_allow_headers'] = 'Authorization,Content-Type'
+        app.settings['kg_allow_methods'] = 'GET,POST'
+        app.settings['kg_allow_origin'] = 'https://jupyter.org'
+        app.settings['kg_expose_headers'] = 'X-My-Fake-Header'
+        app.settings['kg_max_age'] = '600'
+
+        # Get kernels to check headers
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET'
+        )
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'], 'false')
+        self.assertEqual(response.headers['Access-Control-Allow-Headers'], 'Authorization,Content-Type')
+        self.assertEqual(response.headers['Access-Control-Allow-Methods'], 'GET,POST')
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], 'https://jupyter.org')
+        self.assertEqual(response.headers['Access-Control-Expose-Headers'], 'X-My-Fake-Header')
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '600')
+        self.assertEqual(response.headers.get('Content-Security-Policy'), None)
 
     @gen_test
     def test_default_kernel(self):
