@@ -16,21 +16,22 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * Client Websocket to kernel [ZeroMQ](http://zeromq.org/) bridging of the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html)
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 * A shared token authorization scheme
+* CORS headers as options for servicing browser-based clients
 
 ## What It Lacks
 
 These are in scope, but not yet implemented.
 
-* CORS / CSP
 * PyPI package
 * Ability to prespawn kernels
 * Ability to select a default kernel
 * Ability to limit # of kernels
-* More tests
+* Optional kernel spec API exposure
+* Ability to prepopulate kernel memory from a notebook
 
 ## Alternatives
 
-* A Go-based implementation if a kernel gateway has also been proposed (e.g., [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
+* A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
 * If your client is within the same compute cluster as the kernel and already has good ZeroMQ support, there is no need to use the kernel gateway to enable Websocket access. Talk ZeroMQ directly to the kernel.
 
 ## Try It
