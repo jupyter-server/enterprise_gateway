@@ -6,7 +6,7 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 
 * Attach a local Jupyter Notebook server to a compute cluster in the cloud running near big data (e.g., interactive gateway to Spark)
 * Enable a new breed of non-notebook web clients to provision and use kernels (e.g., dashboards)
-* Scale kernels independently from clients (e.g., via [tmpnb](https://github.com/jupyter/tmpnb), [Binder](mybinder.org), your favorite cluster manager)
+* Scale kernels independently from clients (e.g., via [tmpnb](https://github.com/jupyter/tmpnb), [Binder](https://mybinder.org), your favorite cluster manager)
 
 ![Example diagram of how tmpnb might deploy kernel gateway + kernel containers](etc/tmpnb_kernel_gateway.png)
 
