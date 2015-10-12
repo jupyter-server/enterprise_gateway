@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+import os
 
 from traitlets import (
     Unicode, Integer
@@ -31,18 +32,26 @@ class KernelGatewayApp(JupyterApp):
         Provisions kernels and bridges Websocket communication
         to/from them.
     '''
-
-    port = Integer(8888, config=True,
-        help="Port on which to listen"
+    port_env = 'KG_PORT'
+    port = Integer(config=True,
+        help="Port on which to listen (KG_PORT env var)"
     )
+    def _port_default(self):
+        return int(os.getenv(self.port_env, 8888))
 
-    ip = Unicode('0.0.0.0', config=True,
-        help="IP address on which to listen"
+    ip_env = 'KG_IP'
+    ip = Unicode(config=True,
+        help="IP address on which to listen (KG_IP env var)"
     )
+    def _ip_default(self):
+        return os.getenv(self.ip_env, '0.0.0.0')
 
-    auth_token = Unicode('', config=True,
-        help='Authorization token required for all requests'
+    auth_token_env = 'KG_AUTH_TOKEN'
+    auth_token = Unicode(config=True,
+        help='Authorization token required for all requests (KB_AUTH_TOKEN env var)'
     )
+    def _auth_token_default(self):
+        return os.getenv(self.auth_token_env, '')
 
     def initialize(self, argv=None):
         '''

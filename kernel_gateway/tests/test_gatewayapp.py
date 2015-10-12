@@ -3,6 +3,8 @@
 
 import shutil 
 import logging
+import unittest
+import os
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 
@@ -11,6 +13,26 @@ from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
 from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 from tornado.escape import json_encode, json_decode, url_escape
+
+class TestGatewayAppConfig(unittest.TestCase):
+    def setUp(self):
+        self.environ = os.environ
+
+    def tearDown(self):
+        os.environ = self.environ
+
+    def test_config_env_vars(self):
+        '''Env vars should be honored for traitlets.'''
+        # Environment vars are always strings
+        os.environ['KG_PORT'] = '1234'
+        os.environ['KG_IP'] = '1.1.1.1'
+        os.environ['KG_AUTH_TOKEN'] = 'fake-token'
+
+        app = KernelGatewayApp()
+        self.assertEqual(app.port, 1234)
+        self.assertEqual(app.ip, '1.1.1.1')
+        self.assertEqual(app.auth_token, 'fake-token')
+
 
 class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):

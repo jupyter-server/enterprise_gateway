@@ -21,8 +21,16 @@ bash:
 dev:
 	@$(DOCKER) python kernel_gateway
 
+# usage:
+# make test
+# make test TEST="kernel_gateway.tests.test_gatewayapp.TestGatewayAppConfig"
+test: TEST?=
 test:
+ifeq ($(TEST),)
 	@$(DOCKER) python3 -B -m unittest discover
+else
+	@$(DOCKER) python3 -B -m unittest $(TEST)
+endif
 
 sdist:
 	@$(DOCKER) python setup.py sdist
