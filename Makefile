@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: bash bdist_wheel dev help sdist test
+.PHONY: bash clean dev help sdist test
 
 REPO:=jupyter/minimal-notebook:4.0
 define DOCKER
@@ -19,9 +19,17 @@ help:
 bash:
 	@$(DOCKER) bash
 
+clean:
+	@-rm -rf dist
+	@-rm -rf *.egg-info
+	@-find . -name __pycache__ -exec rm -fr {} \;
+
 dev: ARGS?=
 dev:
 	$(DOCKER) python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+
+sdist:
+	@$(DOCKER) python setup.py sdist && rm -rf *.egg-info
 
 # usage:
 # make test
@@ -33,9 +41,3 @@ ifeq ($(TEST),)
 else
 	@$(DOCKER) python3 -B -m unittest $(TEST)
 endif
-
-sdist:
-	@$(DOCKER) python setup.py sdist
-
-bdist_wheel:
-	@$(DOCKER) python setup.py bdist_wheel
