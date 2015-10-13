@@ -3,21 +3,20 @@
 
 .PHONY: bash clean dev help sdist test
 
-REPO:=jupyter/minimal-notebook:4.0
+
+IMAGE:=jupyter/minimal-notebook:4.0
 define DOCKER
 docker run -it --rm \
-	-p 8888:8888 \
-	-e PYTHONPATH=/srv/kernel_gateway \
-	--workdir /srv/kernel_gateway \
-	-v `pwd`:/srv/kernel_gateway \
-	$(REPO)
+	--workdir '/srv/kernel_gateway' \
+	-e PYTHONPATH='/srv/kernel_gateway' \
+	-v `pwd`:/srv/kernel_gateway
 endef
 
 help:
 	@cat Makefile
 
 bash:
-	@$(DOCKER) bash
+	@$(DOCKER) -p 8888:8888 $(IMAGE) bash
 
 clean:
 	@-rm -rf dist
@@ -26,18 +25,20 @@ clean:
 
 dev: ARGS?=
 dev:
-	$(DOCKER) python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+	@$(DOCKER) -p 8888:8888 $(IMAGE) \
+		python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+
+install:
+	$(DOCKER) $(IMAGE) pip install --no-use-wheel dist/*.tar.gz
 
 sdist:
-	@$(DOCKER) python setup.py sdist && rm -rf *.egg-info
+	$(DOCKER) $(IMAGE) python setup.py sdist && rm -rf *.egg-info
 
-# usage:
-# make test
-# make test TEST="kernel_gateway.tests.test_gatewayapp.TestGatewayAppConfig"
 test: TEST?=
 test:
 ifeq ($(TEST),)
-	@$(DOCKER) python3 -B -m unittest discover
+	$(DOCKER) $(IMAGE) python -B -m unittest discover
 else
-	@$(DOCKER) python3 -B -m unittest $(TEST)
+# e.g., make test TEST="kernel_gateway.tests.test_gatewayapp.TestGatewayAppConfig"
+	@$(DOCKER) $(IMAGE) python -B -m unittest $(TEST)
 endif
