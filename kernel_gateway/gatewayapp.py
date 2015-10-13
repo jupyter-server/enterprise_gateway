@@ -27,6 +27,7 @@ class KernelGatewayApp(JupyterApp):
         Provisions kernels and bridges Websocket communication
         to/from them.
     '''
+    # Server IP / PORT binding
     port_env = 'KG_PORT'
     port = Integer(config=True,
         help="Port on which to listen (KG_PORT env var)"
@@ -41,12 +42,56 @@ class KernelGatewayApp(JupyterApp):
     def _ip_default(self):
         return os.getenv(self.ip_env, '127.0.0.1')
 
+    # Token authorization
     auth_token_env = 'KG_AUTH_TOKEN'
     auth_token = Unicode(config=True,
-        help='Authorization token required for all requests (KB_AUTH_TOKEN env var)'
+        help='Authorization token required for all requests (KG_AUTH_TOKEN env var)'
     )
     def _auth_token_default(self):
         return os.getenv(self.auth_token_env, '')
+
+    # CORS headers
+    allow_credentials_env = 'KG_ALLOW_CREDENTIALS'
+    allow_credentials = Unicode(config=True,
+        help='Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env var)'
+    )
+    def _allow_credentials_default(self):
+        return os.getenv(self.allow_credentials_env, '')
+
+    allow_headers_env = 'KG_ALLOW_HEADERS'
+    allow_headers = Unicode(config=True,
+        help='Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)'
+    )
+    def _allow_headers_default(self):
+        return os.getenv(self.allow_headers_env, '')
+
+    allow_methods_env = 'KG_ALLOW_METHODS'
+    allow_methods = Unicode(config=True,
+        help='Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)'
+    )
+    def _allow_methods_default(self):
+        return os.getenv(self.allow_methods_env, '')
+
+    allow_origin_env = 'KG_ALLOW_ORIGIN'
+    allow_origin = Unicode(config=True,
+        help='Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)'
+    )
+    def _allow_origin_default(self):
+        return os.getenv(self.allow_origin_env, '')
+
+    expose_headers_env = 'KG_EXPOSE_HEADERS'
+    expose_headers = Unicode(config=True,
+        help='Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)'
+    )
+    def _expose_headers_default(self):
+        return os.getenv(self.expose_headers_env, '')
+
+    max_age_env = 'KG_MAX_AGE'
+    max_age = Unicode(config=True,
+        help='Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)'
+    )
+    def _max_age_default(self):
+        return os.getenv(self.max_age_env, '')
 
     def initialize(self, argv=None):
         '''
@@ -78,7 +123,13 @@ class KernelGatewayApp(JupyterApp):
         self.web_app = web.Application(
             handlers=default_kernel_handlers,
             kernel_manager=self.kernel_manager,
-            kg_auth_token=self.auth_token
+            kg_auth_token=self.auth_token,
+            kg_allow_credentials=self.allow_credentials,
+            kg_allow_headers=self.allow_headers,
+            kg_allow_methods=self.allow_methods,
+            kg_allow_origin=self.allow_origin,
+            kg_expose_headers=self.expose_headers,
+            kg_max_age=self.max_age
         )
 
     def init_http_server(self):

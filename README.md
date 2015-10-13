@@ -16,26 +16,27 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * Client Websocket to kernel [ZeroMQ](http://zeromq.org/) bridging of the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html)
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 * A shared token authorization scheme
+* CORS headers as options for servicing browser-based clients
 
 ## What It Lacks
 
 These are in scope, but not yet implemented.
 
-* CORS / CSP
 * PyPI package
 * Ability to prespawn kernels
 * Ability to select a default kernel
 * Ability to limit # of kernels
-* More tests
+* Optional kernel spec API exposure
+* Ability to prepopulate kernel memory from a notebook
 
 ## Alternatives
 
-* A Go-based implementation if a kernel gateway has also been proposed (e.g., [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
+* A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
 * If your client is within the same compute cluster as the kernel and already has good ZeroMQ support, there is no need to use the kernel gateway to enable Websocket access. Talk ZeroMQ directly to the kernel.
 
 ## Try It
 
-TODO: We're working on a PyPI package and/or Docker image. For now, you'll need to clone and install from the git repo.
+TODO: We're working on a PyPI package and/or Docker image. For now, if you want to install without Docker, you'll need to clone and install from the git repo.
 
 ```
 git clone https://github.com/jupyter-incubator/kernel_gateway.git
@@ -69,10 +70,10 @@ docker-machine create -d virtualbox dev
 eval "$(docker-machine env dev)"
 ```
 
-Pull the Docker image that we'll use for development. We currently use the `jupyter/minimal-notebook` image because it has all the dependencies preinstalled, but it includes far more than we really need.
+Pull the Docker image that we'll use for development. We currently use the `jupyter/minimal-notebook:4.0` image because it has all the dependencies preinstalled, but it includes far more than we really need.
 
 ```
-docker pull jupyter/minimal-notebook
+docker pull jupyter/minimal-notebook:4.0
 ```
 
 Clone this repository in a local directory that docker can volume mount:
@@ -102,4 +103,4 @@ make dev
 To access the gateway instance:
 
 1. Run `docker-machine ls` and note the IP of the dev machine.
-2. Visit http://THAT_IP:9502/api/kernels in your browser
+2. Visit http://THAT_IP:8888/api/kernels in your browser
