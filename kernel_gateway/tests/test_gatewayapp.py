@@ -124,6 +124,8 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
             ws = yield websocket_connect(ws_url)
         except Exception as ex:
             self.assertEqual(ex.code, 401)
+        else:
+            self.assert_(False, 'no exception raised')
 
         # Now request the websocket with the token
         ws_req = HTTPRequest(ws_url, 
