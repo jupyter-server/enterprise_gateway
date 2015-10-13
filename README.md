@@ -15,12 +15,12 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * Python 3 implementation of `/api/kernels` equivalent to the one found in latest Jupyter Notebook
 * Client Websocket to kernel [ZeroMQ](http://zeromq.org/) bridging of the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html)
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
+* A shared token authorization scheme
 
 ## What It Lacks
 
 These are in scope, but not yet implemented.
 
-* Authorization
 * CORS / CSP
 * PyPI package
 * Ability to prespawn kernels
@@ -35,10 +35,16 @@ These are in scope, but not yet implemented.
 
 ## Try It
 
-TODO: We're working on a PyPI package and/or Docker image.
+TODO: We're working on a PyPI package and/or Docker image. For now, you'll need to clone and install from the git repo.
 
 ```
-pip install kernel_gateway
+git clone https://github.com/jupyter-incubator/kernel_gateway.git
+cd kernel_gateway
+# install from clone
+pip install .
+# show all config options
+jupyter kernelgateway --help-all
+# run it with default options
 jupyter kernelgateway
 ```
 

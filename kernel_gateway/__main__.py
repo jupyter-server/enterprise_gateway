@@ -4,5 +4,5 @@
 from __future__ import absolute_import
 
 if __name__ == '__main__':
-    import gatewayapp as app
+    import kernel_gateway.gatewayapp as app
     app.launch_instance()
