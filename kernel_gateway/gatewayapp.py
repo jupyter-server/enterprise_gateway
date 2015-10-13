@@ -17,6 +17,9 @@ from tornado import httpserver
 from tornado import web
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
+from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
+from .base.handlers import default_handlers as default_base_handlers
+
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 
 class KernelGatewayApp(JupyterApp):
@@ -120,9 +123,15 @@ class KernelGatewayApp(JupyterApp):
         manager in settings to appease handlers that try to reference it there.
         Include additional options in settings as well.
         '''
+        handlers = (
+            default_kernel_handlers + 
+            default_kernelspec_handlers +
+            default_base_handlers
+        )
         self.web_app = web.Application(
-            handlers=default_kernel_handlers,
+            handlers=handlers,
             kernel_manager=self.kernel_manager,
+            kernel_spec_manager=self.kernel_manager.kernel_spec_manager,
             kg_auth_token=self.auth_token,
             kg_allow_credentials=self.allow_credentials,
             kg_allow_headers=self.allow_headers,
