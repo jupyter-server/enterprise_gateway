@@ -3,10 +3,10 @@
 
 .PHONY: bash bdist_wheel dev help sdist test
 
-REPO:=jupyter/minimal-notebook:latest
+REPO:=jupyter/minimal-notebook:4.0
 define DOCKER
 docker run -it --rm \
-	-p 9502:8888 \
+	-p 8888:8888 \
 	-e PYTHONPATH=/srv/kernel_gateway \
 	--workdir /srv/kernel_gateway \
 	-v `pwd`:/srv/kernel_gateway \

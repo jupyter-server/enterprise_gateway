@@ -36,7 +36,7 @@ These are in scope, but not yet implemented.
 
 ## Try It
 
-TODO: We're working on a PyPI package and/or Docker image. For now, you'll need to clone and install from the git repo.
+TODO: We're working on a PyPI package and/or Docker image. For now, if you want to install without Docker, you'll need to clone and install from the git repo.
 
 ```
 git clone https://github.com/jupyter-incubator/kernel_gateway.git
@@ -70,10 +70,10 @@ docker-machine create -d virtualbox dev
 eval "$(docker-machine env dev)"
 ```
 
-Pull the Docker image that we'll use for development. We currently use the `jupyter/minimal-notebook` image because it has all the dependencies preinstalled, but it includes far more than we really need.
+Pull the Docker image that we'll use for development. We currently use the `jupyter/minimal-notebook:4.0` image because it has all the dependencies preinstalled, but it includes far more than we really need.
 
 ```
-docker pull jupyter/minimal-notebook
+docker pull jupyter/minimal-notebook:4.0
 ```
 
 Clone this repository in a local directory that docker can volume mount:
@@ -103,4 +103,4 @@ make dev
 To access the gateway instance:
 
 1. Run `docker-machine ls` and note the IP of the dev machine.
-2. Visit http://THAT_IP:9502/api/kernels in your browser
+2. Visit http://THAT_IP:8888/api/kernels in your browser
