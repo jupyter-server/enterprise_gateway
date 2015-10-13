@@ -19,6 +19,7 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * A way to bridge the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) from Websocket to [ZeroMQ](http://zeromq.org/)
 * A shared token authorization scheme
 * CORS headers as options for servicing browser-based clients
+* Ability to set a custom base URL (e.g., for running under tmpnb)
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 
 ## What It Lacks

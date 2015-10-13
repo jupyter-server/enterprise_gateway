@@ -21,6 +21,7 @@ from .services.kernelspecs.handlers import default_handlers as default_kernelspe
 from .base.handlers import default_handlers as default_base_handlers
 
 from notebook.services.kernels.kernelmanager import MappingKernelManager
+from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
     name = 'jupyter-kernel-gateway'
@@ -44,6 +45,13 @@ class KernelGatewayApp(JupyterApp):
     )
     def _ip_default(self):
         return os.getenv(self.ip_env, '127.0.0.1')
+
+    # Base URL
+    base_url_env = 'KG_BASE_URL'
+    base_url = Unicode(config=True,
+        help='''The base path on which all API resources are mounted (KG_BASE_URL env var)''')
+    def _base_url_default(self):
+        return os.getenv(self.base_url_env, '/')
 
     # Token authorization
     auth_token_env = 'KG_AUTH_TOKEN'
@@ -123,11 +131,20 @@ class KernelGatewayApp(JupyterApp):
         manager in settings to appease handlers that try to reference it there.
         Include additional options in settings as well.
         '''
-        handlers = (
+        # Redefine handlers off the base_url path
+        handlers = []
+        for handler in (
             default_kernel_handlers + 
             default_kernelspec_handlers +
             default_base_handlers
-        )
+        ):
+            # Create a new handler pattern rooted at the base_url
+            pattern = url_path_join(self.base_url, handler[0])
+            # Some handlers take args, so retain those in addition to the
+            # handler class ref
+            new_handler = tuple([pattern] + list(handler[1:]))
+            handlers.append(new_handler)
+
         self.web_app = web.Application(
             handlers=handlers,
             kernel_manager=self.kernel_manager,

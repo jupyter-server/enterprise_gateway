@@ -19,8 +19,9 @@ help:
 bash:
 	@$(DOCKER) bash
 
+dev: ARGS?=
 dev:
-	@$(DOCKER) python kernel_gateway --KernelGatewayApp.ip='0.0.0.0'
+	$(DOCKER) python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
 # usage:
 # make test

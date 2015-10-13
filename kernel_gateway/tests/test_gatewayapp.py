@@ -15,7 +15,7 @@ from tornado.escape import json_encode, json_decode, url_escape
 
 class TestGatewayAppConfig(unittest.TestCase):
     def setUp(self):
-        self.environ = os.environ
+        self.environ = dict(os.environ)
 
     def tearDown(self):
         os.environ = self.environ
@@ -32,6 +32,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_ALLOW_ORIGIN'] = '*'
         os.environ['KG_EXPOSE_HEADERS'] = 'X-Fake-Header'
         os.environ['KG_MAX_AGE'] = '5'
+        os.environ['KG_BASE_URL'] = '/fake/path'
 
         app = KernelGatewayApp()
         
@@ -44,6 +45,45 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.allow_origin, '*')
         self.assertEqual(app.expose_headers, 'X-Fake-Header')
         self.assertEqual(app.max_age, '5')
+        self.assertEqual(app.base_url, '/fake/path')
+
+class TestRelocatedGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
+    def get_new_ioloop(self):
+        '''Use a global zmq ioloop for tests.'''
+        return ioloop.IOLoop.current()
+
+    def get_app(self):
+        '''
+        Instantiate the gateway app. Skip the http_server construction: the 
+        test base class provides one for us.
+        '''
+        if hasattr(self, '_app'):
+            return self._app
+        app = KernelGatewayApp(log_level=logging.CRITICAL)
+        # Set a fake base url; can't do this in the test because the server is 
+        # already running thanks to the base class
+        app.base_url = '/fake/path'
+        app.init_configurables()
+        app.init_webapp()
+        return app.web_app
+
+    @gen_test
+    def test_base_url(self):
+        '''Server should mount resources under configured base.'''
+        # Should not exist at root
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        # Should exist under path
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/api/kernels'),
+            method='GET'
+        )
+        self.assertEqual(response.code, 200)
 
 class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
