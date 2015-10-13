@@ -12,11 +12,14 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 
 ## What It Gives You
 
-* Python 3 implementation of `/api/kernels` equivalent to the one found in latest Jupyter Notebook
-* Client Websocket to kernel [ZeroMQ](http://zeromq.org/) bridging of the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html)
-* A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
+* Python 3 implementation of the following resources equivalent to the ones found in the latest Jupyter Notebook code base:
+    * `/api` (metadata)
+    * `/api/kernelspecs` (what kernels are available)
+    * `/api/kernels` (kernel CRUD)
+* A way to bridge the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) from Websocket to [ZeroMQ](http://zeromq.org/)
 * A shared token authorization scheme
 * CORS headers as options for servicing browser-based clients
+* A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 
 ## What It Lacks
 
@@ -26,7 +29,6 @@ These are in scope, but not yet implemented.
 * Ability to prespawn kernels
 * Ability to select a default kernel
 * Ability to limit # of kernels
-* Optional kernel spec API exposure
 * Ability to prepopulate kernel memory from a notebook
 
 ## Alternatives
