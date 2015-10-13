@@ -91,7 +91,7 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
             self.get_url('/api/kernels'),
             method='POST',
             body='{}',
-            headers={'Authorization': 'Token fake-token'},
+            headers={'Authorization': 'token fake-token'},
             raise_error=False
         )
         self.assertEqual(response.code, 201)
@@ -109,7 +109,7 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels/'+url_escape(kernel['id'])),
             method='GET',
-            headers={'Authorization': 'Token fake-token'},
+            headers={'Authorization': 'token fake-token'},
             raise_error=False
         )
         self.assertEqual(response.code, 200)
@@ -127,7 +127,7 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
 
         # Now request the websocket with the token
         ws_req = HTTPRequest(ws_url, 
-            headers={'Authorization': 'Token fake-token'}
+            headers={'Authorization': 'token fake-token'}
         )
         ws = yield websocket_connect(ws_req)
         ws.close()
