@@ -14,8 +14,10 @@ setup(
     platforms=['Jupyter Notebook 4.x'],
     packages=[
         'kernel_gateway',
+        'kernel_gateway.base',
         'kernel_gateway.services',
-        'kernel_gateway.services.kernels'
+        'kernel_gateway.services.kernels',
+        'kernel_gateway.services.kernelspecs',
     ],
     scripts=[
         'scripts/jupyter-kernelgateway'

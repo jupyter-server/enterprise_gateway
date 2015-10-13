@@ -83,10 +83,44 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
 
     @gen_test
     def test_auth_token(self):
-        '''All kernel endpoints should check the configured auth token.'''
+        '''All server endpoints should check the configured auth token.'''
         # Set token requirement
         app = self.get_app()
         app.settings['kg_auth_token'] = 'fake-token'
+
+        # Requst API without the token
+        response = yield self.http_client.fetch(
+            self.get_url('/api'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 401)
+
+        # Now with it
+        response = yield self.http_client.fetch(
+            self.get_url('/api'),
+            method='GET',
+            headers={'Authorization': 'token fake-token'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+
+        # Requst kernelspecs without the token
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernelspecs'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 401)
+
+        # Now with it
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernelspecs'),
+            method='GET',
+            headers={'Authorization': 'token fake-token'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
 
         # Request a kernel without the token
         response = yield self.http_client.fetch(
@@ -171,7 +205,56 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
         self.assertEqual(response.headers.get('Content-Security-Policy'), None)
 
     @gen_test
-    def test_default_kernel(self):
+    def test_get_api(self):
+        '''Server should respond with the API version metadata.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/api')
+        )
+        self.assertEqual(response.code, 200)
+        info = json_decode(response.body)
+        self.assertIn('version', info)
+
+    @gen_test
+    def test_get_kernelspecs(self):
+        '''Server should respond with kernel spec metadata.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernelspecs')
+        )
+        self.assertEqual(response.code, 200)
+        specs = json_decode(response.body)
+        self.assertIn('kernelspecs', specs)
+        self.assertIn('default', specs)
+
+    @gen_test
+    def test_get_kernels(self):
+        '''Server should respond with running kernel information.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels')
+        )
+        self.assertEqual(response.code, 200)
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 0)
+
+        # Launch a kernel
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}'
+        )
+        self.assertEqual(response.code, 201)
+        kernel = json_decode(response.body)
+
+        # Check the list again
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels')
+        )
+        self.assertEqual(response.code, 200)
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 1)
+        self.assertEqual(kernels[0]['id'], kernel['id'])
+
+    @gen_test
+    def test_kernel_comm(self):
         '''Default kernel should launch and accept commands.'''
         # Request a kernel
         response = yield self.http_client.fetch(
