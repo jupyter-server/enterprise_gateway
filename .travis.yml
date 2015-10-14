@@ -1,14 +1,10 @@
-sudo: required
-
 language: python
-
 python:
+    - 2.7
+    - 3.3
     - 3.4
-
-services:
-    - docker
-
+    - 3.5
 script:
-    - make test
-    - make sdist
-    - make install
+    - python setup.py sdist
+    - pip install --no-use-wheel dist/*.tar.gz
+    - python -B -m unittest discover

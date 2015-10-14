@@ -3,13 +3,14 @@
 
 .PHONY: bash clean dev help sdist test
 
-
 IMAGE:=jupyter/minimal-notebook:4.0
+
+DOCKER_ARGS?=
 define DOCKER
 docker run -it --rm \
 	--workdir '/srv/kernel_gateway' \
 	-e PYTHONPATH='/srv/kernel_gateway' \
-	-v `pwd`:/srv/kernel_gateway
+	-v `pwd`:/srv/kernel_gateway $(DOCKER_ARGS)
 endef
 
 help:
