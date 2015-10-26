@@ -1,6 +1,12 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import os
+import nbformat
+
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 from traitlets import Unicode, Integer
 
@@ -18,9 +24,9 @@ from tornado import web
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
+from .services.kernels.manager import SeedingMappingKernelManager
 from .base.handlers import default_handlers as default_base_handlers
 
-from notebook.services.kernels.kernelmanager import MappingKernelManager
 from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
@@ -113,6 +119,31 @@ class KernelGatewayApp(JupyterApp):
         val = os.getenv(self.max_kernels_env)
         return val if val is None else int(val)
 
+    seed_notebook_env = 'KG_SEED_NOTEBOOK'
+    seed_notebook = Unicode(config=True,
+        allow_none=True,
+        help='Runs the notebook (.ipynb) at the given URI on every kernel launched. (KG_SEED_NOTEBOOK env var)'
+    )
+    def _seed_notebook_default(self):
+        return os.getenv(self.seed_notebook_env)
+
+    def _load_notebook(self, uri):
+        parts = urlparse(self.seed_notebook)
+
+        if parts.netloc == '' or parts.netloc == 'file':
+            with open(parts.path) as nb_fh:
+                notebook = nbformat.read(nb_fh, 4)
+        else:
+            import requests
+            resp = requests.get(uri)
+            resp.raise_for_status()
+            notebook = nbformat.reads(resp.text, 4)
+
+        return [
+            cell['source'] for cell in notebook.cells 
+            if cell['cell_type'] == 'code'
+        ]
+
     def initialize(self, argv=None):
         '''
         Initialize base class, configurable Jupyter instances, the tornado web 
@@ -125,9 +156,14 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         '''
-        Initialize a kernel manager.
+        Initialize a kernel manager, optionally with notebook source to run
+        on all launched kernels.
         '''
-        self.kernel_manager = MappingKernelManager(
+        self.seed_source = None
+        if self.seed_notebook is not None:
+            self.seed_source =self._load_notebook(self.seed_notebook)
+
+        self.kernel_manager = SeedingMappingKernelManager(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,

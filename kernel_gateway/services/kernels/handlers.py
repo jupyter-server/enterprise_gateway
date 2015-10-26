@@ -19,6 +19,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
             kernels = km.list_kernels()
             if len(kernels) >= max_kernels:
                 raise tornado.web.HTTPError(402, 'Resource Limit')
+
         super(MainKernelHandler, self).post()
 
 default_handlers = []
