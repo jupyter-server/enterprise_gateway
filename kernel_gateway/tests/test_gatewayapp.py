@@ -33,6 +33,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_EXPOSE_HEADERS'] = 'X-Fake-Header'
         os.environ['KG_MAX_AGE'] = '5'
         os.environ['KG_BASE_URL'] = '/fake/path'
+        os.environ['KG_MAX_KERNELS'] = '1'
 
         app = KernelGatewayApp()
         
@@ -46,6 +47,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.expose_headers, 'X-Fake-Header')
         self.assertEqual(app.max_age, '5')
         self.assertEqual(app.base_url, '/fake/path')
+        self.assertEqual(app.max_kernels, 1)
 
 class TestRelocatedGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
@@ -243,6 +245,45 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
         self.assertEqual(response.headers['Access-Control-Expose-Headers'], 'X-My-Fake-Header')
         self.assertEqual(response.headers['Access-Control-Max-Age'], '600')
         self.assertEqual(response.headers.get('Content-Security-Policy'), None)
+
+    @gen_test
+    def test_max_kernels(self):
+        '''Number of kernels should be limited.'''
+        app = self.get_app()
+        app.settings['kg_max_kernels'] = 1
+
+        # Request a kernel
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}'
+        )
+        self.assertEqual(response.code, 201)
+
+        # Request another
+        response2 = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            raise_error=False
+        )
+        self.assertEqual(response2.code, 402)
+
+        # Shut down the kernel
+        kernel = json_decode(response.body)
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            method='DELETE'
+        )
+        self.assertEqual(response.code, 204) 
+
+        # Try again
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}'
+        )
+        self.assertEqual(response.code, 201)
 
     @gen_test
     def test_get_api(self):

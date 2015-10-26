@@ -104,6 +104,15 @@ class KernelGatewayApp(JupyterApp):
     def _max_age_default(self):
         return os.getenv(self.max_age_env, '')
 
+    max_kernels_env = 'KG_MAX_KERNELS'
+    max_kernels = Integer(config=True,
+        allow_none=True,
+        help='Limits the number of kernel instances allowed to run by this gateway. (KG_MAX_KERNELS env var)'
+    )
+    def _max_kernels_default(self):
+        val = os.getenv(self.max_kernels_env)
+        return val if val is None else int(val)
+
     def initialize(self, argv=None):
         '''
         Initialize base class, configurable Jupyter instances, the tornado web 
@@ -155,7 +164,8 @@ class KernelGatewayApp(JupyterApp):
             kg_allow_methods=self.allow_methods,
             kg_allow_origin=self.allow_origin,
             kg_expose_headers=self.expose_headers,
-            kg_max_age=self.max_age
+            kg_max_age=self.max_age,
+            kg_max_kernels=self.max_kernels
         )
 
     def init_http_server(self):
