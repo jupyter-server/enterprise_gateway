@@ -20,6 +20,7 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * A shared token authorization scheme
 * CORS headers as options for servicing browser-based clients
 * Ability to set a custom base URL (e.g., for running under tmpnb)
+* Option to limit the number kernel instances a gateway server will launch (e.g., to force scaling at the container level)
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 
 ## What It Lacks
@@ -29,7 +30,6 @@ These are in scope, but not yet implemented.
 * PyPI package
 * Ability to prespawn kernels
 * Ability to select a default kernel
-* Ability to limit # of kernels
 * Ability to prepopulate kernel memory from a notebook
 
 ## Alternatives
