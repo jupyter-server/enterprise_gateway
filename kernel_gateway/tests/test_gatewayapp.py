@@ -4,6 +4,7 @@
 import logging
 import unittest
 import os
+import sys
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -384,7 +385,8 @@ class TestRelocatedGatewayApp(TestGatewayAppBase):
 
 class TestSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES, 'zen.ipynb')
+        self.app.seed_uri = os.path.join(RESOURCES, 
+            'zen{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed(self):
@@ -430,11 +432,12 @@ class TestSeedGatewayApp(TestGatewayAppBase):
 
 class TestRemoteSeedGatewayApp(TestSeedGatewayApp):
     def setup_app(self):
-        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/498885a624df1e3ecc1615079d87a5e6abdc8ea8/zen.ipynb'
+        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
 
 class TestBadSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES, 'failing_code.ipynb')
+        self.app.seed_uri = os.path.join(RESOURCES, 
+            'failing_code{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed_error(self):

@@ -148,7 +148,6 @@ class KernelGatewayApp(JupyterApp):
 
         # Error if no kernel spec can handle the language requested
         kernel_name = notebook['metadata']['kernelspec']['name']
-        print(kernel_name)
         self.kernel_spec_manager.get_kernel_spec(kernel_name)
 
         return notebook
