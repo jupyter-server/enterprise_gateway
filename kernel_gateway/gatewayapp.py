@@ -127,6 +127,16 @@ class KernelGatewayApp(JupyterApp):
     def _seed_uri_default(self):
         return os.getenv(self.seed_uri_env)
 
+    prespawn_count_env = 'KG_PRESPAWN_COUNT'
+    prespawn_count = Integer(config=True,
+        default_value=None,
+        allow_none=True,
+        help='Number of kernels to prespawn using the default language. (KG_PRESPAWN_COUNT env var)'
+    )
+    def _prespawn_count_default(self):
+        val = os.getenv(self.prespawn_count_env)
+        return val if val is None else int(val)
+
     def _load_notebook(self, uri):
         '''
         Loads a local or remote notebook. Raises RuntimeError if no installed 
@@ -165,7 +175,7 @@ class KernelGatewayApp(JupyterApp):
     def init_configurables(self):
         '''
         Initialize a kernel manager, optionally with notebook source to run
-        on all launched kernels.
+        on all launched kernels. Pre-spawn the requested number of kernels too.
         '''
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
@@ -179,6 +189,14 @@ class KernelGatewayApp(JupyterApp):
             connection_dir=self.runtime_dir,
             kernel_spec_manager=self.kernel_spec_manager
         )
+
+        if self.prespawn_count is not None:
+            if self.max_kernels is not None and self.prespawn_count > self.max_kernels:
+                raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
+                    self.prespawn_count, self.max_kernels)
+                )
+            for _ in range(self.prespawn_count):
+                self.kernel_manager.start_kernel()
 
     def init_webapp(self):
         '''
