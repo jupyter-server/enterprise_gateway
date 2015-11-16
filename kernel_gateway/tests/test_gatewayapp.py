@@ -6,6 +6,7 @@ import unittest
 import os
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
+from jupyter_client.kernelspec import NoSuchKernel
 
 from tornado.gen import coroutine, Return
 from tornado.websocket import websocket_connect
@@ -58,6 +59,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         return ioloop.IOLoop.current()
 
     def get_app(self):
+        '''Returns a tornado.web.Application for system tests.'''
         if hasattr(self, '_app'):
             return self._app
         self.app = KernelGatewayApp(log_level=logging.CRITICAL)
@@ -67,10 +69,17 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         return self.app.web_app
 
     def setup_app(self):
+        '''
+        Override to configure KernelGatewayApp instance before initializing
+        configurables and the web app.
+        '''
         pass
 
     @coroutine
     def spawn_kernel(self):
+        '''
+        Code to spawn a kernel and return a websocket connection to it.
+        '''
         # Request a kernel
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -375,10 +384,10 @@ class TestRelocatedGatewayApp(TestGatewayAppBase):
 
 class TestSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
-        self.app.seed_notebook = os.path.join(RESOURCES, 'zen.ipynb')
+        self.app.seed_uri = os.path.join(RESOURCES, 'zen.ipynb')
 
     @gen_test
-    def test_local_seed(self):
+    def test_seed(self):
         '''Kernel should have variables preseeded from notebook.'''
         ws = yield self.spawn_kernel()
 
@@ -421,4 +430,34 @@ class TestSeedGatewayApp(TestGatewayAppBase):
 
 class TestRemoteSeedGatewayApp(TestSeedGatewayApp):
     def setup_app(self):
-        self.app.seed_notebook = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/498885a624df1e3ecc1615079d87a5e6abdc8ea8/zen.ipynb'
+        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/498885a624df1e3ecc1615079d87a5e6abdc8ea8/zen.ipynb'
+
+class TestBadSeedGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.seed_uri = os.path.join(RESOURCES, 'failing_code.ipynb')
+
+    @gen_test
+    def test_seed_error(self):
+        '''
+        Server should shutdown kernel and respond with error when seed notebook
+        has an execution error.
+        '''
+        # Request a kernel
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500)
+
+class TestMissingSeedKernelGatewayApp(unittest.TestCase):
+    def test_seed_kernel_not_available(self):
+        '''
+        Server should error because seed notebook requires a kernel that is not
+        installed.
+        '''
+        app = KernelGatewayApp()
+        app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
+        self.assertRaises(NoSuchKernel, app.init_configurables)
+
