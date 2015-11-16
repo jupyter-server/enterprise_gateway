@@ -6,18 +6,26 @@ from notebook.services.kernels.kernelmanager import MappingKernelManager
 class SeedingMappingKernelManager(MappingKernelManager):
     @property
     def seed_kernelspec(self):
-        if hasattr(self, '_seed_kernelspace'):
-            return self._seed_kernelspace
+        '''
+        Gets the kernel spec name required to run the seed notebook. Returns 
+        None if no seed notebook exists.
+        '''
+        if hasattr(self, '_seed_kernelspec'):
+            return self._seed_kernelspec
 
         if self.parent.seed_notebook:
-            self._seed_kernelspace = self.parent.seed_notebook['metadata']['kernelspec']['name']
+            self._seed_kernelspec = self.parent.seed_notebook['metadata']['kernelspec']['name']
         else:
-            self._seed_kernelspace = None
+            self._seed_kernelspec = None
 
-        return self._seed_kernelspace
+        return self._seed_kernelspec
 
     @property
     def seed_source(self):
+        '''
+        Gets the source of the seed notebook in cell order. Returns None if no
+        seed notebook exists.
+        '''
         if hasattr(self, '_seed_source'):
             return self._seed_source
 
