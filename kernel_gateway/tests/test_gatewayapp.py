@@ -454,6 +454,14 @@ class TestBadSeedGatewayApp(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 500)
 
+        # No kernels should be running
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET'
+        )
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 0)
+
 class TestMissingSeedKernelGatewayApp(unittest.TestCase):
     def test_seed_kernel_not_available(self):
         '''

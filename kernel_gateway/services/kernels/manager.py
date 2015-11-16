@@ -59,5 +59,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
                     client.execute(code)
                     msg = client.shell_channel.get_msg(block=True)
                     if msg['content']['status'] != 'ok':
+                        # Shutdown the kernel
+                        self.shutdown_kernel(kernel_id)
                         raise RuntimeError('Error seeding kernel memory')
         return kernel_id
