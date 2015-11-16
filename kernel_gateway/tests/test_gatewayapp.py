@@ -39,6 +39,8 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_MAX_AGE'] = '5'
         os.environ['KG_BASE_URL'] = '/fake/path'
         os.environ['KG_MAX_KERNELS'] = '1'
+        os.environ['KG_SEED_URI'] = 'fake-notebook.ipynb'
+        os.environ['KG_PRESPAWN_COUNT'] = '1'
 
         app = KernelGatewayApp()
         
@@ -53,6 +55,8 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.max_age, '5')
         self.assertEqual(app.base_url, '/fake/path')
         self.assertEqual(app.max_kernels, 1)
+        self.assertEqual(app.seed_uri, 'fake-notebook.ipynb')
+        self.assertEqual(app.prespawn_count, 1)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
@@ -361,6 +365,30 @@ class TestGatewayApp(TestGatewayAppBase):
             self.assert_(False, 'never received kernel_info_reply')
         ws.close()
 
+class TestPrespawnGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.prespawn_count = 2
+
+    @gen_test(timeout=10)
+    def test_prespawn_count(self):
+        '''Server should launch given number of kernels on start.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels')
+        )
+        self.assertEqual(response.code, 200)
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 2)
+        
+    def test_prespawn_max_conflict(self):
+        '''
+        Server should error if prespawn count is greater than max allowed 
+        kernels.
+        '''
+        app = KernelGatewayApp()
+        app.prespawn_count = 3
+        app.max_kernels = 2
+        self.assertRaises(RuntimeError, app.init_configurables)
+
 class TestRelocatedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
         self.app.base_url = '/fake/path'
@@ -462,7 +490,6 @@ class TestBadSeedGatewayApp(TestGatewayAppBase):
         kernels = json_decode(response.body)
         self.assertEqual(len(kernels), 0)
 
-class TestMissingSeedKernelGatewayApp(unittest.TestCase):
     def test_seed_kernel_not_available(self):
         '''
         Server should error because seed notebook requires a kernel that is not
@@ -471,4 +498,3 @@ class TestMissingSeedKernelGatewayApp(unittest.TestCase):
         app = KernelGatewayApp()
         app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
         self.assertRaises(NoSuchKernel, app.init_configurables)
-
