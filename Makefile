@@ -40,6 +40,6 @@ test:
 ifeq ($(TEST),)
 	$(DOCKER) $(IMAGE) python -B -m unittest discover
 else
-# e.g., make test TEST="kernel_gateway.tests.test_gatewayapp.TestGatewayAppConfig"
-	@$(DOCKER) $(IMAGE) python -B -m unittest $(TEST)
+# e.g., make test TEST="TestGatewayAppConfig"
+	@$(DOCKER) $(IMAGE) python -B -m unittest kernel_gateway.tests.test_gatewayapp.$(TEST)
 endif

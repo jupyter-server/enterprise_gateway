@@ -4,14 +4,19 @@
 import logging
 import unittest
 import os
+import sys
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
+from jupyter_client.kernelspec import NoSuchKernel
 
+from tornado.gen import coroutine, Return
 from tornado.websocket import websocket_connect
 from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
 from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 from tornado.escape import json_encode, json_decode, url_escape
+
+RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 
 class TestGatewayAppConfig(unittest.TestCase):
     def setUp(self):
@@ -49,61 +54,52 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.base_url, '/fake/path')
         self.assertEqual(app.max_kernels, 1)
 
-class TestRelocatedGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
+class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
         '''Use a global zmq ioloop for tests.'''
         return ioloop.IOLoop.current()
 
     def get_app(self):
-        '''
-        Instantiate the gateway app. Skip the http_server construction: the 
-        test base class provides one for us.
-        '''
+        '''Returns a tornado.web.Application for system tests.'''
         if hasattr(self, '_app'):
             return self._app
-        app = KernelGatewayApp(log_level=logging.CRITICAL)
-        # Set a fake base url; can't do this in the test because the server is 
-        # already running thanks to the base class
-        app.base_url = '/fake/path'
-        app.init_configurables()
-        app.init_webapp()
-        return app.web_app
+        self.app = KernelGatewayApp(log_level=logging.CRITICAL)
+        self.setup_app()
+        self.app.init_configurables()
+        self.app.init_webapp()
+        return self.app.web_app
 
-    @gen_test
-    def test_base_url(self):
-        '''Server should mount resources under configured base.'''
-        # Should not exist at root
+    def setup_app(self):
+        '''
+        Override to configure KernelGatewayApp instance before initializing
+        configurables and the web app.
+        '''
+        pass
+
+    @coroutine
+    def spawn_kernel(self):
+        '''
+        Code to spawn a kernel and return a websocket connection to it.
+        '''
+        # Request a kernel
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
-            method='GET',
-            raise_error=False
+            method='POST',
+            body='{}'
         )
-        self.assertEqual(response.code, 404)
+        self.assertEqual(response.code, 201)
 
-        # Should exist under path
-        response = yield self.http_client.fetch(
-            self.get_url('/fake/path/api/kernels'),
-            method='GET'
+        # Connect to the kernel via websocket
+        kernel = json_decode(response.body)
+        ws_url = 'ws://localhost:{}/api/kernels/{}/channels'.format(
+            self.get_http_port(),
+            url_escape(kernel['id'])
         )
-        self.assertEqual(response.code, 200)
 
-class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
-    def get_new_ioloop(self):
-        '''Use a global zmq ioloop for tests.'''
-        return ioloop.IOLoop.current()
+        ws = yield websocket_connect(ws_url)
+        raise Return(ws)
 
-    def get_app(self):
-        '''
-        Instantiate the gateway app. Skip the http_server construction: the 
-        test base class provides one for us.
-        '''
-        if hasattr(self, '_app'):
-            return self._app
-        app = KernelGatewayApp(log_level=logging.CRITICAL)
-        app.init_configurables()
-        app.init_webapp()
-        return app.web_app
-
+class TestGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_startup(self):
         '''Root of kernels resource should be OK.'''
@@ -337,21 +333,7 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
     @gen_test
     def test_kernel_comm(self):
         '''Default kernel should launch and accept commands.'''
-        # Request a kernel
-        response = yield self.http_client.fetch(
-            self.get_url('/api/kernels'),
-            method='POST',
-            body='{}'
-        )
-        self.assertEqual(response.code, 201)
-
-        # Connect to the kernel via websocket
-        kernel = json_decode(response.body)
-        ws_url = 'ws://localhost:{}/api/kernels/{}/channels'.format(
-            self.get_http_port(),
-            url_escape(kernel['id'])
-        )
-        ws = yield websocket_connect(ws_url)
+        ws = yield self.spawn_kernel()
 
         # Send a request for kernel info
         ws.write_message(json_encode({
@@ -378,3 +360,115 @@ class TestGatewayApp(AsyncHTTPTestCase, LogTrapTestCase):
         else:
             self.assert_(False, 'never received kernel_info_reply')
         ws.close()
+
+class TestRelocatedGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.base_url = '/fake/path'
+
+    @gen_test
+    def test_base_url(self):
+        '''Server should mount resources under configured base.'''
+        # Should not exist at root
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        # Should exist under path
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/api/kernels'),
+            method='GET'
+        )
+        self.assertEqual(response.code, 200)
+
+class TestSeedGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.seed_uri = os.path.join(RESOURCES, 
+            'zen{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_seed(self):
+        '''Kernel should have variables preseeded from notebook.'''
+        ws = yield self.spawn_kernel()
+
+        # Print the encoded "zen of python" string, the kernel should have
+        # it imported
+        ws.write_message(json_encode({
+            'header': {
+                'username': '',
+                'version': '5.0',
+                'session': '',
+                'msg_id': 'fake-msg-id',
+                'msg_type': 'execute_request'
+            },
+            'parent_header': {},
+            'channel': 'shell',
+            'content': {
+                'code': 'print(this.s)',
+                'silent': False,
+                'store_history': False,
+                'user_expressions' : {}
+            },
+            'metadata': {},
+            'buffers': {}
+        }))
+
+        # Read messages until we see the output from the print or hit the 
+        # test timeout
+        while 1:
+            msg = yield ws.read_message()
+            msg = json_decode(msg)
+            msg_type = msg['msg_type']
+            parent_msg_id = msg['parent_header']['msg_id']
+            if msg_type == 'stream' and parent_msg_id == 'fake-msg-id':
+                content = msg['content']
+                self.assertEqual(content['name'], 'stdout')
+                self.assertIn('Gur Mra bs Clguba', content['text'])
+                break
+
+        ws.close()
+
+class TestRemoteSeedGatewayApp(TestSeedGatewayApp):
+    def setup_app(self):
+        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
+
+class TestBadSeedGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.seed_uri = os.path.join(RESOURCES, 
+            'failing_code{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_seed_error(self):
+        '''
+        Server should shutdown kernel and respond with error when seed notebook
+        has an execution error.
+        '''
+        # Request a kernel
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500)
+
+        # No kernels should be running
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET'
+        )
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 0)
+
+class TestMissingSeedKernelGatewayApp(unittest.TestCase):
+    def test_seed_kernel_not_available(self):
+        '''
+        Server should error because seed notebook requires a kernel that is not
+        installed.
+        '''
+        app = KernelGatewayApp()
+        app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
+        self.assertRaises(NoSuchKernel, app.init_configurables)
+

@@ -1,6 +1,12 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 import os
+import nbformat
+
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 from traitlets import Unicode, Integer
 
@@ -18,9 +24,9 @@ from tornado import web
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
+from .services.kernels.manager import SeedingMappingKernelManager
 from .base.handlers import default_handlers as default_base_handlers
 
-from notebook.services.kernels.kernelmanager import MappingKernelManager
 from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
@@ -113,6 +119,39 @@ class KernelGatewayApp(JupyterApp):
         val = os.getenv(self.max_kernels_env)
         return val if val is None else int(val)
 
+    seed_uri_env = 'KG_SEED_URI'
+    seed_uri = Unicode(config=True,
+        allow_none=True,
+        help='Runs the notebook (.ipynb) at the given URI on every kernel launched. (KG_SEED_URI env var)'
+    )
+    def _seed_uri_default(self):
+        return os.getenv(self.seed_uri_env)
+
+    def _load_notebook(self, uri):
+        '''
+        Loads a local or remote notebook. Raises RuntimeError if no installed 
+        kernel can handle the language specified in the notebook. Otherwise,
+        returns the notebook object.
+        '''
+        parts = urlparse(self.seed_uri)
+
+        if parts.netloc == '' or parts.netloc == 'file':
+            # Local file
+            with open(parts.path) as nb_fh:
+                notebook = nbformat.read(nb_fh, 4)
+        else:
+            # Remote file
+            import requests
+            resp = requests.get(uri)
+            resp.raise_for_status()
+            notebook = nbformat.reads(resp.text, 4)
+
+        # Error if no kernel spec can handle the language requested
+        kernel_name = notebook['metadata']['kernelspec']['name']
+        self.kernel_spec_manager.get_kernel_spec(kernel_name)
+
+        return notebook
+
     def initialize(self, argv=None):
         '''
         Initialize base class, configurable Jupyter instances, the tornado web 
@@ -125,13 +164,20 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         '''
-        Initialize a kernel manager.
+        Initialize a kernel manager, optionally with notebook source to run
+        on all launched kernels.
         '''
-        self.kernel_manager = MappingKernelManager(
+        self.kernel_spec_manager = KernelSpecManager(parent=self)
+
+        self.seed_notebook = None
+        if self.seed_uri is not None:
+            self.seed_notebook = self._load_notebook(self.seed_uri)
+
+        self.kernel_manager = SeedingMappingKernelManager(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
-            kernel_spec_manager=KernelSpecManager(parent=self)
+            kernel_spec_manager=self.kernel_spec_manager
         )
 
     def init_webapp(self):
