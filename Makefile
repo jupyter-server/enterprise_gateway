@@ -14,7 +14,13 @@ docker run -it --rm \
 endef
 
 help:
-	@cat Makefile
+	@echo 'Host commands:'
+	@echo '            bash - start an interactive shell within a container'
+	@echo '           clean - clean built files'
+	@echo '             dev - start kernel gateway server in a container'
+	@echo '         install - install latest sdist into a container'
+	@echo '           sdist - build a source distribution into dist/'
+	@echo '            test - run unit tests within a container'
 
 bash:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) bash
