@@ -14,7 +14,7 @@ setup(
     name='jupyter_kernel_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
-    url='http://jupyter.org',
+    url='http://github.com/jupyter-incubator/kernel_gateway',
     description='Headless Jupyter kernel provisioner and Websocket proxy',
     version=version_ns['__version__'],
     license='BSD',

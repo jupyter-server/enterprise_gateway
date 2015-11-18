@@ -1,9 +1,9 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: bash clean dev help sdist test
+.PHONY: bash clean dev help install sdist test
 
-IMAGE:=jupyter/minimal-notebook:4.0
+IMAGE:=jupyter/pyspark-notebook:a388c4a66fd4
 
 DOCKER_ARGS?=
 define DOCKER
