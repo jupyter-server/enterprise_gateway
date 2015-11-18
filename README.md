@@ -54,7 +54,7 @@ jupyter kernelgateway
 
 ## NodeJS Client Example
 
-The following sample uses the new `jupyter-js-services` npm package to request a kernel from a kernel gateway and execute some code on it. You can find this sample in `etc/node_client_example` in this repo along with a `package.json` file that installs all the client dependencies.
+The following sample uses the new `jupyter-js-services` npm package to request a kernel from a kernel gateway and execute some code on it. You can find this sample in `etc/node_client_example` in this repo along with a `package.json` file that installs all the client dependencies (i.e., run `npm install` then `node client.js`).
 
 ```
 var xmlhttprequest = require('xmlhttprequest');
