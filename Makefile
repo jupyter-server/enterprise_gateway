@@ -39,7 +39,7 @@ install:
 	$(DOCKER) $(IMAGE) pip install --no-use-wheel dist/*.tar.gz
 
 sdist:
-	$(DOCKER) $(IMAGE) python setup.py sdist && rm -rf *.egg-info
+	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) && rm -rf *.egg-info
 
 test: TEST?=
 test:
@@ -49,3 +49,6 @@ else
 # e.g., make test TEST="TestGatewayAppConfig"
 	@$(DOCKER) $(IMAGE) python -B -m unittest kernel_gateway.tests.test_gatewayapp.$(TEST)
 endif
+
+release: POST_SDIST=register upload
+release: sdist
