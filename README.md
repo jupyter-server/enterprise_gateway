@@ -12,7 +12,7 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 
 ## What It Gives You
 
-* Python 3 implementation of the following resources equivalent to the ones found in the latest Jupyter Notebook code base:
+* Python 3.x implementation of the following resources equivalent to the ones found in the latest Jupyter Notebook 4.x code base:
     * `/api` (metadata)
     * `/api/kernelspecs` (what kernels are available)
     * `/api/kernels` (kernel CRUD)
@@ -21,31 +21,18 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * CORS headers as options for servicing browser-based clients
 * Ability to set a custom base URL (e.g., for running under tmpnb)
 * Option to limit the number kernel instances a gateway server will launch (e.g., to force scaling at the container level)
+* Option for prespawning a set number of kernels
+* Option for setting a default kernel language
+* Option for prepopulating kernel memory from a notebook
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 
-## What It Lacks
-
-These are in scope, but not yet implemented.
-
-* PyPI package
-* Ability to prespawn kernels
-* Ability to select a default kernel
-* Ability to prepopulate kernel memory from a notebook
-
-## Alternatives
-
-* A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
-* If your client is within the same compute cluster as the kernel and already has good ZeroMQ support, there is no need to use the kernel gateway to enable Websocket access. Talk ZeroMQ directly to the kernel.
+Run `jupyter kernelgateway --help-all` after installation to see the full set of options.
 
 ## Try It
 
-TODO: We're working on a PyPI package and/or Docker image. For now, if you want to install without Docker, you'll need to clone and install from the git repo.
-
 ```
-git clone https://github.com/jupyter-incubator/kernel_gateway.git
-cd kernel_gateway
-# install from clone
-pip install .
+# install from pypi
+pip install jupyter_kernel_gateway
 # show all config options
 jupyter kernelgateway --help-all
 # run it with default options
@@ -168,6 +155,11 @@ if __name__ == '__main__':
     IOLoop.current().run_sync(main)
 ```
 
+## Alternatives
+
+* A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
+* If your client is within the same compute cluster as the kernel and already has good ZeroMQ support, there is no need to use the kernel gateway to enable Websocket access. Talk ZeroMQ directly to the kernel.
+
 ## Develop
 
 This repository is setup for a Dockerized development environment. On a Mac, do this one-time setup if you don't have a local Docker environment yet.
@@ -179,12 +171,6 @@ brew update
 brew install docker-machine docker
 docker-machine create -d virtualbox dev
 eval "$(docker-machine env dev)"
-```
-
-Pull the Docker image that we'll use for development. We currently use the `jupyter/minimal-notebook:4.0` image because it has all the dependencies preinstalled, but it includes far more than we really need.
-
-```
-docker pull jupyter/minimal-notebook:4.0
 ```
 
 Clone this repository in a local directory that docker can volume mount:
