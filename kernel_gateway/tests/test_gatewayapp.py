@@ -41,6 +41,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_MAX_KERNELS'] = '1'
         os.environ['KG_SEED_URI'] = 'fake-notebook.ipynb'
         os.environ['KG_PRESPAWN_COUNT'] = '1'
+        os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
 
         app = KernelGatewayApp()
         
@@ -57,6 +58,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.max_kernels, 1)
         self.assertEqual(app.seed_uri, 'fake-notebook.ipynb')
         self.assertEqual(app.prespawn_count, 1)
+        self.assertEqual(app.default_kernel_name, 'fake_kernel')
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
@@ -364,6 +366,23 @@ class TestGatewayApp(TestGatewayAppBase):
         else:
             self.assert_(False, 'never received kernel_info_reply')
         ws.close()
+
+    @gen_test
+    def test_default_kernel_name(self):
+        '''The default kernel name should be used on empty requests.'''
+        # Set token requirement
+        app = self.get_app()
+        app.settings['kg_default_kernel_name'] = 'fake-kernel'
+        # Request without an explicit kernel name
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500)
+        self.assertTrue('raise NoSuchKernel' in str(response.body))
+
 
 class TestPrespawnGatewayApp(TestGatewayAppBase):
     def setup_app(self):

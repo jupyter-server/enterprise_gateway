@@ -137,6 +137,13 @@ class KernelGatewayApp(JupyterApp):
         val = os.getenv(self.prespawn_count_env)
         return val if val is None else int(val)
 
+    default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
+    default_kernel_name = Unicode(config=True,
+        help='''The default kernel name to use when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)''')
+    def _default_kernel_name_default(self):
+        # defaults to Jupyter's default kernel name on empty string
+        return os.getenv(self.default_kernel_name_env, '')
+
     def _load_notebook(self, uri):
         '''
         Loads a local or remote notebook. Raises RuntimeError if no installed 

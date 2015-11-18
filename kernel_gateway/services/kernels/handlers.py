@@ -22,6 +22,18 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
         super(MainKernelHandler, self).post()
 
+    # preemptively insert our own default when one is not specified
+    def get_json_body(self):
+        model = super(MainKernelHandler, self).get_json_body()
+        if 'kg_default_kernel_name' in self.settings and self.settings['kg_default_kernel_name'] is not '':
+            if model is None:
+                model = {
+                    'name': self.settings['kg_default_kernel_name']
+                }
+            else:
+                model.setdefault('name', self.settings['kg_default_kernel_name'])
+        return model
+
 default_handlers = []
 for path, cls in notebook_handlers.default_handlers:
     if cls.__name__ in globals():
