@@ -42,6 +42,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_SEED_URI'] = 'fake-notebook.ipynb'
         os.environ['KG_PRESPAWN_COUNT'] = '1'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
+        os.environ['KG_LIST_KERNELS'] = 'True'
 
         app = KernelGatewayApp()
         
@@ -59,6 +60,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.seed_uri, 'fake-notebook.ipynb')
         self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
+        self.assertEqual(app.list_kernels, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def get_new_ioloop(self):
@@ -109,6 +111,7 @@ class TestGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_startup(self):
         '''Root of kernels resource should be OK.'''
+        self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(self.get_url('/api/kernels'))
         self.assertEqual(response.code, 200)
 
@@ -131,6 +134,7 @@ class TestGatewayApp(TestGatewayAppBase):
         # Set token requirement
         app = self.get_app()
         app.settings['kg_auth_token'] = 'fake-token'
+        app.settings['kg_list_kernels'] = True
 
         # Requst API without the token
         response = yield self.http_client.fetch(
@@ -233,6 +237,7 @@ class TestGatewayApp(TestGatewayAppBase):
         app.settings['kg_allow_origin'] = 'https://jupyter.org'
         app.settings['kg_expose_headers'] = 'X-My-Fake-Header'
         app.settings['kg_max_age'] = '600'
+        app.settings['kg_list_kernels'] = True
 
         # Get kernels to check headers
         response = yield self.http_client.fetch(
@@ -311,6 +316,7 @@ class TestGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_get_kernels(self):
         '''Server should respond with running kernel information.'''
+        self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels')
         )
@@ -370,7 +376,6 @@ class TestGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_default_kernel_name(self):
         '''The default kernel name should be used on empty requests.'''
-        # Set token requirement
         app = self.get_app()
         app.settings['kg_default_kernel_name'] = 'fake-kernel'
         # Request without an explicit kernel name
@@ -383,6 +388,34 @@ class TestGatewayApp(TestGatewayAppBase):
         self.assertEqual(response.code, 500)
         self.assertTrue('raise NoSuchKernel' in str(response.body))
 
+    @gen_test
+    def test_enable_kernel_list(self):
+        '''The listing of running kernels can be enabled.'''
+        app = self.get_app()
+        # default
+        app.settings.pop('kg_list_kernels', None)
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        # set to True
+        app.settings['kg_list_kernels'] = True
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+        )
+        self.assertEqual(response.code, 200)
+        self.assertTrue('[]' in str(response.body))
+
+        # set to False
+        app.settings['kg_list_kernels'] = False
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
 
 class TestPrespawnGatewayApp(TestGatewayAppBase):
     def setup_app(self):
@@ -391,6 +424,7 @@ class TestPrespawnGatewayApp(TestGatewayAppBase):
     @gen_test(timeout=10)
     def test_prespawn_count(self):
         '''Server should launch given number of kernels on start.'''
+        self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels')
         )
@@ -415,6 +449,7 @@ class TestRelocatedGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_base_url(self):
         '''Server should mount resources under configured base.'''
+        self.app.web_app.settings['kg_list_kernels'] = True
         # Should not exist at root
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -492,6 +527,7 @@ class TestBadSeedGatewayApp(TestGatewayAppBase):
         Server should shutdown kernel and respond with error when seed notebook
         has an execution error.
         '''
+        self.app.web_app.settings['kg_list_kernels'] = True
         # Request a kernel
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),

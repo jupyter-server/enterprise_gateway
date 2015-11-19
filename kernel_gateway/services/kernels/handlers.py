@@ -22,6 +22,16 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
         super(MainKernelHandler, self).post()
 
+    def get(self):
+        '''
+        Denies returning a list of running kernels unless explicitly
+        enabled, instead returning a 404 error.
+        '''
+        if 'kg_list_kernels' not in self.settings or self.settings['kg_list_kernels'] != True:
+            raise tornado.web.HTTPError(404, 'Not Found')
+        else:
+            super(MainKernelHandler, self).get()
+
     # preemptively insert our own default when one is not specified
     def get_json_body(self):
         model = super(MainKernelHandler, self).get_json_body()

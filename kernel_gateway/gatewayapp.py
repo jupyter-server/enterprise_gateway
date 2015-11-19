@@ -8,7 +8,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import Unicode, Integer
+from traitlets import Unicode, Integer, Bool
 
 from jupyter_core.application import JupyterApp
 from jupyter_client.kernelspec import KernelSpecManager
@@ -144,6 +144,14 @@ class KernelGatewayApp(JupyterApp):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
+    list_kernels_env = 'KG_LIST_KERNELS'
+    list_kernels = Bool(config=True,
+        help='''Enables listing the running kernels through /api/kernels
+            (KG_LIST_KERNELS env var). Jupyter servers normally allow this.'''
+    )
+    def _list_kernels_default(self):
+        return os.getenv(self.list_kernels_env, 'False') == 'True'
+
     def _load_notebook(self, uri):
         '''
         Loads a local or remote notebook. Raises RuntimeError if no installed 
@@ -236,7 +244,8 @@ class KernelGatewayApp(JupyterApp):
             kg_allow_origin=self.allow_origin,
             kg_expose_headers=self.expose_headers,
             kg_max_age=self.max_age,
-            kg_max_kernels=self.max_kernels
+            kg_max_kernels=self.max_kernels,
+            kg_list_kernels=self.list_kernels
         )
 
     def init_http_server(self):
