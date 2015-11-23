@@ -41,13 +41,20 @@ install:
 sdist:
 	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) && rm -rf *.egg-info
 
-test: TEST?=
-test:
+test: test-python3
+
+test-python2: PRE_CMD:=source activate python2; pip install requests;
+test-python2: _test
+
+test-python3: _test
+
+_test: TEST?=
+_test:
 ifeq ($(TEST),)
-	$(DOCKER) $(IMAGE) python -B -m unittest discover
+	$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest discover"
 else
 # e.g., make test TEST="TestGatewayAppConfig"
-	@$(DOCKER) $(IMAGE) python -B -m unittest kernel_gateway.tests.test_gatewayapp.$(TEST)
+	@$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest kernel_gateway.tests.test_gatewayapp.$(TEST)"
 endif
 
 release: POST_SDIST=register upload
