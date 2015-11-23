@@ -12,18 +12,18 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 
 ## What It Gives You
 
-* Python 3.x implementation of the following resources equivalent to the ones found in the latest Jupyter Notebook 4.x code base:
+* Python 2.7 and 3.3+ compatible implementation of the following resources, equivalent to the ones found in the latest Jupyter Notebook 4.x code base:
     * `/api` (metadata)
     * `/api/kernelspecs` (what kernels are available)
     * `/api/kernels` (kernel CRUD)
-* A way to bridge the [Jupyter protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) from Websocket to [ZeroMQ](http://zeromq.org/)
-* A shared token authorization scheme
-* CORS headers as options for servicing browser-based clients
-* Ability to set a custom base URL (e.g., for running under tmpnb)
+    * `/api/kernels/:kernel_id/channels` (Websocket-to-[ZeroMQ](http://zeromq.org/) transformer for the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html))
+* Option to set a shared authentication token and require it from clients
+* Option to set CORS headers for servicing browser-based clients
+* Option to set a custom base URL (e.g., for running under tmpnb)
 * Option to limit the number kernel instances a gateway server will launch (e.g., to force scaling at the container level)
-* Option for prespawning a set number of kernels
-* Option for setting a default kernel language
-* Option for prepopulating kernel memory from a notebook
+* Option to prespawn a set number of kernels
+* Option to set a default kernel language
+* Option to prepopulate kernel memory from a notebook
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 
 Run `jupyter kernelgateway --help-all` after installation to see the full set of options.
@@ -187,7 +187,8 @@ git clone https://github.com/jupyter-incubator/kernel_gateway.git
 Run the tests:
 
 ```
-make test
+make test-python3
+make test-python2
 ```
 
 Run the gateway server:
