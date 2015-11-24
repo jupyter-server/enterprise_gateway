@@ -17,8 +17,8 @@ def parse_body(body):
     byte string. If body is the empty string or None, the empty string will be
     returned.
     '''
-    body = body.decode(encoding='UTF-8')
-    if body is not None and body is not '':
+    body = None if body is b'' else body.decode(encoding='UTF-8')
+    if body is not None:
         return json.loads(body)
     else:
         return ''
