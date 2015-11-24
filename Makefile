@@ -31,9 +31,10 @@ clean:
 	@-find . -name __pycache__ -exec rm -fr {} \;
 
 dev: ARGS?=
+dev: PYARGS?=
 dev:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) \
-		python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
 install:
 	$(DOCKER) $(IMAGE) pip install --no-use-wheel dist/*.tar.gz

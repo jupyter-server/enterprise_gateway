@@ -472,7 +472,7 @@ class TestSeedGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_seed(self):
-        '''Kernel should have variables preseeded from notebook.'''
+        '''Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
         ws = yield self.spawn_kernel()
 
         # Print the encoded "zen of python" string, the kernel should have
