@@ -10,24 +10,14 @@ except ImportError:
     from Queue import Empty
 
 class NotebookAPIHandler(tornado.web.RequestHandler):
-    get_source = None
-    put_source = None
-    post_source = None
-    delete_source = None
     kernel_client = None
+    sources = None
     execution_timeout = 5
     kernel_name = ''
-    
+
     def initialize(self, sources, kernel_client, kernel_name):
         self.kernel_client = kernel_client
-        if 'GET' in sources:
-            self.get_source = sources['GET']
-        if 'POST' in sources:
-            self.post_source = sources['POST']
-        if 'PUT' in sources:
-            self.put_source = sources['PUT']
-        if 'DELETE' in sources:
-            self.delete_source = sources['DELETE']
+        self.sources = sources
         self.kernel_name = kernel_name
 
     def _send_code(self, code, block=True):
@@ -56,12 +46,13 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
 
         return result, status
 
-    def _handle_request(self, source_code):
-        if source_code is None:
+    def _handle_request(self):
+        if self.request.method not in self.sources:
             self.set_status(405)
             self.finish()
             return
 
+        source_code = self.sources[self.request.method]
         REQUEST = json.dumps({
             'body' : parse_body(self.request.body),
             'args' : parse_args(self.request.arguments),
@@ -85,18 +76,13 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
         self.finish()
 
     def get(self, **kwargs):
-        # execute the get_source
-        self._handle_request(self.get_source)
+        self._handle_request()
+
     def post(self, **kwargs):
-        # execute the post_source
-        self._handle_request(self.post_source)
+        self._handle_request()
 
     def put(self, **kwargs):
-        # execute the put_source
-        print('in put method')
-        self._handle_request(self.put_source)
+        self._handle_request()
 
     def delete(self, **kwargs):
-        print('in delete method')
-        # execute the delete_source
-        self._handle_request(self.delete_source)
+        self._handle_request()
