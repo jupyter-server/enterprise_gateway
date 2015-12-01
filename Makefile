@@ -28,7 +28,8 @@ bash:
 clean:
 	@-rm -rf dist
 	@-rm -rf *.egg-info
-	@-find . -name __pycache__ -exec rm -fr {} \;
+	@-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
+	@-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
 
 dev: ARGS?=
 dev: PYARGS?=

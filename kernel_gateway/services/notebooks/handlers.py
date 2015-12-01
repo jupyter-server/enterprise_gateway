@@ -14,11 +14,20 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
     sources = None
     execution_timeout = 5
     kernel_name = ''
+    _assignment_statements = {'r': "REQUEST <- '{}'",
+        None : "REQUEST = '{}'"}
 
     def initialize(self, sources, kernel_client, kernel_name):
         self.kernel_client = kernel_client
         self.sources = sources
         self.kernel_name = kernel_name
+
+    def _request_assignment_for_lang(self, kernel_name, expression):
+        try:
+            statement = self._assignment_statements[kernel_name]
+        except KeyError:
+            statement = self._assignment_statements[None]
+        return statement.format(expression)
 
     def _send_code(self, code, block=True):
         # execute the code and return the result and HTTP status code
@@ -58,13 +67,9 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
             'args' : parse_args(self.request.arguments),
             'path' : self.path_kwargs
         })
-        if self.kernel_name == 'r':
-            request_code = "REQUEST <- '"  + REQUEST + "'"
-        else:
-            request_code = "REQUEST = '"  + REQUEST + "'"
+        request_code = self._request_assignment_for_lang(self.kernel_name, REQUEST)
 
         access_log.debug('Request code for notebook cell is: {}'.format(request_code))
-        # TODO: Need to figure out multil-lang assignment
         self._send_code(request_code, False)
         result, status = self._send_code(source_code)
 

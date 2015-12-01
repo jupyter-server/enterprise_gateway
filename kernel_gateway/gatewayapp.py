@@ -1,7 +1,9 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+
 import os
 import nbformat
+import sys
 
 try:
     from urlparse import urlparse
@@ -24,7 +26,7 @@ from tornado import web
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
-from .services.kernels.manager import SeedingMappingKernelManager, APIMappingKernelManager
+from .services.kernels.manager import SeedingMappingKernelManager
 from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path
 
@@ -155,10 +157,10 @@ class KernelGatewayApp(JupyterApp):
 
     api_env = 'KG_API'
     api = Unicode(config=True,
-        help='Designates that the kernel gateway will serve APIs from this notebook (KG_API env var)'
+        help='Controls which API to expose, that of a Jupyter kernel or the seed notebook\'s, using values "jupyter-websocket" or "notebook-http" (KG_API env var)'
     )
     def _api_default(self):
-        return os.getenv(self.api_env, '')
+        return os.getenv(self.api_env, 'jupyter-websocket')
 
     def _load_notebook(self, uri):
         '''
@@ -166,7 +168,7 @@ class KernelGatewayApp(JupyterApp):
         kernel can handle the language specified in the notebook. Otherwise,
         returns the notebook object.
         '''
-        parts = urlparse(self.seed_uri)
+        parts = urlparse(uri)
 
         if parts.netloc == '' or parts.netloc == 'file':
             # Local file
@@ -206,23 +208,12 @@ class KernelGatewayApp(JupyterApp):
         if self.seed_uri is not None:
             self.seed_notebook = self._load_notebook(self.seed_uri)
 
-        if self.api:
-            with open(self.api) as nb_fh:
-                notebook = nbformat.read(nb_fh, 4)
-            self.kernel_manager = APIMappingKernelManager(
-                parent=self,
-                log=self.log,
-                connection_dir=self.runtime_dir,
-                kernel_spec_manager=self.kernel_spec_manager,
-                notebook=notebook
-            )
-        else:
-            self.kernel_manager = SeedingMappingKernelManager(
-                parent=self,
-                log=self.log,
-                connection_dir=self.runtime_dir,
-                kernel_spec_manager=self.kernel_spec_manager
-            )
+        self.kernel_manager = SeedingMappingKernelManager(
+            parent=self,
+            log=self.log,
+            connection_dir=self.runtime_dir,
+            kernel_spec_manager=self.kernel_spec_manager
+        )
 
         if self.prespawn_count is not None:
             if self.max_kernels is not None and self.prespawn_count > self.max_kernels:
@@ -240,17 +231,22 @@ class KernelGatewayApp(JupyterApp):
         '''
         # Redefine handlers off the base_url path
         handlers = []
-        if self.api:
+
+        if self.api not in ['jupyter-websocket','notebook-http']:
+            sys.exit('Invalid API value, valid values are jupyter-websocket and notebook-http')
+
+        if self.api == 'notebook-http':
             kernel_id = self.kernel_manager.start_kernel()
             kernel_client = self.kernel_manager.get_kernel(kernel_id).client()
             # discover the notebook endpoints and their implementations
             endpoints = self.kernel_manager.endpoints()
             sorted_endpoints = self.kernel_manager.sorted_endpoints()
             # append tuples for the notebook's API endpoints
-            for uri in endpoints:
+            for uri in sorted_endpoints:
                 parameterized_path = parameterize_path(uri)
-                print('Registering uri {}'.format(parameterized_path))
-                handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_client' : kernel_client, 'kernel_name' : self.kernel_manager.kernelspec}))
+                parameterized_path = url_path_join(self.base_url, parameterized_path)
+                self.log.info('Registering uri: {}, methods: ({})'.format(parameterized_path, list(endpoints[uri].keys())))
+                handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_client' : kernel_client, 'kernel_name' : self.kernel_manager.seed_kernelspec}))
         else:
             # append tuples for the standard kernel gateway endpoints
             for handler in (
@@ -264,7 +260,6 @@ class KernelGatewayApp(JupyterApp):
                 # handler class ref
                 new_handler = tuple([pattern] + list(handler[1:]))
                 handlers.append(new_handler)
-
 
         self.web_app = web.Application(
             handlers=handlers,
