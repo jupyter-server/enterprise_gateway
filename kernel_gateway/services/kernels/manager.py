@@ -111,6 +111,9 @@ class SeedingMappingKernelManager(MappingKernelManager):
                 # Connect to the kernel and pump in the content of the notebook
                 # before returning the kernel ID to the requesting client
                 client = kernel.client()
+                if self.parent.api == 'notebook-http':
+                    client.start_channels()
+                    client.wait_for_ready()
                 for code in self.seed_source:
                     # Execute every code cell and wait for each to succeed or fail
                     if self.api_indicator.match(code) is None:
@@ -120,7 +123,4 @@ class SeedingMappingKernelManager(MappingKernelManager):
                             # Shutdown the kernel
                             self.shutdown_kernel(kernel_id)
                             raise RuntimeError('Error seeding kernel memory')
-            if self.parent.api == 'notebook-http':
-                client.start_channels()
-                client.wait_for_ready()
         return kernel_id
