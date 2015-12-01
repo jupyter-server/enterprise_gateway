@@ -156,7 +156,8 @@ class KernelGatewayApp(JupyterApp):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
 
     api_env = 'KG_API'
-    api = Unicode(config=True,
+    api = Unicode('jupyter-websocket',
+        config=True,
         help='Controls which API to expose, that of a Jupyter kernel or the seed notebook\'s, using values "jupyter-websocket" or "notebook-http" (KG_API env var)'
     )
     def _api_default(self):
@@ -232,9 +233,6 @@ class KernelGatewayApp(JupyterApp):
         # Redefine handlers off the base_url path
         handlers = []
 
-        if self.api not in ['jupyter-websocket','notebook-http']:
-            sys.exit('Invalid API value, valid values are jupyter-websocket and notebook-http')
-
         if self.api == 'notebook-http':
             kernel_id = self.kernel_manager.start_kernel()
             kernel_client = self.kernel_manager.get_kernel(kernel_id).client()
@@ -247,7 +245,7 @@ class KernelGatewayApp(JupyterApp):
                 parameterized_path = url_path_join(self.base_url, parameterized_path)
                 self.log.info('Registering uri: {}, methods: ({})'.format(parameterized_path, list(endpoints[uri].keys())))
                 handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_client' : kernel_client, 'kernel_name' : self.kernel_manager.seed_kernelspec}))
-        else:
+        elif self.api == 'jupyter-websocket':
             # append tuples for the standard kernel gateway endpoints
             for handler in (
                 default_kernel_handlers +
@@ -260,6 +258,8 @@ class KernelGatewayApp(JupyterApp):
                 # handler class ref
                 new_handler = tuple([pattern] + list(handler[1:]))
                 handlers.append(new_handler)
+        else:
+            sys.exit('Invalid API value, valid values are jupyter-websocket and notebook-http')
 
         self.web_app = web.Application(
             handlers=handlers,
