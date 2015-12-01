@@ -65,7 +65,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
     @property
     def seed_kernelspec(self):
         '''
-        Gets the kernel spec name required to run the seed notebook. Returns 
+        Gets the kernel spec name required to run the seed notebook. Returns
         None if no seed notebook exists.
         '''
         if hasattr(self, '_seed_kernelspec'):
@@ -89,7 +89,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
 
         if self.parent.seed_notebook:
             self._seed_source = [
-                cell['source'] for cell in self.parent.seed_notebook.cells 
+                cell['source'] for cell in self.parent.seed_notebook.cells
                 if cell['cell_type'] == 'code'
             ]
         else:
