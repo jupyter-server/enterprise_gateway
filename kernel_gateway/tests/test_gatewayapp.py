@@ -568,6 +568,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_get_endpoint(self):
+        '''GET HTTP method should be callable
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/hello'),
             method='GET',
@@ -578,6 +580,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_get_endpoint_with_path_param(self):
+        '''GET HTTP method should be callable with a path param
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/hello/governor'),
             method='GET',
@@ -588,6 +592,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_get_endpoint_with_query_param(self):
+        '''GET HTTP method should be callable with a query param
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/hello/person?person=governor'),
             method='GET',
@@ -598,6 +604,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_get_endpoint_with_multiple_query_params(self):
+        '''GET HTTP method should be callable with multiple query params
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/hello/persons?person=governor&person=rick'),
             method='GET',
@@ -608,6 +616,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_put_endpoint(self):
+        '''PUT HTTP method should be callable
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/message'),
             method='PUT',
@@ -626,6 +636,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_post_endpoint(self):
+        '''POST endpoint should be callable
+        '''
         expected = b'["Rick", "Maggie", "Glenn", "Carol", "Daryl"]\n'
         response = yield self.http_client.fetch(
             self.get_url('/people'),
@@ -639,6 +651,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_delete_endpoint(self):
+        '''DELETE HTTP method should be callable
+        '''
         expected = b'["Rick", "Maggie", "Glenn", "Carol", "Daryl"]\n'
         response = yield self.http_client.fetch(
             self.get_url('/people'),
@@ -657,6 +671,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_error_endpoint(self):
+        '''Error in a cell should cause 500 HTTP status
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/error'),
             method='GET',
@@ -666,6 +682,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_unsupported_method(self):
+        '''Endpoints which are not registered should return 404 HTTP status
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/message'),
             method='DELETE',
@@ -675,6 +693,8 @@ class TestAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_api_unsupported_method(self):
+        '''Endpoints which are registered, but do not support an HTTP method, should return a 405 HTTP status code
+        '''
         response = yield self.http_client.fetch(
             self.get_url('/not/an/endpoint'),
             method='GET',
