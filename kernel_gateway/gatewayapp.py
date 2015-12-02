@@ -309,4 +309,10 @@ class KernelGatewayApp(JupyterApp):
             self.io_loop.stop()
         self.io_loop.add_callback(_stop)
 
+    def shutdown(self):
+        if self.kernel_manager:
+            kids = self.kernel_manager.list_kernel_ids()
+            for kid in kids:
+                self.kernel_manager.shutdown_kernel(kid, now=True)
+
 launch_instance = KernelGatewayApp.launch_instance

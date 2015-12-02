@@ -64,6 +64,11 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.list_kernels, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
+    def tearDown(self):
+        if self.app:
+            self.app.shutdown()
+        super(TestGatewayAppBase, self).tearDown()
+
     def get_new_ioloop(self):
         '''Use a global zmq ioloop for tests.'''
         return ioloop.IOLoop.current()
