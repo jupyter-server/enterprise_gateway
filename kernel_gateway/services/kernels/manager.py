@@ -120,7 +120,11 @@ class SeedingMappingKernelManager(MappingKernelManager):
                         client.execute(code)
                         msg = client.shell_channel.get_msg(block=True)
                         if msg['content']['status'] != 'ok':
+                            # Shutdown the channels to remove any lingering ZMQ messages
+                            client.stop_channels()
                             # Shutdown the kernel
                             self.shutdown_kernel(kernel_id)
                             raise RuntimeError('Error seeding kernel memory')
+                # Shutdown the channels to remove any lingering ZMQ messages
+                client.stop_channels()
         return kernel_id
