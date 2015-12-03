@@ -678,7 +678,7 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             method='GET',
             raise_error=False
         )
-        self.assertEqual(response.code, 500, 'Cell with error did not retrun 500 status code.')
+        self.assertEqual(response.code, 500, 'Cell with error did not return 500 status code.')
 
     @gen_test
     def test_api_unsupported_method(self):
@@ -689,7 +689,7 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             method='DELETE',
             raise_error=False
         )
-        self.assertEqual(response.code, 404, 'Endpoint which exsists, but does not support DELETE did not return 405 status code.')
+        self.assertEqual(response.code, 404, 'Endpoint which exists, but does not support DELETE, did not return 405 status code.')
 
     @gen_test
     def test_api_unsupported_method(self):
@@ -700,4 +700,11 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             method='GET',
             raise_error=False
         )
-        self.assertEqual(response.code, 404, 'Endpoint which should not exists did not return 404 status code.')
+        self.assertEqual(response.code, 404, 'Endpoint which should not exist did not return 404 status code.')
+
+class TestSeedGatewayApp_NotebookBadAPI(TestGatewayAppBase):
+    @gen_test
+    def test_startup(self):
+        '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
+        self.app.api = 'notebook-gopher'
+        self.assertRaises(ValueError, self.app.init_webapp)

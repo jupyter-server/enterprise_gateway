@@ -259,7 +259,7 @@ class KernelGatewayApp(JupyterApp):
                 new_handler = tuple([pattern] + list(handler[1:]))
                 handlers.append(new_handler)
         else:
-            sys.exit('Invalid API value, valid values are jupyter-websocket and notebook-http')
+            raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
 
         self.web_app = web.Application(
             handlers=handlers,
