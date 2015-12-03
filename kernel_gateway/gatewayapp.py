@@ -163,6 +163,10 @@ class KernelGatewayApp(JupyterApp):
     def _api_default(self):
         return os.getenv(self.api_env, 'jupyter-websocket')
 
+    def _api_changed(self, name, old, new):
+        if new not in ['notebook-http', 'jupyter-websocket']:
+            raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
+
     def _load_notebook(self, uri):
         '''
         Loads a local or remote notebook. Raises RuntimeError if no installed
@@ -258,8 +262,6 @@ class KernelGatewayApp(JupyterApp):
                 # handler class ref
                 new_handler = tuple([pattern] + list(handler[1:]))
                 handlers.append(new_handler)
-        else:
-            raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
 
         self.web_app = web.Application(
             handlers=handlers,

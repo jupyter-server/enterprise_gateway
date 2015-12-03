@@ -21,6 +21,8 @@ help:
 	@echo '         install - install latest sdist into a container'
 	@echo '           sdist - build a source distribution into dist/'
 	@echo '            test - run unit tests within a container'
+	@echo '    test-python2 - run unit tests explicitly using Python 2 within a container'
+	@echo '    test-python3 - run unit tests explicitly using Python 3 within a container'
 
 bash:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) bash

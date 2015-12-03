@@ -63,12 +63,6 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
         self.assertEqual(app.list_kernels, True)
 
-    @gen_test
-    def test_config_bad_api_value(self):
-        '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
-        self.app.api = 'notebook-gopher'
-        self.assertRaises(ValueError, self.app.init_webapp)
-
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def tearDown(self):
         if self.app:
@@ -139,6 +133,13 @@ class TestGatewayApp(TestGatewayAppBase):
         resp = yield self.http_client.fetch(self.get_url('/tree'),
             raise_error=False)
         self.assertEqual(response.code, 404)
+
+    @gen_test
+    def test_config_bad_api_value(self):
+        '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
+        def _set_api():
+            self.app.api = 'notebook-gopher'
+        self.assertRaises(ValueError, _set_api)
 
     @gen_test
     def test_auth_token(self):
