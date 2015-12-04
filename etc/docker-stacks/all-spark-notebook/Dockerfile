@@ -8,4 +8,5 @@ USER jovyan
 # Install Kernel Gateway
 RUN pip install jupyter_kernel_gateway==0.1.0
 
-USER root
+# Configure container startup
+ENTRYPOINT ["jupyter", "kernelgateway"]
