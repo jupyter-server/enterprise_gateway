@@ -9,4 +9,5 @@ USER jovyan
 RUN pip install jupyter_kernel_gateway==0.1.0
 
 # Configure container startup
-ENTRYPOINT ["jupyter", "kernelgateway"]
+ENTRYPOINT ["tini", "--", "jupyter", "kernelgateway"]
+CMD ["--KernelGatewayApp.ip=0.0.0.0"]
