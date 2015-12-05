@@ -5,6 +5,7 @@ import logging
 import unittest
 import os
 import sys
+import json
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -45,7 +46,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_LIST_KERNELS'] = 'True'
 
         app = KernelGatewayApp()
-        
+
         self.assertEqual(app.port, 1234)
         self.assertEqual(app.ip, '1.1.1.1')
         self.assertEqual(app.auth_token, 'fake-token')
@@ -63,6 +64,11 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.list_kernels, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
+    def tearDown(self):
+        if self.app:
+            self.app.shutdown()
+        super(TestGatewayAppBase, self).tearDown()
+
     def get_new_ioloop(self):
         '''Use a global zmq ioloop for tests.'''
         return ioloop.IOLoop.current()
@@ -127,6 +133,13 @@ class TestGatewayApp(TestGatewayAppBase):
         resp = yield self.http_client.fetch(self.get_url('/tree'),
             raise_error=False)
         self.assertEqual(response.code, 404)
+
+    @gen_test
+    def test_config_bad_api_value(self):
+        '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
+        def _set_api():
+            self.app.api = 'notebook-gopher'
+        self.assertRaises(ValueError, _set_api)
 
     @gen_test
     def test_auth_token(self):
@@ -221,7 +234,7 @@ class TestGatewayApp(TestGatewayAppBase):
             self.assert_(False, 'no exception raised')
 
         # Now request the websocket with the token
-        ws_req = HTTPRequest(ws_url, 
+        ws_req = HTTPRequest(ws_url,
             headers={'Authorization': 'token fake-token'}
         )
         ws = yield websocket_connect(ws_req)
@@ -282,7 +295,7 @@ class TestGatewayApp(TestGatewayAppBase):
             self.get_url('/api/kernels/'+url_escape(kernel['id'])),
             method='DELETE'
         )
-        self.assertEqual(response.code, 204) 
+        self.assertEqual(response.code, 204)
 
         # Try again
         response = yield self.http_client.fetch(
@@ -431,10 +444,10 @@ class TestPrespawnGatewayApp(TestGatewayAppBase):
         self.assertEqual(response.code, 200)
         kernels = json_decode(response.body)
         self.assertEqual(len(kernels), 2)
-        
+
     def test_prespawn_max_conflict(self):
         '''
-        Server should error if prespawn count is greater than max allowed 
+        Server should error if prespawn count is greater than max allowed
         kernels.
         '''
         app = KernelGatewayApp()
@@ -467,12 +480,12 @@ class TestRelocatedGatewayApp(TestGatewayAppBase):
 
 class TestSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES, 
+        self.app.seed_uri = os.path.join(RESOURCES,
             'zen{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed(self):
-        '''Kernel should have variables preseeded from notebook.'''
+        '''Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
         ws = yield self.spawn_kernel()
 
         # Print the encoded "zen of python" string, the kernel should have
@@ -497,7 +510,7 @@ class TestSeedGatewayApp(TestGatewayAppBase):
             'buffers': {}
         }))
 
-        # Read messages until we see the output from the print or hit the 
+        # Read messages until we see the output from the print or hit the
         # test timeout
         while 1:
             msg = yield ws.read_message()
@@ -518,7 +531,7 @@ class TestRemoteSeedGatewayApp(TestSeedGatewayApp):
 
 class TestBadSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES, 
+        self.app.seed_uri = os.path.join(RESOURCES,
             'failing_code{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
@@ -553,3 +566,145 @@ class TestBadSeedGatewayApp(TestGatewayAppBase):
         app = KernelGatewayApp()
         app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
         self.assertRaises(NoSuchKernel, app.init_configurables)
+
+class TestAPIGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+            'kernel_api{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_api_get_endpoint(self):
+        '''GET HTTP method should be callable
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/hello'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hello world\n', 'Unexpected body in response to GET.')
+
+    @gen_test
+    def test_api_get_endpoint_with_path_param(self):
+        '''GET HTTP method should be callable with a path param
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/hello/governor'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hello governor\n', 'Unexpected body in response to GET.')
+
+    @gen_test
+    def test_api_get_endpoint_with_query_param(self):
+        '''GET HTTP method should be callable with a query param
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/hello/person?person=governor'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hello governor\n', 'Unexpected body in response to GET.')
+
+    @gen_test
+    def test_api_get_endpoint_with_multiple_query_params(self):
+        '''GET HTTP method should be callable with multiple query params
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/hello/persons?person=governor&person=rick'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hello governor, rick\n', 'Unexpected body in response to GET.')
+
+    @gen_test
+    def test_api_put_endpoint(self):
+        '''PUT HTTP method should be callable
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/message'),
+            method='PUT',
+            body='"hola {}"',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'PUT endpoint did not return 200.')
+
+        response = yield self.http_client.fetch(
+            self.get_url('/message'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hola {}\n', 'Unexpected body in response to GET after performing PUT.')
+
+    @gen_test
+    def test_api_post_endpoint(self):
+        '''POST endpoint should be callable
+        '''
+        expected = b'["Rick", "Maggie", "Glenn", "Carol", "Daryl"]\n'
+        response = yield self.http_client.fetch(
+            self.get_url('/people'),
+            method='POST',
+            body=expected.decode('UTF-8'),
+            raise_error=False,
+            headers={'Content-Type': 'text/plain'}
+        )
+        self.assertEqual(response.code, 200, 'POST endpoint did not return 200.')
+        self.assertEqual(response.body, expected, 'Unexpected body in response to POST.')
+
+    @gen_test
+    def test_api_delete_endpoint(self):
+        '''DELETE HTTP method should be callable
+        '''
+        expected = b'["Rick", "Maggie", "Glenn", "Carol", "Daryl"]\n'
+        response = yield self.http_client.fetch(
+            self.get_url('/people'),
+            method='POST',
+            body=expected.decode('UTF-8'),
+            raise_error=False,
+            headers={'Content-Type': 'text/plain'}
+        )
+        response = yield self.http_client.fetch(
+            self.get_url('/people/2'),
+            method='DELETE',
+            raise_error=False,
+        )
+        self.assertEqual(response.code, 200, 'DELETE endpoint did not return 200.')
+        self.assertEqual(response.body, b'["Rick", "Maggie", "Carol", "Daryl"]\n', 'Unexpected body in response to DELETE.')
+
+    @gen_test
+    def test_api_error_endpoint(self):
+        '''Error in a cell should cause 500 HTTP status
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/error'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500, 'Cell with error did not return 500 status code.')
+
+    @gen_test
+    def test_api_unsupported_method(self):
+        '''Endpoints which are not registered should return 404 HTTP status
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/message'),
+            method='DELETE',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404, 'Endpoint which exists, but does not support DELETE, did not return 405 status code.')
+
+    @gen_test
+    def test_api_unsupported_method(self):
+        '''Endpoints which are registered, but do not support an HTTP method, should return a 405 HTTP status code
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/not/an/endpoint'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404, 'Endpoint which should not exist did not return 404 status code.')

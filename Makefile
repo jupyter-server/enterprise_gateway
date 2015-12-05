@@ -21,6 +21,8 @@ help:
 	@echo '         install - install latest sdist into a container'
 	@echo '           sdist - build a source distribution into dist/'
 	@echo '            test - run unit tests within a container'
+	@echo '    test-python2 - run unit tests explicitly using Python 2 within a container'
+	@echo '    test-python3 - run unit tests explicitly using Python 3 within a container'
 
 bash:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) bash
@@ -28,12 +30,14 @@ bash:
 clean:
 	@-rm -rf dist
 	@-rm -rf *.egg-info
-	@-find . -name __pycache__ -exec rm -fr {} \;
+	@-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
+	@-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
 
 dev: ARGS?=
+dev: PYARGS?=
 dev:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) \
-		python kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
 install:
 	$(DOCKER) $(IMAGE) pip install --no-use-wheel dist/*.tar.gz
