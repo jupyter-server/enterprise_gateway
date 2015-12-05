@@ -43,7 +43,7 @@ jupyter kernelgateway
 
 The following sample uses the new `jupyter-js-services` npm package to request a kernel from a kernel gateway and execute some code on it. You can find this sample in `etc/node_client_example` in this repo along with a `package.json` file that installs all the client dependencies (i.e., run `npm install` then `node client.js`).
 
-```
+```javascript
 var xmlhttprequest = require('xmlhttprequest');
 var ws = require('ws');
 
@@ -87,7 +87,7 @@ The following code shows how to request a kernel and execute code on it using th
 
 The code here is much longer than in the NodeJS case above because there isn't a Python equivalent of `jupyter-js-services` that wraps the logic for talking the Jupyter protocol over over Websockets. (Of course, there is [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client) which operates over ZeroMQ.)
 
-```
+```python
 import os
 from tornado import gen
 from tornado.escape import json_encode, json_decode, url_escape
