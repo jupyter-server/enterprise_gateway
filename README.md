@@ -178,6 +178,9 @@ print("hello world")
 This enables an HTTP GET on `/hello/world`. The [api_intro.ipynb](https://github.com/jupyter-incubator/kernel_gateway/blob/master/etc/api_examples/api_intro.ipynb)
 provides a full example notebook for reference.
 
+The comment syntax should be supported in every language, but it is a work in
+progress to identify all supported syntaxes.
+
 ### Processing requests
 
 When your cell is invoked there will be a string variable called `REQUEST`
@@ -190,9 +193,6 @@ string to access the properties. For example, in python:
 req = json.loads(REQUEST)
 # do something with req
 ```
-
-The comment syntax should be supported in every language, but it is a work in
-progress to identify all supported syntaxes.
 
 Path parameters can be specified when registering an endpoint by appending a `:`
 to a value within the path. For example, in python a path with path params
@@ -211,21 +211,6 @@ specified multiple times.
 * `path` - An object of key-value pairs representing path parameters and
 their values.
 
-### Running
-The minimum number of arguments needed to run in HTTP mode are
-`--KernelGatewayApp.api=notebook-http` and
-`--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
-
-You can run the kernel gateway in `notebook-http` mode from the Makefile:
-
-```
-make dev ARGS="--KernelGatewayApp.api='notebook-http' \
---KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb"
-```
-
-With the above Make command, all of the notebooks in `etc/api_examples` are
-mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
-
 ### Setting The Response
 
 The response for HTTP mode can be set in two ways:
@@ -240,6 +225,21 @@ The second approach is used if no output is collected. This method is dependent
 upon language semantics, kernel implementation, and library usage. The return
 value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
 message.
+
+### Running
+The minimum number of arguments needed to run in HTTP mode are
+`--KernelGatewayApp.api=notebook-http` and
+`--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
+
+You can run the kernel gateway in `notebook-http` mode from the Makefile:
+
+```
+make dev ARGS="--KernelGatewayApp.api='notebook-http' \
+--KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb"
+```
+
+With the above Make command, all of the notebooks in `etc/api_examples` are
+mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
 
 ## Alternatives
 
