@@ -184,9 +184,11 @@ progress to identify all supported syntaxes.
 ### Processing requests
 
 When your cell is invoked there will be a string variable called `REQUEST`
-available in the scope of your cell's code. This string is a JSON object
-representing various properties of the request. You will need to parse this
-string to access the properties. For example, in python:
+available in the scope of your cell's code. If your kernel's language requires
+variable declarations, you will need to explicitly define the `REQUEST` variable
+in your notebook. This string is a JSON object representing various properties
+of the request. You will need to parse this string to access the properties.
+For example, in python:
 
 ```python
 # GET /hello/world
