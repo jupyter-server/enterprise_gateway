@@ -1,12 +1,19 @@
 # Jupyter Kernel Gateway
 
-A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/application.py) that implements the HTTP and Websocket resources of `/api/kernels` using [jupyter/notebook](https://github.com/jupyter/notebook), [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client), and [jupyter/jupyter_core](https://github.com/jupyter/jupyter_core) as libraries. Launches kernels in its local process/filesystem space. Can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/juputer/tmpnb)). Intended to be accessed by [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and similar web-friendly clients.
+A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/application.py) that
+implements different APIs and protocols for accessing Jupyter kernels such as:
+
+* Accessing HTTP and Websocket resources of `/api/kernels` using [jupyter/notebook](https://github.com/jupyter/notebook), [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client), and [jupyter/jupyter_core](https://github.com/jupyter/jupyter_core).
+* [Accessing notebook cells](#notebook-http-mode) via HTTP endpoints
+
+The app launches kernels in its local process/filesystem space. Can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/juputer/tmpnb)). API endpoints can be accessed by [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and similar web-friendly clients.
 
 ## Interesting Uses
 
 * Attach a local Jupyter Notebook server to a compute cluster in the cloud running near big data (e.g., interactive gateway to Spark)
 * Enable a new breed of non-notebook web clients to provision and use kernels (e.g., dashboards)
 * Scale kernels independently from clients (e.g., via [tmpnb](https://github.com/jupyter/tmpnb), [Binder](https://mybinder.org), your favorite cluster manager)
+* Creating microservices from notebooks via [`notebook-http` mode](#notebook-http-mode)
 
 ![Example diagram of how tmpnb might deploy kernel gateway + kernel containers](etc/tmpnb_kernel_gateway.png)
 
@@ -25,6 +32,7 @@ A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/
 * Option to set a default kernel language
 * Option to prepopulate kernel memory from a notebook
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
+* Option to serve annotated notebooks as HTTP endpoints, see [notebook-http](#notebook-http-mode)
 
 Run `jupyter kernelgateway --help-all` after installation to see the full set of options.
 
@@ -154,6 +162,86 @@ def main():
 if __name__ == '__main__':
     IOLoop.current().run_sync(main)
 ```
+
+## `notebook-http` Mode
+
+The `KernelGatewayApp.api` command line argument can be set to `notebook-http`
+to allow a properly annotated notebook to be served via HTTP endpoints. A
+notebook cell must be annotated with a single line comment at the beginning
+describing the HTTP endpoint. An example python cell is:
+
+```python
+# GET /hello/world
+print("hello world")
+```
+
+This enables an HTTP GET on `/hello/world`. The [api_intro.ipynb](https://github.com/jupyter-incubator/kernel_gateway/blob/master/etc/api_examples/api_intro.ipynb)
+provides a full example notebook for reference.
+
+The comment syntax should be supported in every language, but it is a work in
+progress to identify all supported syntaxes.
+
+### Processing requests
+
+When your cell is invoked there will be a string variable called `REQUEST`
+available in the scope of your cell's code. If your kernel's language requires
+variable declarations, you will need to explicitly define the `REQUEST` variable
+in your notebook. This string is a JSON object representing various properties
+of the request. You will need to parse this string to access the properties.
+For example, in python:
+
+```python
+# GET /hello/world
+req = json.loads(REQUEST)
+# do something with req
+```
+
+Path parameters can be specified when registering an endpoint by appending a `:`
+to a value within the path. For example, in python a path with path params
+`firstName` and `lastName` would be defined as:
+
+```python
+# GET /hello/:firstName/:lastName
+```
+
+The REQUEST object currently contains the following properties:
+
+* `body` - The JSON value of the body
+* `args` - An object with keys representing query parameter names and keys
+representing each value. The value will be an array so a query parameter can be
+specified multiple times.
+* `path` - An object of key-value pairs representing path parameters and
+their values.
+
+### Setting The Response
+
+The response for HTTP mode can be set in two ways:
+1. Writing to standard out
+1. A map containing a key-value pairs of mime-type to value
+
+The first method is preferred and is language dependent (e.g. python `print`,
+Scala `println`, R `print`). All standard output during your cell's execution
+will be collected and returned verbatim as the response.
+
+The second approach is used if no output is collected. This method is dependent
+upon language semantics, kernel implementation, and library usage. The return
+value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
+message.
+
+### Running
+The minimum number of arguments needed to run in HTTP mode are
+`--KernelGatewayApp.api=notebook-http` and
+`--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
+
+You can run the kernel gateway in `notebook-http` mode from the Makefile:
+
+```
+make dev ARGS="--KernelGatewayApp.api='notebook-http' \
+--KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb"
+```
+
+With the above Make command, all of the notebooks in `etc/api_examples` are
+mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
 
 ## Alternatives
 
