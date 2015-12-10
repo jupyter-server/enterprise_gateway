@@ -718,8 +718,8 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
-    def test_should_round_robin_through_kernels(self):
-        '''
+    def test_should_cycle_through_kernels(self):
+        '''Requests should cycle through kernels
         '''
         response = yield self.http_client.fetch(
             self.get_url('/message'),
@@ -729,30 +729,21 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 200, 'PUT endpoint did not return 200.')
 
-        response = yield self.http_client.fetch(
-            self.get_url('/message'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.body, b'hello {}\n', 'Unexpected body in response to GET after performing PUT.')
+        for i in range(self.app.prespawn_count):
+            response = yield self.http_client.fetch(
+                self.get_url('/message'),
+                method='GET',
+                raise_error=False
+            )
 
-        response = yield self.http_client.fetch(
-            self.get_url('/message'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.body, b'hello {}\n', 'Unexpected body in response to GET after performing PUT.')
-
-        response = yield self.http_client.fetch(
-            self.get_url('/message'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.body, b'hola {}\n', 'Unexpected body in response to GET after performing PUT.')
-
+            if i != self.app.prespawn_count-1:
+                self.assertEqual(response.body, b'hello {}\n', 'Unexpected body in response to GET after performing PUT.')
+            else:
+                self.assertEqual(response.body, b'hola {}\n', 'Unexpected body in response to GET after performing PUT.')
     @gen_test
     def test_concurrent_request_should_not_be_blocked(self):
         '''
+        Concurrent requests should not be blocked
         '''
         response_long_running = self.http_client.fetch(
             self.get_url('/sleep/6'),
@@ -771,6 +762,8 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
     @gen_test
     def test_locking_semaphore_of_kernel_resources(self):
         '''
+        Semaphore should properly control access to the kernel pool when all
+        kernels are busy/requests overwhelm the kernel prespawn count
         '''
         futures = []
         for _ in range(self.app.prespawn_count*2+1):
