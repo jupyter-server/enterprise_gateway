@@ -3,7 +3,6 @@
 
 import os
 import nbformat
-import sys
 
 try:
     from urlparse import urlparse
@@ -27,6 +26,7 @@ from tornado import web
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
 from .services.kernels.manager import SeedingMappingKernelManager
+from .services.kernels.pool import KernelPool
 from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path
 
@@ -225,8 +225,12 @@ class KernelGatewayApp(JupyterApp):
                 raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
                     self.prespawn_count, self.max_kernels)
                 )
-            for _ in range(self.prespawn_count):
-                self.kernel_manager.start_kernel()
+        else:
+            if self.api == 'notebook-http':
+                self.prespawn_count = 1
+            else:
+                self.prespawn_count = 0
+        self.kernel_pool = KernelPool(self.prespawn_count, self.kernel_manager)
 
     def init_webapp(self):
         '''
@@ -236,10 +240,7 @@ class KernelGatewayApp(JupyterApp):
         '''
         # Redefine handlers off the base_url path
         handlers = []
-        self.kernel_client = None
         if self.api == 'notebook-http':
-            kernel_id = self.kernel_manager.start_kernel()
-            self.kernel_client = self.kernel_manager.get_kernel(kernel_id).client()
             # discover the notebook endpoints and their implementations
             endpoints = self.kernel_manager.endpoints()
             sorted_endpoints = self.kernel_manager.sorted_endpoints()
@@ -248,7 +249,7 @@ class KernelGatewayApp(JupyterApp):
                 parameterized_path = parameterize_path(uri)
                 parameterized_path = url_path_join(self.base_url, parameterized_path)
                 self.log.info('Registering uri: {}, methods: ({})'.format(parameterized_path, list(endpoints[uri].keys())))
-                handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_client' : self.kernel_client, 'kernel_name' : self.kernel_manager.seed_kernelspec}))
+                handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_pool' : self.kernel_pool, 'kernel_name' : self.kernel_manager.seed_kernelspec}))
         elif self.api == 'jupyter-websocket':
             # append tuples for the standard kernel gateway endpoints
             for handler in (
@@ -312,12 +313,6 @@ class KernelGatewayApp(JupyterApp):
         self.io_loop.add_callback(_stop)
 
     def shutdown(self):
-        if self.kernel_manager:
-            kids = self.kernel_manager.list_kernel_ids()
-            for kid in kids:
-                self.kernel_manager.shutdown_kernel(kid, now=True)
-
-        if self.kernel_client:
-            self.kernel_client.stop_channels()
+        self.kernel_pool.shutdown()
 
 launch_instance = KernelGatewayApp.launch_instance
