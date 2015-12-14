@@ -5,12 +5,16 @@ from tornado.locks import Semaphore
 from tornado import gen
 
 
-class KernelPool():
+class KernelPool(object):
     '''
     A class to maintain a pool of kernel and control access to the individual kernels.
     Kernels are protected by a borrower/lender pattern.
     '''
     def __init__(self, prespawn_count, kernel_manager):
+
+        if prespawn_count is None:
+            prespawn_count = 0
+
         self.kernel_clients = {}
         self.on_recv_funcs = {}
         self.kernel_manager = kernel_manager

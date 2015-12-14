@@ -35,6 +35,11 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
         return statement.format(expression)
 
     def on_recv(self, msg):
+        '''
+        Receives messages for a particular code execution defined by self.parent_header.
+        Collects all outputs from the kernel until an execution state of idle is received.
+        :param msg: The execution content/state message received.
+        '''
         # Only look at messages which are derived from the parent_header
         # TODO Refactor this so we only look for parent headers for the actual cell execution
         if msg['parent_header']['msg_id'] == self.parent_header:
@@ -75,8 +80,8 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
         self.execution_future = Future()
         self.response_future = Future()
         kernel_client, kernel_id = yield self.kernel_pool.acquire()
-        self.kernel_pool.on_recv(kernel_id, self.on_recv)
         try:
+            self.kernel_pool.on_recv(kernel_id, self.on_recv)
             source_code = self.sources[self.request.method]
             REQUEST = json.dumps({
                 'body' : parse_body(self.request.body),

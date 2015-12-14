@@ -5,7 +5,6 @@ import logging
 import unittest
 import os
 import sys
-from time import sleep
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -719,7 +718,8 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
 
     @gen_test
     def test_should_cycle_through_kernels(self):
-        '''Requests should cycle through kernels
+        '''
+        Requests should cycle through kernels
         '''
         response = yield self.http_client.fetch(
             self.get_url('/message'),

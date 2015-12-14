@@ -220,16 +220,13 @@ class KernelGatewayApp(JupyterApp):
             kernel_spec_manager=self.kernel_spec_manager
         )
 
-        if self.prespawn_count is not None:
-            if self.max_kernels is not None and self.prespawn_count > self.max_kernels:
+        if self.prespawn_count:
+            if self.max_kernels and self.prespawn_count > self.max_kernels:
                 raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
                     self.prespawn_count, self.max_kernels)
                 )
-        else:
-            if self.api == 'notebook-http':
-                self.prespawn_count = 1
-            else:
-                self.prespawn_count = 0
+        elif not self.prespawn_count and self.api == 'notebook-http':
+            self.prespawn_count = 1
         self.kernel_pool = KernelPool(self.prespawn_count, self.kernel_manager)
 
     def init_webapp(self):
