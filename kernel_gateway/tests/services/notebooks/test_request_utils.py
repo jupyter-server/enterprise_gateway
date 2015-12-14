@@ -30,3 +30,9 @@ class TestRequestUtils(unittest.TestCase):
         self.assertEqual(result, '/foo/(?P<bar>[^\/]+)')
         result = parameterize_path('/foo/:bar/baz/:quo')
         self.assertEqual(result, '/foo/(?P<bar>[^\/]+)/baz/(?P<quo>[^\/]+)')
+
+    def test_whitespace_in_paths(self):
+        result = parameterize_path('/foo/:bar ')
+        self.assertEqual(result, '/foo/(?P<bar>[^\/]+)')
+        result = parameterize_path('/foo/:bar/baz ')
+        self.assertEqual(result, '/foo/(?P<bar>[^\/]+)/baz')

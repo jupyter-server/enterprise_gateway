@@ -4,13 +4,13 @@
 import json
 import re
 
-_named_param_regex = re.compile('(:([^/]*))')
+_named_param_regex = re.compile('(:([^/\s]*))')
 
 def parameterize_path(path):
     matches = re.findall(_named_param_regex, path)
     for match in matches:
         path = path.replace(match[0], '(?P<{}>[^\/]+)'.format(match[1]))
-    return path
+    return path.strip()
 
 def parse_body(body):
     '''Converts body into a proper JSON string. body is expected to be a UTF-8
