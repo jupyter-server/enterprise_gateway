@@ -23,7 +23,10 @@ class KernelPool(object):
         self.kernel_semaphore = Semaphore(prespawn_count)
 
         for _ in range(prespawn_count):
-            kernel_id = kernel_manager.start_kernel()
+            if self.kernel_manager.parent.seed_notebook:
+                kernel_id = kernel_manager.start_kernel(kernel_name=self.kernel_manager.parent.seed_notebook['metadata']['kernelspec']['name'])
+            else:
+                kernel_id = kernel_manager.start_kernel()
             self.kernel_clients[kernel_id] = kernel_manager.get_kernel(kernel_id).client()
             self.kernel_pool.append(kernel_id)
             iopub = self.kernel_manager.connect_iopub(kernel_id)
