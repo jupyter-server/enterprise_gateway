@@ -5,7 +5,6 @@ import logging
 import unittest
 import os
 import sys
-import json
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -708,3 +707,75 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             raise_error=False
         )
         self.assertEqual(response.code, 404, 'Endpoint which should not exist did not return 404 status code.')
+
+
+class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.prespawn_count = 3
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'kernel_api{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_should_cycle_through_kernels(self):
+        '''
+        Requests should cycle through kernels
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/message'),
+            method='PUT',
+            body='"hola {}"',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'PUT endpoint did not return 200.')
+
+        for i in range(self.app.prespawn_count):
+            response = yield self.http_client.fetch(
+                self.get_url('/message'),
+                method='GET',
+                raise_error=False
+            )
+
+            if i != self.app.prespawn_count-1:
+                self.assertEqual(response.body, b'hello {}\n', 'Unexpected body in response to GET after performing PUT.')
+            else:
+                self.assertEqual(response.body, b'hola {}\n', 'Unexpected body in response to GET after performing PUT.')
+    @gen_test
+    def test_concurrent_request_should_not_be_blocked(self):
+        '''
+        Concurrent requests should not be blocked
+        '''
+        response_long_running = self.http_client.fetch(
+            self.get_url('/sleep/6'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertTrue(response_long_running.running(), 'Long HTTP Request is not running')
+        response_short_running = yield self.http_client.fetch(
+            self.get_url('/sleep/3'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertTrue(response_long_running.running(), 'Long HTTP Request is not running')
+        self.assertEqual(response_short_running.code, 200, 'Short HTTP Request did not return proper status code of 200')
+
+    @gen_test
+    def test_locking_semaphore_of_kernel_resources(self):
+        '''
+        Semaphore should properly control access to the kernel pool when all
+        kernels are busy/requests overwhelm the kernel prespawn count
+        '''
+        futures = []
+        for _ in range(self.app.prespawn_count*2+1):
+            futures.append(self.http_client.fetch(
+                self.get_url('/sleep/1'),
+                method='GET',
+                raise_error=False
+            ))
+
+        count = 0
+        for future in futures:
+            yield future
+            count += 1
+            if count >= self.app.prespawn_count + 1:
+                break
