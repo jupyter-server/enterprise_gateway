@@ -243,6 +243,18 @@ make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 With the above Make command, all of the notebooks in `etc/api_examples` are
 mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
 
+The notebook-http mode will honor the `prespawn_count` command line argument.
+This will start the specified number of kernels and execute the `seed_uri`
+notebook across all of them. Requests will be distributed across all of the
+spawned kernels, providing a minimal layer of scalability. An example which
+starts 5 kernels:
+
+```
+make dev ARGS="--KernelGatewayApp.api='notebook-http' \
+--KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb" \
+--KernelGatewayApp.prespawn_count=5
+```
+
 ## Alternatives
 
 * A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
