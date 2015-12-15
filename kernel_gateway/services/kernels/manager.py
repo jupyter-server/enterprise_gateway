@@ -34,7 +34,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
         for cell_source in self.seed_source:
             matched = self.api_indicator.match(cell_source)
             if matched is not None:
-                uri = matched.group(2)
+                uri = matched.group(2).strip()
                 verb = matched.group(1)
                 if uri not in endpoints:
                     endpoints[uri] = {}
