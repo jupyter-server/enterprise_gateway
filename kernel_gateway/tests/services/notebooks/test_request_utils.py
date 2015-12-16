@@ -9,6 +9,12 @@ class MockRequest(dict):
         super(MockRequest, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
+class MockHeaders(object):
+    def __init__(self, headers, **kwargs):
+        self.headers = headers
+
+    def get_all(self):
+        return self.headers
 
 class TestRequestUtils(unittest.TestCase):
     def test_parse_body_text(self):
@@ -92,3 +98,12 @@ class TestRequestUtils(unittest.TestCase):
         self.assertEqual(result, '/foo/(?P<bar>[^\/]+)')
         result = parameterize_path('/foo/:bar/baz ')
         self.assertEqual(result, '/foo/(?P<bar>[^\/]+)/baz')
+
+    def test_headers_to_dict(self):
+        result = headers_to_dict(MockHeaders([('Content-Type', 'application/json'), ('Set-Cookie', 'A=B'), ('Set-Cookie', 'C=D')]))
+        self.assertEqual(result['Content-Type'], 'application/json','Single value for header was not assigned correctly')
+        self.assertEqual(result['Set-Cookie'], ['A=B','C=D'],'Single value for header was not assigned correctly')
+
+    def test_headers_to_dict_with_no_headers(self):
+        result = headers_to_dict(MockHeaders([]))
+        self.assertEqual(result, {},'Empty headers handled incorrectly and did not make empty dict')
