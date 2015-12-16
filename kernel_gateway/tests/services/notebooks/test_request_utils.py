@@ -4,18 +4,74 @@
 from kernel_gateway.services.notebooks.request_utils import *
 import unittest
 
+class MockRequest(dict):
+    def __init__(self, *args, **kwargs):
+        super(MockRequest, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
 class TestRequestUtils(unittest.TestCase):
     def test_parse_body_text(self):
-        result = parse_body(b'"test value"')
+        request = MockRequest()
+        request.body = b'test value'
+        request.headers = {
+            'Content-Type' : 'text/plain'
+        }
+        result = parse_body(request)
         self.assertEqual(result, "test value", 'Did not properly parse text body.')
 
     def test_parse_body_json(self):
-        result = parse_body(b'{ "foo" : "bar" }')
+        request = MockRequest()
+        request.body = b'{ "foo" : "bar" }'
+        request.headers = {
+            'Content-Type' : 'application/json'
+        }
+        result = parse_body(request)
         self.assertEqual(result, { 'foo' : 'bar' }, 'Did not properly parse json body.')
 
+    def test_parse_body_bad_json(self):
+        request = MockRequest()
+        request.body = b'{ "foo" "bar" }'
+        request.headers = {
+            'Content-Type' : 'application/json'
+        }
+        result = parse_body(request)
+        self.assertEqual(result, '{ "foo" "bar" }', 'Did not properly parse json body.')
+
+
+    def test_parse_body_multipart_form(self):
+        request = MockRequest()
+        request.body = None
+        request.body_arguments = { 'foo' : [b'bar']}
+        request.headers = {
+            'Content-Type' : 'multipart/form-data'
+        }
+        result = parse_body(request)
+        self.assertEqual(result, { 'foo' : ['bar']}, 'Did not properly parse json body.')
+
+    def test_parse_body_url_encoded_form(self):
+        request = MockRequest()
+        request.body = None
+        request.body_arguments = { 'foo' : [b'bar']}
+        request.headers = {
+            'Content-Type' : 'application/x-www-form-urlencoded'
+        }
+        result = parse_body(request)
+        self.assertEqual(result, { 'foo' : ['bar']}, 'Did not properly parse json body.')
+
     def test_parse_body_empty(self):
-        result = parse_body(b'')
+        request = MockRequest()
+        request.body = b''
+        request.headers = {}
+        result = parse_body(request)
         self.assertEqual(result, '', 'Did not properly handle body = empty string.')
+
+    def test_parse_body_defaults_to_text_plain(self):
+        request = MockRequest()
+        request.body = b'{"foo" : "bar"}'
+        request.headers = {}
+        result = parse_body(request)
+        self.assertEqual(result, '{"foo" : "bar"}', 'Did not properly handle body = empty string.')
 
     def test_parse_args(self):
         result = parse_args({'arga': [ b'1234', b'4566'], 'argb' : [b'hello']})
