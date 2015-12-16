@@ -559,7 +559,7 @@ class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
             'parent_header': {},
             'channel': 'shell',
             'content': {
-                'code': 'print(this.s)',
+                'code': 'print this.s',
                 'silent': False,
                 'store_history': False,
                 'user_expressions' : {}
