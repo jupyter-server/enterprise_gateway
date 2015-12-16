@@ -771,6 +771,21 @@ class TestAPIGatewayApp(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 404, 'Endpoint which should not exist did not return 404 status code.')
 
+    @gen_test
+    def test_api_access_http_header(self):
+        '''HTTP endpoints should be able to access request headers
+        '''
+        content_types = ['text/plain', 'application/json', 'application/atom+xml', 'foo']
+        for content_type in content_types:
+            response = yield self.http_client.fetch(
+                self.get_url('/content-type'),
+                method='GET',
+                raise_error=False,
+                headers={'Content-Type': content_type}
+            )
+            self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+            self.assertEqual(response.body.decode(encoding='UTF-8'), '{}\n'.format(content_type), 'Unexpected value in response')
+
 
 class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
     def setup_app(self):
