@@ -206,12 +206,20 @@ to a value within the path. For example, in python a path with path params
 
 The REQUEST object currently contains the following properties:
 
-* `body` - The JSON value of the body
+* `body` - The value of the body, see the [Body And Content Type](#Body-And-Content-Type) section below
 * `args` - An object with keys representing query parameter names and keys
 representing each value. The value will be an array so a query parameter can be
 specified multiple times.
 * `path` - An object of key-value pairs representing path parameters and
 their values.
+
+###Body And Content Type
+If the HTTP request to the kernel gateway has a `Content-Type` header the `REQUEST.body` value may change. Below is the list of outcomes for various mime-types:
+
+* `application/json` -  The `REQUEST.body` will be a JSON object
+* `multipart/form-data` and `application/x-www-form-urlencoded` -  The `REQUEST.body` will be a JSON object representing the parameters and their values. Files are currently not supported for `multipart/form-data`
+* `text/plain` -  The `REQUEST.body` will be a string value of the body
+* All other types will be sent as strings
 
 ### Setting The Response
 
