@@ -5,6 +5,7 @@ import logging
 import unittest
 import os
 import sys
+import json
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -531,7 +532,7 @@ class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
                                          'zen{}.ipynb'.format(sys.version_info.major))
     @coroutine
     def spawn_kernel(self):
-        ws = yield super(TestSeedGatewayAppKernelLanguageSupport, self).spawn_kernel(kernel_body="{{\"name\":\"python{}\"}}".format(sys.version_info.major))
+        ws = yield super(TestSeedGatewayAppKernelLanguageSupport, self).spawn_kernel(kernel_body=json.dumps({"name":"python{}".format(sys.version_info.major)}))
         raise Return(ws)
 
     @gen_test
