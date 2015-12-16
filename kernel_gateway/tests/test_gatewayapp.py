@@ -528,24 +528,27 @@ class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
     def setup_app(self):
         self.app.prespawn_count = 1
         self.app.seed_uri = os.path.join(RESOURCES,
-                                         'zen2.ipynb')
+                                         'zen{}.ipynb'.format(sys.version_info.major))
     @coroutine
     def spawn_kernel(self):
-        ws = yield super(TestSeedGatewayAppKernelLanguageSupport, self).spawn_kernel(kernel_body='{\"name\":\"python2\"}')
-        return ws
+        ws = yield super(TestSeedGatewayAppKernelLanguageSupport, self).spawn_kernel(kernel_body="{{\"name\":\"python{}\"}}".format(sys.version_info.major))
+        raise Return(ws)
 
     @gen_test
     def test_seed_kernel_name_language_support(self):
         '''Python2 Kernel should have the correct name'''
         _, kernel_id = yield self.app.kernel_pool.acquire()
         kernel = self.app.kernel_manager.get_kernel(kernel_id)
-        self.assertEqual(kernel.kernel_name,'python2')
+        self.assertEqual(kernel.kernel_name,'python{}'.format(sys.version_info.major))
 
     @gen_test
     def test_seed_language_support(self):
         '''Python2 Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
         ws = yield self.spawn_kernel()
-
+        if sys.version_info.major == 2:
+            code = 'print this.s'
+        else:
+            code = 'print(this.s)'
         # Print the encoded "zen of python" string, the kernel should have
         # it imported
         ws.write_message(json_encode({
@@ -559,7 +562,7 @@ class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
             'parent_header': {},
             'channel': 'shell',
             'content': {
-                'code': 'print this.s',
+                'code': code,
                 'silent': False,
                 'store_history': False,
                 'user_expressions' : {}
