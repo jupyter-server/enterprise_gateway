@@ -5,6 +5,7 @@ import logging
 import unittest
 import os
 import sys
+import json
 
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
 from jupyter_client.kernelspec import NoSuchKernel
@@ -90,7 +91,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         pass
 
     @coroutine
-    def spawn_kernel(self):
+    def spawn_kernel(self, kernel_body='{}'):
         '''
         Code to spawn a kernel and return a websocket connection to it.
         '''
@@ -98,7 +99,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
             method='POST',
-            body='{}'
+            body=kernel_body
         )
         self.assertEqual(response.code, 201)
 
@@ -501,6 +502,68 @@ class TestSeedGatewayApp(TestGatewayAppBase):
             'channel': 'shell',
             'content': {
                 'code': 'print(this.s)',
+                'silent': False,
+                'store_history': False,
+                'user_expressions' : {}
+            },
+            'metadata': {},
+            'buffers': {}
+        }))
+
+        # Read messages until we see the output from the print or hit the
+        # test timeout
+        while 1:
+            msg = yield ws.read_message()
+            msg = json_decode(msg)
+            msg_type = msg['msg_type']
+            parent_msg_id = msg['parent_header']['msg_id']
+            if msg_type == 'stream' and parent_msg_id == 'fake-msg-id':
+                content = msg['content']
+                self.assertEqual(content['name'], 'stdout')
+                self.assertIn('Gur Mra bs Clguba', content['text'])
+                break
+
+        ws.close()
+
+class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.prespawn_count = 1
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'zen{}.ipynb'.format(sys.version_info.major))
+    @coroutine
+    def spawn_kernel(self):
+        ws = yield super(TestSeedGatewayAppKernelLanguageSupport, self).spawn_kernel(kernel_body=json.dumps({"name":"python{}".format(sys.version_info.major)}))
+        raise Return(ws)
+
+    @gen_test
+    def test_seed_kernel_name_language_support(self):
+        '''Python2 Kernel should have the correct name'''
+        _, kernel_id = yield self.app.kernel_pool.acquire()
+        kernel = self.app.kernel_manager.get_kernel(kernel_id)
+        self.assertEqual(kernel.kernel_name,'python{}'.format(sys.version_info.major))
+
+    @gen_test
+    def test_seed_language_support(self):
+        '''Python2 Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
+        ws = yield self.spawn_kernel()
+        if sys.version_info.major == 2:
+            code = 'print this.s'
+        else:
+            code = 'print(this.s)'
+        # Print the encoded "zen of python" string, the kernel should have
+        # it imported
+        ws.write_message(json_encode({
+            'header': {
+                'username': '',
+                'version': '5.0',
+                'session': '',
+                'msg_id': 'fake-msg-id',
+                'msg_type': 'execute_request'
+            },
+            'parent_header': {},
+            'channel': 'shell',
+            'content': {
+                'code': code,
                 'silent': False,
                 'store_history': False,
                 'user_expressions' : {}
