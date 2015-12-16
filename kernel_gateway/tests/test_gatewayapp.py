@@ -690,7 +690,7 @@ class TestAPIGatewayApp(TestGatewayAppBase):
         response = yield self.http_client.fetch(
             self.get_url('/message'),
             method='PUT',
-            body='"hola {}"',
+            body='hola {}',
             raise_error=False
         )
         self.assertEqual(response.code, 200, 'PUT endpoint did not return 200.')
@@ -713,7 +713,7 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             method='POST',
             body=expected.decode('UTF-8'),
             raise_error=False,
-            headers={'Content-Type': 'text/plain'}
+            headers={'Content-Type': 'application/json'}
         )
         self.assertEqual(response.code, 200, 'POST endpoint did not return 200.')
         self.assertEqual(response.body, expected, 'Unexpected body in response to POST.')
@@ -728,7 +728,7 @@ class TestAPIGatewayApp(TestGatewayAppBase):
             method='POST',
             body=expected.decode('UTF-8'),
             raise_error=False,
-            headers={'Content-Type': 'text/plain'}
+            headers={'Content-Type': 'application/json'}
         )
         response = yield self.http_client.fetch(
             self.get_url('/people/2'),
@@ -787,7 +787,7 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
         response = yield self.http_client.fetch(
             self.get_url('/message'),
             method='PUT',
-            body='"hola {}"',
+            body='hola {}',
             raise_error=False
         )
         self.assertEqual(response.code, 200, 'PUT endpoint did not return 200.')
