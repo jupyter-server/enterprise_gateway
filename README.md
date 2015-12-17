@@ -210,6 +210,7 @@ The REQUEST object currently contains the following properties:
 * `args` - An object with keys representing query parameter names and their associated values. A query parameter name may be specified multiple times in a valid URL, and so each value is a sequence (e.g., list, array) of strings from the original URL.
 * `path` - An object of key-value pairs representing path parameters and
 their values.
+* `headers` - An object of key-value pairs where a key is a HTTP header name and a value is the HTTP header value. If there are multiple values are specified for a  header, the value will be an array.
 
 ###Body And Content Type
 If the HTTP request to the kernel gateway has a `Content-Type` header the `REQUEST.body` value may change. Below is the list of outcomes for various mime-types:

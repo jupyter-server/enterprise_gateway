@@ -51,3 +51,16 @@ def parse_args(args):
         for value in args[key]:
             ARGS[key].append(value.decode(encoding='UTF-8'))
     return ARGS
+
+def headers_to_dict(headers):
+    new_headers = {}
+    for header, header_value in headers.get_all():
+        if header in new_headers:
+            if not isinstance(new_headers[header], list):
+                oringal_value = new_headers[header]
+                new_headers[header] = [oringal_value]
+            new_headers[header].append(header_value)
+        else:
+            new_headers[header] = header_value
+
+    return new_headers
