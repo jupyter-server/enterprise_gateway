@@ -11,8 +11,9 @@ except ImportError:
 
 from tornado import gen
 from tornado.concurrent import Future
+from ...mixins import TokenAuthorizationMixin, CORSMixin
 
-class NotebookAPIHandler(tornado.web.RequestHandler):
+class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
     kernel_pool = None
     sources = None
     kernel_name = ''
@@ -122,3 +123,6 @@ class NotebookAPIHandler(tornado.web.RequestHandler):
     def delete(self, **kwargs):
         self._handle_request()
         yield self.response_future
+
+    def options(self, **kwargs):
+        self.finish()
