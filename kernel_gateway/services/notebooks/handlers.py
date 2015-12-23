@@ -21,7 +21,7 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
     stream_messages = []
     error_message = None
     _assignment_statements = {'r': "REQUEST <- '{}'",
-        None : "REQUEST = '{}'"}
+        'julia-0.3': "REQUEST = \"{}\"", None: "REQUEST = '{}'"}
 
     def initialize(self, sources, kernel_pool, kernel_name):
         self.kernel_pool = kernel_pool
@@ -34,6 +34,11 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
         except KeyError:
             statement = self._assignment_statements[None]
         return statement.format(expression)
+
+    def _request_json_for_lang(self, kernel_name, expression):
+        if kernel_name == 'julia-0.3':
+            expression = expression.replace('\"', '\\"')
+        return expression
 
     def on_recv(self, msg):
         '''
@@ -90,6 +95,7 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
                 'path' : self.path_kwargs,
                 'headers' : headers_to_dict(self.request.headers)
             })
+            REQUEST = self._request_json_for_lang(self.kernel_name, REQUEST)
             request_code = self._request_assignment_for_lang(self.kernel_name, REQUEST)
             access_log.debug('Request code for notebook cell is: {}'.format(request_code))
             kernel_client.execute(request_code)
