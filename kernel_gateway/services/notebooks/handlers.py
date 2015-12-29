@@ -20,25 +20,18 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
     execute_result = None
     stream_messages = []
     error_message = None
-    _assignment_statements = {'r': "REQUEST <- '{}'",
-        'julia-0.3': "REQUEST = \"{}\"", None: "REQUEST = '{}'"}
 
     def initialize(self, sources, kernel_pool, kernel_name):
         self.kernel_pool = kernel_pool
         self.sources = sources
         self.kernel_name = kernel_name
 
-    def _request_assignment_for_lang(self, kernel_name, expression):
-        try:
-            statement = self._assignment_statements[kernel_name]
-        except KeyError:
-            statement = self._assignment_statements[None]
+    def _format_request(self, expression):
+        #Escape the quotes in the request JSON string
+        expression = expression.replace('\"', '\\"')
+        #Note some languages do not support single quoted strings, thus double quotes are used when formatting the request statement
+        statement = "REQUEST = \"{}\""
         return statement.format(expression)
-
-    def _request_json_for_lang(self, kernel_name, expression):
-        if kernel_name == 'julia-0.3':
-            expression = expression.replace('\"', '\\"')
-        return expression
 
     def on_recv(self, msg):
         '''
@@ -95,8 +88,7 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
                 'path' : self.path_kwargs,
                 'headers' : headers_to_dict(self.request.headers)
             })
-            REQUEST = self._request_json_for_lang(self.kernel_name, REQUEST)
-            request_code = self._request_assignment_for_lang(self.kernel_name, REQUEST)
+            request_code = self._format_request(REQUEST)
             access_log.debug('Request code for notebook cell is: {}'.format(request_code))
             kernel_client.execute(request_code)
             self.parent_header = kernel_client.execute(source_code)
