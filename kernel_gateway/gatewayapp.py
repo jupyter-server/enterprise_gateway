@@ -28,7 +28,7 @@ from .services.kernelspecs.handlers import default_handlers as default_kernelspe
 from .services.kernels.manager import SeedingMappingKernelManager
 from .services.kernels.pool import KernelPool
 from .base.handlers import default_handlers as default_base_handlers
-from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path
+from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 
 from notebook.utils import url_path_join
 
@@ -167,6 +167,15 @@ class KernelGatewayApp(JupyterApp):
         if new not in ['notebook-http', 'jupyter-websocket']:
             raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
 
+    allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
+    allow_notebook_download = Bool(config=True,
+                   default_value=False,
+                   allow_none=True,
+                   help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
+    )
+    def _allow_notebook_download_default(self):
+        return os.getenv(self.allow_notebook_download_env, False)
+
     def _load_notebook(self, uri):
         '''
         Loads a local or remote notebook. Raises RuntimeError if no installed
@@ -238,6 +247,10 @@ class KernelGatewayApp(JupyterApp):
         # Redefine handlers off the base_url path
         handlers = []
         if self.api == 'notebook-http':
+            #Register the NotebookDownloadHandler if configuration allows
+            if self.allow_notebook_download:
+                handlers.append((r'/api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
+
             # discover the notebook endpoints and their implementations
             endpoints = self.kernel_manager.endpoints()
             sorted_endpoints = self.kernel_manager.sorted_endpoints()

@@ -33,6 +33,7 @@ The app launches kernels in its local process/filesystem space. Can be container
 * Option to prepopulate kernel memory from a notebook
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 * Option to serve annotated notebooks as HTTP endpoints, see [notebook-http](#notebook-http-mode)
+* Option to allow downloading of the notebook source when running notebook-http-mode
 
 Run `jupyter kernelgateway --help-all` after installation to see the full set of options.
 

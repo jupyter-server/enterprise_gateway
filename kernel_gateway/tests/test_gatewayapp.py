@@ -525,6 +525,45 @@ class TestSeedGatewayApp(TestGatewayAppBase):
 
         ws.close()
 
+class TestDownloadNotebookSource(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.allow_notebook_download = True
+
+    @gen_test
+    def test_download_notebook_source(self):
+        '''
+        Notebook source should exists under the path /api/source
+        when allow_notebook download is True
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/source'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, "/api/source did not correctly return the downloaded notebook")
+
+class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'zen{}.ipynb'.format(sys.version_info.major))
+    @gen_test
+    def test_blocked_download_notebook_source(self):
+        '''
+        Notebook source should not exist under the path /api/source
+        when allow_notebook download is False or not configured
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/source'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 301, "/api/source did not block as allow_notebook_download is false")
+
+
 class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
     def setup_app(self):
         self.app.prespawn_count = 1
