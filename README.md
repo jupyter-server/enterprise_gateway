@@ -47,122 +47,6 @@ jupyter kernelgateway --help-all
 jupyter kernelgateway
 ```
 
-## NodeJS Client Example
-
-The following sample uses the new `jupyter-js-services` npm package to request a kernel from a kernel gateway and execute some code on it. You can find this sample in `etc/node_client_example` in this repo along with a `package.json` file that installs all the client dependencies (i.e., run `npm install` then `node client.js`).
-
-```javascript
-var xmlhttprequest = require('xmlhttprequest');
-var ws = require('ws');
-
-global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
-global.WebSocket = ws;
-
-var jupyter = require('jupyter-js-services');
-
-var kg_host = process.env.GATEWAY_HOST || '192.168.99.100:8888';
-
-// get info about the available kernels and start a new one
-jupyter.getKernelSpecs('http://'+kg_host).then((kernelSpecs) => {
-    console.log('Available kernelspecs:', kernelSpecs);
-    var options = {
-        baseUrl: 'http://'+kg_host,
-        wsUrl: 'ws://'+kg_host,
-        name: kernelSpecs.default
-    };
-    // request a kernel in the default language (python)
-    jupyter.startNewKernel(options).then((kernel) => {
-        // execute some code
-        var future = kernel.execute({ code: 'print("Hello world!")' } );
-        future.onDone = () => {
-            // quit when done
-            process.exit(0);
-        };
-        future.onIOPub = (msg) => {
-            // print received messages
-            console.log('Received message type:', msg.msg_type);
-            if(msg.msg_type === 'stream') {
-                console.log('  Content:', msg.content.text);
-            }
-        };
-    });
-});
-```
-
-## Python Client Example
-
-The following code shows how to request a kernel and execute code on it using the Tornado HTTP and Websocket client library. You can find this sample in `etc/python_client_example` in this repo.
-
-The code here is much longer than in the NodeJS case above because there isn't a Python equivalent of `jupyter-js-services` that wraps the logic for talking the Jupyter protocol over over Websockets. (Of course, there is [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client) which operates over ZeroMQ.)
-
-```python
-import os
-from tornado import gen
-from tornado.escape import json_encode, json_decode, url_escape
-from tornado.websocket import websocket_connect
-from tornado.ioloop import IOLoop
-from tornado.httpclient import AsyncHTTPClient
-
-@gen.coroutine
-def main():
-    kg_host = os.getenv('GATEWAY_HOST', '192.168.99.100:8888')
-
-    client = AsyncHTTPClient()
-
-    response = yield client.fetch(
-        'http://{}/api/kernels'.format(kg_host),
-        method='POST',
-        body='{}'
-    )
-    print('Created kernel')
-    kernel = json_decode(response.body)
-    print(kernel)
-
-    ws_url = 'ws://{}/api/kernels/{}/channels'.format(
-        kg_host,
-        url_escape(kernel['id'])
-    )
-    ws = yield websocket_connect(ws_url)
-    print('Connected to kernel websocket')
-
-    # Send an execute request
-    ws.write_message(json_encode({
-        'header': {
-            'username': '',
-            'version': '5.0',
-            'session': '',
-            'msg_id': 'test-msg',
-            'msg_type': 'execute_request'
-        },
-        'parent_header': {},
-        'channel': 'shell',
-        'content': {
-            'code': 'print("Hello world!")',
-            'silent': False,
-            'store_history': False,
-            'user_expressions' : {}
-        },
-        'metadata': {},
-        'buffers': {}
-    }))
-
-    # Look for stream output for the print in the execute
-    while 1:
-        msg = yield ws.read_message()
-        msg = json_decode(msg)
-        msg_type = msg['msg_type']
-        print('Received message type:', msg_type)
-        parent_msg_id = msg['parent_header']['msg_id']
-        if msg_type == 'stream' and parent_msg_id == 'test-msg':
-            print('  Content:', msg['content']['text'])
-            break
-
-    ws.close()
-
-if __name__ == '__main__':
-    IOLoop.current().run_sync(main)
-```
-
 ## `notebook-http` Mode
 
 The `KernelGatewayApp.api` command line argument can be set to `notebook-http`
@@ -234,6 +118,11 @@ The second approach is used if no output is collected. This method is dependent
 upon language semantics, kernel implementation, and library usage. The return
 value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
 message.
+
+
+## Kernel Gateway Demos
+For a complete set of demos utilizing the WebSocket client and notebook-http mode see
+[Kernel Gateway Demos](https://github.com/jupyter-incubator/kernel_gateway_demos).
 
 ### Running
 The minimum number of arguments needed to run in HTTP mode are
