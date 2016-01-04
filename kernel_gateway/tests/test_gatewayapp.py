@@ -44,6 +44,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_PRESPAWN_COUNT'] = '1'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
         os.environ['KG_LIST_KERNELS'] = 'True'
+        os.environ['KG_ALLOW_NOTEBOOK_DOWNLOAD'] = 'True'
 
         app = KernelGatewayApp()
 
@@ -62,6 +63,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
         self.assertEqual(app.list_kernels, True)
+        self.assertEqual(app.allow_notebook_download, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def tearDown(self):

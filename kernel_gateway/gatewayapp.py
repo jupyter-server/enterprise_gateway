@@ -169,12 +169,10 @@ class KernelGatewayApp(JupyterApp):
 
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
     allow_notebook_download = Bool(config=True,
-                   default_value=False,
-                   allow_none=True,
                    help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
     )
     def _allow_notebook_download_default(self):
-        return os.getenv(self.allow_notebook_download_env, False)
+        return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def _load_notebook(self, uri):
         '''
