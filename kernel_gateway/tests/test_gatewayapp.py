@@ -44,6 +44,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_PRESPAWN_COUNT'] = '1'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
         os.environ['KG_LIST_KERNELS'] = 'True'
+        os.environ['KG_ALLOW_NOTEBOOK_DOWNLOAD'] = 'True'
 
         app = KernelGatewayApp()
 
@@ -62,6 +63,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
         self.assertEqual(app.list_kernels, True)
+        self.assertEqual(app.allow_notebook_download, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     def tearDown(self):
@@ -524,6 +526,45 @@ class TestSeedGatewayApp(TestGatewayAppBase):
                 break
 
         ws.close()
+
+class TestDownloadNotebookSource(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.allow_notebook_download = True
+
+    @gen_test
+    def test_download_notebook_source(self):
+        '''
+        Notebook source should exists under the path /_api/source
+        when allow_notebook download is True
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/source'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, "/_api/source did not correctly return the downloaded notebook")
+
+class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'zen{}.ipynb'.format(sys.version_info.major))
+    @gen_test
+    def test_blocked_download_notebook_source(self):
+        '''
+        Notebook source should not exist under the path /_api/source
+        when allow_notebook download is False or not configured
+        '''
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/source'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 301, "/_api/source did not block as allow_notebook_download is false")
+
 
 class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
     def setup_app(self):

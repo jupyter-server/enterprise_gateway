@@ -12,6 +12,7 @@ except ImportError:
 from tornado import gen
 from tornado.concurrent import Future
 from ...mixins import TokenAuthorizationMixin, CORSMixin
+import os
 
 class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
     kernel_pool = None
@@ -124,3 +125,11 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
 
     def options(self, **kwargs):
         self.finish()
+
+class NotebookDownloadHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.StaticFileHandler):
+    def initialize(self, path):
+        self.dirname, self.filename = os.path.split(path)
+        super(NotebookDownloadHandler, self).initialize(self.dirname)
+
+    def get(self, include_body=True):
+        super(NotebookDownloadHandler, self).get(self.filename, include_body)
