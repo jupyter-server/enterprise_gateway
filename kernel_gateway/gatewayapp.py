@@ -29,6 +29,7 @@ from .services.kernels.manager import SeedingMappingKernelManager
 from .services.kernels.pool import KernelPool
 from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
+from .services.cell.parser import APICellParser
 
 from notebook.utils import url_path_join
 
@@ -242,6 +243,7 @@ class KernelGatewayApp(JupyterApp):
         manager in settings to appease handlers that try to reference it there.
         Include additional options in settings as well.
         '''
+
         # Redefine handlers off the base_url path
         handlers = []
         if self.api == 'notebook-http':
@@ -250,17 +252,24 @@ class KernelGatewayApp(JupyterApp):
                 handlers.append((r'/_api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
 
             # discover the notebook endpoints and their implementations
-            endpoints = self.kernel_manager.endpoints()
+            parser = APICellParser(self.kernel_manager.seed_kernelspec)
+            endpoints = parser.endpoints(self.kernel_manager.seed_source)
             if len(endpoints) == 0:
                 raise RuntimeError('No endpoints were discovered. Check your notebook to make sure your cells are annotated correctly.')
 
-            sorted_endpoints = self.kernel_manager.sorted_endpoints()
-            # append tuples for the notebook's API endpoints
-            for uri in sorted_endpoints:
-                parameterized_path = parameterize_path(uri)
+            # cycle through the (endpoint_path, source) tuples and register their handler
+            for endpoint_path, verb_source_map in endpoints:
+                parameterized_path = parameterize_path(endpoint_path)
                 parameterized_path = url_path_join(self.base_url, parameterized_path)
-                self.log.info('Registering uri: {}, methods: ({})'.format(parameterized_path, list(endpoints[uri].keys())))
-                handlers.append((parameterized_path, NotebookAPIHandler, {'sources' : endpoints[uri], 'kernel_pool' : self.kernel_pool, 'kernel_name' : self.kernel_manager.seed_kernelspec}))
+                self.log.info('Registering endpoint_path: {}, methods: ({})'.format(
+                    parameterized_path,
+                    list(verb_source_map.keys())
+                ))
+                handler_args = { 'sources' : verb_source_map,
+                    'kernel_pool' : self.kernel_pool,
+                    'kernel_name' : self.kernel_manager.seed_kernelspec
+                }
+                handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
         elif self.api == 'jupyter-websocket':
             # append tuples for the standard kernel gateway endpoints
             for handler in (
