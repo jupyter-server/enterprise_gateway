@@ -247,7 +247,7 @@ class KernelGatewayApp(JupyterApp):
         if self.api == 'notebook-http':
             #Register the NotebookDownloadHandler if configuration allows
             if self.allow_notebook_download:
-                handlers.append((r'/api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
+                handlers.append((r'/_api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
 
             # discover the notebook endpoints and their implementations
             endpoints = self.kernel_manager.endpoints()

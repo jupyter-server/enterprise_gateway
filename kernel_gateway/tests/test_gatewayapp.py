@@ -537,15 +537,15 @@ class TestDownloadNotebookSource(TestGatewayAppBase):
     @gen_test
     def test_download_notebook_source(self):
         '''
-        Notebook source should exists under the path /api/source
+        Notebook source should exists under the path /_api/source
         when allow_notebook download is True
         '''
         response = yield self.http_client.fetch(
-            self.get_url('/api/source'),
+            self.get_url('/_api/source'),
             method='GET',
             raise_error=False
         )
-        self.assertEqual(response.code, 200, "/api/source did not correctly return the downloaded notebook")
+        self.assertEqual(response.code, 200, "/_api/source did not correctly return the downloaded notebook")
 
 class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
     def setup_app(self):
@@ -555,15 +555,15 @@ class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
     @gen_test
     def test_blocked_download_notebook_source(self):
         '''
-        Notebook source should not exist under the path /api/source
+        Notebook source should not exist under the path /_api/source
         when allow_notebook download is False or not configured
         '''
         response = yield self.http_client.fetch(
-            self.get_url('/api/source'),
+            self.get_url('/_api/source'),
             method='GET',
             raise_error=False
         )
-        self.assertEqual(response.code, 301, "/api/source did not block as allow_notebook_download is false")
+        self.assertEqual(response.code, 301, "/_api/source did not block as allow_notebook_download is false")
 
 
 class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
