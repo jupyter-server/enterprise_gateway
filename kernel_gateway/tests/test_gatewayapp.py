@@ -531,7 +531,7 @@ class TestDownloadNotebookSource(TestGatewayAppBase):
     def setup_app(self):
         self.app.api = 'notebook-http'
         self.app.seed_uri = os.path.join(RESOURCES,
-                                         'zen{}.ipynb'.format(sys.version_info.major))
+                                         'kernel_api{}.ipynb'.format(sys.version_info.major))
         self.app.allow_notebook_download = True
 
     @gen_test
@@ -551,7 +551,7 @@ class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
     def setup_app(self):
         self.app.api = 'notebook-http'
         self.app.seed_uri = os.path.join(RESOURCES,
-                                         'zen{}.ipynb'.format(sys.version_info.major))
+                                         'kernel_api{}.ipynb'.format(sys.version_info.major))
     @gen_test
     def test_blocked_download_notebook_source(self):
         '''
@@ -563,7 +563,7 @@ class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
             method='GET',
             raise_error=False
         )
-        self.assertEqual(response.code, 301, "/_api/source did not block as allow_notebook_download is false")
+        self.assertEqual(response.code, 404, "/_api/source did not block as allow_notebook_download is false")
 
 
 class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
