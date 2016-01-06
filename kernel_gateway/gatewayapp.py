@@ -251,6 +251,9 @@ class KernelGatewayApp(JupyterApp):
 
             # discover the notebook endpoints and their implementations
             endpoints = self.kernel_manager.endpoints()
+            if len(endpoints) == 0:
+                raise RuntimeError('No endpoints were discovered. Check your notebook to make sure your cells are annotated correctly.')
+
             sorted_endpoints = self.kernel_manager.sorted_endpoints()
             # append tuples for the notebook's API endpoints
             for uri in sorted_endpoints:
