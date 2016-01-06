@@ -272,8 +272,6 @@ class KernelGatewayApp(JupyterApp):
                 }
                 handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
 
-            # TODO The ip specified here may not be a correct value swagger can use (e.g. 0.0.0.0)
-            #      Need to find a better way to know what ip/host to use
             handlers.append(('/_api/spec/swagger.json', SwaggerSpecHandler, {
                 'title' : self.seed_uri,
                 'endpoints': endpoints,
