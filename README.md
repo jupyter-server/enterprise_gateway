@@ -147,6 +147,14 @@ make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 --KernelGatewayApp.prespawn_count=5
 ```
 
+### Swagger Spec
+An endpoint of `/_api/spec/swagger.json` is automatically generated from the
+notebook used for the API definition. This is a simple swagger spec which can
+be used with either the [swagger editor](http://editor.swagger.io/#/) or a
+[swagger ui](https://github.com/swagger-api/swagger-ui). Currently, only a
+200 response is listed for each endpoint's response. Features to make this a more
+full featured swagger spec will be added.
+
 ## Kernel Gateway Demos
 For a complete set of demos utilizing the default jupyter-websocket and alternative notebook-http modes see
 [Kernel Gateway Demos](https://github.com/jupyter-incubator/kernel_gateway_demos).
