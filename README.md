@@ -97,7 +97,7 @@ The REQUEST object currently contains the following properties:
 their values.
 * `headers` - An object of key-value pairs where a key is a HTTP header name and a value is the HTTP header value. If there are multiple values are specified for a  header, the value will be an array.
 
-###Body And Content Type
+### Body And Content Type
 If the HTTP request to the kernel gateway has a `Content-Type` header the `REQUEST.body` value may change. Below is the list of outcomes for various mime-types:
 
 * `application/json` -  The `REQUEST.body` will be an object of key-value pairs representing the request body
@@ -119,11 +119,6 @@ The second approach is used if no output is collected. This method is dependent
 upon language semantics, kernel implementation, and library usage. The return
 value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
 message.
-
-
-## Kernel Gateway Demos
-For a complete set of demos utilizing the WebSocket client and notebook-http mode see
-[Kernel Gateway Demos](https://github.com/jupyter-incubator/kernel_gateway_demos).
 
 ### Running
 The minimum number of arguments needed to run in HTTP mode are
@@ -151,6 +146,10 @@ make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb" \
 --KernelGatewayApp.prespawn_count=5
 ```
+
+## Kernel Gateway Demos
+For a complete set of demos utilizing the default jupyter-websocket and alternative notebook-http modes see
+[Kernel Gateway Demos](https://github.com/jupyter-incubator/kernel_gateway_demos).
 
 ## Alternatives
 
