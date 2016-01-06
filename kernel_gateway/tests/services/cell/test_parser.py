@@ -90,3 +90,20 @@ class TestAPICellParserUtils(unittest.TestCase):
         for index in range(0, len(expected_values)):
             endpoint, _ = endpoints[index]
             self.assertEqual(expected_values[index], endpoint, 'Endpoint was not found in expected order')
+
+    def test_get_cell_endpoint_and_verb(self):
+        '''Tests the ability to extract API endpoint and verb from a cell'''
+        parser = APICellParser('some_unknown_kernel')
+        endpoint, verb = parser.get_cell_endpoint_and_verb('# GET /foo')
+        self.assertEqual(endpoint, '/foo', 'Endpoint was not extracted correctly')
+        self.assertEqual(verb, 'GET', 'Endpoint was not extracted correctly')
+        endpoint, verb = parser.get_cell_endpoint_and_verb('# POST /bar/quo')
+        self.assertEqual(endpoint, '/bar/quo', 'Endpoint was not extracted correctly')
+        self.assertEqual(verb, 'POST', 'Endpoint was not extracted correctly')
+
+    def test_get_cell_endpoint_and_verb_with_non_api_cell(self):
+        '''Tests the ability to extract API endpoint and verb from a cell when there is no API code'''
+        parser = APICellParser('some_unknown_kernel')
+        endpoint, verb = parser.get_cell_endpoint_and_verb('some regular code')
+        self.assertEqual(endpoint, None, 'Endpoint was not extracted correctly')
+        self.assertEqual(verb, None, 'Endpoint was not extracted correctly')

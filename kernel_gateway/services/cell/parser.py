@@ -1,23 +1,26 @@
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
 import re
 import sys
 
-class EndpointSortStrategies(object):
-
-    @staticmethod
-    def first_path_param_index(endpoint):
-        '''Returns the index to the first path parameter for the endpoint. The
-        index is not the string index, but rather where it is within the path.
-        For example:
-            first_path_param_index('/foo/:bar') # returns 1
-            first_path_param_index('/foo/quo/:bar') # return 2
-            first_path_param_index('/foo/quo/bar') # return sys.maxsize
-        '''
-        index = sys.maxsize
-        if endpoint.find(':') >= 0:
-            index = endpoint.count('/', 0, endpoint.find(':')) - 1
-        return index
+def first_path_param_index(endpoint):
+    '''Returns the index to the first path parameter for the endpoint. The
+    index is not the string index, but rather where it is within the path.
+    For example:
+        first_path_param_index('/foo/:bar') # returns 1
+        first_path_param_index('/foo/quo/:bar') # return 2
+        first_path_param_index('/foo/quo/bar') # return sys.maxsize
+    '''
+    index = sys.maxsize
+    if endpoint.find(':') >= 0:
+        index = endpoint.count('/', 0, endpoint.find(':')) - 1
+    return index
 
 class APICellParser(object):
+    '''
+    A utility class for parsing Jupyter code cells in regards to using notebook
+    cells as REST API endpoints.
+    '''
     kernelspec_comment_mapping = {
         None:'#',
         'scala':'//'
@@ -37,12 +40,16 @@ class APICellParser(object):
         return match is not None
 
     def get_cell_endpoint_and_verb(self, cell_source):
+        '''Parses a cell's source code and will return the endpoint and verb as a tuple'''
+        endpoint = None
+        verb = None
         matched = self.kernelspec_api_indicator.match(cell_source)
-        endpoint = matched.group(2).strip()
-        verb = matched.group(1)
+        if matched:
+            endpoint = matched.group(2).strip()
+            verb = matched.group(1)
         return endpoint, verb
 
-    def endpoints(self, source_cells, sort_func=EndpointSortStrategies.first_path_param_index):
+    def endpoints(self, source_cells, sort_func=first_path_param_index):
         '''Return a list of tuples containing the method+URI and the cell source'''
         endpoints = {}
         for cell_source in source_cells:

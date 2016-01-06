@@ -274,7 +274,7 @@ class KernelGatewayApp(JupyterApp):
 
             handlers.append(('/_api/spec/swagger.json', SwaggerSpecHandler, {
                 'title' : self.seed_uri,
-                'endpoints': endpoints,
+                'source_cells': self.kernel_manager.seed_source,
                 'kernel_spec' : self.kernel_manager.seed_kernelspec
             }))
         elif self.api == 'jupyter-websocket':
