@@ -30,6 +30,7 @@ from .services.kernels.pool import KernelPool
 from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from .services.cell.parser import APICellParser
+from .services.swagger.handlers import SwaggerSpecHandler
 
 from notebook.utils import url_path_join
 
@@ -270,6 +271,14 @@ class KernelGatewayApp(JupyterApp):
                     'kernel_name' : self.kernel_manager.seed_kernelspec
                 }
                 handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
+
+            # TODO The ip specified here may not be a correct value swagger can use (e.g. 0.0.0.0)
+            #      Need to find a better way to know what ip/host to use
+            handlers.append(('/_api/spec/swagger.json', SwaggerSpecHandler, {
+                'title' : self.seed_uri,
+                'endpoints': endpoints,
+                'kernel_spec' : self.kernel_manager.seed_kernelspec
+            }))
         elif self.api == 'jupyter-websocket':
             # append tuples for the standard kernel gateway endpoints
             for handler in (

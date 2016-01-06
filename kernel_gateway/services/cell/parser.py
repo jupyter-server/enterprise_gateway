@@ -36,6 +36,12 @@ class APICellParser(object):
         match = self.kernelspec_api_indicator.match(cell_source)
         return match is not None
 
+    def get_cell_endpoint_and_verb(self, cell_source):
+        matched = self.kernelspec_api_indicator.match(cell_source)
+        endpoint = matched.group(2).strip()
+        verb = matched.group(1)
+        return endpoint, verb
+
     def endpoints(self, source_cells, sort_func=EndpointSortStrategies.first_path_param_index):
         '''Return a list of tuples containing the method+URI and the cell source'''
         endpoints = {}

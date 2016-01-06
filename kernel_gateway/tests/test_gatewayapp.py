@@ -898,3 +898,38 @@ class TestConcurrentAPIGatewayApp(TestGatewayAppBase):
             count += 1
             if count >= self.app.prespawn_count + 1:
                 break
+
+class TestSwaggerSpecGeneration(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'simple_api{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_generation_of_swagger_spec(self):
+        '''
+        Notebook source should exists under the path /_api/source
+        when allow_notebook download is True
+        '''
+        expected_response = {
+            "info": {
+                "version": "0.0.0",
+                "title": "simple_api{}".format(sys.version_info.major)
+            },
+            "paths": {
+                "/name": {
+                    "get": {"responses": {"200": {"description": "Success"}}},
+                    "post": {"responses": {"200": {"description": "Success"}}}
+                }
+            },
+            "swagger": "2.0"
+        }
+
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/spec/swagger.json'),
+            method='GET',
+            raise_error=False
+        )
+        result = json.loads(response.body.decode('UTF-8'))
+        self.assertEqual(response.code, 200, "Swagger spec endpoint did not return the correct status code")
+        self.assertEqual(result, expected_response, "Swagger spec endpoint did not return the correct value")
