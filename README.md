@@ -6,7 +6,7 @@ implements different APIs and protocols for accessing Jupyter kernels such as:
 * Accessing HTTP and Websocket resources of `/api/kernels` using [jupyter/notebook](https://github.com/jupyter/notebook), [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client), and [jupyter/jupyter_core](https://github.com/jupyter/jupyter_core).
 * [Accessing notebook cells](#notebook-http-mode) via HTTP endpoints
 
-The app launches kernels in its local process/filesystem space. Can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/juputer/tmpnb)). API endpoints can be accessed by [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and similar web-friendly clients.
+The app launches kernels in its local process/filesystem space. Can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)). API endpoints can be accessed by [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and similar web-friendly clients.
 
 ## Interesting Uses
 
