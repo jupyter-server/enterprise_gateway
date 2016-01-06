@@ -133,7 +133,7 @@ You can run the kernel gateway in `notebook-http` mode from the Makefile:
 
 ```
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
---KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb"
+--KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb"
 ```
 
 With the above Make command, all of the notebooks in `etc/api_examples` are
@@ -147,7 +147,7 @@ starts 5 kernels:
 
 ```
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
---KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/scotch_api.ipynb" \
+--KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb" \
 --KernelGatewayApp.prespawn_count=5
 ```
 
