@@ -28,11 +28,9 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
         self.kernel_name = kernel_name
 
     def _format_request(self, expression):
-        #Escape the quotes in the request JSON string
-        expression = expression.replace('\"', '\\"')
-        #Note some languages do not support single quoted strings, thus double quotes are used when formatting the request statement
-        statement = "REQUEST = \"{}\""
-        return statement.format(expression)
+        expression = json.dumps(json.dumps(expression))
+        statement = "REQUEST = {}".format(json.loads(expression))
+        return statement
 
     def on_recv(self, msg):
         '''
