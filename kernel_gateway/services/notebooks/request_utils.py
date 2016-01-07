@@ -11,6 +11,11 @@ MULTIPART_FORM_DATA = 'multipart/form-data'
 APPLICATION_JSON = 'application/json'
 TEXT_PLAIN = 'text/plain'
 
+def format_request(expression):
+    expression = json.dumps(expression)
+    statement = "REQUEST = {}".format(expression)
+    return statement
+
 def parameterize_path(path):
     matches = re.findall(_named_param_regex, path)
     for match in matches:
