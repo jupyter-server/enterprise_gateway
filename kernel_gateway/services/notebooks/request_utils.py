@@ -12,8 +12,8 @@ APPLICATION_JSON = 'application/json'
 TEXT_PLAIN = 'text/plain'
 
 def format_request(expression):
-    expression = json.dumps(json.dumps(expression))
-    statement = "REQUEST = {}".format(json.loads(expression))
+    expression = json.dumps(expression)
+    statement = "REQUEST = {}".format(expression)
     return statement
 
 def parameterize_path(path):
