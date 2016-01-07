@@ -431,6 +431,27 @@ class TestGatewayApp(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 404)
 
+class TestFormatRequestCodeEscapedIntegration(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'kernel_api{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_format_request_code_escaped_integration(self):
+        '''
+        Quotes should be properly escaped in the request code
+        '''
+
+        #Test query with escaping of arguements and headers with multiple escaped quotes
+        response = yield self.http_client.fetch(
+            self.get_url('/hello/person?person=governor'),
+            method='GET',
+            headers={'If-None-Match': '\"\"9a28a9262f954494a8de7442c63d6d0715ce0998\"\"'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'hello governor\n', 'Unexpected body in response to GET.')
 
 class TestPrespawnGatewayApp(TestGatewayAppBase):
     def setup_app(self):
@@ -564,7 +585,6 @@ class TestBlockedDownloadNotebookSource(TestGatewayAppBase):
             raise_error=False
         )
         self.assertEqual(response.code, 404, "/_api/source did not block as allow_notebook_download is false")
-
 
 class TestSeedGatewayAppKernelLanguageSupport(TestGatewayAppBase):
     def setup_app(self):
