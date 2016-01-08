@@ -22,6 +22,7 @@ ioloop.install()
 import tornado
 from tornado import httpserver
 from tornado import web
+from tornado.log import enable_pretty_logging
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
@@ -277,6 +278,7 @@ class KernelGatewayApp(JupyterApp):
                 'source_cells': self.kernel_manager.seed_source,
                 'kernel_spec' : self.kernel_manager.seed_kernelspec
             }))
+            enable_pretty_logging()
         elif self.api == 'jupyter-websocket':
             # append tuples for the standard kernel gateway endpoints
             for handler in (
