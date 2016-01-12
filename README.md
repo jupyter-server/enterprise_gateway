@@ -239,6 +239,24 @@ upon language semantics, kernel implementation, and library usage. The return
 value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
 message.
 
+### Setting The Response Metadata
+API cells can have an optional companion response cell to set response metadata (e.g. status, headers, etc.).
+An example comment, in python, for a companion cell would be `# ResponseInfo GET /resource`. The aforementioned companion cell
+would run after the corresponding API cell for `# GET /resource` is run. The companion cell relays response metadata to
+the kernel gateway by printing a well known json structure to standard out. An example of the json structure is as follows:
+
+```
+{
+    "headers" : {
+        "Content-Type" : "application/json"
+    },
+    "status" : 201
+}
+```
+
+Currently, `headers` and `status` are the only values supported. `headers` should be an object of key-value pairs of header
+names to header values for the response. `status` should be an integer value for the response status code.
+
 ### Running
 The minimum number of arguments needed to run in HTTP mode are
 `--KernelGatewayApp.api=notebook-http` and

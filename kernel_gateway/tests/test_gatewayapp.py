@@ -953,3 +953,47 @@ class TestSwaggerSpecGeneration(TestGatewayAppBase):
         result = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 200, "Swagger spec endpoint did not return the correct status code")
         self.assertEqual(result, expected_response, "Swagger spec endpoint did not return the correct value")
+
+class TestSettingResponse(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.api = 'notebook-http'
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'responses_{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_setting_content_type(self):
+        '''A response cell should allow the content type to be set'''
+        response = yield self.http_client.fetch(
+            self.get_url('/json'),
+            method='GET',
+            raise_error=False
+        )
+        result = json.loads(response.body.decode('UTF-8'))
+        self.assertEqual(response.code, 200, 'Response status was not 200')
+        self.assertEqual(response.headers['Content-Type'], 'application/json', 'Incorrect mime type was set on response')
+        self.assertEqual(result, {'hello' : 'world'}, 'Incorrect response value.')
+
+    @gen_test
+    def test_setting_response_status_code(self):
+        '''A response cell should allow the response status code to be set'''
+        response = yield self.http_client.fetch(
+            self.get_url('/nocontent'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 204, 'Response status was not 204')
+        self.assertEqual(response.body, b'', 'Incorrect response value.')
+
+    @gen_test
+    def test_setting_etag_header(self):
+        '''A response cell should allow the etag header to be set'''
+        response = yield self.http_client.fetch(
+            self.get_url('/etag'),
+            method='GET',
+            raise_error=False
+        )
+        result = json.loads(response.body.decode('UTF-8'))
+        self.assertEqual(response.code, 200, 'Response status was not 200')
+        self.assertEqual(response.headers['Content-Type'], 'application/json', 'Incorrect mime type was set on response')
+        self.assertEqual(result, {'hello' : 'world'}, 'Incorrect response value.')
+        self.assertEqual(response.headers['Etag'], '1234567890', 'Incorrect Etag header value.')
