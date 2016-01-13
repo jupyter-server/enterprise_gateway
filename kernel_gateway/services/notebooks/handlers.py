@@ -3,81 +3,81 @@
 import tornado.web
 import json
 from tornado.log import access_log
-from .request_utils import (parse_body, parse_args, format_request, 
+from .request_utils import (parse_body, parse_args, format_request,
     headers_to_dict, parameterize_path)
 
 from tornado import gen
 from tornado.concurrent import Future
 from ...mixins import TokenAuthorizationMixin, CORSMixin
+from functools import partial
+from .errors import UnsupportedMethodError,CodeExecutionError
 import os
 
 class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
     '''Executes annotated notebook cells in response to associated HTTP requests.'''
-    kernel_pool = None
-    sources = None
-    kernel_name = ''
-    execute_result = None
-    stream_messages = []
-    error_message = None
 
-    def initialize(self, sources, kernel_pool, kernel_name):
+    def initialize(self, sources, response_sources, kernel_pool, kernel_name):
         self.kernel_pool = kernel_pool
         self.sources = sources
         self.kernel_name = kernel_name
+        self.response_sources = response_sources
 
-    def on_recv(self, msg):
+    def on_recv(self, result_accumulator, future, parent_header, msg):
         '''
-        Receives messages for a particular code execution defined by self.parent_header.
+        Receives messages for a particular code execution defined by parent_header.
         Collects all outputs from the kernel until an execution state of idle is received.
+        This function should be used to generate partial functions where the newly derived
+        function only takes msg as an argument.
+        :param result_accumulator: Accumulates results across all messages received
+        :param future: A future used to set the result (errors via exceptions)
+        :param parent_header: The parent header value in the messages, indicating how results map to requests
         :param msg: The execution content/state message received.
         '''
-        # Only look at messages which are derived from the parent_header
-        # TODO Refactor this so we only look for parent headers for the actual cell execution
-        if msg['parent_header']['msg_id'] == self.parent_header:
+        if msg['parent_header']['msg_id'] == parent_header:
             # On idle status, exit our loop
             if msg['header']['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
-                result = {'status': 200, 'content': ''}
-                if self.error_message:
-                    result['content'] =self.error_message
-                    result['status'] = 500
-                elif self.execute_result and self.execute_result is not '':
-                    result['content'] = self.error_message
-                else:
-                    result['content'] = ''.join(self.stream_messages)
-                self.execution_future.set_result(result)
+                # If the future is still running, no errors were thrown and we can set the result
+                if future.running():
+                    result_accumulator['content'] = ''.join(result_accumulator['content'])
+                    future.set_result(result_accumulator['content'])
             # Store the execute result
             elif msg['header']['msg_type'] == 'execute_result':
-                self.execute_result = msg['content']['data']
+                result_accumulator['content'].append(msg['content']['data'])
             # Accumulate the stream messages
             elif msg['header']['msg_type'] == 'stream':
-                self.stream_messages.append(msg['content']['text'])
+                result_accumulator['content'].append((msg['content']['text']))
             # Store the error message
             elif msg['header']['msg_type'] == 'error':
-                self.error_message = 'Error {}: {} \n'.format(
-                    msg['content']['ename'],
-                    msg['content']['evalue']
-                )
+                error_name = msg['content']['ename']
+                error_value = msg['content']['evalue']
+                future.set_exception(CodeExecutionError(
+                    'Error {}: {} \n'.format(error_name, error_value)
+                ))
+
+    def execute_code(self, kernel_client, kernel_id, source_code):
+        '''Executes source_code on the kernel specified and will return a Future to indicate when code
+        execution is completed. If the code execution results in an error, a CodeExecutionError is raised.
+        '''
+        future = Future()
+        result_accumulator = {'content' : []}
+        parent_header = kernel_client.execute(source_code)
+        on_recv_func = partial(self.on_recv, result_accumulator, future, parent_header)
+        self.kernel_pool.on_recv(kernel_id, on_recv_func)
+        return future
 
     @gen.coroutine
     def _handle_request(self):
         '''Translates a HTTP request into code to execute on a kernel.'''
-        self.execute_result = None
-        self.stream_messages = []
-        self.error_message = None
-        
-        # Method not supported
-        if self.request.method not in self.sources:
-            self.set_status(405)
-            self.finish()
-            return
-
-        self.execution_future = Future()
         self.response_future = Future()
-
         kernel_client, kernel_id = yield self.kernel_pool.acquire()
         try:
-            # Listen for kernel responses
-            self.kernel_pool.on_recv(kernel_id, self.on_recv)
+            # Method not supported
+            if self.request.method not in self.sources:
+                raise UnsupportedMethodError(self.request.method)
+
+            # Set the Content-Type and status to default values
+            self.set_header('Content-Type', 'text/plain')
+            self.set_status(200)
 
             # Get the source to execute in response to this request
             source_code = self.sources[self.request.method]
@@ -90,19 +90,44 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
             })
             # Turn the request string into a valid code string
             request_code = format_request(request)
-            
-            # Run the code and yield until there's a result
-            access_log.debug('Request code for notebook cell is: {}'.format(request_code))
-            kernel_client.execute(request_code)
-            self.parent_header = kernel_client.execute(source_code)
-            result = yield self.execution_future
 
-            # Hard code the response metadata for now (see Issue #46)
-            self.set_header('Content-Type', 'text/plain')
-            self.set_status(result['status'])
-            self.write(result['content'])
+            # Run the request and source code and yield until there's a result
+            access_log.debug('Request code for notebook cell is: {}'.format(request_code))
+            request_future = self.execute_code(kernel_client, kernel_id, request_code)
+            yield request_future
+            source_future = self.execute_code(kernel_client, kernel_id, source_code)
+            source_result = yield source_future
+
+            # If a response code cell exists, execute it
+            if self.request.method in self.response_sources:
+                response_code = self.response_sources[self.request.method]
+                response_future = self.execute_code(kernel_client, kernel_id, response_code)
+
+                # Wait for the response and parse the json value
+                response_result = yield response_future
+                response = json.loads(response_result)
+
+                # Copy all the header values into the tornado response
+                if 'headers' in response:
+                    for header in response['headers']:
+                        self.set_header(header, response['headers'][header])
+
+                # Set the status code if it exists
+                if 'status' in response:
+                    self.set_status(response['status'])
+
+            # Write the result of the source code execution
+            self.write(source_result)
+        # If there was a problem executing an code, return a 500
+        except CodeExecutionError as err:
+            self.write(err.error_message)
+            self.set_status(500)
+        # An unspported method was called on this handler
+        except UnsupportedMethodError:
+            self.set_status(405)
         finally:
             # Always make sure we release the kernel and finish the request
+            self.response_future.set_result(None)
             self.kernel_pool.release(kernel_id)
             self.finish()
 

@@ -256,10 +256,12 @@ class KernelGatewayApp(JupyterApp):
             # discover the notebook endpoints and their implementations
             parser = APICellParser(self.kernel_manager.seed_kernelspec)
             endpoints = parser.endpoints(self.kernel_manager.seed_source)
+            response_sources = parser.endpoint_responses(self.kernel_manager.seed_source)
             if len(endpoints) == 0:
                 raise RuntimeError('No endpoints were discovered. Check your notebook to make sure your cells are annotated correctly.')
 
             # cycle through the (endpoint_path, source) tuples and register their handler
+
             for endpoint_path, verb_source_map in endpoints:
                 parameterized_path = parameterize_path(endpoint_path)
                 parameterized_path = url_path_join(self.base_url, parameterized_path)
@@ -267,7 +269,9 @@ class KernelGatewayApp(JupyterApp):
                     parameterized_path,
                     list(verb_source_map.keys())
                 ))
+                response_source_map = response_sources[endpoint_path] if endpoint_path in response_sources else {}
                 handler_args = { 'sources' : verb_source_map,
+                    'response_sources' : response_source_map,
                     'kernel_pool' : self.kernel_pool,
                     'kernel_name' : self.kernel_manager.seed_kernelspec
                 }
