@@ -413,7 +413,7 @@ class TestGatewayApp(TestGatewayAppBase):
             self.get_url('/api/kernels'),
             raise_error=False
         )
-        self.assertEqual(response.code, 404)
+        self.assertEqual(response.code, 403)
 
         # set to True
         app.settings['kg_list_kernels'] = True
@@ -429,7 +429,7 @@ class TestGatewayApp(TestGatewayAppBase):
             self.get_url('/api/kernels'),
             raise_error=False
         )
-        self.assertEqual(response.code, 404)
+        self.assertEqual(response.code, 403)
 
 class TestFormatRequestCodeEscapedIntegration(TestGatewayAppBase):
     def setup_app(self):
