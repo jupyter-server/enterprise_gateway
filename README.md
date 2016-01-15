@@ -3,7 +3,7 @@
 A web server that supports different mechanisms for spawning and communicating with Jupyter kernels, such as:
 
 * A Jupyter Notebook server-compatible HTTP API for requesting kernels and talking the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) with them over Websockets
-* A HTTP API defined by annoated notebook cells that maps HTTP verbs and resources to code to execute on a kernel
+* A HTTP API defined by annotated notebook cells that maps HTTP verbs and resources to code to execute on a kernel
 
 The server launches kernels in its local process/filesystem space. It can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)).
 
@@ -26,9 +26,9 @@ See the [jupyter-incubator/kernel_gateway_demos](https://github.com/jupyter-incu
 * Options to set CORS headers for servicing browser-based clients
 * Option to set a custom base URL (e.g., for running under tmpnb)
 * Option to limit the number kernel instances a gateway server will launch (e.g., to force scaling at the container level)
-* Option to prespawn a set number of kernel instances
+* Option to pre-spawn a set number of kernel instances
 * Option to set a default kernel language to use when one is not specified in the request
-* Option to prepopulate kernel memory from a notebook
+* Option to pre-populate kernel memory from a notebook
 * Option to serve annotated notebooks as HTTP endpoints, see [notebook-http](#notebook-http-mode)
 * Option to allow downloading of the notebook source when running `notebook-http` mode
 * Automatic [Swagger spec](http://swagger.io/introducing-the-open-api-initiative/) for a notebook-defined API in `notebook-http` mode
@@ -171,8 +171,7 @@ req = json.loads(REQUEST)
 # do something with req
 ```
 
-You may specify path parameters when registering an endpoint by prepending a `:` to a path segment. For example, a path with params
-`firstName` and `lastName` would be defined as the following in a Python comment:
+You may specify path parameters when registering an endpoint by prepending a `:` to a path segment. For example, a path with parameters `firstName` and `lastName` would be defined as the following in a Python comment:
 
 ```python
 # GET /hello/:firstName/:lastName
