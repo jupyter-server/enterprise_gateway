@@ -5,7 +5,7 @@ A web server that supports different mechanisms for spawning and communicating w
 * A Jupyter Notebook server-compatible HTTP API for requesting kernels and talking the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) with them over Websockets
 * A HTTP API defined by annoated notebook cells that maps HTTP verbs and resources to code to execute on a kernel
 
- The server launches kernels in its local process/filesystem space. It can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)).
+The server launches kernels in its local process/filesystem space. It can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)).
 
 ## Interesting Uses
 
