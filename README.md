@@ -1,88 +1,56 @@
 # Jupyter Kernel Gateway
 
-A [JupyterApp](https://github.com/jupyter/jupyter_core/blob/master/jupyter_core/application.py) that
-implements different APIs and protocols for accessing Jupyter kernels such as:
+A web server that supports different mechanisms for spawning and communicating with Jupyter kernels, such as:
 
-* Accessing HTTP and Websocket resources of `/api/kernels` using [jupyter/notebook](https://github.com/jupyter/notebook), [jupyter/jupyter_client](https://github.com/jupyter/jupyter_client), and [jupyter/jupyter_core](https://github.com/jupyter/jupyter_core).
-* [Accessing notebook cells](#notebook-http-mode) via HTTP endpoints
+* A Jupyter Notebook server-compatible HTTP API for requesting kernels and talking the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) with them over Websockets
+* A HTTP API defined by annoated notebook cells that maps HTTP verbs and resources to code to execute on a kernel
 
-The app launches kernels in its local process/filesystem space. Can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)). API endpoints can be accessed by [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and similar web-friendly clients.
+ The server launches kernels in its local process/filesystem space. It can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)).
 
 ## Interesting Uses
 
 * Attach a local Jupyter Notebook server to a compute cluster in the cloud running near big data (e.g., interactive gateway to Spark)
-* Enable a new breed of non-notebook web clients to provision and use kernels (e.g., dashboards)
+* Enable a new breed of non-notebook web clients to provision and use kernels (e.g., dashboards using [jupyter-js-services](https://github.com/jupyter/jupyter-js-services))
 * Scale kernels independently from clients (e.g., via [tmpnb](https://github.com/jupyter/tmpnb), [Binder](https://mybinder.org), your favorite cluster manager)
-* Creating microservices from notebooks via [`notebook-http` mode](#notebook-http-mode)
+* Create microservices from notebooks via [`notebook-http` mode](#notebook-http-mode)
 
 ![Example diagram of how tmpnb might deploy kernel gateway + kernel containers](etc/tmpnb_kernel_gateway.png)
 
+See the [jupyter-incubator/kernel_gateway_demos](https://github.com/jupyter-incubator/kernel_gateway_demos) repository for additional ideas.
+
 ## What It Gives You
 
-* Python 2.7 and 3.3+ compatible implementation of the following resources, equivalent to the ones found in the latest Jupyter Notebook 4.x code base:
-    * `/api` (metadata)
-    * `/api/kernelspecs` (what kernels are available)
-    * `/api/kernels` (kernel CRUD)
-    * `/api/kernels/:kernel_id/channels` (Websocket-to-[ZeroMQ](http://zeromq.org/) transformer for the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html))
+* [`jupyter-websocket` mode](#jupyter-websocket-mode) which provides a Jupyter Notebook server-compatible API for requesting kernels and communicating with them using Websockets
+* [`notebook-http` mode](#notebook-http-mode) which maps HTTP requests to cells in annotated notebooks
 * Option to set a shared authentication token and require it from clients
-* Option to set CORS headers for servicing browser-based clients
+* Options to set CORS headers for servicing browser-based clients
 * Option to set a custom base URL (e.g., for running under tmpnb)
 * Option to limit the number kernel instances a gateway server will launch (e.g., to force scaling at the container level)
-* Option to prespawn a set number of kernels
-* Option to set a default kernel language
+* Option to prespawn a set number of kernel instances
+* Option to set a default kernel language to use when one is not specified in the request
 * Option to prepopulate kernel memory from a notebook
-* A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
 * Option to serve annotated notebooks as HTTP endpoints, see [notebook-http](#notebook-http-mode)
-* Option to allow downloading of the notebook source when running notebook-http-mode
+* Option to allow downloading of the notebook source when running `notebook-http` mode
+* Automatic [Swagger spec](http://swagger.io/introducing-the-open-api-initiative/) for a notebook-defined API in `notebook-http` mode
+* A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
+* A Python 2.7 and 3.3+ compatible implementation 
 
 ## Try It
 
-```
+```bash
 # install from pypi
 pip install jupyter_kernel_gateway
+
 # show all config options
 jupyter kernelgateway --help-all
+
 # run it with default options
 jupyter kernelgateway
 ```
 
-Run `jupyter kernelgateway --help-all` after installation to see the full set of options or see a snapshot of the output below.
+Run `jupyter kernelgateway --help-all` after installation to see the full set of server options. A snapshot of this help appears below.
 
 ```
-Jupyter Kernel Gateway
-
-Provisions kernels and bridges Websocket communication to/from them.
-
-Options
--------
-
-Arguments that take values are actually convenience aliases to full
-Configurables, whose aliases are listed on the help line. For more information
-on full configurables, see '--help-all'.
-
---debug
-    set log level to logging.DEBUG (maximize logging output)
--y
-    Answer yes to any questions instead of prompting.
---generate-config
-    generate default config file
---log-level=<Enum> (Application.log_level)
-    Default: 30
-    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
-    Set the log level by value or name.
---config=<Unicode> (JupyterApp.config_file)
-    Default: ''
-    Full path of a config file.
-
-Class parameters
-----------------
-
-Parameters are set from command-line arguments of the form:
-`--Class.trait=value`. This line is evaluated in Python, so simple expressions
-are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
-
-KernelGatewayApp options
-------------------------
 --KernelGatewayApp.allow_credentials=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
@@ -167,32 +135,35 @@ KernelGatewayApp options
     (KG_SEED_URI env var)
 ```
 
+## `jupyter-websocket` Mode
+
+The `KernelGatewayApp.api` command line argument defaults to `jupyter-websocket`. In this mode, the kernel gateway defines the following web resources:
+
+    * `/api` (metadata)
+    * `/api/kernelspecs` (what kernels are available)
+    * `/api/kernels` (kernel CRUD, with discovery disabled by default, see `--list_kernels`)
+    * `/api/kernels/:kernel_id/channels` (Websocket-to-[ZeroMQ](http://zeromq.org/) transformer for the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html))
+
+Discounting features of the kernel gateway (e.g., token auth), the behavior of these resources is equivalent to that found in the Jupyter Notebook server. The kernel gateway simply imports and extends the handler clases from Jupyter Notebook.
+
 ## `notebook-http` Mode
 
-The `KernelGatewayApp.api` command line argument can be set to `notebook-http`
-to allow a properly annotated notebook to be served via HTTP endpoints. A
-notebook cell must be annotated with a single line comment at the beginning
-describing the HTTP endpoint. An example python cell is:
+The `KernelGatewayApp.api` command line argument can be set to `notebook-http`. In this mode, the kernel gateway exposes annotated cells in the `KernelGatewayApp.seed_uri` notebook as HTTP resources.
+
+To turn a notebook cell into a HTTP handler, you must prefix it with a single line comment. The comment describes the HTTP method and resource, as in the following Python example:
 
 ```python
 # GET /hello/world
 print("hello world")
 ```
 
-This enables an HTTP GET on `/hello/world`. The [api_intro.ipynb](https://github.com/jupyter-incubator/kernel_gateway/blob/master/etc/api_examples/api_intro.ipynb)
-provides a full example notebook for reference.
+The annotation above declares the cell contents as the code to execute when the kernel gateway receives a HTTP GET request for the path `/hello/world`. For other languages, the comment prefix may change, but the rest of the annotation remains the same.
 
-The comment syntax should be supported in every language, but it is a work in
-progress to identify all supported syntaxes.
+### Getting the Request Data
 
-### Processing requests
+Before the gateway invokes an annotated cell, it sets the value of a global notebook variable named `REQUEST` to a JSON string containing information about the request. You may parse this string to access the request properties.
 
-When your cell is invoked there will be a string variable called `REQUEST`
-available in the scope of your cell's code. If your kernel's language requires
-variable declarations, you will need to explicitly define the `REQUEST` variable
-in your notebook. This string is a JSON object representing various properties
-of the request. You will need to parse this string to access the properties.
-For example, in python:
+For example, in Python:
 
 ```python
 # GET /hello/world
@@ -200,69 +171,92 @@ req = json.loads(REQUEST)
 # do something with req
 ```
 
-Path parameters can be specified when registering an endpoint by appending a `:`
-to a value within the path. For example, in python a path with path params
-`firstName` and `lastName` would be defined as:
+You may specify path parameters when registering an endpoint by prepending a `:` to a path segment. For example, a path with params
+`firstName` and `lastName` would be defined as the following in a Python comment:
 
 ```python
 # GET /hello/:firstName/:lastName
 ```
 
-The REQUEST object currently contains the following properties:
+The `REQUEST` object currently contains the following properties:
 
 * `body` - The value of the body, see the [Body And Content Type](#Body-And-Content-Type) section below
 * `args` - An object with keys representing query parameter names and their associated values. A query parameter name may be specified multiple times in a valid URL, and so each value is a sequence (e.g., list, array) of strings from the original URL.
-* `path` - An object of key-value pairs representing path parameters and
-their values.
+* `path` - An object of key-value pairs representing path parameters and their values.
 * `headers` - An object of key-value pairs where a key is a HTTP header name and a value is the HTTP header value. If there are multiple values are specified for a  header, the value will be an array.
 
-### Body And Content Type
-If the HTTP request to the kernel gateway has a `Content-Type` header the `REQUEST.body` value may change. Below is the list of outcomes for various mime-types:
+#### Request Content-Type and Request Body Processing
+
+If the HTTP request to the kernel gateway has a `Content-Type` header the value of `REQUEST.body` may change. Below is the list of outcomes for various mime-types:
 
 * `application/json` -  The `REQUEST.body` will be an object of key-value pairs representing the request body
 * `multipart/form-data` and `application/x-www-form-urlencoded` -  The `REQUEST.body` will be an object of key-value pairs representing the parameters and their values. Files are currently not supported for `multipart/form-data`
 * `text/plain` -  The `REQUEST.body` will be the string value of the body
 * All other types will be sent as strings
 
-### Setting The Response
+### Setting the Response Body
 
-The response for HTTP mode can be set in two ways:
-1. Writing to standard out
-1. A map containing a key-value pairs of mime-type to value
+The response from an annotated cell may be set in one of two ways:
 
-The first method is preferred and is language dependent (e.g. python `print`,
-Scala `println`, R `print`). All standard output during your cell's execution
-will be collected and returned verbatim as the response.
+1. Writing to stdout in a notebook cell
+2. Emitting output in a notebook cell
 
-The second approach is used if no output is collected. This method is dependent
-upon language semantics, kernel implementation, and library usage. The return
-value will be the `content.data` in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4)
-message.
+The first method is preferred because it is explicit: a cell writes to stdout using the appropriate language statement or function (e.g. Python `print`, Scala `println`, R `print`, etc.). The kernel gateway collects all bytes from kernel stdout and returns the entire byte string verbatim as the response body. 
 
-### Setting The Response Metadata
-API cells can have an optional companion response cell to set response metadata (e.g. status, headers, etc.).
-An example comment, in python, for a companion cell would be `# ResponseInfo GET /resource`. The aforementioned companion cell
-would run after the corresponding API cell for `# GET /resource` is run. The companion cell relays response metadata to
-the kernel gateway by printing a well known json structure to standard out. An example of the json structure is as follows:
+The second approach is used if nothing appears on stdout. This method is dependent upon language semantics, kernel implementation, and library usage. The response body will be the `content.data` structure in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4) message.
 
+In both cases, the response defaults to status `200 OK` and `Content-Type: text/plain` if cell execution completes without error. If an error occurs, the status is `500 Internal Server Error`. If the HTTP request method is not one supported at the given path, the status is `405 Not Supported`. If you wish to return custom status or headers, see the next section. 
+
+See the [api_intro.ipynb](etc/api_examples/api_intro.ipynb) notebook for basic request and response examples.
+
+### Setting the Response Status and Headers
+
+Annotated cells may have an optional metadata companion cell that sets the HTTP response status and headers. Consider this Python cell that creates a person entry in a database table and returns the new row ID in a JSON object:
+
+```python
+# POST /person
+req = json.loads(REQUEST)
+row_id = person_table.insert(req['body'])
+res = {'id' : row_id}
+print(json.dumps(res))
 ```
-{
+
+Now consider this companion cell which runs after the cell above and sets a custom response header and status:
+
+```python
+# ResponseInfo GET /hello/world
+print(json.dumps({
     "headers" : {
         "Content-Type" : "application/json"
     },
     "status" : 201
-}
+}))
 ```
 
-Currently, `headers` and `status` are the only values supported. `headers` should be an object of key-value pairs of header
-names to header values for the response. `status` should be an integer value for the response status code.
+Currently, `headers` and `status` are the only fields supported. `headers` should be an object of key-value pairs mapping header names to header values. `status` should be an integer value. Both should be printed to stdout as JSON.
+
+Given the two cells above, a `POST` request to `/person` produces a HTTP response like the following from the kernel gateway, assuming no errors occur:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"id": 123}
+```
+
+See the [setting_response_metadata.ipynb](etc/api_examples/setting_response_metadata.ipynb) notebook for examples of setting response metadata.
+
+### Swagger Spec
+
+The resource `/_api/spec/swagger.json` is automatically generated from the notebook used to define the HTTP API. The response is a simple Swagger spec which can be used with the [Swagger editor](http://editor.swagger.io/#/), a [Swagger ui](https://github.com/swagger-api/swagger-ui), or with any other Swagger-aware tool. 
+
+Currently, every response is listed as having a status of `200 OK`.
 
 ### Running
-The minimum number of arguments needed to run in HTTP mode are
-`--KernelGatewayApp.api=notebook-http` and
-`--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
 
-You can run the kernel gateway in `notebook-http` mode from the Makefile:
+The minimum number of arguments needed to run in HTTP mode are `--KernelGatewayApp.api=notebook-http` and `--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
+
+If you  development, you can run the kernel gateway in `notebook-http` mode using the Makefile in this repository:
 
 ```
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
@@ -272,34 +266,13 @@ make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 With the above Make command, all of the notebooks in `etc/api_examples` are
 mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
 
-The notebook-http mode will honor the `prespawn_count` command line argument.
-This will start the specified number of kernels and execute the `seed_uri`
-notebook across all of them. Requests will be distributed across all of the
-spawned kernels, providing a minimal layer of scalability. An example which
-starts 5 kernels:
+The notebook-http mode will honor the `prespawn_count` command line argument. This will start the specified number of kernels and execute the `seed_uri` notebook on each one. Requests will be distributed across the pool of prespawned kernels, providing a minimal layer of scalability. An example which starts a pool of 5 kernels follows:
 
 ```
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
---KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb" \
---KernelGatewayApp.prespawn_count=5
+    --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb" \
+    --KernelGatewayApp.prespawn_count=5
 ```
-
-### Swagger Spec
-An endpoint of `/_api/spec/swagger.json` is automatically generated from the
-notebook used for the API definition. This is a simple swagger spec which can
-be used with either the [swagger editor](http://editor.swagger.io/#/) or a
-[swagger ui](https://github.com/swagger-api/swagger-ui). Currently, only a
-200 response is listed for each endpoint's response. Features to make this a more
-full featured swagger spec will be added.
-
-## Kernel Gateway Demos
-For a complete set of demos utilizing the default jupyter-websocket and alternative notebook-http modes see
-[Kernel Gateway Demos](https://github.com/jupyter-incubator/kernel_gateway_demos).
-
-## Alternatives
-
-* A Go-based implementation of a kernel gateway has also been proposed (e.g., using [rgbkrk/juno](https://github.com/rgbkrk/juno)). It will have the benefit of being a single binary that can be dropped into any environment more easily than a full Python-stack. A potential downside is that it will need to track changes in the Jupyter API and protocols whereas the Python implementation here does so implicitly.
-* If your client is within the same compute cluster as the kernel and already has good ZeroMQ support, there is no need to use the kernel gateway to enable Websocket access. Talk ZeroMQ directly to the kernel.
 
 ## Develop
 
