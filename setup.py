@@ -24,9 +24,11 @@ setup(
         'kernel_gateway',
         'kernel_gateway.base',
         'kernel_gateway.services',
+        'kernel_gateway.services.cell',
         'kernel_gateway.services.kernels',
         'kernel_gateway.services.kernelspecs',
         'kernel_gateway.services.notebooks',
+        'kernel_gateway.services.swagger',
     ],
     scripts=[
         'scripts/jupyter-kernelgateway'
