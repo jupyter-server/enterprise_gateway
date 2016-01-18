@@ -4,8 +4,9 @@
 import tornado.web
 import json
 from .builders import *
+from ...mixins import TokenAuthorizationMixin, CORSMixin
 
-class SwaggerSpecHandler(tornado.web.RequestHandler):
+class SwaggerSpecHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
     '''A tornado handler to serve requests for a swagger specification.
     Given a collection of cell sources, notebook title and kernel name, this
     handler will generate a swagger specification describing the API.
