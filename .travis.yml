@@ -4,7 +4,11 @@ python:
     - 3.3
     - 3.4
     - 3.5
+install:
+    - pip install wheel
 script:
-    - python setup.py sdist
-    - pip install --no-use-wheel dist/*.tar.gz
+    - python setup.py bdist_wheel sdist
+    - pip install dist/*.whl
     - python -B -m unittest discover
+    - jupyter kernelgateway --help
+    - pip install jupyter_kernel_gateway

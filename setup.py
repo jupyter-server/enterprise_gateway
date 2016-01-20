@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
+import sys
 from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -10,7 +11,7 @@ version_ns = {}
 with open(os.path.join(here, 'kernel_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
-setup(
+setup_args = dict(
     name='jupyter_kernel_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
@@ -45,7 +46,20 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3'
     ],
 )
+
+if 'setuptools' in sys.modules:
+    # setupstools turns entrypoint scripts into executables on windows
+    setup_args['entry_points'] = {
+        'console_scripts': [
+            'jupyter-kernelgateway = kernel_gateway:launch_instance'
+        ]
+    }
+    # Don't bother installing the .py scripts if if we're using entrypoints
+    setup_args.pop('scripts', None)
+
+if __name__ == '__main__':
+    setup(**setup_args)
