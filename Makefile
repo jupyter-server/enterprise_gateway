@@ -40,10 +40,20 @@ dev:
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
 install:
-	$(DOCKER) $(IMAGE) pip install --no-use-wheel dist/*.tar.gz
+	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.whl && \
+		jupyter kernelgateway --help && \
+		pip uninstall -y jupyter_kernel_gateway "
+	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.tar.gz && \
+		jupyter kernelgateway --help && \
+		pip uninstall -y jupyter_kernel_gateway"
+
+bdist:
+	$(DOCKER) $(IMAGE) python setup.py bdist_wheel $(POST_SDIST) \
+	&& rm -rf *.egg-info
 
 sdist:
-	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) && rm -rf *.egg-info
+	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) \
+	&& rm -rf *.egg-info
 
 test: test-python3
 
@@ -62,4 +72,4 @@ else
 endif
 
 release: POST_SDIST=register upload
-release: sdist
+release: bdist sdist
