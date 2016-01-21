@@ -523,6 +523,22 @@ class TestRelocatedGatewayApp(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 200)
 
+class TestFixBaseUrlGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.base_url = 'fake/path'
+
+    @gen_test
+    def test_base_url(self):
+        '''Server should mount resources under fixed base.'''
+        self.app.web_app.settings['kg_list_kernels'] = True
+
+        # Should exist under path
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/api/kernels'),
+            method='GET'
+        )
+        self.assertEqual(response.code, 200)
+
 class TestSeedGatewayApp(TestGatewayAppBase):
     def setup_app(self):
         self.app.seed_uri = os.path.join(RESOURCES,
