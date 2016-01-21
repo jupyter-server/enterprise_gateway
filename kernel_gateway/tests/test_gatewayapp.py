@@ -137,6 +137,28 @@ class TestGatewayApp(TestGatewayAppBase):
         self.assertEqual(response.code, 404)
 
     @gen_test
+    def test_check_origin(self):
+        '''Allow origin setting should pass through to base handlers.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernelspecs'),
+            method='GET',
+            headers={'Origin': 'fake.com:8888'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        app = self.get_app()
+        app.settings['allow_origin'] = '*'
+
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernelspecs'),
+            method='GET',
+            headers={'Origin': 'fake.com:8888'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+
+    @gen_test
     def test_config_bad_api_value(self):
         '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
         def _set_api():
