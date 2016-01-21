@@ -291,7 +291,7 @@ class KernelGatewayApp(JupyterApp):
                 default_base_handlers
             ):
                 # Create a new handler pattern rooted at the base_url
-                pattern = url_path_join(self.base_url, handler[0])
+                pattern = url_path_join('/', self.base_url, handler[0])
                 # Some handlers take args, so retain those in addition to the
                 # handler class ref
                 new_handler = tuple([pattern] + list(handler[1:]))
