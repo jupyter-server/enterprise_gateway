@@ -314,4 +314,4 @@ make dev
 To access the gateway instance:
 
 1. Run `docker-machine ls` and note the IP of the dev machine.
-2. Visit http://THAT_IP:8888/api/kernels in your browser
+2. Visit http://THAT_IP:8888/api in your browser. (Note that the route `/api/kernels` is not enabled by default for security. See the `--KernelGatewayApp.list_kernels` parameter above.)
