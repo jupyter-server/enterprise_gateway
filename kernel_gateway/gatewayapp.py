@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
+import logging
 import nbformat
 
 try:
@@ -296,6 +297,9 @@ class KernelGatewayApp(JupyterApp):
                 # handler class ref
                 new_handler = tuple([pattern] + list(handler[1:]))
                 handlers.append(new_handler)
+
+        # Configure the tornado logging level too
+        logging.getLogger().setLevel(self.log_level)
 
         self.web_app = web.Application(
             handlers=handlers,
