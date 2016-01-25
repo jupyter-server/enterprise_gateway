@@ -39,6 +39,12 @@ dev:
 	@$(DOCKER) -p 8888:8888 $(IMAGE) \
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
+etc/api_examples/%:
+	$(DOCKER) -p 8888:8888 $(IMAGE) \
+		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' \
+			--KernelGatewayApp.api='notebook-http' \
+			--KernelGatewayApp.seed_uri=/srv/kernel_gateway/$@.ipynb $(ARGS)
+
 install:
 	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.whl && \
 		jupyter kernelgateway --help && \

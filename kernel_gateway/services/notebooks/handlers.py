@@ -28,9 +28,11 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
         Collects all outputs from the kernel until an execution state of idle is received.
         This function should be used to generate partial functions where the newly derived
         function only takes msg as an argument.
+
         :param result_accumulator: Accumulates results across all messages received
         :param future: A future used to set the result (errors via exceptions)
-        :param parent_header: The parent header value in the messages, indicating how results map to requests
+        :param parent_header: The parent header value in the messages, indicating how
+            results map to requests
         :param msg: The execution content/state message received.
         '''
         if msg['parent_header']['msg_id'] == parent_header:
@@ -45,7 +47,10 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
                 result_accumulator['content'].append(msg['content']['data'])
             # Accumulate the stream messages
             elif msg['header']['msg_type'] == 'stream':
-                result_accumulator['content'].append((msg['content']['text']))
+                # Only take stream output if it is on stdout or if the kernel
+                # is non-confirming and does not name the stream
+                if 'name' not in msg['content'] or msg['content']['name'] == 'stdout':
+                    result_accumulator['content'].append((msg['content']['text']))
             # Store the error message
             elif msg['header']['msg_type'] == 'error':
                 error_name = msg['content']['ename']
