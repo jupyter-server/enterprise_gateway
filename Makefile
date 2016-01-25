@@ -73,8 +73,8 @@ _test:
 ifeq ($(TEST),)
 	$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest discover"
 else
-# e.g., make test TEST="TestGatewayAppConfig"
-	@$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest kernel_gateway.tests.test_gatewayapp.$(TEST)"
+# e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
+	@$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest kernel_gateway.tests.$(TEST)"
 endif
 
 release: POST_SDIST=register upload
