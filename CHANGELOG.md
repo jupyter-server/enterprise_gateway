@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 (2016-01-25)
+
+* Fix CORS and auth token headers for `/_api/spec/swagger.json` resource
+* Fix `allow_origin` handling for non-browser clients
+* Ensure base path is prefixed with a forward slash
+* Filter stderr from all responses
+* Set Tornado logging level and Jupyter logging level together with `--log-level`
+
 ## 0.3.0 (2016-01-15)
 
 * Support setting of status and headers in notebook-http mode
