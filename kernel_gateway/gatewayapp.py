@@ -27,6 +27,8 @@ from tornado.log import enable_pretty_logging
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
+from .services.sessions.handlers import default_handlers as default_kernelspec_handlers
+from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.manager import SeedingMappingKernelManager
 from .services.kernels.pool import KernelPool
 from .base.handlers import default_handlers as default_base_handlers
@@ -231,6 +233,9 @@ class KernelGatewayApp(JupyterApp):
             kernel_spec_manager=self.kernel_spec_manager
         )
 
+        self.session_manager = SessionManager(self.kernel_manager)
+        self.contents_manager = None
+
         if self.prespawn_count:
             if self.max_kernels and self.prespawn_count > self.max_kernels:
                 raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
@@ -304,6 +309,8 @@ class KernelGatewayApp(JupyterApp):
         self.web_app = web.Application(
             handlers=handlers,
             kernel_manager=self.kernel_manager,
+            session_manager=self.session_manager,
+            contents_manager=self.contents_manager,
             kernel_spec_manager=self.kernel_manager.kernel_spec_manager,
             kg_auth_token=self.auth_token,
             kg_allow_credentials=self.allow_credentials,
