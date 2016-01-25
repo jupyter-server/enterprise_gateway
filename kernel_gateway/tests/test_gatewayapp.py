@@ -849,6 +849,16 @@ class TestAPIGatewayApp(TestGatewayAppBase):
         self.assertEqual(response.code, 500, 'Cell with error did not return 500 status code.')
 
     @gen_test
+    def test_api_stderr_endpoint(self):
+        '''stderr output in a cell should be dropped'''
+        response = yield self.http_client.fetch(
+            self.get_url('/stderr'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.body, b'I am text on stdout\n', 'Unexpected text in response')
+
+    @gen_test
     def test_api_unsupported_method(self):
         '''Endpoints which are not registered should return 404 HTTP status
         '''
