@@ -626,3 +626,17 @@ class TestSessions(TestJupyterWebsocket):
         self.assertEqual(len(sessions), 1)
         self.assertEqual(sessions[0]['id'], session['id'])
 
+        # Delete the session
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions/'+session['id']),
+            method='DELETE'
+        )
+        self.assertEqual(response.code, 204)
+
+        # Make sure the list is empty
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions')
+        )
+        self.assertEqual(response.code, 200)
+        sessions = json_decode(response.body)
+        self.assertEqual(len(sessions), 0)

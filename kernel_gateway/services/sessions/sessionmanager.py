@@ -10,7 +10,6 @@ from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
 from ipython_genutils.py3compat import unicode_type
 
-
 class SessionManager(LoggingConfigurable):
 
     def __init__(self, kernel_manager):

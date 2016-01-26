@@ -27,7 +27,7 @@ from tornado.log import enable_pretty_logging
 
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
-from .services.sessions.handlers import default_handlers as default_kernelspec_handlers
+from .services.sessions.handlers import default_handlers as default_session_handlers
 from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.manager import SeedingMappingKernelManager
 from .services.kernels.pool import KernelPool
@@ -294,6 +294,7 @@ class KernelGatewayApp(JupyterApp):
             for handler in (
                 default_kernel_handlers +
                 default_kernelspec_handlers +
+                default_session_handlers +
                 default_base_handlers
             ):
                 # Create a new handler pattern rooted at the base_url
