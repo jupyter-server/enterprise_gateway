@@ -22,7 +22,7 @@ class SessionManager(LoggingConfigurable):
         return bool([item for item in self._sessions if item['path'] == path])
 
     def new_session_id(self):
-        "Create a uuid for a new session"
+        """Create a uuid for a new session"""
         return unicode_type(uuid.uuid4())
 
     def create_session(self, path=None, kernel_name=None):

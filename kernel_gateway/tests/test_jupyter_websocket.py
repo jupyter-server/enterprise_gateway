@@ -600,6 +600,7 @@ class TestBadSeedURI(TestJupyterWebsocket):
 class TestSessions(TestJupyterWebsocket):
     @gen_test
     def test_get_sessions(self):
+        self.app.web_app.settings['kg_list_kernels'] = True
         '''Server should respond with session information.'''
         response = yield self.http_client.fetch(
             self.get_url('/api/sessions')
