@@ -1,3 +1,4 @@
+sudo: false
 language: python
 python:
     - 2.7
@@ -12,3 +13,5 @@ script:
     - python -B -m unittest discover
     - jupyter kernelgateway --help
     - pip install jupyter_kernel_gateway
+matrix:
+    fast_finish: true
