@@ -48,6 +48,8 @@ jupyter kernelgateway --help-all
 jupyter kernelgateway
 ```
 
+As an alternative to installing the kernel gateway from pypi, one can also use the [minimal-kernel](https://hub.docker.com/r/jupyter/minimal-kernel/) image from the [docker-stacks](https://github.com/jupyter/docker-stacks) project to try out its functionalities.  
+
 Run `jupyter kernelgateway --help-all` after installation to see the full set of server options. A snapshot of this help appears below.
 
 ```
