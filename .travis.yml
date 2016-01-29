@@ -1,9 +1,11 @@
+sudo: false
 language: python
 python:
     - 2.7
     - 3.3
     - 3.4
-    - 3.5
+    # no 3.5 until stalls stop on travis
+    #- 3.5
 install:
     - pip install wheel
 script:
@@ -12,3 +14,5 @@ script:
     - python -B -m unittest discover
     - jupyter kernelgateway --help
     - pip install jupyter_kernel_gateway
+matrix:
+    fast_finish: true
