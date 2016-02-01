@@ -43,8 +43,8 @@ class KernelGatewayApp(JupyterApp):
     description = '''
         Jupyter Kernel Gateway
 
-        Provisions kernels and bridges Websocket communication
-        to/from them.
+        Provisions Jupyter kernels and proxies HTTP/Websocket traffic
+        to them.
     '''
     # Server IP / PORT binding
     port_env = 'KG_PORT'
@@ -156,7 +156,8 @@ class KernelGatewayApp(JupyterApp):
     list_kernels_env = 'KG_LIST_KERNELS'
     list_kernels = Bool(config=True,
         help='''Enables listing the running kernels through /api/kernels
-            (KG_LIST_KERNELS env var). Jupyter servers normally allow this.'''
+            and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
+            allows this by default but kernel gateway does not .'''
     )
     def _list_kernels_default(self):
         return os.getenv(self.list_kernels_env, 'False') == 'True'

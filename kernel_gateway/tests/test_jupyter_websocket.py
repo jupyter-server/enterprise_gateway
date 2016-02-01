@@ -96,7 +96,6 @@ class TestDefaults(TestJupyterWebsocket):
         # Set token requirement
         app = self.get_app()
         app.settings['kg_auth_token'] = 'fake-token'
-        app.settings['kg_list_kernels'] = True
 
         # Requst API without the token
         response = yield self.http_client.fetch(
@@ -115,7 +114,7 @@ class TestDefaults(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 200)
 
-        # Requst kernelspecs without the token
+        # Request kernelspecs without the token
         response = yield self.http_client.fetch(
             self.get_url('/api/kernelspecs'),
             method='GET',
@@ -351,32 +350,84 @@ class TestDefaults(TestJupyterWebsocket):
         self.assertTrue('raise NoSuchKernel' in str(response.body))
 
     @gen_test
-    def test_enable_kernel_list(self):
-        '''The listing of running kernels can be enabled.'''
-        app = self.get_app()
-        # default
-        app.settings.pop('kg_list_kernels', None)
+    def test_no_discovery(self):
+        '''The list of kernels / sessions should be forbidden by default.'''
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
             raise_error=False
         )
         self.assertEqual(response.code, 403)
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions'),
+            raise_error=False
+        )
+        self.assertEqual(response.code, 403)
 
-        # set to True
+    @gen_test
+    def test_crud_sessions(self):
+        '''Server should create, list, and delete sessions.'''
+        app = self.get_app()
         app.settings['kg_list_kernels'] = True
+
+        # Ensure no sessions by default
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions')
+        )
+        self.assertEqual(response.code, 200)
+        sessions = json_decode(response.body)
+        self.assertEqual(len(sessions), 0)
+
+        # Launch a session
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions'),
+            method='POST',
+            body='{"id":"any","notebook":{"path":"anywhere"},"kernel":{"name":"python"}}'
+        )
+        self.assertEqual(response.code, 201)
+        session = json_decode(response.body)
+
+        # Check the list again
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions')
+        )
+        self.assertEqual(response.code, 200)
+        sessions = json_decode(response.body)
+        self.assertEqual(len(sessions), 1)
+        self.assertEqual(sessions[0]['id'], session['id'])
+
+        # Delete the session
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions/'+session['id']),
+            method='DELETE'
+        )
+        self.assertEqual(response.code, 204)
+
+        # Make sure the list is empty
+        response = yield self.http_client.fetch(
+            self.get_url('/api/sessions')
+        )
+        self.assertEqual(response.code, 200)
+        sessions = json_decode(response.body)
+        self.assertEqual(len(sessions), 0)
+
+
+class TestEnableDiscovery(TestJupyterWebsocket):
+    def setup_app(self):
+        self.app.list_kernels = True
+
+    @gen_test
+    def test_enable_kernel_list(self):
+        '''The list of kernels and sessions should be available.'''
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
         )
         self.assertEqual(response.code, 200)
         self.assertTrue('[]' in str(response.body))
-
-        # set to False
-        app.settings['kg_list_kernels'] = False
         response = yield self.http_client.fetch(
-            self.get_url('/api/kernels'),
-            raise_error=False
+            self.get_url('/api/sessions'),
         )
-        self.assertEqual(response.code, 403)
+        self.assertEqual(response.code, 200)
+        self.assertTrue('[]' in str(response.body))
 
 class TestPrespawnKernels(TestJupyterWebsocket):
     def setup_app(self):
@@ -596,48 +647,3 @@ class TestBadSeedURI(TestJupyterWebsocket):
         app = KernelGatewayApp()
         app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
         self.assertRaises(NoSuchKernel, app.init_configurables)
-
-class TestSessions(TestJupyterWebsocket):
-    @gen_test
-    def test_get_sessions(self):
-        self.app.web_app.settings['kg_list_kernels'] = True
-        '''Server should respond with session information.'''
-        response = yield self.http_client.fetch(
-            self.get_url('/api/sessions')
-        )
-        self.assertEqual(response.code, 200)
-        sessions = json_decode(response.body)
-        self.assertEqual(len(sessions), 0)
-
-        # Launch a session
-        response = yield self.http_client.fetch(
-            self.get_url('/api/sessions'),
-            method='POST',
-            body='{"id":"any","notebook":{"path":"anywhere"},"kernel":{"name":"python"}}'
-        )
-        self.assertEqual(response.code, 201)
-        session = json_decode(response.body)
-
-        # Check the list again
-        response = yield self.http_client.fetch(
-            self.get_url('/api/sessions')
-        )
-        self.assertEqual(response.code, 200)
-        sessions = json_decode(response.body)
-        self.assertEqual(len(sessions), 1)
-        self.assertEqual(sessions[0]['id'], session['id'])
-
-        # Delete the session
-        response = yield self.http_client.fetch(
-            self.get_url('/api/sessions/'+session['id']),
-            method='DELETE'
-        )
-        self.assertEqual(response.code, 204)
-
-        # Make sure the list is empty
-        response = yield self.http_client.fetch(
-            self.get_url('/api/sessions')
-        )
-        self.assertEqual(response.code, 200)
-        sessions = json_decode(response.body)
-        self.assertEqual(len(sessions), 0)
