@@ -33,7 +33,7 @@ See the [jupyter-incubator/kernel_gateway_demos](https://github.com/jupyter-incu
 * Option to allow downloading of the notebook source when running `notebook-http` mode
 * Automatic [Swagger spec](http://swagger.io/introducing-the-open-api-initiative/) for a notebook-defined API in `notebook-http` mode
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
-* A Python 2.7 and 3.3+ compatible implementation 
+* A Python 2.7 and 3.3+ compatible implementation
 
 ## Try It
 
@@ -53,6 +53,8 @@ As an alternative to installing the kernel gateway from pypi, one can also use t
 Run `jupyter kernelgateway --help-all` after installation to see the full set of server options. A snapshot of this help appears below.
 
 ```
+KernelGatewayApp options
+------------------------
 --KernelGatewayApp.allow_credentials=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
@@ -105,8 +107,9 @@ Run `jupyter kernelgateway --help-all` after installation to see the full set of
     IP address on which to listen (KG_IP env var)
 --KernelGatewayApp.list_kernels=<Bool>
     Default: False
-    Enables listing the running kernels through /api/kernels (KG_LIST_KERNELS
-    env var). Jupyter servers normally allow this.
+    Enables listing the running kernels through /api/kernels and /api/sessions
+    (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this by default but
+    kernel gateway does not .
 --KernelGatewayApp.log_datefmt=<Unicode>
     Default: '%Y-%m-%d %H:%M:%S'
     The date format used by logging formatters for %(asctime)s
@@ -145,6 +148,7 @@ The `KernelGatewayApp.api` command line argument defaults to `jupyter-websocket`
 * `/api/kernelspecs` (what kernels are available)
 * `/api/kernels` (kernel CRUD, with discovery disabled by default, see `--list_kernels`)
 * `/api/kernels/:kernel_id/channels` (Websocket-to-[ZeroMQ](http://zeromq.org/) transformer for the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html))
+* `/api/sessions` (session CRUD, for associating information with kernels, discovery disabled by default, see `--list_kernels`)
 
 Discounting features of the kernel gateway (e.g., token auth), the behavior of these resources is equivalent to that found in the Jupyter Notebook server. The kernel gateway simply imports and extends the handler clases from Jupyter Notebook.
 
@@ -202,11 +206,11 @@ The response from an annotated cell may be set in one of two ways:
 1. Writing to stdout in a notebook cell
 2. Emitting output in a notebook cell
 
-The first method is preferred because it is explicit: a cell writes to stdout using the appropriate language statement or function (e.g. Python `print`, Scala `println`, R `print`, etc.). The kernel gateway collects all bytes from kernel stdout and returns the entire byte string verbatim as the response body. 
+The first method is preferred because it is explicit: a cell writes to stdout using the appropriate language statement or function (e.g. Python `print`, Scala `println`, R `print`, etc.). The kernel gateway collects all bytes from kernel stdout and returns the entire byte string verbatim as the response body.
 
 The second approach is used if nothing appears on stdout. This method is dependent upon language semantics, kernel implementation, and library usage. The response body will be the `content.data` structure in the Jupyter [`execute_result`](http://jupyter-client.readthedocs.org/en/latest/messaging.html#id4) message.
 
-In both cases, the response defaults to status `200 OK` and `Content-Type: text/plain` if cell execution completes without error. If an error occurs, the status is `500 Internal Server Error`. If the HTTP request method is not one supported at the given path, the status is `405 Not Supported`. If you wish to return custom status or headers, see the next section. 
+In both cases, the response defaults to status `200 OK` and `Content-Type: text/plain` if cell execution completes without error. If an error occurs, the status is `500 Internal Server Error`. If the HTTP request method is not one supported at the given path, the status is `405 Not Supported`. If you wish to return custom status or headers, see the next section.
 
 See the [api_intro.ipynb](etc/api_examples/api_intro.ipynb) notebook for basic request and response examples.
 
@@ -249,7 +253,7 @@ See the [setting_response_metadata.ipynb](etc/api_examples/setting_response_meta
 
 ### Swagger Spec
 
-The resource `/_api/spec/swagger.json` is automatically generated from the notebook used to define the HTTP API. The response is a simple Swagger spec which can be used with the [Swagger editor](http://editor.swagger.io/#/), a [Swagger ui](https://github.com/swagger-api/swagger-ui), or with any other Swagger-aware tool. 
+The resource `/_api/spec/swagger.json` is automatically generated from the notebook used to define the HTTP API. The response is a simple Swagger spec which can be used with the [Swagger editor](http://editor.swagger.io/#/), a [Swagger ui](https://github.com/swagger-api/swagger-ui), or with any other Swagger-aware tool.
 
 Currently, every response is listed as having a status of `200 OK`.
 

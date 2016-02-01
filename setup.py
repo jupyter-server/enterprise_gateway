@@ -28,6 +28,7 @@ setup_args = dict(
         'kernel_gateway.services.cell',
         'kernel_gateway.services.kernels',
         'kernel_gateway.services.kernelspecs',
+        'kernel_gateway.services.sessions',
         'kernel_gateway.services.notebooks',
         'kernel_gateway.services.swagger',
     ],
