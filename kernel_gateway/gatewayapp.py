@@ -236,7 +236,10 @@ class KernelGatewayApp(JupyterApp):
             kernel_spec_manager=self.kernel_spec_manager
         )
 
-        self.session_manager = SessionManager(self.kernel_manager)
+        self.session_manager = SessionManager(
+            log=self.log,
+            kernel_manager=self.kernel_manager
+        )
         self.contents_manager = None
 
         if self.prespawn_count:
