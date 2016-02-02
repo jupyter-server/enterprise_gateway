@@ -71,10 +71,10 @@ test-python3: _test
 _test: TEST?=
 _test:
 ifeq ($(TEST),)
-	$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest discover"
+	$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) nosetests"
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	@$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) python -B -m unittest kernel_gateway.tests.$(TEST)"
+	@$(DOCKER) $(IMAGE) bash -c  "$(PRE_CMD) nosetests kernel_gateway.tests.$(TEST)"
 endif
 
 release: POST_SDIST=register upload

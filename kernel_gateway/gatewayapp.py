@@ -30,7 +30,7 @@ from .services.kernelspecs.handlers import default_handlers as default_kernelspe
 from .services.sessions.handlers import default_handlers as default_session_handlers
 from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.manager import SeedingMappingKernelManager
-from .services.kernels.pool import KernelPool
+from .services.kernels.pool import KernelPool, ManagedKernelPool
 from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from .services.cell.parser import APICellParser
@@ -218,13 +218,15 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         '''
-        Initialize a kernel manager, optionally with notebook source to run
-        on all launched kernels. Pre-spawn the requested number of kernels too.
+        Initialize all configurable objects including a kernel manager, kernel
+        spec manager, session manager, and kernel pool. Optionally, load a
+        notebook and prespawn the requested number of kernels.
         '''
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
         self.seed_notebook = None
         if self.seed_uri is not None:
+            # Note: must be set before instantiating a SeedingMappingKernelManager
             self.seed_notebook = self._load_notebook(self.seed_uri)
 
         self.kernel_manager = SeedingMappingKernelManager(
@@ -234,7 +236,10 @@ class KernelGatewayApp(JupyterApp):
             kernel_spec_manager=self.kernel_spec_manager
         )
 
-        self.session_manager = SessionManager(self.kernel_manager)
+        self.session_manager = SessionManager(
+            log=self.log,
+            kernel_manager=self.kernel_manager
+        )
         self.contents_manager = None
 
         if self.prespawn_count:
@@ -242,9 +247,17 @@ class KernelGatewayApp(JupyterApp):
                 raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
                     self.prespawn_count, self.max_kernels)
                 )
-        elif not self.prespawn_count and self.api == 'notebook-http':
-            self.prespawn_count = 1
-        self.kernel_pool = KernelPool(self.prespawn_count, self.kernel_manager)
+
+        if self.api == 'notebook-http':
+            self.kernel_pool = ManagedKernelPool(
+                self.prespawn_count,
+                self.kernel_manager
+            )
+        else:
+            self.kernel_pool = KernelPool(
+                self.prespawn_count,
+                self.kernel_manager
+            )
 
     def init_webapp(self):
         '''
@@ -252,7 +265,6 @@ class KernelGatewayApp(JupyterApp):
         manager in settings to appease handlers that try to reference it there.
         Include additional options in settings as well.
         '''
-
         # Redefine handlers off the base_url path
         handlers = []
         if self.api == 'notebook-http':
@@ -362,6 +374,9 @@ class KernelGatewayApp(JupyterApp):
         self.io_loop.add_callback(_stop)
 
     def shutdown(self):
+        '''
+        Stop all kernels in the pool.
+        '''
         self.kernel_pool.shutdown()
 
 launch_instance = KernelGatewayApp.launch_instance

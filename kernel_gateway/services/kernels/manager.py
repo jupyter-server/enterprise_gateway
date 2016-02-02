@@ -40,6 +40,14 @@ class SeedingMappingKernelManager(MappingKernelManager):
 
         return self._seed_source
 
+    def start_seeded_kernel(self, *args, **kwargs):
+        '''
+        Start a kernel using the language specified in the seed notebook. If
+        there is no seed notebook,  start a kernel using the other parameters
+        specified.
+        '''
+        self.start_kernel(kernel_name=self.seed_kernelspec, *args, **kwargs)
+
     def start_kernel(self, *args, **kwargs):
         '''
         Starts a kernel and then optionally executes a list of code cells on it

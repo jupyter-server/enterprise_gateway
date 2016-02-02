@@ -11,8 +11,7 @@ from traitlets.config.configurable import LoggingConfigurable
 from ipython_genutils.py3compat import unicode_type
 
 class SessionManager(LoggingConfigurable):
-
-    def __init__(self, kernel_manager):
+    def __init__(self, kernel_manager, *args, **kwargs):
         self.kernel_manager = kernel_manager
         self._sessions = []
         self._columns = ['session_id', 'path', 'kernel_id']
@@ -36,11 +35,11 @@ class SessionManager(LoggingConfigurable):
 
     def save_session(self, session_id, path=None, kernel_id=None):
         """Saves the items for the session with the given session_id
-        
+
         Given a session_id (and any other of the arguments), this method
         creates a row in the sqlite session database that holds the information
         for a session.
-        
+
         Parameters
         ----------
         session_id : str
@@ -49,14 +48,14 @@ class SessionManager(LoggingConfigurable):
             the path for the given notebook
         kernel_id : str
             a uuid for the kernel associated with this session
-        
+
         Returns
         -------
         model : dict
             a dictionary of the session model
         """
-        self._sessions.append({'session_id': session_id, 
-                               'path':path, 
+        self._sessions.append({'session_id': session_id,
+                               'path':path,
                                'kernel_id': kernel_id})
 
         return self.get_session(session_id=session_id)
@@ -67,7 +66,7 @@ class SessionManager(LoggingConfigurable):
 
     def get_session(self, **kwargs):
         """Returns the model for a particular session.
-        
+
         Takes a keyword argument and searches for the value in the session
         database, then returns the rest of the session's info.
 
@@ -80,7 +79,7 @@ class SessionManager(LoggingConfigurable):
         Returns
         -------
         model : dict
-            returns a dictionary that includes all the information from the 
+            returns a dictionary that includes all the information from the
             session described by the kwarg.
         """
         if not kwargs:
@@ -102,17 +101,17 @@ class SessionManager(LoggingConfigurable):
 
     def update_session(self, session_id, **kwargs):
         """Updates the values in the session database.
-        
+
         Changes the values of the session with the given session_id
-        with the values from the keyword arguments. 
-        
+        with the values from the keyword arguments.
+
         Parameters
         ----------
         session_id : str
             a uuid that identifies a session in the sqlite3 database
         **kwargs : str
             the key must correspond to a column title in session database,
-            and the value replaces the current value in the session 
+            and the value replaces the current value in the session
             with session_id.
         """
         if not kwargs:
@@ -123,7 +122,7 @@ class SessionManager(LoggingConfigurable):
 
         if not row:
             raise KeyError
-        
+
         self._sessions.remove(row)
 
         if 'path' in kwargs:
