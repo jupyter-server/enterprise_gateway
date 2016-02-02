@@ -541,34 +541,32 @@ class TestSeedURI(TestJupyterWebsocket):
         ws.close()
 
 class TestKernelLanguageSupport(TestJupyterWebsocket):
+    '''
+    Test explicit kernel language requests. Nothing fancy so that the test can
+    run in barebones environments like Travis.
+    '''
     def setup_app(self):
         self.app.prespawn_count = 1
         self.app.seed_uri = os.path.join(RESOURCES,
-                                         'zen{}.ipynb'.format(sys.version_info.major))
+            'zen{}.ipynb'.format(sys.version_info.major))
+
     @coroutine
     def spawn_kernel(self):
-        '''
-        Override to let test spawn a kernel with a specific Python version.
-        '''
+        '''Explicitly set the Python kernel version number when spawning.'''
         kernel_body = json.dumps({"name":"python{}".format(sys.version_info.major)})
         ws = yield super(TestKernelLanguageSupport, self).spawn_kernel(kernel_body)
         raise Return(ws)
 
     @gen_test
-    def test_seed_kernel_name_language_support(self):
-        '''Python2 Kernel should have the correct name'''
-        _, kernel_id = yield self.app.kernel_pool.acquire()
-        kernel = self.app.kernel_manager.get_kernel(kernel_id)
-        self.assertEqual(kernel.kernel_name,'python{}'.format(sys.version_info.major))
-
-    @gen_test
     def test_seed_language_support(self):
-        '''Python2 Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
+        '''Kernel should have variables preseeded from notebook.'''
         ws = yield self.spawn_kernel()
+
         if sys.version_info.major == 2:
             code = 'print this.s'
         else:
             code = 'print(this.s)'
+
         # Print the encoded "zen of python" string, the kernel should have
         # it imported
         ws.write_message(json_encode({

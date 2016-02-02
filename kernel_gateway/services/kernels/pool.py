@@ -4,29 +4,45 @@
 from tornado.locks import Semaphore
 from tornado import gen
 
-
 class KernelPool(object):
     '''
-    A class to maintain a pool of kernel and control access to the individual kernels.
-    Kernels are protected by a borrower/lender pattern.
+    Spawns a pool of kernels and cleans them up when shut down.
     '''
     def __init__(self, prespawn_count, kernel_manager):
-
-        if prespawn_count is None:
+        self.kernel_manager = kernel_manager
+        # Make sure we've got a int
+        if not prespawn_count:
             prespawn_count = 0
+        for _ in range(prespawn_count):
+            self.kernel_manager.start_seeded_kernel()
+
+    def shutdown(self):
+        kids = self.kernel_manager.list_kernel_ids()
+        for kid in kids:
+            self.kernel_manager.shutdown_kernel(kid, now=True)
+
+class ManagedKernelPool(KernelPool):
+    '''
+    Spawns a pool of kernels. Manages access to individual kernels using a
+    borrower/lender pattern. Cleans them all up when shut down.
+    '''
+    def __init__(self, prespawn_count, kernel_manager):
+        # Make sure there's at least one kernel as a delegate
+        if not prespawn_count:
+            prespawn_count = 1
+
+        super(ManagedKernelPool, self).__init__(prespawn_count, kernel_manager)
 
         self.kernel_clients = {}
         self.on_recv_funcs = {}
-        self.kernel_manager = kernel_manager
         self.pool_index = 0
         self.kernel_pool = []
-        self.kernel_semaphore = Semaphore(prespawn_count)
 
-        for _ in range(prespawn_count):
-            if self.kernel_manager.parent.seed_notebook:
-                kernel_id = kernel_manager.start_kernel(kernel_name=self.kernel_manager.parent.seed_notebook['metadata']['kernelspec']['name'])
-            else:
-                kernel_id = kernel_manager.start_kernel()
+        kernel_ids = self.kernel_manager.list_kernel_ids()
+        self.kernel_semaphore = Semaphore(len(kernel_ids))
+
+        # Connect to any prespawned kernels
+        for kernel_id in kernel_ids:
             self.kernel_clients[kernel_id] = kernel_manager.get_kernel(kernel_id).client()
             self.kernel_pool.append(kernel_id)
             iopub = self.kernel_manager.connect_iopub(kernel_id)
@@ -37,7 +53,7 @@ class KernelPool(object):
         '''
         Returns a kernel client and id for use and removes the kernel the resource pool.
         Kernels must be returned via the release method.
-        :return:Returns a kernel client and a kernel id
+        :return: Returns a kernel client and a kernel id
         '''
         yield self.kernel_semaphore.acquire()
         kernel_id = self.kernel_pool[0]
@@ -81,6 +97,4 @@ class KernelPool(object):
             self.kernel_manager.shutdown_kernel(kid, now=True)
 
         # Any remaining kernels that were not created for our pool should be shutdown
-        kids = self.kernel_manager.list_kernel_ids()
-        for kid in kids:
-            self.kernel_manager.shutdown_kernel(kid, now=True)
+        super(ManagedKernelPool, self).shutdown()
