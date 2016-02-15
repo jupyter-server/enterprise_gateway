@@ -4,9 +4,12 @@
 import tornado.web
 import json
 from .manager import activity
-from ...mixins import TokenAuthorizationMixin, CORSMixin
+from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
-class ActivityHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
+class ActivityHandler(TokenAuthorizationMixin,
+                      CORSMixin,
+                      JSONErrorsMixin,
+                      tornado.web.RequestHandler):
 
     def get(self, **kwargs):
         if not self.settings.get('kg_list_kernels'):

@@ -8,12 +8,15 @@ from .request_utils import (parse_body, parse_args, format_request,
 
 from tornado import gen
 from tornado.concurrent import Future
-from ...mixins import TokenAuthorizationMixin, CORSMixin
+from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from functools import partial
-from .errors import UnsupportedMethodError,CodeExecutionError
+from .errors import UnsupportedMethodError, CodeExecutionError
 import os
 
-class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.RequestHandler):
+class NotebookAPIHandler(TokenAuthorizationMixin,
+                         CORSMixin,
+                         JSONErrorsMixin,
+                         tornado.web.RequestHandler):
     '''Executes annotated notebook cells in response to associated HTTP requests.'''
 
     def initialize(self, sources, response_sources, kernel_pool, kernel_name):
@@ -159,7 +162,10 @@ class NotebookAPIHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.Request
     def options(self, **kwargs):
         self.finish()
 
-class NotebookDownloadHandler(TokenAuthorizationMixin, CORSMixin, tornado.web.StaticFileHandler):
+class NotebookDownloadHandler(TokenAuthorizationMixin,
+                              CORSMixin,
+                              JSONErrorsMixin,
+                              tornado.web.StaticFileHandler):
     '''Allows clients to download the original notebook behind the HTTP facade.'''
     def initialize(self, path):
         self.dirname, self.filename = os.path.split(path)

@@ -1,18 +1,17 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import json
 import tornado
-from notebook.base.handlers import json_errors
 import notebook.services.kernels.handlers as notebook_handlers
-from ...mixins import TokenAuthorizationMixin, CORSMixin
+from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from ...services.activity.manager import activity, LAST_MESSAGE_TO_CLIENT, LAST_MESSAGE_TO_KERNEL, LAST_TIME_STATE_CHANGED, BUSY, CONNECTIONS, LAST_CLIENT_CONNECT, LAST_CLIENT_DISCONNECT
 from datetime import datetime
-import json
 
 class MainKernelHandler(TokenAuthorizationMixin,
                         CORSMixin,
+                        JSONErrorsMixin,
                         notebook_handlers.MainKernelHandler):
-    @json_errors
     def post(self):
         '''
         Honors the max number of allowed kernels configuration setting. Raises
@@ -27,7 +26,6 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
         super(MainKernelHandler, self).post()
 
-    @json_errors
     def get(self):
         '''
         Denies returning a list of running kernels unless explicitly
@@ -56,17 +54,17 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
 class KernelHandler(TokenAuthorizationMixin,
                     CORSMixin,
+                    JSONErrorsMixin,
                     notebook_handlers.KernelHandler):
     '''This class will remove a kernel from the activity store when it is delted.
     '''
-    @json_errors
     def delete(self, kernel_id):
         if self.settings.get('kg_list_kernels'):
             activity.remove(kernel_id)
         super(KernelHandler, self).delete(kernel_id)
 
 class ZMQChannelsHandler(TokenAuthorizationMixin,
-                        notebook_handlers.ZMQChannelsHandler):
+                         notebook_handlers.ZMQChannelsHandler):
     '''This class listens for messages coming to and from the kernel to provide metrics
     about kernel usage.
     '''
