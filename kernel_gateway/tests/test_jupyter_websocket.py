@@ -645,3 +645,63 @@ class TestBadSeedURI(TestJupyterWebsocket):
         app = KernelGatewayApp()
         app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
         self.assertRaises(NoSuchKernel, app.init_configurables)
+
+class TestActivityAPI(TestJupyterWebsocket):
+    @gen_test
+    def test_api_is_hidden_with_no_flag(self):
+        self.app.web_app.settings['kg_list_kernels'] = False
+        # Request the activity
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
+            method='GET',
+            raise_error=False
+        )
+        print(response)
+        self.assertEqual(response.code, 403)
+
+    @gen_test
+    def test_api_lists_kernels_with_flag_set(self):
+        self.app.web_app.settings['kg_list_kernels'] = True
+        ws = yield self.spawn_kernel()
+        ws.write_message(json_encode({
+            'header': {
+                'username': '',
+                'version': '5.0',
+                'session': '',
+                'msg_id': 'fake-msg-id',
+                'msg_type': 'execute_request'
+            },
+            'parent_header': {},
+            'channel': 'shell',
+            'content': {
+                'code': 'import time\ntime.sleep(1)',
+                'silent': False,
+                'store_history': False,
+                'user_expressions' : {}
+            },
+            'metadata': {},
+            'buffers': {}
+        }))
+        # Get the first set of activities
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+        first_kernel_id, first_activity_data = json.loads(response.body.decode('UTF-8')).popitem()
+        # Close the websocket and get the activities
+        ws.close()
+
+        # Request the activity
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+        second_kernel_id, second_activity_data = json.loads(response.body.decode('UTF-8')).popitem()
+
+        self.assertEqual(first_kernel_id, second_kernel_id, 'Kernel IDs were not equal')
+        self.assertEqual(first_activity_data['connections'], 1, 'The wrong number of connections existed during the first request')
+        self.assertEqual(second_activity_data['connections'], 0, 'The wrong number of connections existed during the first request')

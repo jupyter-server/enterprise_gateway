@@ -35,6 +35,7 @@ from .base.handlers import default_handlers as default_base_handlers
 from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from .services.cell.parser import APICellParser
 from .services.swagger.handlers import SwaggerSpecHandler
+from .services.activity.handlers import ActivityHandler
 
 from notebook.utils import url_path_join
 
@@ -303,6 +304,8 @@ class KernelGatewayApp(JupyterApp):
             }))
             enable_pretty_logging()
         elif self.api == 'jupyter-websocket':
+            # append the activity monitor for websocket mode
+            handlers.append(('/_api/activity', ActivityHandler, {}))
             # append tuples for the standard kernel gateway endpoints
             for handler in (
                 default_kernel_handlers +
