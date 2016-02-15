@@ -2,18 +2,17 @@
 # Distributed under the terms of the Modified BSD License.
 
 import tornado
-from notebook.base.handlers import json_errors
 import notebook.services.sessions.handlers as notebook_handlers
-from ...mixins import TokenAuthorizationMixin, CORSMixin
+from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
-class SessionRootHandler(TokenAuthorizationMixin, 
-                        CORSMixin, 
+class SessionRootHandler(TokenAuthorizationMixin,
+                        CORSMixin,
+                        JSONErrorsMixin,
                         notebook_handlers.SessionRootHandler):
-    @json_errors
     def get(self):
         '''
         Denies returning a list of running sessions  unless explicitly
-        enabled, instead returning a 403 error indicating that the list is 
+        enabled, instead returning a 403 error indicating that the list is
         permanently forbidden.
         '''
         if 'kg_list_kernels' not in self.settings or self.settings['kg_list_kernels'] != True:

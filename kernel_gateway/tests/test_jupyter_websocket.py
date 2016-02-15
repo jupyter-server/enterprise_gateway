@@ -410,6 +410,29 @@ class TestDefaults(TestJupyterWebsocket):
         sessions = json_decode(response.body)
         self.assertEqual(len(sessions), 0)
 
+    @gen_test
+    def test_json_errors(self):
+        '''Handlers should always return JSON errors.'''
+        # A handler that we override
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            raise_error=False
+        )
+        body = json_decode(response.body)
+        self.assertEqual(response.code, 403)
+        self.assertEqual(body['reason'], 'Forbidden')
+
+        # A handler from the notebook base
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels/1-2-3-4-5'),
+            raise_error=False
+        )
+        body = json_decode(response.body)
+        self.assertEqual(response.code, 404)
+        # Base handler json_errors decorator does not capture reason properly
+        # self.assertEqual(body['reason'], 'Not Found')
+        self.assertIn('1-2-3-4-5', body['message'])
+
 
 class TestEnableDiscovery(TestJupyterWebsocket):
     def setup_app(self):
