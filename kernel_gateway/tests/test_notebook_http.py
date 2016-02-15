@@ -146,14 +146,16 @@ class TestDefaults(TestGatewayAppBase):
     @gen_test
     def test_api_undefined(self):
         '''
-        Endpoints which are not registered at all should be 404s
+        Endpoints which are not registered at all should be 404s with JSON bodies.
         '''
         response = yield self.http_client.fetch(
             self.get_url('/not/an/endpoint'),
             method='GET',
             raise_error=False
         )
+        body = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 404, 'Endpoint which should not exist did not return 404 status code.')
+        self.assertEqual(body['reason'], 'Not Found')
 
     @gen_test
     def test_api_access_http_header(self):

@@ -20,7 +20,6 @@ from jupyter_client.kernelspec import KernelSpecManager
 from zmq.eventloop import ioloop
 ioloop.install()
 
-import tornado
 from tornado import httpserver
 from tornado import web
 from tornado.log import enable_pretty_logging
@@ -269,19 +268,18 @@ class KernelGatewayApp(JupyterApp):
         # Redefine handlers off the base_url path
         handlers = []
         if self.api == 'notebook-http':
-            #Register the NotebookDownloadHandler if configuration allows
+            # Register the NotebookDownloadHandler if configuration allows
             if self.allow_notebook_download:
                 handlers.append((r'/_api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
 
-            # discover the notebook endpoints and their implementations
+            # Discover the notebook endpoints and their implementations
             parser = APICellParser(self.kernel_manager.seed_kernelspec)
             endpoints = parser.endpoints(self.kernel_manager.seed_source)
             response_sources = parser.endpoint_responses(self.kernel_manager.seed_source)
             if len(endpoints) == 0:
                 raise RuntimeError('No endpoints were discovered. Check your notebook to make sure your cells are annotated correctly.')
 
-            # cycle through the (endpoint_path, source) tuples and register their handler
-
+            # Cycle through the (endpoint_path, source) tuples and register their handlers
             for endpoint_path, verb_source_map in endpoints:
                 parameterized_path = parameterize_path(endpoint_path)
                 parameterized_path = url_path_join(self.base_url, parameterized_path)
@@ -297,11 +295,17 @@ class KernelGatewayApp(JupyterApp):
                 }
                 handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
 
+            # Register the swagger API spec handler
             handlers.append(('/_api/spec/swagger.json', SwaggerSpecHandler, {
                 'title' : self.seed_uri,
                 'source_cells': self.kernel_manager.seed_source,
                 'kernel_spec' : self.kernel_manager.seed_kernelspec
             }))
+
+            # Register the 404 catch-all last
+            handlers.append(default_base_handlers[-1])
+
+            # Enable the same pretty logging the notebook uses
             enable_pretty_logging()
         elif self.api == 'jupyter-websocket':
             # append the activity monitor for websocket mode

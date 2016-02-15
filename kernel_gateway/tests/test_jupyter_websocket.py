@@ -357,6 +357,7 @@ class TestDefaults(TestJupyterWebsocket):
             raise_error=False
         )
         self.assertEqual(response.code, 403)
+
         response = yield self.http_client.fetch(
             self.get_url('/api/sessions'),
             raise_error=False
@@ -433,6 +434,14 @@ class TestDefaults(TestJupyterWebsocket):
         # self.assertEqual(body['reason'], 'Not Found')
         self.assertIn('1-2-3-4-5', body['message'])
 
+        # The last resort not found handler
+        response = yield self.http_client.fetch(
+            self.get_url('/fake-endpoint'),
+            raise_error=False
+        )
+        body = json_decode(response.body)
+        self.assertEqual(response.code, 404)
+        self.assertEqual(body['reason'], 'Not Found')
 
 class TestEnableDiscovery(TestJupyterWebsocket):
     def setup_app(self):
