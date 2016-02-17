@@ -199,6 +199,17 @@ class TestDefaults(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 404, "/_api/source did not block as allow_notebook_download is false")
 
+    @gen_test
+    def test_api_returns_execute_result(self):
+        '''GET HTTP method should be callable'''
+        response = yield self.http_client.fetch(
+            self.get_url('/execute_result'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'{"text/plain": "2"}', 'Unexpected body in response to GET.')
+
 class TestSourceDownload(TestGatewayAppBase):
     def setup_app(self):
         self.app.api = 'notebook-http'

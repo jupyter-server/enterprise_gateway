@@ -25,6 +25,17 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
         self.kernel_name = kernel_name
         self.response_sources = response_sources
 
+    def finish_future(self, future, result_accumulator):
+        if result_accumulator['error']:
+            future.set_exception(CodeExecutionError(result_accumulator['error']))
+        elif len(result_accumulator['stream']) > 0:
+            future.set_result(''.join(result_accumulator['stream']))
+        elif result_accumulator['result']:
+            future.set_result(json.dumps(result_accumulator['result']))
+        else:
+            # If nothing was set, return an empty value
+            future.set_result('')
+
     def on_recv(self, result_accumulator, future, parent_header, msg):
         '''
         Receives messages for a particular code execution defined by parent_header.
@@ -41,33 +52,29 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
         if msg['parent_header']['msg_id'] == parent_header:
             # On idle status, exit our loop
             if msg['header']['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
-                # If the future is still running, no errors were thrown and we can set the result
-                if future.running():
-                    result_accumulator['content'] = ''.join(result_accumulator['content'])
-                    future.set_result(result_accumulator['content'])
+                self.finish_future(future, result_accumulator)
             # Store the execute result
             elif msg['header']['msg_type'] == 'execute_result':
-                result_accumulator['content'].append(msg['content']['data'])
+                result_accumulator['result'] = msg['content']['data']
             # Accumulate the stream messages
             elif msg['header']['msg_type'] == 'stream':
                 # Only take stream output if it is on stdout or if the kernel
                 # is non-confirming and does not name the stream
                 if 'name' not in msg['content'] or msg['content']['name'] == 'stdout':
-                    result_accumulator['content'].append((msg['content']['text']))
+                    result_accumulator['stream'].append((msg['content']['text']))
             # Store the error message
             elif msg['header']['msg_type'] == 'error':
                 error_name = msg['content']['ename']
                 error_value = msg['content']['evalue']
-                future.set_exception(CodeExecutionError(
-                    'Error {}: {} \n'.format(error_name, error_value)
-                ))
+                result_accumulator['error'] = 'Error {}: {} \n'.format(error_name, error_value)
+
 
     def execute_code(self, kernel_client, kernel_id, source_code):
         '''Executes source_code on the kernel specified and will return a Future to indicate when code
         execution is completed. If the code execution results in an error, a CodeExecutionError is raised.
         '''
         future = Future()
-        result_accumulator = {'content' : []}
+        result_accumulator = {'stream' : [], 'error' : None, 'result' : None}
         parent_header = kernel_client.execute(source_code)
         on_recv_func = partial(self.on_recv, result_accumulator, future, parent_header)
         self.kernel_pool.on_recv(kernel_id, on_recv_func)
