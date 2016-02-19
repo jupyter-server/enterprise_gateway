@@ -151,7 +151,7 @@ The `KernelGatewayApp.api` command line argument defaults to `jupyter-websocket`
 * `/api/sessions` (session CRUD, for associating information with kernels, discovery disabled by default, see `--list_kernels`)
 * `/_api/activity` (activity metrics for all running kernels, enabled with `--list_kernels`)
 
-Discounting features of the kernel gateway (e.g., token auth), the behavior of these resources is equivalent to that found in the Jupyter Notebook server. The kernel gateway simply imports and extends the handler clases from Jupyter Notebook.
+Discounting features of the kernel gateway (e.g., token auth), the behavior of these resources is equivalent to that found in the Jupyter Notebook server. The kernel gateway simply imports and extends the handler classes from Jupyter Notebook.
 
 ## `notebook-http` Mode
 
@@ -165,6 +165,16 @@ print("hello world")
 ```
 
 The annotation above declares the cell contents as the code to execute when the kernel gateway receives a HTTP GET request for the path `/hello/world`. For other languages, the comment prefix may change, but the rest of the annotation remains the same.
+
+Multiple cells may share the same annotation. Their content is concatenated to form a single code segment at runtime. This facilitates typical, iterative development in notebooks with lots of short, separate cells: The notebook author does not need to merge all of the cells into one, or refactor to use functions.
+
+```python
+# GET /hello/world
+print("I'm cell #1")
+
+# GET /hello/world
+print("I'm cell #2")
+```
 
 ### Getting the Request Data
 
@@ -186,7 +196,7 @@ You may specify path parameters when registering an endpoint by prepending a `:`
 
 The `REQUEST` object currently contains the following properties:
 
-* `body` - The value of the body, see the [Body And Content Type](#Body-And-Content-Type) section below
+* `body` - The value of the body, see the [Body And Content Type](#Request Content-Type and Request Body Processing) section below
 * `args` - An object with keys representing query parameter names and their associated values. A query parameter name may be specified multiple times in a valid URL, and so each value is a sequence (e.g., list, array) of strings from the original URL.
 * `path` - An object of key-value pairs representing path parameters and their values.
 * `headers` - An object of key-value pairs where a key is a HTTP header name and a value is the HTTP header value. If there are multiple values are specified for a  header, the value will be an array.

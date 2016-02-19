@@ -25,8 +25,8 @@ class APICellParser(object):
         None:'#',
         'scala':'//'
     }
-    api_indicator = '{}\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
-    api_response_indicator = '{}\s+ResponseInfo\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
+    api_indicator = r'{}\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
+    api_response_indicator = r'{}\s+ResponseInfo\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
 
     def __init__(self, kernelspec):
         try:
@@ -64,15 +64,12 @@ class APICellParser(object):
                 matched = self.kernelspec_api_indicator.match(cell_source)
                 uri = matched.group(2).strip()
                 verb = matched.group(1)
-                if uri not in endpoints:
-                    endpoints[uri] = {}
-                if verb not in endpoints[uri]:
-                    endpoints[uri][verb] = cell_source
+
+                endpoints.setdefault(uri, {}).setdefault(verb, '')
+                endpoints[uri][verb] += cell_source + '\n'
+
         sorted_keys = sorted(endpoints, key=sort_func, reverse=True)
-        ret_val = []
-        for key in sorted_keys:
-            ret_val.append((key,endpoints[key]))
-        return ret_val
+        return [(key, endpoints[key]) for key in sorted_keys]
 
     def endpoint_responses(self, source_cells, sort_func=first_path_param_index):
         '''Return a list of tuples containing the method+URI and the cell source'''
@@ -82,8 +79,7 @@ class APICellParser(object):
                 matched = self.kernelspec_api_response_indicator.match(cell_source)
                 uri = matched.group(2).strip()
                 verb = matched.group(1)
-                if uri not in endpoints:
-                    endpoints[uri] = {}
-                if verb not in endpoints[uri]:
-                    endpoints[uri][verb] = cell_source
+
+                endpoints.setdefault(uri, {}).setdefault(verb, '')
+                endpoints[uri][verb] += cell_source + '\n'
         return endpoints
