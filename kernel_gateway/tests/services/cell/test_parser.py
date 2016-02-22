@@ -107,3 +107,43 @@ class TestAPICellParserUtils(unittest.TestCase):
         endpoint, verb = parser.get_cell_endpoint_and_verb('some regular code')
         self.assertEqual(endpoint, None, 'Endpoint was not extracted correctly')
         self.assertEqual(verb, None, 'Endpoint was not extracted correctly')
+
+    def test_endpoint_concatenation(self):
+        '''Multiple cells with the same URI and verb should concatenate.'''
+        source_cells = [
+            '# POST /foo/:bar',
+            '# POST /foo/:bar',
+            '# POST /foo',
+            'ignored',
+            '# GET /foo/:bar'
+        ]
+        parser = APICellParser('some_unknown_kernel')
+        endpoints = parser.endpoints(source_cells)
+        self.assertEqual(len(endpoints), 2)
+        # for ease of testing
+        endpoints = dict(endpoints)
+        self.assertEqual(len(endpoints['/foo']), 1)
+        self.assertEqual(len(endpoints['/foo/:bar']), 2)
+        self.assertEqual(endpoints['/foo']['POST'], '# POST /foo\n')
+        self.assertEqual(endpoints['/foo/:bar']['POST'], '# POST /foo/:bar\n# POST /foo/:bar\n')
+        self.assertEqual(endpoints['/foo/:bar']['GET'], '# GET /foo/:bar\n')
+
+    def test_endpoint_response_concatenation(self):
+        '''Multiple response cells with the same URI and verb should concatenate.'''
+        source_cells = [
+            '# ResponseInfo POST /foo/:bar',
+            '# ResponseInfo POST /foo/:bar',
+            '# ResponseInfo POST /foo',
+            'ignored',
+            '# ResponseInfo GET /foo/:bar'
+        ]
+        parser = APICellParser('some_unknown_kernel')
+        endpoints = parser.endpoint_responses(source_cells)
+        self.assertEqual(len(endpoints), 2)
+        # for ease of testing
+        endpoints = dict(endpoints)
+        self.assertEqual(len(endpoints['/foo']), 1)
+        self.assertEqual(len(endpoints['/foo/:bar']), 2)
+        self.assertEqual(endpoints['/foo']['POST'], '# ResponseInfo POST /foo\n')
+        self.assertEqual(endpoints['/foo/:bar']['POST'], '# ResponseInfo POST /foo/:bar\n# ResponseInfo POST /foo/:bar\n')
+        self.assertEqual(endpoints['/foo/:bar']['GET'], '# ResponseInfo GET /foo/:bar\n')

@@ -210,6 +210,17 @@ class TestDefaults(TestGatewayAppBase):
         self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
         self.assertEqual(response.body, b'{"text/plain": "2"}', 'Unexpected body in response to GET.')
 
+    @gen_test
+    def test_cells_concatenate(self):
+        '''Multiple cells with the same verb and path should concatenate.'''
+        response = yield self.http_client.fetch(
+            self.get_url('/multi'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'x is 1\n', 'Unexpected body in response to GET.')
+
 class TestSourceDownload(TestGatewayAppBase):
     def setup_app(self):
         self.app.api = 'notebook-http'
