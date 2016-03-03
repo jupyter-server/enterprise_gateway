@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Kernel Gateway Jupyter application."""
 
 import os
 import logging
@@ -39,13 +40,17 @@ from .services.activity.handlers import ActivityHandler
 from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
+    """Application that reads command line and envrionment variable settings;
+    initializes managers and routes; creates a Tornad HTTP server; and starts
+    the Tornado event loop.
+    """
     name = 'jupyter-kernel-gateway'
-    description = '''
+    description = """
         Jupyter Kernel Gateway
 
         Provisions Jupyter kernels and proxies HTTP/Websocket traffic
         to them.
-    '''
+    """
     # Server IP / PORT binding
     port_env = 'KG_PORT'
     port = Integer(config=True,
@@ -64,7 +69,7 @@ class KernelGatewayApp(JupyterApp):
     # Base URL
     base_url_env = 'KG_BASE_URL'
     base_url = Unicode(config=True,
-        help='''The base path on which all API resources are mounted (KG_BASE_URL env var)''')
+        help="""The base path on which all API resources are mounted (KG_BASE_URL env var)""")
     def _base_url_default(self):
         return os.getenv(self.base_url_env, '/')
 
@@ -148,16 +153,16 @@ class KernelGatewayApp(JupyterApp):
 
     default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
-        help='''The default kernel name to use when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)''')
+        help="""The default kernel name to use when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)""")
     def _default_kernel_name_default(self):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
     list_kernels_env = 'KG_LIST_KERNELS'
     list_kernels = Bool(config=True,
-        help='''Enables listing the running kernels through /api/kernels
+        help="""Enables listing the running kernels through /api/kernels
             and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
-            allows this by default but kernel gateway does not .'''
+            allows this by default but kernel gateway does not ."""
     )
     def _list_kernels_default(self):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
@@ -175,18 +180,26 @@ class KernelGatewayApp(JupyterApp):
             raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
 
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
-    allow_notebook_download = Bool(config=True,
-                   help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
+    allow_notebook_download = Bool(
+        config=True,
+        help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
     )
     def _allow_notebook_download_default(self):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def _load_notebook(self, uri):
-        '''
-        Loads a local or remote notebook. Raises RuntimeError if no installed
-        kernel can handle the language specified in the notebook. Otherwise,
-        returns the notebook object.
-        '''
+        """Loads a local or remote notebook.
+
+        Raises
+        ------
+        RuntimeError if no installed kernel can handle the language specified
+        in the notebook.
+
+        Returns
+        -------
+        object
+            Notebook object from nbformat
+        """
         parts = urlparse(uri)
 
         if parts.netloc == '' or parts.netloc == 'file':
@@ -207,21 +220,26 @@ class KernelGatewayApp(JupyterApp):
         return notebook
 
     def initialize(self, argv=None):
-        '''
-        Initialize base class, configurable Jupyter instances, the tornado web
-        app, and the tornado HTTP server.
-        '''
+        """Initializes the base class, configurable manager instances, the
+        Tornado web app, and the tornado HTTP server.
+
+        Parameters
+        ----------
+        argv
+            Command line arguments
+        """
         super(KernelGatewayApp, self).initialize(argv)
         self.init_configurables()
         self.init_webapp()
         self.init_http_server()
 
     def init_configurables(self):
-        '''
-        Initialize all configurable objects including a kernel manager, kernel
-        spec manager, session manager, and kernel pool. Optionally, load a
-        notebook and prespawn the requested number of kernels.
-        '''
+        """Initializes all configurable objects including a kernel manager, kernel
+        spec manager, session manager, and kernel pool.
+
+        Optionally, loads a notebook and prespawn the configured number of
+        kernels.
+        """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
         self.seed_notebook = None
@@ -260,11 +278,16 @@ class KernelGatewayApp(JupyterApp):
             )
 
     def init_webapp(self):
-        '''
-        Initialize tornado web application with kernel handlers. Put the kernel
-        manager in settings to appease handlers that try to reference it there.
-        Include additional options in settings as well.
-        '''
+        """Initializes Tornado web application with kernel handlers.
+
+        Adds the various managers and web-front configuration values to the
+        Tornado settings for reference by the handlers.
+
+        Notes
+        -----
+        Currently decides which handlers to add based on the `api` setting.
+        This may be refactored in the future.
+        """
         # Redefine handlers off the base_url path
         handlers = []
         if self.api == 'notebook-http':
@@ -359,16 +382,14 @@ class KernelGatewayApp(JupyterApp):
         )
 
     def init_http_server(self):
-        '''
-        Initialize a HTTP server.
-        '''
+        """Initializes a HTTP server for the Tornado web application on the
+        configured interface and port.
+        """
         self.http_server = httpserver.HTTPServer(self.web_app)
         self.http_server.listen(self.port, self.ip)
 
     def start(self):
-        '''
-        Start an IO loop for the application.
-        '''
+        """Starts an IO loop for the application."""
         super(KernelGatewayApp, self).start()
         self.log.info('The Jupyter Kernel Gateway is running at: http://{}:{}'.format(
             self.ip, self.port
@@ -382,18 +403,16 @@ class KernelGatewayApp(JupyterApp):
             self.log.info("Interrupted...")
 
     def stop(self):
-        '''
-        Stop the HTTP server and IO loop associated with the application.
-        '''
+        """
+        Stops the HTTP server and IO loop associated with the application.
+        """
         def _stop():
             self.http_server.stop()
             self.io_loop.stop()
         self.io_loop.add_callback(_stop)
 
     def shutdown(self):
-        '''
-        Stop all kernels in the pool.
-        '''
+        """Stops all kernels in the pool."""
         self.kernel_pool.shutdown()
 
 launch_instance = KernelGatewayApp.launch_instance

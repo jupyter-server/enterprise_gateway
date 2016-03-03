@@ -1,6 +1,8 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Manager that tracks kernel activity."""
 
+# Constants for activity keys in the store
 LAST_MESSAGE_TO_CLIENT = 'last_message_to_client'
 LAST_MESSAGE_TO_KERNEL = 'last_message_to_kernel'
 LAST_TIME_STATE_CHANGED = 'last_time_state_changed'
@@ -9,6 +11,7 @@ CONNECTIONS = 'connections'
 LAST_CLIENT_CONNECT = 'last_client_connect'
 LAST_CLIENT_DISCONNECT = 'last_client_disconnect'
 
+# Initial values for all kernel activity keys
 default_activity_values = [(LAST_MESSAGE_TO_CLIENT, None),
     (LAST_MESSAGE_TO_KERNEL, None),
     (LAST_TIME_STATE_CHANGED , None),
@@ -18,26 +21,50 @@ default_activity_values = [(LAST_MESSAGE_TO_CLIENT, None),
     (LAST_CLIENT_DISCONNECT , None)
 ]
 class ActivityManager(object):
-    '''Represents a store of activity values for kernels. There is a singleton instance
-    called `activity` created in this module.'''
+    """Represents a store of activity values for kernels. Intended to be used as a
+    singleton.
+
+    Attributes
+    ----------
+    values : dict
+        Kernel ID keys to dictionary of tracked activity values
+    ignore : set
+        Kernel IDs that have been removed. Tracked so that no more activity updates
+        can sneak in (e.g., when a kernel is deleted and later a websocket disconnects).
+    dummy_map : dict
+         Default activity values
+    """
     def __init__(self):
         self.values = {}
-        # A blacklist of kernels that have been removed so no more activities cannot sneak in.
-        # This can happen when a kernel is deleted, and a websocket is later disconnected
         self.ignore = set()
         self.dummy_map = {}
         self.populate_kernel_with_defaults(self.dummy_map)
 
     def populate_kernel_with_defaults(self, activity_values):
-        '''Sets the default value for known activities being recorded.
-        '''
+        """Sets the default values for known activities being recorded.
+
+        Parameters
+        ----------
+        activity_values : dict
+            Target to receive the default values
+        """
         for value in default_activity_values:
             activity_values[value[0]] = value[1]
 
     def get_map_for_kernel(self, kernel_id):
-        '''Gets a map for a kernel. This method will always return a map, even if the kernel has been removed.
-        In the event the kernel has been removed, the activities will not be recorded.
-        '''
+        """Gets activity values for a kernel.
+
+        Parameters
+        ----------
+        kernel_id : str
+            Unique identifier for the kernel
+
+        Returns
+        -------
+        dict
+            Activity values for the kernel or defaults if the `kernel_id` is
+            not tracked
+        """
         if kernel_id in self.ignore:
             return self.dummy_map
 
@@ -48,35 +75,76 @@ class ActivityManager(object):
         return self.values[kernel_id]
 
     def publish(self, kernel_id, activity_type, value=None):
-        '''Sets the value stored for *activity_type*. If the activity_type is not found, it
-        will be created and assigned to *value*.
-        '''
-        self.get_map_for_kernel(kernel_id)[activity_type] = value;
+        """Sets the `value` stored for `activity_type` for `kernel_id`.
 
+        Parameters
+        ----------
+        kernel_id : str
+            Unique identifier for the kernel
+        activity_type : str
+            Activity key to set
+        value : any
+            Value to set for the activity
+        """
+        self.get_map_for_kernel(kernel_id)[activity_type] = value
 
     def increment_activity(self, kernel_id, activity_type):
-        '''Increments the value stored for *activity_type*. If the value currently stored
-        is not an int, an TypeError will be raised. If the activity_type is not found, a
-        KeyError will be raised.
-        '''
-        self.get_map_for_kernel(kernel_id)[activity_type] += 1;
+        """Increments the int value stored for `activity_type` for `kernel_id`.
+
+        Parameters
+        ----------
+        kernel_id : str
+            Unique identifier for the kernel
+        activity_type : str
+            Activity key to set
+
+        Raises
+        ------
+        TypeError
+            If the stored value is not an int
+        """
+        self.get_map_for_kernel(kernel_id)[activity_type] += 1
 
     def decrement_activity(self, kernel_id, activity_type):
-        '''Decrements the value stored for *activity_type*. If the value currently stored
-        is not an int, an TypeError will be raised. If the activity_type is not found, a
-        KeyError will be raised.
-        '''
-        self.get_map_for_kernel(kernel_id)[activity_type] -= 1;
+        """Decrements the int value stored for `activity_type` for `kernel_id`.
+
+        Parameters
+        ----------
+        kernel_id : str
+            Unique identifier for the kernel
+        activity_type : str
+            Activity key to set
+
+        Raises
+        ------
+        TypeError
+            If the stored value is not an int
+        """
+        self.get_map_for_kernel(kernel_id)[activity_type] -= 1
 
     def remove(self, kernel_id):
-        '''Removes the activities for a kernel.'''
+        """Removes all tracked activity values for `kernel_id`.
+
+        Adds it to the set to ignore.
+
+        Parameters
+        ----------
+        kernel_id : str
+            Unique identifier for the kernel
+        """
         if kernel_id in self.values:
             del self.values[kernel_id]
             self.ignore.add(kernel_id)
 
     def get(self):
-        '''Returns a mapping of kernel_id to activity values.
-        '''
+        """Gets all tracked activities for all kernels.
+
+        Returns
+        -------
+        dict
+            Kernel ID keys, activity dictionary values
+        """
         return self.values
 
+# Singleton instance
 activity = ActivityManager()
