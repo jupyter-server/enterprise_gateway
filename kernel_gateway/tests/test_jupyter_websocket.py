@@ -489,14 +489,20 @@ class TestPrespawnKernels(TestJupyterWebsocket):
 class TestBaseURL(TestJupyterWebsocket):
     def setup_app(self):
         self.app.base_url = '/fake/path'
+        self.app.list_kernels = True
 
     @gen_test
     def test_base_url(self):
         '''Server should mount resources under configured base.'''
-        self.app.web_app.settings['kg_list_kernels'] = True
         # Should not exist at root
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
             method='GET',
             raise_error=False
         )
@@ -505,6 +511,12 @@ class TestBaseURL(TestJupyterWebsocket):
         # Should exist under path
         response = yield self.http_client.fetch(
             self.get_url('/fake/path/api/kernels'),
+            method='GET'
+        )
+        self.assertEqual(response.code, 200)
+
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/_api/activity'),
             method='GET'
         )
         self.assertEqual(response.code, 200)

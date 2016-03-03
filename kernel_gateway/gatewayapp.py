@@ -270,7 +270,11 @@ class KernelGatewayApp(JupyterApp):
         if self.api == 'notebook-http':
             # Register the NotebookDownloadHandler if configuration allows
             if self.allow_notebook_download:
-                handlers.append((r'/_api/source', NotebookDownloadHandler, {'path': self.seed_uri}))
+                handlers.append((
+                    url_path_join('/', self.base_url, r'/_api/source'),
+                    NotebookDownloadHandler,
+                    {'path': self.seed_uri}
+                ))
 
             # Discover the notebook endpoints and their implementations
             parser = APICellParser(self.kernel_manager.seed_kernelspec)
@@ -282,7 +286,7 @@ class KernelGatewayApp(JupyterApp):
             # Cycle through the (endpoint_path, source) tuples and register their handlers
             for endpoint_path, verb_source_map in endpoints:
                 parameterized_path = parameterize_path(endpoint_path)
-                parameterized_path = url_path_join(self.base_url, parameterized_path)
+                parameterized_path = url_path_join('/', self.base_url, parameterized_path)
                 self.log.info('Registering endpoint_path: {}, methods: ({})'.format(
                     parameterized_path,
                     list(verb_source_map.keys())
@@ -296,10 +300,12 @@ class KernelGatewayApp(JupyterApp):
                 handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
 
             # Register the swagger API spec handler
-            handlers.append(('/_api/spec/swagger.json', SwaggerSpecHandler, {
-                'title' : self.seed_uri,
-                'source_cells': self.kernel_manager.seed_source,
-                'kernel_spec' : self.kernel_manager.seed_kernelspec
+            handlers.append(
+                (url_path_join('/', self.base_url, r'/_api/spec/swagger.json'),
+                SwaggerSpecHandler, {
+                    'title' : self.seed_uri,
+                    'source_cells': self.kernel_manager.seed_source,
+                    'kernel_spec' : self.kernel_manager.seed_kernelspec
             }))
 
             # Register the 404 catch-all last
@@ -309,7 +315,11 @@ class KernelGatewayApp(JupyterApp):
             enable_pretty_logging()
         elif self.api == 'jupyter-websocket':
             # append the activity monitor for websocket mode
-            handlers.append(('/_api/activity', ActivityHandler, {}))
+            handlers.append((
+                url_path_join('/', self.base_url, r'/_api/activity'),
+                ActivityHandler,
+                {}
+            ))
             # append tuples for the standard kernel gateway endpoints
             for handler in (
                 default_kernel_handlers +

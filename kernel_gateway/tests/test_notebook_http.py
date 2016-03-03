@@ -390,3 +390,44 @@ class TestSwaggerSpec(TestGatewayAppBase):
         result = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 200, "Swagger spec endpoint did not return the correct status code")
         self.assertEqual(result, expected_response, "Swagger spec endpoint did not return the correct value")
+
+class TestBaseURL(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.base_url = '/fake/path'
+        self.app.api = 'notebook-http'
+        self.app.allow_notebook_download = True
+        self.app.seed_uri = os.path.join(RESOURCES,
+                                         'kernel_api{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_base_url(self):
+        '''Server should mount resources under configured base.'''
+        # Should not exist at root
+        response = yield self.http_client.fetch(
+            self.get_url('/hello'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/spec/swagger.json'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 404)
+
+        # Should exist under path
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/hello'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
+
+        response = yield self.http_client.fetch(
+            self.get_url('/fake/path/_api/spec/swagger.json'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)
