@@ -11,7 +11,7 @@ class APIVersionHandler(TokenAuthorizationMixin,
                         JSONErrorsMixin,
                         notebook_handlers.APIVersionHandler):
     """Extends the notebook server base API handler with token auth, CORS, and
-    JSONErrors.
+    JSON errors.
     """
     pass
 
