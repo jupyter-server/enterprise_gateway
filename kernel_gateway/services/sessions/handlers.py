@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Tornado handlers for session CRUD."""
 
 import tornado
 import notebook.services.sessions.handlers as notebook_handlers
@@ -9,12 +10,18 @@ class SessionRootHandler(TokenAuthorizationMixin,
                         CORSMixin,
                         JSONErrorsMixin,
                         notebook_handlers.SessionRootHandler):
+    """Extends the notebook root session handler with token auth, CORS, and
+    JSON errors.
+    """
     def get(self):
-        '''
-        Denies returning a list of running sessions  unless explicitly
-        enabled, instead returning a 403 error indicating that the list is
-        permanently forbidden.
-        '''
+        """Overrides the super class method to honor the kernel listing
+        configuration setting.
+
+        Raises
+        ------
+        tornado.web.HTTPError
+            If kg_list_kernels is False, respond with 403 Forbidden
+        """
         if 'kg_list_kernels' not in self.settings or self.settings['kg_list_kernels'] != True:
             raise tornado.web.HTTPError(403, 'Forbidden')
         else:

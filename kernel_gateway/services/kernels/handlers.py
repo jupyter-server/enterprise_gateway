@@ -39,7 +39,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
         super(MainKernelHandler, self).post()
 
     def get(self):
-        """Overrides the super class method to honor the the kernel listing
+        """Overrides the super class method to honor the kernel listing
         configuration setting.
 
         Allows the request to reach the super class if listing is enabled.

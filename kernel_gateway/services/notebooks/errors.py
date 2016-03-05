@@ -1,9 +1,15 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Exception classes for notebook-http mode."""
+
 class CodeExecutionError(Exception):
-    def __init__(self, error_message):
-        self.error_message = error_message
+    """Raised when code in a notebook fails to execute in response to an API
+    request.
+    """
+    pass
 
 class UnsupportedMethodError(Exception):
-    def __init__(self, method):
-        self.method = method
+    """Raised when a notebook defined API does not support the requested HTTP
+    method.
+    """
+    pass
