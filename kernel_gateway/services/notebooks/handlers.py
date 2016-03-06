@@ -1,24 +1,50 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-import tornado.web
+"""Tornado handlers for invoking notebook cells as web APIs."""
+
+import os
 import json
+import tornado.web
 from tornado.log import access_log
 from .request_utils import (parse_body, parse_args, format_request,
     headers_to_dict, parameterize_path)
-
 from tornado import gen
 from tornado.concurrent import Future
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from functools import partial
 from .errors import UnsupportedMethodError, CodeExecutionError
-import os
 
 class NotebookAPIHandler(TokenAuthorizationMixin,
                          CORSMixin,
                          JSONErrorsMixin,
                          tornado.web.RequestHandler):
-    '''Executes annotated notebook cells in response to associated HTTP requests.'''
+    """Executes code from a notebook cell in response to HTTP requests at the
+    route registered in association with this class.
 
+    Supports the GET, POST, PUT, and DELETE HTTP methods.
+
+    Parameters
+    ----------
+    sources : dict
+        Maps HTTP verb strings to annotated cells extracted from a notebook
+    response_sources
+        Maps HTTP verb strings to ResponseInfo annotated cells extracted from a
+        notebook
+    kernel_pool
+        Instance of services.kernels.ManagedKernelPool
+    kernel_name
+        Kernel spec name used to launch the kernel pool. Identifies the
+        language of the source code cells.
+
+    Attributes
+    ----------
+    See parameters: they are stored as passed as instance variables.
+
+    See Also
+    --------
+    services.cell.parser.APICellParser for detail about how the source cells
+    are identified, parsed, and associated with HTTP verbs and paths.
+    """
     def initialize(self, sources, response_sources, kernel_pool, kernel_name):
         self.kernel_pool = kernel_pool
         self.sources = sources
@@ -26,6 +52,26 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
         self.response_sources = response_sources
 
     def finish_future(self, future, result_accumulator):
+        """Resolves the promise to respond to a HTTP request handled by a
+        kernel in the pool.
+
+        Defines precedence for the kind of response:
+
+        1. If any error occurred, resolve with a CodeExecutionError exception
+        2. If any stream message was collected from the kernel, resolve with
+            the joined string of stream messages
+        3. If an execute_result was collected, resolve with that result object
+            JSON encoded
+        4. Resolve with an empty string
+
+        Parameters
+        ----------
+        future : tornado.concurrent.Future
+            Promise of a future response to an API request
+        result_accumulator : dict
+            Dictionary of results from a kernel with at least the keys error,
+            stream, and result
+        """
         if result_accumulator['error']:
             future.set_exception(CodeExecutionError(result_accumulator['error']))
         elif len(result_accumulator['stream']) > 0:
@@ -37,18 +83,26 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
             future.set_result('')
 
     def on_recv(self, result_accumulator, future, parent_header, msg):
-        '''
-        Receives messages for a particular code execution defined by parent_header.
-        Collects all outputs from the kernel until an execution state of idle is received.
-        This function should be used to generate partial functions where the newly derived
-        function only takes msg as an argument.
+        """Collects ipoub messages associated with code execution request
+        identified by `parent_header`.
 
-        :param result_accumulator: Accumulates results across all messages received
-        :param future: A future used to set the result (errors via exceptions)
-        :param parent_header: The parent header value in the messages, indicating how
-            results map to requests
-        :param msg: The execution content/state message received.
-        '''
+        Continues collecting until an execution state of idle is reached.
+        The first three parameters are typically applied in a partial.
+
+        Parameters
+        ----------
+        result_accumulator : dict
+            Accumulates data from `execute_result`, `stream` and `error`
+            messages under keys `result`, `stream`, and `error` respectively
+            across multiple invocations of this callback.
+        future : tornado.concurrent.Future
+            Promise to resolve when the kernel goes idle
+        parent_header : dict
+            Parent header from an `execute` request, used to identify messages
+            that relate to its execution vs other executions
+        msg : dict
+            Kernel message received from the iopub channel
+        """
         if msg['parent_header']['msg_id'] == parent_header:
             # On idle status, exit our loop
             if msg['header']['msg_type'] == 'status' and msg['content']['execution_state'] == 'idle':
@@ -68,11 +122,32 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
                 error_value = msg['content']['evalue']
                 result_accumulator['error'] = 'Error {}: {} \n'.format(error_name, error_value)
 
-
     def execute_code(self, kernel_client, kernel_id, source_code):
-        '''Executes source_code on the kernel specified and will return a Future to indicate when code
-        execution is completed. If the code execution results in an error, a CodeExecutionError is raised.
-        '''
+        """Executes `source_code` on the kernel specified.
+
+        Registers a callback for iopub messages. Promises to return the output
+        of the execution in the future after the kernel returns to its idle
+        state.
+
+        Parameters
+        ----------
+        kernel_client : object
+            Client to use to execute the code
+        kernel_id : str
+            ID of the kernel from the pool that will execute the request
+        source_code : str
+            Source code to execut
+
+        Returns
+        -------
+        tornado.concurrent.Future
+            Promise of execution result
+
+        Raises
+        ------
+        CodeExecutionError
+            If the kernel returns any error
+        """
         future = Future()
         result_accumulator = {'stream' : [], 'error' : None, 'result' : None}
         parent_header = kernel_client.execute(source_code)
@@ -82,7 +157,12 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
 
     @gen.coroutine
     def _handle_request(self):
-        '''Translates a HTTP request into code to execute on a kernel.'''
+        """Turns an HTTP request into annotated notebook code to execute on a
+        kernel.
+
+        Sets the HTTP response code, headers, and response body based on the
+        result of the kernel execution. Then finishes the Tornado response.
+        """
         self.response_future = Future()
         kernel_client, kernel_id = yield self.kernel_pool.acquire()
         try:
@@ -135,7 +215,7 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
             self.write(source_result)
         # If there was a problem executing an code, return a 500
         except CodeExecutionError as err:
-            self.write(err.error_message)
+            self.write(str(err))
             self.set_status(500)
         # An unspported method was called on this handler
         except UnsupportedMethodError:
@@ -173,7 +253,8 @@ class NotebookDownloadHandler(TokenAuthorizationMixin,
                               CORSMixin,
                               JSONErrorsMixin,
                               tornado.web.StaticFileHandler):
-    '''Allows clients to download the original notebook behind the HTTP facade.'''
+    """Handles requests to download the annotated notebook behind the web API.
+    """
     def initialize(self, path):
         self.dirname, self.filename = os.path.split(path)
         super(NotebookDownloadHandler, self).initialize(self.dirname)

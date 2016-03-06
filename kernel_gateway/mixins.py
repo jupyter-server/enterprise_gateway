@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Mixins for Tornado handlers."""
 
 import json
 try:
@@ -9,9 +10,7 @@ except ImportError:
     from httplib import responses
 
 class CORSMixin(object):
-    '''
-    Adds CORS headers to tornado.web.RequestHandlers.
-    '''
+    """Mixes CORS headers into tornado.web.RequestHandlers."""
     SETTINGS_TO_HEADERS = {
         'kg_allow_credentials': 'Access-Control-Allow-Credentials',
         'kg_allow_headers': 'Access-Control-Allow-Headers',
@@ -21,10 +20,11 @@ class CORSMixin(object):
         'kg_max_age': 'Access-Control-Max-Age'
     }
     def set_default_headers(self):
-        '''
-        Sets the CORS headers as the default for all responses. Disable CSP
-        for the API.
-        '''
+        """Sets the CORS headers as the default for all responses.
+
+        Disables CSP configured by the notebook package. It's not necessary
+        for a programmatic API.
+        """
         super(CORSMixin, self).set_default_headers()
 
         # Add CORS headers after default if they have a non-blank value
@@ -37,16 +37,22 @@ class CORSMixin(object):
         self.clear_header('Content-Security-Policy')
 
 class TokenAuthorizationMixin(object):
-    '''
-    Adds token authentication to tornado.web.RequestHandlers and
+    """Mixes token auth into tornado.web.RequestHandlers and
     tornado.websocket.WebsocketHandlers.
-    '''
+    """
     def prepare(self):
-        '''
-        If kg_auth_token is present in the application settings,
-        raises 401 if the request Authorization header does not contain
-        the value "token <kg_auth_token>".
-        '''
+        """Ensures the correct `Authorization: token <value>` is present in
+        the request's header if an auth token is configured.
+
+        If kg_auth_token is set and the token is not in the header, responds
+        with 401 Unauthorized.
+
+        Notes
+        -----
+        Implemented in prepare rather than in `get_user` to avoid interaction
+        with the `@web.authenticated` decorated methods in the notebook
+        package.
+        """
         server_token = self.settings.get('kg_auth_token')
         if server_token:
             client_token = self.request.headers.get('Authorization')
@@ -55,18 +61,32 @@ class TokenAuthorizationMixin(object):
         return super(TokenAuthorizationMixin, self).prepare()
 
 class JSONErrorsMixin(object):
-    '''
-    Outputs all errors as JSON in the same format as the
-    notebook.base.handlers.json_errors decorator. Avoids having to (re-)decorate
-    everything that the kernel gateway overrides. Also avoids rendering errors
-    as a human readable HTML pages in cases where the decorator is not used
-    in the notebook code base.
-    '''
+    """Mixes `write_error` into tornado.web.RequestHandlers to respond with
+    JSON format errors.
+    """
     def write_error(self, status_code, **kwargs):
-        '''
+        """Responds with an application/json error object.
+
         Overrides the HTML renderer in the notebook server to force all errors
-        to JSON format.
-        '''
+        to JSON format. Outputs all errors as JSON in the same format as the
+        notebook.base.handlers.json_errors decorator. Avoids having to
+        (re-)decorate everything that the kernel gateway overrides. Also avoids
+        rendering errors as a human readable HTML pages in cases where the
+        decorator is not used in the notebook code base.
+
+        Parameters
+        ----------
+        status_code
+            HTTP status code to set
+        **kwargs
+            Arbitrary keyword args. Only uses `exc_info[1]`, if it exists,
+            to get a `log_message`, `args`, and `reason` from a raised
+            exception that triggered this method
+
+        Examples
+        --------
+        {"401", reason="Unauthorized", message="Invalid auth token"}
+        """
         exc_info = kwargs.get('exc_info')
         message = ''
         reason = responses.get(status_code, 'Unknown HTTP Error')

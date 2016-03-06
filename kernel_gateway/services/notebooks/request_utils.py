@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Utilities for handling HTTP requests."""
 
 import json
 import re
@@ -11,22 +12,53 @@ MULTIPART_FORM_DATA = 'multipart/form-data'
 APPLICATION_JSON = 'application/json'
 TEXT_PLAIN = 'text/plain'
 
-def format_request(expression):
-    expression = json.dumps(expression)
-    statement = "REQUEST = {}".format(expression)
+def format_request(bundle):
+    """Creates an assignment statement of bundle JSON-encoded to a variable
+    named `REQUEST`.
+
+    Returns
+    -------
+    str
+        `REQUEST = "<json-encoded expression>"`
+    """
+    bundle = json.dumps(bundle)
+    statement = "REQUEST = {}".format(bundle)
     return statement
 
 def parameterize_path(path):
+    """Creates a regex to match all named parameters in a path.
+
+    Parameters
+    ----------
+    path : str
+        URL path with `/:name` segements
+
+    Returns
+    -------
+    str
+        Path with `:name` parameters replaced with regex patterns for matching
+        them.
+    """
     matches = re.findall(_named_param_regex, path)
     for match in matches:
         path = path.replace(match[0], '(?P<{}>[^\/]+)'.format(match[1]))
     return path.strip()
 
 def parse_body(request):
-    '''Takes an HTTP request and will parse the body depending on the Content-Type
-    header. If no Content-Type is found, will treat the value as plain text. The
-    return value is a dict or string representing the body.
-    '''
+    """Parses the body of an HTTP request based on its Content-Type.
+
+    If no Content-Type is found, treats the value as plain text.
+
+    Parameters
+    ----------
+    request : tornado.web.HTTPRequest
+        Web request with the body to parse
+
+    Returns
+    -------
+    dict or str
+        Dictionary of a form-encoded JSON-encoded body, raw string otherwise
+    """
     content_type = TEXT_PLAIN
     body = request.body
     body = '' if body is b'' or body is None else body.decode(encoding='UTF-8')
@@ -47,23 +79,46 @@ def parse_body(request):
     return return_body
 
 def parse_args(args):
-    '''Converts args into a proper JSON string. args is expected to be a dictionary
-    where the values are arrays of UTF-8 byte strings.
-    '''
-    ARGS = {}
+    """Decodes UTF-8 encoded argument values.
+
+    Parameters
+    ----------
+    args : dict
+        Maps arbitrary keys to UTF-8 encoded strings / byte-arrays
+
+    Returns
+    -------
+    dict
+        Maps keys from args to decoded strings
+    """
+    rv = {}
     for key in args:
-        ARGS[key] = []
+        rv[key] = []
         for value in args[key]:
-            ARGS[key].append(value.decode(encoding='UTF-8'))
-    return ARGS
+            rv[key].append(value.decode(encoding='UTF-8'))
+    return rv
 
 def headers_to_dict(headers):
+    """Turns a set of tornado headers into a Python dict.
+
+    Repeat headers are aggregated into lists.
+
+    Parameters
+    ----------
+    headers : dict
+        Key / value header pairs
+
+    Returns
+    -------
+    dict
+        Maps keys from headers to values or lists of values
+    """
     new_headers = {}
     for header, header_value in headers.get_all():
         if header in new_headers:
             if not isinstance(new_headers[header], list):
-                oringal_value = new_headers[header]
-                new_headers[header] = [oringal_value]
+                original_value = new_headers[header]
+                new_headers[header] = [original_value]
             new_headers[header].append(header_value)
         else:
             new_headers[header] = header_value
