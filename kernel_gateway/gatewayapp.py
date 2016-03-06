@@ -40,9 +40,13 @@ from .services.activity.handlers import ActivityHandler
 from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
-    """Application that reads command line and envrionment variable settings;
-    initializes managers and routes; creates a Tornad HTTP server; and starts
-    the Tornado event loop.
+    """Application that provisions Jupyter kernels and proxies HTTP/Websocket
+    traffic to the kernels.
+
+    - reads command line and environment variable settings
+    - initializes managers and routes
+    - creates a Tornado HTTP server
+    - starts the Tornado event loop
     """
     name = 'jupyter-kernel-gateway'
     description = """
@@ -69,7 +73,7 @@ class KernelGatewayApp(JupyterApp):
     # Base URL
     base_url_env = 'KG_BASE_URL'
     base_url = Unicode(config=True,
-        help="""The base path on which all API resources are mounted (KG_BASE_URL env var)""")
+        help="""The base path for mounting all API resources (KG_BASE_URL env var)""")
     def _base_url_default(self):
         return os.getenv(self.base_url_env, '/')
 
@@ -153,16 +157,16 @@ class KernelGatewayApp(JupyterApp):
 
     default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
-        help="""The default kernel name to use when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)""")
+        help="""The default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)""")
     def _default_kernel_name_default(self):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
     list_kernels_env = 'KG_LIST_KERNELS'
     list_kernels = Bool(config=True,
-        help="""Enables listing the running kernels through /api/kernels
+        help="""Permits listing of the running kernels using API endpoints /api/kernels
             and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
-            allows this by default but kernel gateway does not ."""
+            allows this by default but kernel gateway does not."""
     )
     def _list_kernels_default(self):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
@@ -188,7 +192,7 @@ class KernelGatewayApp(JupyterApp):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def _load_notebook(self, uri):
-        """Loads a local or remote notebook.
+        """Loads a notebook from the local filesystem or HTTP URL.
 
         Raises
         ------
@@ -237,7 +241,7 @@ class KernelGatewayApp(JupyterApp):
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and kernel pool.
 
-        Optionally, loads a notebook and prespawn the configured number of
+        Optionally, loads a notebook and prespawns the configured number of
         kernels.
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
@@ -285,8 +289,8 @@ class KernelGatewayApp(JupyterApp):
 
         Notes
         -----
-        Currently decides which handlers to add based on the `api` setting.
-        This may be refactored in the future.
+        Uses the `api` setting to determine which handlers to add.
+        Developers should note: this may be refactored in the future.
         """
         # Redefine handlers off the base_url path
         handlers = []

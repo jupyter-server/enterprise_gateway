@@ -41,7 +41,7 @@ class ActivityManager(object):
         self.populate_kernel_with_defaults(self.dummy_map)
 
     def populate_kernel_with_defaults(self, activity_values):
-        """Sets the default values for known activities being recorded.
+        """Sets the default values for activities being recorded.
 
         Parameters
         ----------
@@ -89,7 +89,7 @@ class ActivityManager(object):
         self.get_map_for_kernel(kernel_id)[activity_type] = value
 
     def increment_activity(self, kernel_id, activity_type):
-        """Increments the int value stored for `activity_type` for `kernel_id`.
+        """Increments the `activity_type` value (an `int`) for `kernel_id`.
 
         Parameters
         ----------
@@ -106,7 +106,7 @@ class ActivityManager(object):
         self.get_map_for_kernel(kernel_id)[activity_type] += 1
 
     def decrement_activity(self, kernel_id, activity_type):
-        """Decrements the int value stored for `activity_type` for `kernel_id`.
+        """Decrements the `activity_type` value (an `int`) for `kernel_id`.
 
         Parameters
         ----------
@@ -123,9 +123,11 @@ class ActivityManager(object):
         self.get_map_for_kernel(kernel_id)[activity_type] -= 1
 
     def remove(self, kernel_id):
-        """Removes all tracked activity values for `kernel_id`.
+        """Removes all activity values for `kernel_id`.
 
-        Adds it to the set to ignore.
+        Adds the `kernel_id` to the set of IDs to ignore to prevent activities
+        during shutdown from causing this manager to being tracking the
+        kernel again.
 
         Parameters
         ----------

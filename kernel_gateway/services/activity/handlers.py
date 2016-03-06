@@ -13,7 +13,7 @@ class ActivityHandler(TokenAuthorizationMixin,
                       tornado.web.RequestHandler):
     def get(self):
         """Responds with a JSON object of stats about every running kernel if
-        kernel listing is enabled on the server.
+        kernel listing, `kg_list_kernels`, is enabled on the server.
 
         Raises
         ------

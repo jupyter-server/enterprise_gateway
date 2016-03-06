@@ -6,7 +6,10 @@ from tornado.locks import Semaphore
 from tornado import gen
 
 class KernelPool(object):
-    """Spawns a pool of kernels and cleans them up when shut down.
+    """Spawns a pool of kernels.
+
+    The kernel pool is responsible for clean up and shutdown of individual
+    kernels that are members of the pool.
 
     Parameters
     ----------
@@ -91,7 +94,8 @@ class ManagedKernelPool(KernelPool):
         raise gen.Return((self.kernel_clients[kernel_id], kernel_id))
 
     def release(self, kernel_id):
-        """Puts a kernel back into the pool.
+        """Puts a kernel back into the pool of kernels available to handle
+        requests.
 
         Parameters
         ----------

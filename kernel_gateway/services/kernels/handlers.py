@@ -20,8 +20,8 @@ class MainKernelHandler(TokenAuthorizationMixin,
         """Overrides the super class method to honor the max number of allowed
         kernels configuration setting.
 
-        Allows the request to reach the super class if no limit is set or if the
-        maximum is not reached.
+        Delegates the request to the super class implementation if no limit is
+        set or if the maximum is not reached. Otherwise, responds with an error.
 
         Raises
         ------

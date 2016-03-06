@@ -3,13 +3,13 @@
 """Exception classes for notebook-http mode."""
 
 class CodeExecutionError(Exception):
-    """Raised when code in a notebook fails to execute in response to an API
+    """Raised when a notebook's code fails to execute in response to an API
     request.
     """
     pass
 
 class UnsupportedMethodError(Exception):
-    """Raised when a notebook defined API does not support the requested HTTP
+    """Raised when a notebook-defined API does not support the requested HTTP
     method.
     """
     pass

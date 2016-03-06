@@ -41,8 +41,8 @@ class TokenAuthorizationMixin(object):
     tornado.websocket.WebsocketHandlers.
     """
     def prepare(self):
-        """Ensures the correct `Authorization: token <value>` is present if a
-        token is configured.
+        """Ensures the correct `Authorization: token <value>` is present in
+        the request's header if an auth token is configured.
 
         If kg_auth_token is set and the token is not in the header, responds
         with 401 Unauthorized.

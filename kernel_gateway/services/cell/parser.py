@@ -7,9 +7,10 @@ import sys
 
 def first_path_param_index(endpoint):
     """Gets the index to the first path parameter for the endpoint. The
-    index is not the string index, but rather where it is within the path.
+    returned value is not the string index, but rather the depth of where the
+    endpoint is found in the the path.
 
-    Paramters
+    Parameters
     ---------
     endpoint : str
         URL
@@ -17,7 +18,7 @@ def first_path_param_index(endpoint):
     Returns
     -------
     int
-        Path segment index
+        Path segment index value or sys.maxsize
 
     Examples
     --------
@@ -38,12 +39,16 @@ class APICellParser(object):
     """A utility class for parsing Jupyter code cells to find API annotations
     of the form:
 
-    COMMENT (ResponseInfo)? HTTP_VERB URL_PATH
+    `COMMENT (ResponseInfo)? HTTP_VERB URL_PATH`
 
-    where `COMMENT` is the single line comment character of the notebook
-    kernel language, `HTTP_VERB` is a valid HTTP verb, and `URL_PATH` is
-    a valid HTTP URL path string with optional `:variable` placeholders.
-    `ResponseInfo` is a literal token.
+    where:
+
+    * `COMMENT` is the single line comment character of the notebook kernel
+        language
+    * `HTTP_VERB` is a valid HTTP verb
+    * `URL_PATH` is a valid HTTP URL path string with optional `:variable`
+        placeholders
+    * `ResponseInfo` is a literal token.
 
     Parameters
     ----------
@@ -161,7 +166,7 @@ class APICellParser(object):
         return [(key, endpoints[key]) for key in sorted_keys]
 
     def endpoint_responses(self, source_cells, sort_func=first_path_param_index):
-        """Gets the list of all annotated ResposeInfo HTTP paths and verbs.
+        """Gets the list of all annotated ResponseInfo HTTP paths and verbs.
 
         Parameters
         ----------

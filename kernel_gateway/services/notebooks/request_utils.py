@@ -26,7 +26,7 @@ def format_request(bundle):
     return statement
 
 def parameterize_path(path):
-    """Creates a regex for match all named parameters in a path.
+    """Creates a regex to match all named parameters in a path.
 
     Parameters
     ----------
@@ -45,7 +45,7 @@ def parameterize_path(path):
     return path.strip()
 
 def parse_body(request):
-    """Parses the body of an HTTP request baed on its Content-Type.
+    """Parses the body of an HTTP request based on its Content-Type.
 
     If no Content-Type is found, treats the value as plain text.
 
@@ -99,7 +99,7 @@ def parse_args(args):
     return rv
 
 def headers_to_dict(headers):
-    """Turns a set of tornado headers into a plain Python dict.
+    """Turns a set of tornado headers into a Python dict.
 
     Repeat headers are aggregated into lists.
 

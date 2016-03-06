@@ -18,8 +18,8 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
                          CORSMixin,
                          JSONErrorsMixin,
                          tornado.web.RequestHandler):
-    """Executes notebook cell code in response to HTTP requests at the route
-    registered in association with this class.
+    """Executes code from a notebook cell in response to HTTP requests at the
+    route registered in association with this class.
 
     Supports the GET, POST, PUT, and DELETE HTTP methods.
 
