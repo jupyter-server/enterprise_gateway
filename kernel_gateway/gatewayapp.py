@@ -326,7 +326,7 @@ class KernelGatewayApp(JupyterApp):
             handlers.append(
                 (url_path_join('/', self.base_url, r'/_api/spec/swagger.json'),
                 SwaggerSpecHandler, {
-                    'title' : self.seed_uri,
+                    'notebook_path' : self.seed_uri,
                     'source_cells': self.kernel_manager.seed_source,
                     'kernel_spec' : self.kernel_manager.seed_kernelspec
             }))
