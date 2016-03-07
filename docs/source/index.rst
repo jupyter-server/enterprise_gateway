@@ -35,7 +35,7 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developer Documentation
+   :caption: Contributor Documentation
    
    devinstall
 
