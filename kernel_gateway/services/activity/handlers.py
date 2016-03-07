@@ -4,13 +4,17 @@
 
 import tornado.web
 import json
-from .manager import activity
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
 class ActivityHandler(TokenAuthorizationMixin,
                       CORSMixin,
                       JSONErrorsMixin,
                       tornado.web.RequestHandler):
+
+    @property
+    def activity(self):
+        return self.settings['activity_manager']
+
     def get(self):
         """Responds with a JSON object of stats about every running kernel if
         kernel listing, `kg_list_kernels`, is enabled on the server.
@@ -43,4 +47,4 @@ class ActivityHandler(TokenAuthorizationMixin,
             raise tornado.web.HTTPError(403, 'Forbidden')
         self.set_header('Content-Type', 'application/json')
         self.set_status(200)
-        self.finish(json.dumps(activity.get()))
+        self.finish(json.dumps(self.activity.get()))

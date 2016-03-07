@@ -2,6 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 """Manager that tracks kernel activity."""
 
+from traitlets.config.configurable import LoggingConfigurable
+
 # Constants for activity keys in the store
 LAST_MESSAGE_TO_CLIENT = 'last_message_to_client'
 LAST_MESSAGE_TO_KERNEL = 'last_message_to_kernel'
@@ -20,7 +22,8 @@ default_activity_values = [(LAST_MESSAGE_TO_CLIENT, None),
     (LAST_CLIENT_CONNECT , None),
     (LAST_CLIENT_DISCONNECT , None)
 ]
-class ActivityManager(object):
+
+class ActivityManager(LoggingConfigurable):
     """Represents a store of activity values for kernels. Intended to be used as a
     singleton.
 
@@ -34,7 +37,8 @@ class ActivityManager(object):
     dummy_map : dict
          Default activity values
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super(ActivityManager, self).__init__(*args, **kwargs)
         self.values = {}
         self.ignore = set()
         self.dummy_map = {}
@@ -147,6 +151,3 @@ class ActivityManager(object):
             Kernel ID keys, activity dictionary values
         """
         return self.values
-
-# Singleton instance
-activity = ActivityManager()

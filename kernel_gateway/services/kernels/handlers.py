@@ -4,10 +4,12 @@
 
 import json
 import tornado
+from datetime import datetime
 import notebook.services.kernels.handlers as notebook_handlers
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
-from ...services.activity.manager import activity, LAST_MESSAGE_TO_CLIENT, LAST_MESSAGE_TO_KERNEL, LAST_TIME_STATE_CHANGED, BUSY, CONNECTIONS, LAST_CLIENT_CONNECT, LAST_CLIENT_DISCONNECT
-from datetime import datetime
+from ...services.activity.manager import (LAST_MESSAGE_TO_CLIENT,
+    LAST_MESSAGE_TO_KERNEL, LAST_TIME_STATE_CHANGED, BUSY, CONNECTIONS,
+    LAST_CLIENT_CONNECT, LAST_CLIENT_DISCONNECT)
 
 class MainKernelHandler(TokenAuthorizationMixin,
                         CORSMixin,
@@ -80,14 +82,22 @@ class KernelHandler(TokenAuthorizationMixin,
     """Extends the notebook kernel handler with token auth, CORS, JSON
     errors, and kernel activity tracking.
     """
+
+    @property
+    def activity(self):
+        return self.settings['activity_manager']
+
     def delete(self, kernel_id):
         """Override the super class method to stop tracking activity for a
         kernel that is being deleted.
 
-
+        Parameters
+        ----------
+        kernel_id
+            ID of the kernel to stop tracking
         """
         if self.settings.get('kg_list_kernels'):
-            activity.remove(kernel_id)
+            self.activity.remove(kernel_id)
         super(KernelHandler, self).delete(kernel_id)
 
 class ZMQChannelsHandler(TokenAuthorizationMixin,
@@ -95,6 +105,10 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
     """Extends the notebook websocket to zmq handler with token auth and
     kernel activity tracking.
     """
+    @property
+    def activity(self):
+        return self.settings['activity_manager']
+
     def open(self, kernel_id):
         """Overrides the super class method to track connections to a kenrel.
 
@@ -104,8 +118,8 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
             Opening a connection to this kernel
         """
         if self.settings.get('kg_list_kernels'):
-            activity.publish(self.kernel_id, LAST_CLIENT_CONNECT, datetime.now().isoformat())
-            activity.increment_activity(self.kernel_id, CONNECTIONS)
+            self.activity.publish(self.kernel_id, LAST_CLIENT_CONNECT, datetime.now().isoformat())
+            self.activity.increment_activity(self.kernel_id, CONNECTIONS)
         super(ZMQChannelsHandler, self).open(kernel_id)
 
     def on_close(self):
@@ -113,8 +127,8 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
         kernel.
         """
         if self.settings.get('kg_list_kernels'):
-            activity.publish(self.kernel_id, LAST_CLIENT_DISCONNECT, datetime.now().isoformat())
-            activity.decrement_activity(self.kernel_id, CONNECTIONS)
+            self.activity.publish(self.kernel_id, LAST_CLIENT_DISCONNECT, datetime.now().isoformat())
+            self.activity.decrement_activity(self.kernel_id, CONNECTIONS)
         super(ZMQChannelsHandler, self).on_close()
 
     def _on_zmq_reply(self, stream, msg_list):
@@ -133,14 +147,14 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
                 msg_content = json.loads(msg_list[6].decode('UTF-8'))
                 # If the status is busy, set the busy to True
                 if msg_content['execution_state'] == 'busy':
-                    activity.publish(self.kernel_id, BUSY, True)
+                    self.activity.publish(self.kernel_id, BUSY, True)
                 # Else if the status is idle, set the busy to False
                 elif msg_content['execution_state'] == 'idle':
-                    activity.publish(self.kernel_id, BUSY, False)
+                    self.activity.publish(self.kernel_id, BUSY, False)
                 # Record the time the state was changed
-                activity.publish(self.kernel_id, LAST_TIME_STATE_CHANGED, datetime.now().isoformat())
+                self.activity.publish(self.kernel_id, LAST_TIME_STATE_CHANGED, datetime.now().isoformat())
 
-            activity.publish(self.kernel_id, LAST_MESSAGE_TO_CLIENT, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_CLIENT, datetime.now().isoformat())
         super(ZMQChannelsHandler, self)._on_zmq_reply(stream, msg_list)
 
     def on_message(self, msg):
@@ -153,7 +167,7 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
             Message sent to a kernel
         """
         if self.settings.get('kg_list_kernels'):
-            activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, datetime.now().isoformat())
         super(ZMQChannelsHandler, self).on_message(msg)
 
 default_handlers = []
