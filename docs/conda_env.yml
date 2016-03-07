@@ -7,8 +7,8 @@ dependencies:
 - nbformat
 - jupyter_client
 - notebook
-- jupyter_kernel_gateway
 - ipykernel
 - pip:
     - sphinxcontrib_spelling
     - pyenchant
+    - jupyter_kernel_gateway
