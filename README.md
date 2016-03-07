@@ -1,4 +1,5 @@
 # Jupyter Kernel Gateway
+[![Documentation Status](http://readthedocs.org/projects/jupyter-kernel-gateway/badge/?version=latest)](http://jupyter-kernel-gateway.readthedocs.org/en/latest/?badge=latest)
 
 ## Overview
 
