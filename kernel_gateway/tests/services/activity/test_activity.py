@@ -6,10 +6,12 @@ from kernel_gateway.services.activity.manager import ActivityManager, LAST_MESSA
 import uuid
 from datetime import datetime
 
-class TestActivityStore(unittest.TestCase):
+class TestActivityManager(unittest.TestCase):
+    """Unit tests the ActivityManager class."""
     def setUp(self):
         self.kernel_id = 'fake_id-{}'.format(uuid.uuid1().hex)
-        self.activity = ActivityManager()
+        self.kernel_manager = [self.kernel_id]
+        self.activity = ActivityManager(self.kernel_manager)
 
     def test_store_creates_default_metrics(self):
         """Unknown kernels should have default activity values."""
@@ -113,12 +115,6 @@ class TestActivityStore(unittest.TestCase):
         self.activity.decrement_activity(self.kernel_id, CONNECTIONS)
         self.assertTrue(self.activity.get()[self.kernel_id] is not None, 'Kernel activity object was not created')
 
-    def test_remove_should_blacklist_kernel(self):
-        """remove should add the self.kernel_id to the blacklist"""
-        self.activity.increment_activity(self.kernel_id, CONNECTIONS)
-        self.activity.remove(self.kernel_id)
-        self.assertTrue(self.kernel_id in self.activity.ignore, 'Kernel was not blacklisted')
-
     def test_remove_should_remove_kernel_from_get(self):
         """remove should remove the kernel from the store's values"""
         self.activity.increment_activity(self.kernel_id, CONNECTIONS)
@@ -128,13 +124,21 @@ class TestActivityStore(unittest.TestCase):
     def test_remove_should_not_allow_new_activities_for_a_kernel(self):
         """remove should not allow future activities for a kernel to be recorded"""
         self.activity.increment_activity(self.kernel_id, CONNECTIONS)
+
+        # Simulate kernel shutdown and removal from the activity tracker
+        self.kernel_manager.remove(self.kernel_id)
         self.activity.remove(self.kernel_id)
+
         self.activity.increment_activity(self.kernel_id, CONNECTIONS)
         self.assertTrue(self.activity.get().get(self.kernel_id) is None, 'New kernel activities were created when they should not have been')
 
     def test_get_should_return_list_of_kernel_activities(self):
         """get should return a list of all kernel activities record"""
-        self.activity.increment_activity('{}-1'.format(self.kernel_id), CONNECTIONS)
-        self.activity.increment_activity('{}-2'.format(self.kernel_id), CONNECTIONS)
-        self.activity.increment_activity('{}-3'.format(self.kernel_id), CONNECTIONS)
+        # Simulate three kernels
+        for i in range(3):
+            kernel_id = '{}-{}'.format(self.kernel_id, i)
+            # Track each one in the kernel manager so that they're not ignored
+            # by the activity manager
+            self.kernel_manager.append(kernel_id)
+            self.activity.increment_activity(kernel_id, CONNECTIONS)
         self.assertEqual(len(self.activity.get()), 3, 'Activities were not created for all of the kernels')

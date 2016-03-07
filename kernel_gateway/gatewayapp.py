@@ -252,16 +252,17 @@ class KernelGatewayApp(JupyterApp):
             # Note: must be set before instantiating a SeedingMappingKernelManager
             self.seed_notebook = self._load_notebook(self.seed_uri)
 
-        self.activity_manager = ActivityManager(
-            parent=self,
-            log=self.log
-        )
-
         self.kernel_manager = SeedingMappingKernelManager(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
             kernel_spec_manager=self.kernel_spec_manager
+        )
+
+        self.activity_manager = ActivityManager(
+            parent=self,
+            log=self.log,
+            kernel_manager=self.kernel_manager
         )
 
         self.session_manager = SessionManager(
