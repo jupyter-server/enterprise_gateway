@@ -1,10 +1,11 @@
 # Jupyter Kernel Gateway
 
+## Overview
 A web server that supports different mechanisms for spawning and
 communicating with Jupyter kernels, such as:
 
 * A Jupyter Notebook server-compatible HTTP API used for requesting kernels
-  and talking the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html)
+  and talking the [Jupyter kernel protocol](https://jupyter-client.readthedocs.org/en/latest/messaging.html)
   with the kernels over Websockets
 * A HTTP API defined by annotated notebook cells that maps HTTP verbs and
   resources to code to execute on a kernel
@@ -13,10 +14,27 @@ The server launches kernels in the server's local process/filesystem space.
 The server can be containerized and scaled out by a cluster manager (e.g.,
 [tmpnb](https://github.com/jupyter/tmpnb)).
 
+### Features
+See the [Features page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/) in the 
+documentation for a detailed explanation of Jupyter Kernel Gateway's
+features.
+
+### Uses of Kernel Gateway
+A few uses of Kernel Gateway are (see [documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/)
+for more detail):
+* Create an interactive gateway to other services, i.e. Spark, by attaching a
+  local Jupyter Notebook server to a big data cloud compute cluster
+* Enables development of non-notebook web clients, such as dashboards, to
+  provision and use language kernels
+* Scale kernels independently from clients to create services such as
+  [tmpnb](https://github.com/jupyter/tmpnb) or [Binder](https://mybinder.org)
+* Create microservices from notebooks using the Kernel Gateway's 
+  [`notebook-http` mode](#notebook-http-mode)
+
 ## Installation
 
 Detailed installation instructions can be found in the 
-[Jupyter Kernel Gateway documentation](http://jupyter-kernel-gateway.readthedocs.org/en/latest/)
+[Jupyter Kernel Gateway documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/)
 found on ReadTheDocs.
 
 ### Using pip
