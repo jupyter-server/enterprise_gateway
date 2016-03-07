@@ -109,7 +109,7 @@ See the [setting_response_metadata.ipynb](etc/api_examples/setting_response_meta
 
 ### Swagger Spec
 
-The resource `/_api/spec/swagger.json` is automatically generated from the notebook used to define the HTTP API. The response is a simple Swagger spec which can be used with the [Swagger editor](http://editor.swagger.io/#/), a [Swagger ui](https://github.com/swagger-api/swagger-ui), or with any other Swagger-aware tool.
+The resource `/_api/spec/swagger.json` is automatically generated from the notebook used to define the HTTP API. The response is a simple Swagger spec which can be used with the [Swagger editor](http://editor.swagger.io/#), a [Swagger ui](https://github.com/swagger-api/swagger-ui), or with any other Swagger-aware tool.
 
 Currently, every response is listed as having a status of `200 OK`.
 

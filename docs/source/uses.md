@@ -9,7 +9,7 @@ Jupyter Kernel Gateway:
   kernels (e.g., dashboards using 
   [jupyter-js-services](https://github.com/jupyter/jupyter-js-services))
 * Scale kernels independently from clients (e.g., via 
-  [tmpnb](https://github.com/jupyter/tmpnb), [Binder](https://mybinder.org),
+  [tmpnb](https://github.com/jupyter/tmpnb), [Binder](http://mybinder.org/),
   or your favorite cluster manager)
 * Create microservices from notebooks via 
   [`notebook-http` mode](#notebook-http-mode)
