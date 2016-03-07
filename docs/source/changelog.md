@@ -1,8 +1,5 @@
-# Summary of changes in Jupyter Kernel Gateway
+# Summary of changes
 
 See `git log` for a more detailed summary.
 
-## 0.0
-
-
-
+## 0.5

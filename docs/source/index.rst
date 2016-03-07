@@ -23,11 +23,13 @@ Contents:
    getting-started
    uses
    features
+   operating
 
 .. toctree::
    :maxdepth: 2
    :caption: Configuration
 
+   config-options
    troubleshooting
 
 .. toctree::
@@ -37,7 +39,7 @@ Contents:
    devinstall
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Community documentation
 
 .. toctree::
@@ -47,7 +49,7 @@ Contents:
    changelog
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Questions? Suggestions?
 
    Jupyter mailing list <https://groups.google.com/forum/#!forum/jupyter>
