@@ -1,7 +1,8 @@
 # Jupyter Kernel Gateway
 
 ## Overview
-A web server that supports different mechanisms for spawning and
+
+The kernel gateway is a web server that supports different mechanisms for spawning and
 communicating with Jupyter kernels, such as:
 
 * A Jupyter Notebook server-compatible HTTP API used for requesting kernels
@@ -10,9 +11,7 @@ communicating with Jupyter kernels, such as:
 * A HTTP API defined by annotated notebook cells that maps HTTP verbs and
   resources to code to execute on a kernel
 
-The server launches kernels in the server's local process/filesystem space.
-The server can be containerized and scaled out by a cluster manager (e.g.,
-[tmpnb](https://github.com/jupyter/tmpnb)).
+The server launches kernels in its local process/filesystem space. It can be containerized and scaled out using common technology like [tmpnb](https://github.com/jupyter/tmpnb), [Cloud Foundry](https://github.com/cloudfoundry), and [Kubernetes](http://kubernetes.io/).
 
 ### Features
 See the [Features page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/) in the 
