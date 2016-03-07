@@ -23,7 +23,8 @@ Contents:
    getting-started
    uses
    features
-   operating
+   websocket-mode
+   http-mode
 
 .. toctree::
    :maxdepth: 2
