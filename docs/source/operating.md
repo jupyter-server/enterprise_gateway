@@ -1,17 +1,3 @@
-# Jupyter Kernel Gateway
-
-A web server that supports different mechanisms for spawning and communicating with Jupyter kernels, such as:
-
-* A Jupyter Notebook server-compatible HTTP API for requesting kernels and talking the [Jupyter kernel protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) with them over Websockets
-* A HTTP API defined by annotated notebook cells that maps HTTP verbs and resources to code to execute on a kernel
-
-The server launches kernels in its local process/filesystem space. It can be containerized and scaled out by a cluster manager (e.g., [tmpnb](https://github.com/jupyter/tmpnb)).
-
-
-
-
-
-
 ## `notebook-http` Mode
 
 The `KernelGatewayApp.api` command line argument can be set to `notebook-http`. In this mode, the kernel gateway exposes annotated cells in the `KernelGatewayApp.seed_uri` notebook as HTTP resources.
@@ -133,7 +119,7 @@ The minimum number of arguments needed to run in HTTP mode are `--KernelGatewayA
 
 If you  development, you can run the kernel gateway in `notebook-http` mode using the Makefile in this repository:
 
-```
+```bash
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb"
 ```
@@ -143,12 +129,8 @@ mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode
 
 The notebook-http mode will honor the `prespawn_count` command line argument. This will start the specified number of kernels and execute the `seed_uri` notebook on each one. Requests will be distributed across the pool of prespawned kernels, providing a minimal layer of scalability. An example which starts a pool of 5 kernels follows:
 
-```
+```bash
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
     --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb" \
     --KernelGatewayApp.prespawn_count=5
 ```
-
-## Contributors
-
-### Setting up a development system
