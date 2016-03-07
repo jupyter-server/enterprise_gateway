@@ -21,6 +21,8 @@ Contents:
    :caption: User Documentation
 
    getting-started
+   uses
+   features
 
 .. toctree::
    :maxdepth: 2
@@ -29,7 +31,7 @@ Contents:
    troubleshooting
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Developer Documentation
    
    devinstall
@@ -37,8 +39,6 @@ Contents:
 .. toctree::
    :maxdepth: 1
    :caption: Community documentation
-
-
 
 .. toctree::
    :maxdepth: 2
