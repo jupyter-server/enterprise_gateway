@@ -21,23 +21,27 @@ Contents:
    :caption: User Documentation
 
    getting-started
+   uses
+   features
+   websocket-mode
+   http-mode
 
 .. toctree::
    :maxdepth: 2
    :caption: Configuration
 
+   config-options
    troubleshooting
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Developer Documentation
+   :maxdepth: 2
+   :caption: Contributor Documentation
    
+   devinstall
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Community documentation
-
-
 
 .. toctree::
    :maxdepth: 2
@@ -46,7 +50,7 @@ Contents:
    changelog
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Questions? Suggestions?
 
    Jupyter mailing list <https://groups.google.com/forum/#!forum/jupyter>

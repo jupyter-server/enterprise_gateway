@@ -1,6 +1,5 @@
-name: kernel_gateway
-type: sphinx
-requirements_file: docs/requirements.txt
+conda:
+    file: docs/conda_env.yml
 python:
-  version: 3
+    version: 3
   
