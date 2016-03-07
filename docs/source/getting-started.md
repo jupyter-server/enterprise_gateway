@@ -5,7 +5,7 @@ Jupyter Kernel.
 
 ### Installation
 
-See [the readme](https://github.com/jupyter-incubator/kernel_gateway/blob/master/README.md)
+See [the readme](https://github.com/jupyter/kernel_gateway/blob/master/README.md)
 for help installing Jupyter Kernel Gateway.
 
 ### Try It

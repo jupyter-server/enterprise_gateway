@@ -47,7 +47,7 @@ Contents:
    :maxdepth: 2
    :caption: About Jupyter Kernel Gateway
 
-   changelog
+   summary-changes
 
 .. toctree::
    :maxdepth: 2
