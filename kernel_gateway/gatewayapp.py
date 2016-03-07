@@ -29,6 +29,7 @@ from .services.kernels.handlers import default_handlers as default_kernel_handle
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
 from .services.sessions.handlers import default_handlers as default_session_handlers
 from .services.sessions.sessionmanager import SessionManager
+from .services.activity.manager import ActivityManager
 from .services.kernels.manager import SeedingMappingKernelManager
 from .services.kernels.pool import KernelPool, ManagedKernelPool
 from .base.handlers import default_handlers as default_base_handlers
@@ -239,7 +240,7 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
-        spec manager, session manager, and kernel pool.
+        spec manager, session manager, kernel pool, and activity manager.
 
         Optionally, loads a notebook and prespawns the configured number of
         kernels.
@@ -256,6 +257,12 @@ class KernelGatewayApp(JupyterApp):
             log=self.log,
             connection_dir=self.runtime_dir,
             kernel_spec_manager=self.kernel_spec_manager
+        )
+
+        self.activity_manager = ActivityManager(
+            parent=self,
+            log=self.log,
+            kernel_manager=self.kernel_manager
         )
 
         self.session_manager = SessionManager(
@@ -366,6 +373,7 @@ class KernelGatewayApp(JupyterApp):
 
         self.web_app = web.Application(
             handlers=handlers,
+            activity_manager=self.activity_manager,
             kernel_manager=self.kernel_manager,
             session_manager=self.session_manager,
             contents_manager=self.contents_manager,
