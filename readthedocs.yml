@@ -1,0 +1,6 @@
+name: kernel_gateway
+type: sphinx
+requirements_file: docs/requirements.txt
+python:
+  version: 3
+  
