@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Tests for handler mixins."""
 
 import json
 import unittest
@@ -7,6 +8,7 @@ from tornado import web
 from kernel_gateway.mixins import JSONErrorsMixin
 
 class TestableHandler(JSONErrorsMixin):
+    """Implementation that uses the JSONErrorsMixin for testing."""
     def __init__(self):
         self.headers = {}
         self.response = None
@@ -22,11 +24,13 @@ class TestableHandler(JSONErrorsMixin):
         self.headers[name] = value
 
 class TestJSONErrorsMixin(unittest.TestCase):
+    """Unit tests the JSON errors mixin."""
     def setUp(self):
+        """Creates a handler that uses the mixin."""
         self.mixin = TestableHandler()
 
     def test_status(self):
-        '''Status should be set on the response.'''
+        """Status should be set on the response."""
         self.mixin.write_error(404)
         response = json.loads(self.mixin.response)
         self.assertEqual(self.mixin.status_code, 404)
@@ -34,7 +38,7 @@ class TestJSONErrorsMixin(unittest.TestCase):
         self.assertEqual(response['message'], '')
 
     def test_custom_status(self):
-        '''Custom reason from exeception should be set in the response.'''
+        """Custom reason from exeception should be set in the response."""
         exc = web.HTTPError(500, reason='fake-reason')
         self.mixin.write_error(500, exc_info=[None, exc])
 
@@ -44,7 +48,7 @@ class TestJSONErrorsMixin(unittest.TestCase):
         self.assertEqual(response['message'], '')
 
     def test_log_message(self):
-        '''Custom message from exeception should be set in the response.'''
+        """Custom message from exeception should be set in the response."""
         exc = web.HTTPError(410, log_message='fake-message')
         self.mixin.write_error(410, exc_info=[None, exc])
 
