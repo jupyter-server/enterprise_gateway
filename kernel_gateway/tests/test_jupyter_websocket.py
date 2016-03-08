@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Tests for jupyter-websocket mode."""
 
 import os
 import sys
@@ -17,11 +18,22 @@ from tornado.testing import gen_test
 from tornado.escape import json_encode, json_decode, url_escape
 
 class TestJupyterWebsocket(TestGatewayAppBase):
+    """Base class for jupyter-websocket mode tests that spawn kernels."""
     @coroutine
     def spawn_kernel(self, kernel_body='{}'):
-        '''
-        Code to spawn a kernel and return a websocket connection to it.
-        '''
+        """Spawns a kernel using the gateway API and connects a websocket
+        client to it.
+
+        Parameters
+        ----------
+        kernel_body : str
+            POST /api/kernels body
+
+        Returns
+        -------
+        Future
+            Promise of a WebSocketClientConnection
+        """
         # Request a kernel
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -41,16 +53,17 @@ class TestJupyterWebsocket(TestGatewayAppBase):
         raise Return(ws)
 
 class TestDefaults(TestJupyterWebsocket):
+    """Tests gateway behavior."""
     @gen_test
     def test_startup(self):
-        '''Root of kernels resource should be OK.'''
+        """Root of kernels resource should be OK."""
         self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(self.get_url('/api/kernels'))
         self.assertEqual(response.code, 200)
 
     @gen_test
     def test_headless(self):
-        '''Other notebook resources should not exist.'''
+        """Other notebook resources should not exist."""
         response = yield self.http_client.fetch(self.get_url('/api/contents'),
             raise_error=False)
         self.assertEqual(response.code, 404)
@@ -63,7 +76,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_check_origin(self):
-        '''Allow origin setting should pass through to base handlers.'''
+        """Allow origin setting should pass through to base handlers."""
         response = yield self.http_client.fetch(
             self.get_url('/api/kernelspecs'),
             method='GET',
@@ -85,14 +98,14 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_config_bad_api_value(self):
-        '''A ValueError should be raised on an unsupported KernelGatewayApp.api value'''
+        """Should raise a ValueError for unsupported API modes."""
         def _set_api():
             self.app.api = 'notebook-gopher'
         self.assertRaises(ValueError, _set_api)
 
     @gen_test
     def test_auth_token(self):
-        '''All server endpoints should check the configured auth token.'''
+        """All server endpoints should check the configured auth token."""
         # Set token requirement
         app = self.get_app()
         app.settings['kg_auth_token'] = 'fake-token'
@@ -190,7 +203,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_cors_headers(self):
-        '''All kernel endpoints should respond with configured CORS headers.'''
+        """All kernel endpoints should respond with configured CORS headers."""
         app = self.get_app()
         app.settings['kg_allow_credentials'] = 'false'
         app.settings['kg_allow_headers'] = 'Authorization,Content-Type'
@@ -216,7 +229,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_max_kernels(self):
-        '''Number of kernels should be limited.'''
+        """Number of kernels should be limited."""
         app = self.get_app()
         app.settings['kg_max_kernels'] = 1
 
@@ -255,7 +268,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_get_api(self):
-        '''Server should respond with the API version metadata.'''
+        """Server should respond with the API version metadata."""
         response = yield self.http_client.fetch(
             self.get_url('/api')
         )
@@ -265,7 +278,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_get_kernelspecs(self):
-        '''Server should respond with kernel spec metadata.'''
+        """Server should respond with kernel spec metadata."""
         response = yield self.http_client.fetch(
             self.get_url('/api/kernelspecs')
         )
@@ -276,7 +289,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_get_kernels(self):
-        '''Server should respond with running kernel information.'''
+        """Server should respond with running kernel information."""
         self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels')
@@ -305,7 +318,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_kernel_comm(self):
-        '''Default kernel should launch and accept commands.'''
+        """Default kernel should launch and accept commands."""
         ws = yield self.spawn_kernel()
 
         # Send a request for kernel info
@@ -336,7 +349,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_default_kernel_name(self):
-        '''The default kernel name should be used on empty requests.'''
+        """The default kernel name should be used on empty requests."""
         app = self.get_app()
         app.settings['kg_default_kernel_name'] = 'fake-kernel'
         # Request without an explicit kernel name
@@ -351,7 +364,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_no_discovery(self):
-        '''The list of kernels / sessions should be forbidden by default.'''
+        """The list of kernels / sessions should be forbidden by default."""
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
             raise_error=False
@@ -364,9 +377,15 @@ class TestDefaults(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 403)
 
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
+            raise_error=False
+        )
+        self.assertEqual(response.code, 403)
+
     @gen_test
     def test_crud_sessions(self):
-        '''Server should create, list, and delete sessions.'''
+        """Server should create, list, and delete sessions."""
         app = self.get_app()
         app.settings['kg_list_kernels'] = True
 
@@ -413,7 +432,7 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_json_errors(self):
-        '''Handlers should always return JSON errors.'''
+        """Handlers should always return JSON errors."""
         # A handler that we override
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -444,12 +463,14 @@ class TestDefaults(TestJupyterWebsocket):
         self.assertEqual(body['reason'], 'Not Found')
 
 class TestEnableDiscovery(TestJupyterWebsocket):
+    """Tests gateway behavior with kernel listing enabled."""
     def setup_app(self):
+        """Enables kernel listing for all tests."""
         self.app.list_kernels = True
 
     @gen_test
     def test_enable_kernel_list(self):
-        '''The list of kernels and sessions should be available.'''
+        """The list of kernels, sessions, and activities should be available."""
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
         )
@@ -460,14 +481,21 @@ class TestEnableDiscovery(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 200)
         self.assertTrue('[]' in str(response.body))
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/activity'),
+        )
+        self.assertEqual(response.code, 200)
+        self.assertTrue('{}' in str(response.body))
 
 class TestPrespawnKernels(TestJupyterWebsocket):
+    """Tests gateway behavior when kernels are spawned at startup."""
     def setup_app(self):
+        """Always prespawn 2 kernels."""
         self.app.prespawn_count = 2
 
     @gen_test(timeout=10)
     def test_prespawn_count(self):
-        '''Server should launch given number of kernels on start.'''
+        """Server should launch the given number of kernels on startup."""
         self.app.web_app.settings['kg_list_kernels'] = True
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels')
@@ -477,23 +505,24 @@ class TestPrespawnKernels(TestJupyterWebsocket):
         self.assertEqual(len(kernels), 2)
 
     def test_prespawn_max_conflict(self):
-        '''
-        Server should error if prespawn count is greater than max allowed
+        """Server should error if prespawn count is greater than max allowed
         kernels.
-        '''
+        """
         app = KernelGatewayApp()
         app.prespawn_count = 3
         app.max_kernels = 2
         self.assertRaises(RuntimeError, app.init_configurables)
 
 class TestBaseURL(TestJupyterWebsocket):
+    """Tests gateway behavior when a custom base URL is configured."""
     def setup_app(self):
+        """Sets the custom base URL and enables kernel listing."""
         self.app.base_url = '/fake/path'
         self.app.list_kernels = True
 
     @gen_test
     def test_base_url(self):
-        '''Server should mount resources under configured base.'''
+        """Server should mount resources under configured base."""
         # Should not exist at root
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -522,12 +551,14 @@ class TestBaseURL(TestJupyterWebsocket):
         self.assertEqual(response.code, 200)
 
 class TestRelativeBaseURL(TestJupyterWebsocket):
+    """Tests gateway behavior when a relative base URL is configured."""
     def setup_app(self):
+        """Sets the custom base URL as a relative path."""
         self.app.base_url = 'fake/path'
 
     @gen_test
     def test_base_url(self):
-        '''Server should mount resources under fixed base.'''
+        """Server should mount resources under fixed base."""
         self.app.web_app.settings['kg_list_kernels'] = True
 
         # Should exist under path
@@ -538,13 +569,15 @@ class TestRelativeBaseURL(TestJupyterWebsocket):
         self.assertEqual(response.code, 200)
 
 class TestSeedURI(TestJupyterWebsocket):
+    """Tests gateway behavior when a seeding kernel memory with code from a
+    notebook."""
     def setup_app(self):
         self.app.seed_uri = os.path.join(RESOURCES,
             'zen{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed(self):
-        '''Kernel should have variables preseeded from notebook. Failures may be the result of networking problems.'''
+        """Kernel should have variables preseeded from the notebook."""
         ws = yield self.spawn_kernel()
 
         # Print the encoded "zen of python" string, the kernel should have
@@ -584,26 +617,78 @@ class TestSeedURI(TestJupyterWebsocket):
 
         ws.close()
 
-class TestKernelLanguageSupport(TestJupyterWebsocket):
-    '''
-    Test explicit kernel language requests. Nothing fancy so that the test can
-    run in barebones environments like Travis.
-    '''
+class TestRemoteSeedURI(TestSeedURI):
+    """Tests gateway behavior when a seeding kernel memory with code from a
+    remote notebook.
+    """
     def setup_app(self):
+        """Sets the seed notebook to a remote notebook."""
+        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
+
+class TestBadSeedURI(TestJupyterWebsocket):
+    """Tests gateway behavior when seeding kernel memory with notebook code
+    that fails.
+    """
+    def setup_app(self):
+        """Sets the seed notebook to one of the test resources."""
+        self.app.seed_uri = os.path.join(RESOURCES,
+            'failing_code{}.ipynb'.format(sys.version_info.major))
+
+    @gen_test
+    def test_seed_error(self):
+        """
+        Server should shutdown kernel and respond with error when seed notebook
+        has an execution error.
+        """
+        self.app.web_app.settings['kg_list_kernels'] = True
+        # Request a kernel
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{}',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500)
+
+        # No kernels should be running
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='GET'
+        )
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 0)
+
+    def test_seed_kernel_not_available(self):
+        """
+        Server should error because seed notebook requires a kernel that is not
+        installed.
+        """
+        app = KernelGatewayApp()
+        app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
+        self.assertRaises(NoSuchKernel, app.init_configurables)
+
+class TestKernelLanguageSupport(TestJupyterWebsocket):
+    """Tests gateway behavior when a client requests a specific kernel spec."""
+    def setup_app(self):
+        """Sets the app to prespawn one kernel and preseed it with one of the
+        test notebooks.
+        """
         self.app.prespawn_count = 1
         self.app.seed_uri = os.path.join(RESOURCES,
             'zen{}.ipynb'.format(sys.version_info.major))
 
     @coroutine
     def spawn_kernel(self):
-        '''Explicitly set the Python kernel version number when spawning.'''
+        """Override the base class spawn utility method to set the Python kernel
+        version number when spawning.
+        """
         kernel_body = json.dumps({"name":"python{}".format(sys.version_info.major)})
         ws = yield super(TestKernelLanguageSupport, self).spawn_kernel(kernel_body)
         raise Return(ws)
 
     @gen_test
     def test_seed_language_support(self):
-        '''Kernel should have variables preseeded from notebook.'''
+        """Kernel should have variables preseeded from notebook."""
         ws = yield self.spawn_kernel()
 
         if sys.version_info.major == 2:
@@ -648,64 +733,17 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
 
         ws.close()
 
-class TestRemoteSeedURI(TestJupyterWebsocket):
-    def setup_app(self):
-        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
-
-class TestBadSeedURI(TestJupyterWebsocket):
-    def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES,
-            'failing_code{}.ipynb'.format(sys.version_info.major))
-
-    @gen_test
-    def test_seed_error(self):
-        '''
-        Server should shutdown kernel and respond with error when seed notebook
-        has an execution error.
-        '''
-        self.app.web_app.settings['kg_list_kernels'] = True
-        # Request a kernel
-        response = yield self.http_client.fetch(
-            self.get_url('/api/kernels'),
-            method='POST',
-            body='{}',
-            raise_error=False
-        )
-        self.assertEqual(response.code, 500)
-
-        # No kernels should be running
-        response = yield self.http_client.fetch(
-            self.get_url('/api/kernels'),
-            method='GET'
-        )
-        kernels = json_decode(response.body)
-        self.assertEqual(len(kernels), 0)
-
-    def test_seed_kernel_not_available(self):
-        '''
-        Server should error because seed notebook requires a kernel that is not
-        installed.
-        '''
-        app = KernelGatewayApp()
-        app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
-        self.assertRaises(NoSuchKernel, app.init_configurables)
-
 class TestActivityAPI(TestJupyterWebsocket):
-    @gen_test
-    def test_api_is_hidden_with_no_flag(self):
-        self.app.web_app.settings['kg_list_kernels'] = False
-        # Request the activity
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-            method='GET',
-            raise_error=False
-        )
-        print(response)
-        self.assertEqual(response.code, 403)
+    """Tests gateway behavior when the activity API is enabled."""
+    def setup_app(self):
+        """Enables kernel listing so the activity API is available."""
+        self.app.list_kernels = True
 
     @gen_test
     def test_api_lists_kernels_with_flag_set(self):
-        self.app.web_app.settings['kg_list_kernels'] = True
+        """Server should report initial activity values for one kernel with
+        one client connected to it.
+        """
         ws = yield self.spawn_kernel()
         ws.write_message(json_encode({
             'header': {

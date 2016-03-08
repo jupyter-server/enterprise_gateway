@@ -1,11 +1,31 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Tests for notebook cell parsing."""
 
-from kernel_gateway.services.cell.parser import *
 import unittest
 import re
-class TestAPICellParserUtils(unittest.TestCase):
+import sys
+from kernel_gateway.services.cell.parser import APICellParser
+
+class TestAPICellParser(unittest.TestCase):
+    """Unit tests the APICellParser class."""
     def _test_parser_with_kernel_spec(self, kernel_spec, expected_comment):
+        """Instantiates the parser using the given `kernel_spec` and asserts
+        whether it created the correct regular expression for the kernel
+        language comment syntax.
+
+        Parameters
+        ----------
+        kernel_spec : str
+            Kernel spec name
+        expected_comment : str
+            Comment token in the kernel spec language
+
+        Raises
+        ------
+        AssertionError
+            If the parser did not create the correct regex
+        """
         parser = APICellParser(kernel_spec)
         self.assertEqual(
             parser.kernelspec_api_indicator,
@@ -16,42 +36,23 @@ class TestAPICellParserUtils(unittest.TestCase):
             )
         )
 
-    def test_init_uses_correct_default_comment(self):
-        '''Tests if the parser correctly sets the comment regex for unknown kernels'''
+    def test_init(self):
+        """Parser should pick the correct comment syntax."""
         self._test_parser_with_kernel_spec('some_unknown_kernel', '#')
-
-    def test_init_uses_correct_comment_for_spark_kernel(self):
-        '''Tests if the parser correctly sets the comment regex for spark kernel'''
         self._test_parser_with_kernel_spec('scala', '//')
-
-    def test_init_uses_correct_comment_for_python2_kernel(self):
-        '''Tests if the parser correctly sets the comment regex for python2'''
         self._test_parser_with_kernel_spec('python2', '#')
-
-    def test_init_uses_correct_comment_for_python3_kernel(self):
-        '''Tests if the parser correctly sets the comment regex for python3'''
         self._test_parser_with_kernel_spec('python3', '#')
-
-    def test_init_uses_correct_comment_for_ir_kernel(self):
-        '''Tests if the parser correctly sets the comment regex for r'''
         self._test_parser_with_kernel_spec('ir', '#')
-
-    def test_init_uses_correct_comment_for_julia_kernel(self):
-        '''Tests if the parser correctly sets the comment regex for julia'''
         self._test_parser_with_kernel_spec('julia-0.3', '#')
 
-    def test_is_api_cell_is_true_for_api_cells(self):
-        '''Tests if the parser correctly identifies api cells'''
+    def test_is_api_cell(self):
+        """Parser should correctly identify annotated API cells."""
         parser = APICellParser('some_unknown_kernel')
         self.assertTrue(parser.is_api_cell('# GET /yes'), 'API cell was not detected')
-
-    def test_is_api_cell_is_false_for_api_cells(self):
-        '''Tests if the parser correctly identifies non-api cells'''
-        parser = APICellParser('some_unknown_kernel')
         self.assertFalse(parser.is_api_cell('no'), 'API cell was not detected')
 
-    def test_endpoints_are_sorted_default_strategy(self):
-        '''Tests if the parser correctly creates a list of endpoint, source tuples using the default sort strategy'''
+    def test_endpoint_sort_default_strategy(self):
+        """Parser should sort duplicate endpoint paths."""
         source_cells = [
             '# POST /:foo',
             '# POST /hello/:foo',
@@ -66,8 +67,10 @@ class TestAPICellParserUtils(unittest.TestCase):
             endpoint, _ = endpoints[index]
             self.assertEqual(expected_values[index], endpoint, 'Endpoint was not found in expected order')
 
-    def test_endpoints_are_sorted_default_strategy(self):
-        '''Tests if the parser correctly creates a list of endpoint, source tuples using a custom sort strategy'''
+    def test_endpoint_sort_custom_strategy(self):
+        """Parser should sort duplicate endpoint paths using a custom sort
+        strategy.
+        """
         source_cells = [
             '# POST /1',
             '# POST /+',
@@ -92,7 +95,7 @@ class TestAPICellParserUtils(unittest.TestCase):
             self.assertEqual(expected_values[index], endpoint, 'Endpoint was not found in expected order')
 
     def test_get_cell_endpoint_and_verb(self):
-        '''Tests the ability to extract API endpoint and verb from a cell'''
+        """Parser should extract API endpoint and verb from cell annotations."""
         parser = APICellParser('some_unknown_kernel')
         endpoint, verb = parser.get_cell_endpoint_and_verb('# GET /foo')
         self.assertEqual(endpoint, '/foo', 'Endpoint was not extracted correctly')
@@ -101,15 +104,12 @@ class TestAPICellParserUtils(unittest.TestCase):
         self.assertEqual(endpoint, '/bar/quo', 'Endpoint was not extracted correctly')
         self.assertEqual(verb, 'POST', 'Endpoint was not extracted correctly')
 
-    def test_get_cell_endpoint_and_verb_with_non_api_cell(self):
-        '''Tests the ability to extract API endpoint and verb from a cell when there is no API code'''
-        parser = APICellParser('some_unknown_kernel')
         endpoint, verb = parser.get_cell_endpoint_and_verb('some regular code')
         self.assertEqual(endpoint, None, 'Endpoint was not extracted correctly')
         self.assertEqual(verb, None, 'Endpoint was not extracted correctly')
 
     def test_endpoint_concatenation(self):
-        '''Multiple cells with the same URI and verb should concatenate.'''
+        """Parser should concatenate multiple cells with the same verb+path."""
         source_cells = [
             '# POST /foo/:bar',
             '# POST /foo/:bar',
@@ -129,7 +129,9 @@ class TestAPICellParserUtils(unittest.TestCase):
         self.assertEqual(endpoints['/foo/:bar']['GET'], '# GET /foo/:bar\n')
 
     def test_endpoint_response_concatenation(self):
-        '''Multiple response cells with the same URI and verb should concatenate.'''
+        """Parser should concatenate multiple response cells with the same
+        verb+path.
+        """
         source_cells = [
             '# ResponseInfo POST /foo/:bar',
             '# ResponseInfo POST /foo/:bar',

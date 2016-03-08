@@ -1,5 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
+"""Tests for basic gateway app behavior."""
 
 import logging
 import unittest
@@ -10,14 +11,17 @@ from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 
 class TestGatewayAppConfig(unittest.TestCase):
+    """Tests configuration of the gateway app."""
     def setUp(self):
+        """Saves a copy of the environment."""
         self.environ = dict(os.environ)
 
     def tearDown(self):
+        """Resets the environment."""
         os.environ = self.environ
 
     def test_config_env_vars(self):
-        '''Env vars should be honored for traitlets.'''
+        """Env vars should be honored for traitlets."""
         # Environment vars are always strings
         os.environ['KG_PORT'] = '1234'
         os.environ['KG_IP'] = '1.1.1.1'
@@ -56,21 +60,26 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.allow_notebook_download, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
-    '''
-    Base class for integration style tests using HTTP/Websockets against an
+    """Base class for integration style tests using HTTP/Websockets against an
     instance of the gateway app..
-    '''
+
+    Attributes
+    ----------
+    app : KernelGatewayApp
+        Instance of the app
+    """
     def tearDown(self):
+        """Shuts down the app after test run."""
         if self.app:
             self.app.shutdown()
         super(TestGatewayAppBase, self).tearDown()
 
     def get_new_ioloop(self):
-        '''Use a global zmq ioloop for tests.'''
+        """Uses a global zmq ioloop for tests."""
         return ioloop.IOLoop.current()
 
     def get_app(self):
-        '''Returns a tornado.web.Application for system tests.'''
+        """Returns a tornado.web.Application for the Tornado test runner."""
         if hasattr(self, '_app'):
             return self._app
         self.app = KernelGatewayApp(log_level=logging.CRITICAL)
@@ -80,8 +89,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         return self.app.web_app
 
     def setup_app(self):
-        '''
-        Override to configure KernelGatewayApp instance before initializing
+        """Override to configure KernelGatewayApp instance before initializing
         configurables and the web app.
-        '''
+        """
         pass
