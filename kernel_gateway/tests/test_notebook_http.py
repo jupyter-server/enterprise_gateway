@@ -7,6 +7,7 @@ import sys
 import json
 
 from .test_gatewayapp import TestGatewayAppBase, RESOURCES
+from ..services.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import gen_test
 
 class TestDefaults(TestGatewayAppBase):
@@ -394,6 +395,7 @@ class TestSwaggerSpec(TestGatewayAppBase):
         result = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 200, "Swagger spec endpoint did not return the correct status code")
         self.assertEqual(result, expected_response, "Swagger spec endpoint did not return the correct value")
+        self.assertIsNotNone(SwaggerSpecHandler.output, "Swagger spec output wasn't cached for later requests")
 
 class TestBaseURL(TestGatewayAppBase):
     """Tests gateway behavior when a custom base URL is configured."""

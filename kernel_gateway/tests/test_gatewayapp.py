@@ -6,6 +6,7 @@ import logging
 import unittest
 import os
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
+from ..services.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -72,6 +73,8 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         """Shuts down the app after test run."""
         if self.app:
             self.app.shutdown()
+        # Make sure the generated Swagger output is reset for subsequent tests
+        SwaggerSpecHandler.output = None
         super(TestGatewayAppBase, self).tearDown()
 
     def get_new_ioloop(self):
