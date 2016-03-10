@@ -221,6 +221,18 @@ class TestDefaults(TestGatewayAppBase):
         self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
         self.assertEqual(response.body, b'x is 1\n', 'Unexpected body in response to GET.')
 
+    @gen_test
+    def test_kernel_gateway_environment_set(self):
+        """GET HTTP method should be callable with multiple query params"""
+        response = yield self.http_client.fetch(
+            self.get_url('/env_kernel_gateway'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
+        self.assertEqual(response.body, b'KERNEL_GATEWAY is 1\n', 'Unexpected body in response to GET.')
+
+
 class TestSourceDownload(TestGatewayAppBase):
     """Tests gateway behavior when notebook download is allowed."""
     def setup_app(self):

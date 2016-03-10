@@ -3,12 +3,16 @@
 """Kernel manager that optionally seeds kernel memory."""
 
 from notebook.services.kernels.kernelmanager import MappingKernelManager
+from jupyter_client.ioloop import IOLoopKernelManager
 from ..cell.parser import APICellParser
 
 class SeedingMappingKernelManager(MappingKernelManager):
     """Extends the notebook kernel manager to optionally execute the contents
     of a notebook on a kernel when it starts.
     """
+    def _kernel_manager_class_default(self):
+        return 'kernel_gateway.services.kernels.manager.KernelGatewayIOLoopKernelManager'
+
     @property
     def seed_kernelspec(self):
         """Gets the kernel spec name required to run the seed notebook.
@@ -90,3 +94,12 @@ class SeedingMappingKernelManager(MappingKernelManager):
                 # Shutdown the channels to remove any lingering ZMQ messages
                 client.stop_channels()
         return kernel_id
+
+class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
+    """Extends the IOLoopKernelManagers used by the SeedingMappingKernelManager
+    to include the environment variable 'KERNEL_GATEWAY' set to '1', indicating
+    that the notebook is executing within a Jupyter Kernel Gateway
+    """
+    def _launch_kernel(self, kernel_cmd, **kw):
+        kw['env']['KERNEL_GATEWAY'] = '1'
+        return super(KernelGatewayIOLoopKernelManager, self)._launch_kernel(kernel_cmd, **kw)
