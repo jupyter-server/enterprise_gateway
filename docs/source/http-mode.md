@@ -68,7 +68,7 @@ The second approach is used if nothing appears on stdout. This method is depende
 
 In both cases, the response defaults to status `200 OK` and `Content-Type: text/plain` if cell execution completes without error. If an error occurs, the status is `500 Internal Server Error`. If the HTTP request method is not one supported at the given path, the status is `405 Not Supported`. If you wish to return custom status or headers, see the next section.
 
-See the [api_intro.ipynb](etc/api_examples/api_intro.ipynb) notebook for basic request and response examples.
+See the [api_intro.ipynb](https://github.com/jupyter/kernel_gateway/blob/master/etc/api_examples/api_intro.ipynb) notebook for basic request and response examples.
 
 ### Setting the Response Status and Headers
 
@@ -105,7 +105,7 @@ Content-Type: application/json
 {"id": 123}
 ```
 
-See the [setting_response_metadata.ipynb](etc/api_examples/setting_response_metadata.ipynb) notebook for examples of setting response metadata.
+See the [setting_response_metadata.ipynb](https://github.com/jupyter/kernel_gateway/blob/master/etc/api_examples/setting_response_metadata.ipynb) notebook for examples of setting response metadata.
 
 ### Swagger Spec
 
