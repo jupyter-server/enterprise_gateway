@@ -1,6 +1,6 @@
 name: kernel_gateway_docs
 dependencies:
-- sphinx>=1.3
+- sphinx>=1.3.6
 - sphinx_rtd_theme
 - jinja2
 - tornado
