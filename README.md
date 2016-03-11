@@ -12,32 +12,25 @@ communicating with Jupyter kernels, such as:
 * A HTTP API defined by annotated notebook cells that maps HTTP verbs and
   resources to code to execute on a kernel
 
-The server launches kernels in its local process/filesystem space. It can be containerized and scaled out using common technology like [tmpnb](https://github.com/jupyter/tmpnb), [Cloud Foundry](https://github.com/cloudfoundry), and [Kubernetes](http://kubernetes.io/).
+The server launches kernels in its local process/filesystem space. It can be containerized and scaled out using common technologies like [tmpnb](https://github.com/jupyter/tmpnb), [Cloud Foundry](https://github.com/cloudfoundry), and [Kubernetes](http://kubernetes.io/).
+
+### Example Uses of Kernel Gateway
+
+* Attach a local Jupyter Notebook server to a compute cluster in the cloud running near big data (e.g., interactive gateway to Spark)
+* Enable a new breed of non-notebook web clients to provision and use kernels (e.g., web dashboards using [jupyter-js-services](https://github.com/jupyter/jupyter-js-services))
+* Create microservices from notebooks using the Kernel Gateway [`notebook-http` mode](http://jupyter-kernel-gateway.readthedocs.org/en/latest/http-mode.html)
 
 ### Features
-See the [Features page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/) in the 
+
+See the [Features page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/features.html) in the 
 documentation for a detailed explanation of Jupyter Kernel Gateway's
 features.
-
-### Uses of Kernel Gateway
-A few uses of Kernel Gateway are (see [documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/)
-for more detail):
-* Create an interactive gateway to other services, i.e. Spark, by attaching a
-  local Jupyter Notebook server to a big data cloud compute cluster
-* Enables development of non-notebook web clients, such as dashboards, to
-  provision and use language kernels
-* Scale kernels independently from clients to create services such as
-  [tmpnb](https://github.com/jupyter/tmpnb) or [Binder](https://mybinder.org)
-* Create microservices from notebooks using the Kernel Gateway's 
-  [`notebook-http` mode](#notebook-http-mode)
 
 ## Installation
 
 Detailed installation instructions can be found in the 
-[Jupyter Kernel Gateway documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/)
+[Jupyter Kernel Gateway documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/getting-started.html)
 found on ReadTheDocs.
-
-### Using pip
 
 ```bash
 # install from pypi
@@ -49,10 +42,6 @@ jupyter kernelgateway --help-all
 # run it with default options
 jupyter kernelgateway
 ```
-### Using Docker
-
-Getting started with Jupyter Kernel Gateway and Docker is an option too.
-Just follow the steps below for [Development Installation](#Development%20Installation).
 
 ## Contributors
 
@@ -63,7 +52,7 @@ straightforward using these steps:
 
 1. Prerequisite - Docker installation (if needed)
 
-   On a Mac, do this one-time setup to set up Docker locally:
+  For example, on a Mac, do this one-time setup to set up Docker locally:
 
    ```bash
    brew update
