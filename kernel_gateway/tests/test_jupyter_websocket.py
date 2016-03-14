@@ -447,6 +447,56 @@ class TestDefaults(TestJupyterWebsocket):
         self.assertEqual(response.code, 404)
         self.assertEqual(body['reason'], 'Not Found')
 
+    @gen_test
+    def test_kernel_env(self):
+        """Kernel should start with environment vars defined in the request."""
+        kernel_body = json.dumps({
+            'name': 'python',
+            'env': {
+                'KERNEL_FOO': 'kernel-foo-value',
+                'NOT_KERNEL': 'ignored',
+                'KERNEL_GATEWAY' : 'overridden'
+            }
+        })
+        ws = yield self.spawn_kernel(kernel_body)
+
+        ws.write_message(json_encode({
+            'header': {
+                'username': '',
+                'version': '5.0',
+                'session': '',
+                'msg_id': 'fake-msg-id',
+                'msg_type': 'execute_request'
+            },
+            'parent_header': {},
+            'channel': 'shell',
+            'content': {
+                'code': 'import os; print(os.getenv("KERNEL_FOO"), os.getenv("NOT_KERNEL"), os.getenv("KERNEL_GATEWAY"))',
+                'silent': False,
+                'store_history': False,
+                'user_expressions' : {}
+            },
+            'metadata': {},
+            'buffers': {}
+        }))
+
+        # Read messages until we see the output from the print or hit the
+        # test timeout
+        while 1:
+            msg = yield ws.read_message()
+            msg = json_decode(msg)
+            msg_type = msg['msg_type']
+            parent_msg_id = msg['parent_header']['msg_id']
+            if msg_type == 'stream' and parent_msg_id == 'fake-msg-id':
+                content = msg['content']
+                self.assertEqual(content['name'], 'stdout')
+                self.assertIn('kernel-foo-value', content['text'])
+                self.assertNotIn('ignored', content['text'])
+                self.assertNotIn('overridden', content['text'])
+                break
+
+        ws.close()
+
 class TestCustomDefaultKernel(TestJupyterWebsocket):
     """Tests gateway behavior when setting a custom default kernelspec."""
     def setup_app(self):

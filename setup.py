@@ -38,7 +38,7 @@ setup_args = dict(
     ],
     install_requires=[
         'jupyter_core>=4.0, <5.0',
-        'jupyter_client>=4.0, <5.0',
+        'jupyter_client>=4.2.0, <5.0',
         'notebook>=4.0, <5.0',
         'requests>=2.7, <3.0'
     ],

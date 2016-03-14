@@ -3,7 +3,7 @@
 
 .PHONY: bash clean dev help install sdist test
 
-IMAGE:=jupyter/pyspark-notebook:a388c4a66fd4
+IMAGE:=jupyter/pyspark-notebook:918deae45315
 
 DOCKER_ARGS?=
 define DOCKER

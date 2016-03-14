@@ -4,6 +4,7 @@
 
 import json
 import tornado
+from functools import partial
 from datetime import datetime
 import notebook.services.kernels.handlers as notebook_handlers
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
@@ -20,7 +21,8 @@ class MainKernelHandler(TokenAuthorizationMixin,
     """
     def post(self):
         """Overrides the super class method to honor the max number of allowed
-        kernels configuration setting.
+        kernels configuration setting and to support custom kernel environment
+        variables for every request.
 
         Delegates the request to the super class implementation if no limit is
         set or if the maximum is not reached. Otherwise, responds with an error.
@@ -38,7 +40,23 @@ class MainKernelHandler(TokenAuthorizationMixin,
             if len(kernels) >= max_kernels:
                 raise tornado.web.HTTPError(402, 'Resource Limit')
 
-        super(MainKernelHandler, self).post()
+        # Try to get env vars from the request body
+        model = self.get_json_body()
+        if model is not None and 'env' in model:
+            if not isinstance(model['env'], dict):
+                raise tornado.web.HTTPError(400)
+            # Whitelist to KERNEL_* args only
+            env = {key: value for key, value in model['env'].items() if key.startswith('KERNEL_')}
+            # No way to override the call to start_kernel on the kernel manager
+            # so do a temporary partial (ugh)
+            orig_start = self.kernel_manager.start_kernel
+            self.kernel_manager.start_kernel = partial(self.kernel_manager.start_kernel, env=env)
+            try:
+                super(MainKernelHandler, self).post()
+            finally:
+                self.kernel_manager.start_kernel = orig_start
+        else:
+            super(MainKernelHandler, self).post()
 
     def get(self):
         """Overrides the super class method to honor the kernel listing

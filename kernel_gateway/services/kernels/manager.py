@@ -96,7 +96,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
         return kernel_id
 
 class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
-    """Extends the IOLoopKernelManagers used by the SeedingMappingKernelManager
+    """Extends the IOLoopKernelManager used by the SeedingMappingKernelManager
     to include the environment variable 'KERNEL_GATEWAY' set to '1', indicating
     that the notebook is executing within a Jupyter Kernel Gateway
     """
