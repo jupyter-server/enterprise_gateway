@@ -348,21 +348,6 @@ class TestDefaults(TestJupyterWebsocket):
         ws.close()
 
     @gen_test
-    def test_default_kernel_name(self):
-        """The default kernel name should be used on empty requests."""
-        app = self.get_app()
-        app.settings['kg_default_kernel_name'] = 'fake-kernel'
-        # Request without an explicit kernel name
-        response = yield self.http_client.fetch(
-            self.get_url('/api/kernels'),
-            method='POST',
-            body='',
-            raise_error=False
-        )
-        self.assertEqual(response.code, 500)
-        self.assertTrue('raise NoSuchKernel' in str(response.body))
-
-    @gen_test
     def test_no_discovery(self):
         """The list of kernels / sessions should be forbidden by default."""
         response = yield self.http_client.fetch(
@@ -461,6 +446,24 @@ class TestDefaults(TestJupyterWebsocket):
         body = json_decode(response.body)
         self.assertEqual(response.code, 404)
         self.assertEqual(body['reason'], 'Not Found')
+
+class TestCustomDefaultKernel(TestJupyterWebsocket):
+    """Tests gateway behavior when setting a custom default kernelspec."""
+    def setup_app(self):
+        self.app.default_kernel_name = 'fake-kernel'
+
+    @gen_test
+    def test_default_kernel_name(self):
+        """The default kernel name should be used on empty requests."""
+        # Request without an explicit kernel name
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 500)
+        self.assertTrue('raise NoSuchKernel' in str(response.body))
 
 class TestEnableDiscovery(TestJupyterWebsocket):
     """Tests gateway behavior with kernel listing enabled."""
