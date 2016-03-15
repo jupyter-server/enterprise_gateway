@@ -13,8 +13,9 @@ install:
     - python setup.py bdist_wheel sdist
     - pip install -f travis-wheels/wheelhouse dist/*.whl
     - rm -rf travis-wheels
+    - pip install coverage
     - pip freeze
 script:
     - jupyter kernelgateway --help
-    - nosetests -x --process-restartworker
+    - nosetests -x --process-restartworker --with-coverage --cover-package=kernel_gateway
     - pip uninstall -y jupyter_kernel_gateway
