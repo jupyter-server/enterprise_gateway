@@ -14,20 +14,13 @@ docker run -it --rm \
 endef
 
 help:
-	@echo 'Host commands:'
-	@echo '            bash - start an interactive shell within a container'
-	@echo '           clean - clean built files'
-	@echo '             dev - start kernel gateway server in a container'
-	@echo '         install - install latest sdist into a container'
-	@echo '           sdist - build a source distribution into dist/'
-	@echo '            test - run unit tests within a container'
-	@echo '    test-python2 - run unit tests explicitly using Python 2 within a container'
-	@echo '    test-python3 - run unit tests explicitly using Python 3 within a container'
+# http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-bash:
+bash: ## Start a bash shell within the dev container
 	@$(DOCKER) -p 8888:8888 $(IMAGE) bash
 
-clean:
+clean: ## Remove all built files from the host (but not the dev docker image)
 	@-rm -rf dist
 	@-rm -rf *.egg-info
 	@-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
@@ -35,17 +28,17 @@ clean:
 
 dev: ARGS?=
 dev: PYARGS?=
-dev:
+dev: ## Start kernel gateway on port 8888 in a docker container
 	@$(DOCKER) -p 8888:8888 $(IMAGE) \
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
-etc/api_examples/%:
+etc/api_examples/%: ## Start one of the notebook-http mode API examples on port 8888 in a docker container
 	$(DOCKER) -p 8888:8888 $(IMAGE) \
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' \
 			--KernelGatewayApp.api='notebook-http' \
 			--KernelGatewayApp.seed_uri=/srv/kernel_gateway/$@.ipynb $(ARGS)
 
-install:
+install: ## Test install of dist/*.whl and dist/*.tar.gz
 	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.whl && \
 		jupyter kernelgateway --help && \
 		pip uninstall -y jupyter_kernel_gateway "
@@ -53,18 +46,18 @@ install:
 		jupyter kernelgateway --help && \
 		pip uninstall -y jupyter_kernel_gateway"
 
-bdist:
+bdist: ## Build dist/*.whl binary distribution
 	$(DOCKER) $(IMAGE) python setup.py bdist_wheel $(POST_SDIST) \
 	&& rm -rf *.egg-info
 
-sdist:
+sdist: ## Build a dist/*.tar.gz source distribution
 	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) \
 	&& rm -rf *.egg-info
 
-test: test-python3
+test: test-python3 ## Run tests on Python 3 in a docker container
 
 test-python2: PRE_CMD:=source activate python2; pip install requests;
-test-python2: _test
+test-python2: _test ## Run tests on Python 2 in a docker container
 
 test-python3: _test
 
@@ -78,4 +71,4 @@ else
 endif
 
 release: POST_SDIST=register upload
-release: bdist sdist
+release: bdist sdist ## Build wheel/source dists, register them on PyPI, and upload them all from a clean docker container
