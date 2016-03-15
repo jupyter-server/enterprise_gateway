@@ -27,7 +27,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
         Raises
         ------
-        tonrado.web.HTTPError
+        tornado.web.HTTPError
             402 Payment Required (for lack of a better HTTP error code and
             mimicking what Google does) if the limit is reached
         """
@@ -56,24 +56,6 @@ class MainKernelHandler(TokenAuthorizationMixin,
         else:
             super(MainKernelHandler, self).get()
 
-    def get_json_body(self):
-        """Overrides the super class method to honor the configured default
-        kernel name when one is not included in the JSON body of the request.
-
-        Returns
-        -------
-        dict
-            Model object representing information about the requested kernel
-        """
-        model = super(MainKernelHandler, self).get_json_body()
-        if 'kg_default_kernel_name' in self.settings and self.settings['kg_default_kernel_name'] is not '':
-            if model is None:
-                model = {
-                    'name': self.settings['kg_default_kernel_name']
-                }
-            else:
-                model.setdefault('name', self.settings['kg_default_kernel_name'])
-        return model
 
 class KernelHandler(TokenAuthorizationMixin,
                     CORSMixin,

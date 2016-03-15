@@ -252,11 +252,17 @@ class KernelGatewayApp(JupyterApp):
             # Note: must be set before instantiating a SeedingMappingKernelManager
             self.seed_notebook = self._load_notebook(self.seed_uri)
 
+        # Only pass a default kernel name when one is provided. Otherwise,
+        # adopt whatever default the kernel manager wants to use.
+        kwargs = {}
+        if self.default_kernel_name:
+            kwargs['default_kernel_name'] = self.default_kernel_name
         self.kernel_manager = SeedingMappingKernelManager(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
-            kernel_spec_manager=self.kernel_spec_manager
+            kernel_spec_manager=self.kernel_spec_manager,
+            **kwargs
         )
 
         self.activity_manager = ActivityManager(
