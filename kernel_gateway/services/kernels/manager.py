@@ -75,9 +75,8 @@ class SeedingMappingKernelManager(MappingKernelManager):
                 # Create a client to talk to the kernel
                 client = kernel.client()
                 # Only start channels and wait for ready in HTTP mode
-                if self.parent.api == 'notebook-http':
-                    client.start_channels()
-                    client.wait_for_ready()
+                client.start_channels()
+                client.wait_for_ready()
                 for code in self.seed_source:
                     # Execute every non-API code cell and wait for each to
                     # succeed or fail
