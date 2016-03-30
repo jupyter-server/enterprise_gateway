@@ -25,6 +25,7 @@ from tornado import httpserver
 from tornado import web
 from tornado.log import enable_pretty_logging
 
+from .services.api.handlers import default_handlers as default_api_handlers
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
 from .services.sessions.handlers import default_handlers as default_session_handlers
@@ -362,6 +363,7 @@ class KernelGatewayApp(JupyterApp):
             ))
             # append tuples for the standard kernel gateway endpoints
             for handler in (
+                default_api_handlers +
                 default_kernel_handlers +
                 default_kernelspec_handlers +
                 default_session_handlers +

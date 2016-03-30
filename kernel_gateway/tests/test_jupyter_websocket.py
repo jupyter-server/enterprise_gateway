@@ -496,6 +496,17 @@ class TestDefaults(TestJupyterWebsocket):
                 break
 
         ws.close()
+    @gen_test
+    def test_get_swagger_yaml_spec(self):
+        """Getting the swagger.yaml spec should be ok"""
+        response = yield self.http_client.fetch(self.get_url('/api/swagger.yaml'))
+        self.assertEqual(response.code, 200)
+
+    @gen_test
+    def test_get_swagger_json_spec(self):
+        """Getting the swagger.json spec should be ok"""
+        response = yield self.http_client.fetch(self.get_url('/api/swagger.json'))
+        self.assertEqual(response.code, 200)
 
 class TestCustomDefaultKernel(TestJupyterWebsocket):
     """Tests gateway behavior when setting a custom default kernelspec."""

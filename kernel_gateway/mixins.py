@@ -26,7 +26,6 @@ class CORSMixin(object):
         for a programmatic API.
         """
         super(CORSMixin, self).set_default_headers()
-
         # Add CORS headers after default if they have a non-blank value
         for settings_name, header_name in self.SETTINGS_TO_HEADERS.items():
             header_value = self.settings.get(settings_name)

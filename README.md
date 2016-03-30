@@ -102,3 +102,12 @@ straightforward using these steps:
       route `/api/kernels` is not enabled by default for greater security. See
       the `--KernelGatewayApp.list_kernels` parameter documentation if you
       would like to enable the `/api/kernels` route.)
+
+### Swagger Documentation
+
+When adding features to the `jupyter-websocket` handlers, documentation needs to
+be added to the project's swagger specifications. You can import the current
+[yaml](https://github.com/jupyter/kernel_gateway/tree/master/kernel_gateway/services/api/swagger.yaml)
+file into the swagger editor and add your changes. Upon completion, export both
+the `swagger.json` and `swagger.yaml` files and place them in
+[`kernel_gateway/services/api`](https://github.com/jupyter/kernel_gateway/tree/master/kernel_gateway/services/api).
