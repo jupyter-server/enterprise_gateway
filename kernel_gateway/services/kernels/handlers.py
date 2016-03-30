@@ -54,11 +54,11 @@ class MainKernelHandler(TokenAuthorizationMixin,
             orig_start = self.kernel_manager.start_kernel
             self.kernel_manager.start_kernel = partial(self.kernel_manager.start_kernel, env=env)
             try:
-                super(MainKernelHandler, self).post()
+                yield super(MainKernelHandler, self).post()
             finally:
                 self.kernel_manager.start_kernel = orig_start
         else:
-            super(MainKernelHandler, self).post()
+            yield super(MainKernelHandler, self).post()
 
     def get(self):
         """Overrides the super class method to honor the kernel listing
