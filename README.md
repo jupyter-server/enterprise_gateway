@@ -63,7 +63,7 @@ straightforward using these steps:
    eval "$(docker-machine env dev)"
    ```
 
-2. Clone the repo
+2. Clone the repo.
 
    ```bash
    # make a directory under ~ to put source
@@ -74,24 +74,29 @@ straightforward using these steps:
    git clone https://github.com/jupyter/kernel_gateway.git
    ```
    
-3. Test the installation
+3. Build the Docker dev image.
+
+   ```bash
+   make image
+   ```
+   
+3. Run the unit tests.
 
    ```bash
    make test-python3
    make test-python2
    ```
 
-4. Run the gateway server
+4. Run the gateway server.
 
    ```bash
    cd kernel_gateway
    make dev
    ```
 
-5. Access the gateway instances:
+5. Access the gateway instance.
 
    a. Run `docker-machine ls` and note the IP of the dev machine.
-   
    b. Visit http://THAT_IP:8888/api in your browser where `THAT_IP` is the IP
       address returned from the previous step. (Note that the 
       route `/api/kernels` is not enabled by default for greater security. See
