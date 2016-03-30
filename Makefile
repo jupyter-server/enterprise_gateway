@@ -3,7 +3,7 @@
 
 .PHONY: bash clean dev help install sdist test
 
-IMAGE:=jupyter/pyspark-notebook:918deae45315
+IMAGE:=jupyter/kernel-gateway-dev
 
 DOCKER_ARGS?=
 define DOCKER
@@ -37,6 +37,9 @@ etc/api_examples/%: ## Start one of the notebook-http mode API examples on port 
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' \
 			--KernelGatewayApp.api='notebook-http' \
 			--KernelGatewayApp.seed_uri=/srv/kernel_gateway/$@.ipynb $(ARGS)
+
+image: ## Build the dev/test docker image
+	@docker build --rm -f Dockerfile.dev -t $(IMAGE) .
 
 install: ## Test install of dist/*.whl and dist/*.tar.gz
 	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.whl && \

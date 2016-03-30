@@ -18,6 +18,7 @@ eval "$(docker-machine env dev)"
 ```
 
 ### Clone the repo
+
 Clone this repository in a local directory that docker can volume mount:
 
 ```bash
@@ -29,7 +30,16 @@ cd !$
 git clone https://github.com/jupyter/kernel_gateway.git
 ```
 
+### Build the development image
+
+Build a Docker image containing additional dev libraries.
+
+```bash
+make image
+```
+
 ### Run the tests
+
 To run the tests:
 
 ```bash
@@ -38,6 +48,7 @@ make test-python2
 ```
 
 ### Run the gateway server
+
 To run the gateway server:
 
 ```bash
@@ -46,6 +57,7 @@ make dev
 ```
 
 ### Access the gateway
+
 To access the gateway instance:
 
 1. Run `docker-machine ls` and note the IP of the dev machine.
