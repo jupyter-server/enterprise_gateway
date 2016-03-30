@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel manager that optionally seeds kernel memory."""
 
+from tornado import gen
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 from jupyter_client.ioloop import IOLoopKernelManager
 from ..cell.parser import APICellParser
@@ -62,11 +63,12 @@ class SeedingMappingKernelManager(MappingKernelManager):
         """
         self.start_kernel(kernel_name=self.seed_kernelspec, *args, **kwargs)
 
+    @gen.coroutine
     def start_kernel(self, *args, **kwargs):
         """Starts a kernel and then executes a list of code cells on it if a
         seed notebook exists.
         """
-        kernel_id = super(MappingKernelManager, self).start_kernel(*args, **kwargs)
+        kernel_id = yield gen.maybe_future(super(SeedingMappingKernelManager, self).start_kernel(*args, **kwargs))
 
         if kernel_id and self.seed_source is not None:
             # Only run source if the kernel spec matches the notebook kernel spec
@@ -92,7 +94,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
                             raise RuntimeError('Error seeding kernel memory')
                 # Shutdown the channels to remove any lingering ZMQ messages
                 client.stop_channels()
-        return kernel_id
+        raise gen.Return(kernel_id)
 
 class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
     """Extends the IOLoopKernelManager used by the SeedingMappingKernelManager

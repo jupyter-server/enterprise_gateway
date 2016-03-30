@@ -4,9 +4,10 @@
 
 import json
 import tornado
+import notebook.services.kernels.handlers as notebook_handlers
+from tornado import gen
 from functools import partial
 from datetime import datetime
-import notebook.services.kernels.handlers as notebook_handlers
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from ...services.activity.manager import (LAST_MESSAGE_TO_CLIENT,
     LAST_MESSAGE_TO_KERNEL, LAST_TIME_STATE_CHANGED, BUSY, CONNECTIONS,
@@ -19,6 +20,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
     """Extends the notebook main kernel handler with token auth, CORS, and
     JSON errors.
     """
+    @gen.coroutine
     def post(self):
         """Overrides the super class method to honor the max number of allowed
         kernels configuration setting and to support custom kernel environment
