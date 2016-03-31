@@ -74,6 +74,9 @@ class MainKernelHandler(TokenAuthorizationMixin,
         else:
             super(MainKernelHandler, self).get()
 
+    def options(self, **kwargs):
+        """Method for properly handling CORS pre-flight"""
+        self.finish()
 
 class KernelHandler(TokenAuthorizationMixin,
                     CORSMixin,
@@ -99,6 +102,10 @@ class KernelHandler(TokenAuthorizationMixin,
         if self.settings.get('kg_list_kernels'):
             self.activity.remove(kernel_id)
         super(KernelHandler, self).delete(kernel_id)
+
+    def options(self, **kwargs):
+        """Method for properly handling CORS pre-flight"""
+        self.finish()
 
 class ZMQChannelsHandler(TokenAuthorizationMixin,
                          notebook_handlers.ZMQChannelsHandler):
