@@ -11,7 +11,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import Unicode, Integer, Bool
+from traitlets import Unicode, Integer, Bool, default
 
 from jupyter_core.application import JupyterApp
 from jupyter_client.kernelspec import KernelSpecManager
@@ -62,21 +62,24 @@ class KernelGatewayApp(JupyterApp):
     port = Integer(config=True,
         help="Port on which to listen (KG_PORT env var)"
     )
-    def _port_default(self):
+    @default('port')
+    def port_default(self):
         return int(os.getenv(self.port_env, 8888))
 
     ip_env = 'KG_IP'
     ip = Unicode(config=True,
         help="IP address on which to listen (KG_IP env var)"
     )
-    def _ip_default(self):
+    @default('ip')
+    def ip_default(self):
         return os.getenv(self.ip_env, '127.0.0.1')
 
     # Base URL
     base_url_env = 'KG_BASE_URL'
     base_url = Unicode(config=True,
         help="""The base path for mounting all API resources (KG_BASE_URL env var)""")
-    def _base_url_default(self):
+    @default('base_url')
+    def base_url_default(self):
         return os.getenv(self.base_url_env, '/')
 
     # Token authorization
@@ -84,6 +87,7 @@ class KernelGatewayApp(JupyterApp):
     auth_token = Unicode(config=True,
         help='Authorization token required for all requests (KG_AUTH_TOKEN env var)'
     )
+    @default('auth_token')
     def _auth_token_default(self):
         return os.getenv(self.auth_token_env, '')
 
@@ -92,42 +96,48 @@ class KernelGatewayApp(JupyterApp):
     allow_credentials = Unicode(config=True,
         help='Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env var)'
     )
-    def _allow_credentials_default(self):
+    @default('allow_credentials')
+    def allow_credentials_default(self):
         return os.getenv(self.allow_credentials_env, '')
 
     allow_headers_env = 'KG_ALLOW_HEADERS'
     allow_headers = Unicode(config=True,
         help='Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)'
     )
-    def _allow_headers_default(self):
+    @default('allow_headers')
+    def allow_headers_default(self):
         return os.getenv(self.allow_headers_env, '')
 
     allow_methods_env = 'KG_ALLOW_METHODS'
     allow_methods = Unicode(config=True,
         help='Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)'
     )
-    def _allow_methods_default(self):
+    @default('allow_methods')
+    def allow_methods_default(self):
         return os.getenv(self.allow_methods_env, '')
 
     allow_origin_env = 'KG_ALLOW_ORIGIN'
     allow_origin = Unicode(config=True,
         help='Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)'
     )
-    def _allow_origin_default(self):
+    @default('allow_origin')
+    def allow_origin_default(self):
         return os.getenv(self.allow_origin_env, '')
 
     expose_headers_env = 'KG_EXPOSE_HEADERS'
     expose_headers = Unicode(config=True,
         help='Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)'
     )
-    def _expose_headers_default(self):
+    @default('expose_headers')
+    def expose_headers_default(self):
         return os.getenv(self.expose_headers_env, '')
 
     max_age_env = 'KG_MAX_AGE'
     max_age = Unicode(config=True,
         help='Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)'
     )
-    def _max_age_default(self):
+    @default('max_age')
+    def max_age_default(self):
         return os.getenv(self.max_age_env, '')
 
     max_kernels_env = 'KG_MAX_KERNELS'
@@ -135,7 +145,8 @@ class KernelGatewayApp(JupyterApp):
         allow_none=True,
         help='Limits the number of kernel instances allowed to run by this gateway. (KG_MAX_KERNELS env var)'
     )
-    def _max_kernels_default(self):
+    @default('max_kernels')
+    def max_kernels_default(self):
         val = os.getenv(self.max_kernels_env)
         return val if val is None else int(val)
 
@@ -144,7 +155,8 @@ class KernelGatewayApp(JupyterApp):
         allow_none=True,
         help='Runs the notebook (.ipynb) at the given URI on every kernel launched. (KG_SEED_URI env var)'
     )
-    def _seed_uri_default(self):
+    @default('seed_uri')
+    def seed_uri_default(self):
         return os.getenv(self.seed_uri_env)
 
     prespawn_count_env = 'KG_PRESPAWN_COUNT'
@@ -153,14 +165,16 @@ class KernelGatewayApp(JupyterApp):
         allow_none=True,
         help='Number of kernels to prespawn using the default language. (KG_PRESPAWN_COUNT env var)'
     )
-    def _prespawn_count_default(self):
+    @default('prespawn_count')
+    def prespawn_count_default(self):
         val = os.getenv(self.prespawn_count_env)
         return val if val is None else int(val)
 
     default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
         help="""The default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)""")
-    def _default_kernel_name_default(self):
+    @default('default_kernel_name')
+    def default_kernel_name_default(self):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
@@ -170,7 +184,8 @@ class KernelGatewayApp(JupyterApp):
             and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
             allows this by default but kernel gateway does not."""
     )
-    def _list_kernels_default(self):
+    @default('list_kernels')
+    def list_kernels_default(self):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
 
     api_env = 'KG_API'
@@ -178,7 +193,8 @@ class KernelGatewayApp(JupyterApp):
         config=True,
         help='Controls which API to expose, that of a Jupyter kernel or the seed notebook\'s, using values "jupyter-websocket" or "notebook-http" (KG_API env var)'
     )
-    def _api_default(self):
+    @default('api')
+    def api_default(self):
         return os.getenv(self.api_env, 'jupyter-websocket')
 
     def _api_changed(self, name, old, new):
@@ -190,7 +206,8 @@ class KernelGatewayApp(JupyterApp):
         config=True,
         help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
     )
-    def _allow_notebook_download_default(self):
+    @default('allow_notebook_download')
+    def allow_notebook_download_default(self):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def _load_notebook(self, uri):

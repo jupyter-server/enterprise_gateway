@@ -2,4 +2,4 @@
 # Distributed under the terms of the Modified BSD License.
 
 FROM jupyter/pyspark-notebook:9f4ed032bada 
-RUN pip install nose
+RUN pip install nose traitlets==4.2.0
