@@ -1,8 +1,10 @@
 # Summary of changes
 
-See `git log` and `CHANGELOG.md` for a more detailed summary of changes.
+See `git log` for a more detailed summary of changes.
 
 ## 0.5
+
+In progress ...
 
 ## 0.4
 ### 0.4.0 (2016-02-17)
