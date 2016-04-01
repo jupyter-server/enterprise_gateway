@@ -1,5 +1,7 @@
 ## `notebook-http` Mode
 
+**NOTE** This mode may one day become a plug-in to the Jupyter Kernel Gateway or split into a separate project. The concepts documented here, however, will survive any move.
+
 The `KernelGatewayApp.api` command line argument can be set to `notebook-http`. In this mode, the kernel gateway exposes annotated cells in the `KernelGatewayApp.seed_uri` notebook as HTTP resources.
 
 To turn a notebook cell into a HTTP handler, you must prefix it with a single line comment. The comment describes the HTTP method and resource, as in the following Python example:

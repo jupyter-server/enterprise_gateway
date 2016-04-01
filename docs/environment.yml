@@ -1,14 +1,9 @@
 name: kernel_gateway_docs
 dependencies:
 - sphinx_rtd_theme
-- jinja2
-- tornado
-- nbformat
-- jupyter_client
-- notebook
-- ipykernel
 - pip:
     - sphinx>=1.3.6
+    - recommonmark
     - sphinxcontrib_spelling
     - pyenchant
     - jupyter_kernel_gateway

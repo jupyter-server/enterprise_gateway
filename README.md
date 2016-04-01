@@ -23,14 +23,13 @@ The server launches kernels in its local process/filesystem space. It can be con
 ### Features
 
 See the [Features page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/features.html) in the 
-documentation for a detailed explanation of Jupyter Kernel Gateway's
-features.
+documentation for a list of the Jupyter Kernel Gateway features.
 
 ## Installation
 
-Detailed installation instructions can be found in the 
-[Jupyter Kernel Gateway documentation](https://jupyter-kernel-gateway.readthedocs.org/en/latest/getting-started.html)
-found on ReadTheDocs.
+Detailed installation instructions are located in the 
+[Getting Started page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/getting-started.html)
+of the project docs. Here's a quick start using `pip`:
 
 ```bash
 # install from pypi
@@ -43,71 +42,6 @@ jupyter kernelgateway --help-all
 jupyter kernelgateway
 ```
 
-## Contributors
+## Contributing
 
-### Development Installation
-
-Setting up a Dockerized development environment for the Jupyter Kernel Gateway is
-straightforward using these steps:
-
-1. Prerequisite - Docker installation (if needed)
-
-  For example, on a Mac, do this one-time setup to set up Docker locally:
-
-   ```bash
-   brew update
-
-   # make sure you're on Docker >= 1.7
-   brew install docker-machine docker
-   docker-machine create -d virtualbox dev
-   eval "$(docker-machine env dev)"
-   ```
-
-2. Clone the repo.
-
-   ```bash
-   # make a directory under ~ to put source
-   mkdir -p ~/projects
-   cd !$
-
-   # clone this repo
-   git clone https://github.com/jupyter/kernel_gateway.git
-   ```
-   
-3. Build the Docker dev image.
-
-   ```bash
-   make image
-   ```
-   
-3. Run the unit tests.
-
-   ```bash
-   make test-python3
-   make test-python2
-   ```
-
-4. Run the gateway server.
-
-   ```bash
-   cd kernel_gateway
-   make dev
-   ```
-
-5. Access the gateway instance.
-
-   a. Run `docker-machine ls` and note the IP of the dev machine.
-   b. Visit http://THAT_IP:8888/api in your browser where `THAT_IP` is the IP
-      address returned from the previous step. (Note that the 
-      route `/api/kernels` is not enabled by default for greater security. See
-      the `--KernelGatewayApp.list_kernels` parameter documentation if you
-      would like to enable the `/api/kernels` route.)
-
-### Swagger Documentation
-
-When adding features to the `jupyter-websocket` handlers, documentation needs to
-be added to the project's swagger specifications. You can import the current
-[yaml](https://github.com/jupyter/kernel_gateway/tree/master/kernel_gateway/services/api/swagger.yaml)
-file into the swagger editor and add your changes. Upon completion, export both
-the `swagger.json` and `swagger.yaml` files and place them in
-[`kernel_gateway/services/api`](https://github.com/jupyter/kernel_gateway/tree/master/kernel_gateway/services/api).
+The [Development page](https://jupyter-kernel-gateway.readthedocs.org/en/latest/devinstall.html) includes information about setting up a development environment and typical developer tasks.
