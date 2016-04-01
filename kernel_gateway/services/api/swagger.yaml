@@ -38,6 +38,34 @@ securityDefinitions:
       form of `token {value}` where `{value}` is the value of the token.
 
 paths:
+  /api:
+    get:
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns information about the API
+          schema:
+            $ref: '#/definitions/ApiInfo'
+  /api/swagger.yaml:
+    get:
+      produces:
+        - text/x-yaml
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns a swagger specification in yaml
+  /api/swagger.json:
+    get:
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns a swagger specification in json
   /api/kernelspecs:
     get:
       security: 
@@ -132,6 +160,33 @@ paths:
       responses:
         200:
           description: The connection will be upgraded to a websocket.
+  /kernels/{kernel_id}/interrupt:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    post:
+      summary: Interrupt a kernel
+      tags:
+        - kernels
+      responses:
+        204:
+          description: Kernel interrupted
+  /kernels/{kernel_id}/restart:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    post:
+      summary: Restart a kernel
+      tags:
+        - kernels
+      responses:
+        200:
+          description: Kernel interrupted
+          headers:
+            Location:
+              description: URL for kernel commands
+              type: string
+              format: url
+          schema:
+            $ref: '#/definitions/Kernel'
   /api/sessions:
     get:
       summary: List available sessions
@@ -394,3 +449,9 @@ definitions:
             description: path to notebook
       kernel:
         $ref: '#/definitions/Kernel'
+  ApiInfo:
+    description: Information about the api
+    type: object
+    properties:
+      version:
+        type: string
