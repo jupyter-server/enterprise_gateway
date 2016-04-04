@@ -1,6 +1,6 @@
 ## Development Workflow
 
-This document includes instructions for setting up Dockerized development environment for the Jupyter Kernel Gateway. It also includes common steps in the developer workflow such as running tests, building doc, updating specs, etc.
+This document includes instructions for setting up Dockerized development environment for the Jupyter Kernel Gateway. It also includes common steps in the developer workflow such as running tests, building docs, updating specs, etc.
 
 ### Prerequisites
 
