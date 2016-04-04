@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: bash clean dev help install sdist test
+.PHONY: bash clean dev help install sdist test docs
 
 IMAGE:=jupyter/kernel-gateway-dev
 
@@ -29,8 +29,11 @@ clean: ## Remove all built files from the host (but not the dev docker image)
 dev: ARGS?=
 dev: PYARGS?=
 dev: ## Start kernel gateway on port 8888 in a docker container
-	@$(DOCKER) -p 8888:8888 $(IMAGE) \
+	$(DOCKER) -p 8888:8888 $(IMAGE) \
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+
+docs: ## Build the sphinx documentation in a container
+	$(DOCKER) $(IMAGE) bash -c "source activate kernel_gateway_docs && make -C docs html"
 
 etc/api_examples/%: ## Start one of the notebook-http mode API examples on port 8888 in a docker container
 	$(DOCKER) -p 8888:8888 $(IMAGE) \

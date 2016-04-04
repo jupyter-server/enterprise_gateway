@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0 (2016-04-08)
+
+* Support multiple cells per path in `notebook-http` mode
+* Add a Swagger specification of the `jupyter-websocket` API
+* Add `KERNEL_GATEWAY=1` to all kernel environments
+* Support environment variables in `POST /api/kernels`
+* numpydoc format docstrings on everything
+* Convert README to Sphinx/ReadTheDocs site
+* Convert `ActivityManager` to a traitlets `LoggingConfigurable`
+* Fix `base_url` handling for all paths
+* Fix unbounded growth of ignored kernels in `ActivityManager`
+* Fix caching of Swagger spec in `notebook-http` mode
+* Fix failure to install due to whitespace in `setup.py` version numbers
+* Fix call to kernel manager base class when starting a kernel
+* Fix test fixture hangs
+
 ## 0.4.0 (2016-02-17)
 
 * Enable `/_api/activity` resource with stats about kernels in `jupyter-websocket` mode

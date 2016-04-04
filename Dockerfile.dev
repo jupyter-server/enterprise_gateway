@@ -1,5 +1,9 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM jupyter/pyspark-notebook:9f4ed032bada 
+FROM jupyter/pyspark-notebook:9f4ed032bada
 RUN pip install nose traitlets==4.2.0
+
+# Setup a sphinx environment for doc building
+COPY docs/environment.yml /tmp
+RUN conda env create -f /tmp/environment.yml

@@ -1,7 +1,16 @@
 ## `jupyter-websocket` Mode
 
-The `KernelGatewayApp.api` command line argument defaults to
-`jupyter-websocket`. The API exposed in this mode can be viewed
-in the [swagger ui.](http://petstore.swagger.io) by entering
-the link to the [swagger spec](https://raw.githubusercontent.com/jupyter/kernel_gateway/master/kernel_gateway/services/api/swagger.json)
-of kernel gateway.
+The `KernelGatewayApp.api` command line argument defaults to `jupyter-websocket`. In this mode, the kernel gateway exposes:
+
+1. a superset of the HTTP API provided by the Jupyter Notebook server, and
+2. the equivalent Websocket API implemented by the Jupyter Notebook server.
+
+### HTTP Resources
+
+The HTTP API consists of kernel, session, monitoring, and metadata resources. All of these are documented in a [swagger.yaml](https://github.com/jupyter/kernel_gateway/blob/master/kernel_gateway/services/api/swagger.yaml) file. You can use the [Swagger UI](http://petstore.swagger.io) to interact with a running instance of the kernel gateway by pointing the tool to the `/api/swagger.json` resource.
+
+### Websocket Resources
+
+The `/api/kernels/{kernel_id}/channels` resource multiplexes the [Jupyter kernel messaging protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) over a single Websocket connection.
+
+See the [NodeJS](https://github.com/jupyter/kernel_gateway_demos/tree/master/node_client_example) and [Python](https://github.com/jupyter/kernel_gateway_demos/tree/master/python_client_example) client demos for two simple examples of using these resources to send code to kernels for interactive evaluation.
