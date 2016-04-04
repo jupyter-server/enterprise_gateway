@@ -3,7 +3,7 @@
 See `git log` for a more detailed summary of changes.
 
 ## 0.5
-## 0.5.0 (2016-04-08)
+## 0.5.0 (2016-04-04)
 
 * Support multiple cells per path in `notebook-http` mode
 * Add a Swagger specification of the `jupyter-websocket` API
