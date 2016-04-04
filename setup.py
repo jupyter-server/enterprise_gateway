@@ -58,6 +58,7 @@ containerized and scaled out using common technologies like
         'jupyter_client>=4.2.0,<5.0',
         'notebook>=4.1.0,<5.0',
         'traitlets>=4.2.0,<5.0',
+        'tornado>=4.2.0,<5.0',
         'requests>=2.7,<3.0'
     ],
     classifiers=[
