@@ -16,7 +16,23 @@ setup_args = dict(
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
     url='http://github.com/jupyter-incubator/kernel_gateway',
-    description='Headless Jupyter kernel provisioner and Websocket proxy',
+    description='A web server for spawning and communicating with Jupyter kernels',
+    long_description='''\
+Jupyter Kernel Gateway is a web server that supports different mechanisms for
+spawning and communicating with Jupyter kernels, such as:
+
+* A Jupyter Notebook server-compatible HTTP API used for requesting kernels
+  and talking the `Jupyter kernel protocol <https://jupyter-client.readthedocs.org/en/latest/messaging.html>`_
+  with the kernels over Websockets
+* A HTTP API defined by annotated notebook cells that maps HTTP verbs and
+  resources to code to execute on a kernel
+
+The server launches kernels in its local process/filesystem space. It can be
+containerized and scaled out using common technologies like
+`tmpnb <https://github.com/jupyter/tmpnb>`_,
+`Cloud Foundry <https://github.com/cloudfoundry>`_, and
+`Kubernetes <http://kubernetes.io/>`_.
+''',
     version=version_ns['__version__'],
     license='BSD',
     platforms="Linux, Mac OS X, Windows",
@@ -25,13 +41,13 @@ setup_args = dict(
         'kernel_gateway',
         'kernel_gateway.base',
         'kernel_gateway.services',
-        'kernel_gateway.services.api',
         'kernel_gateway.services.activity',
+        'kernel_gateway.services.api',
         'kernel_gateway.services.cell',
         'kernel_gateway.services.kernels',
         'kernel_gateway.services.kernelspecs',
-        'kernel_gateway.services.sessions',
         'kernel_gateway.services.notebooks',
+        'kernel_gateway.services.sessions',
         'kernel_gateway.services.swagger',
     ],
     scripts=[
