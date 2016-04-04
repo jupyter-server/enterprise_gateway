@@ -33,7 +33,7 @@ dev: ## Start kernel gateway on port 8888 in a docker container
 		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
 
 docs: ## Build the sphinx documentation in a container
-	$(DOCKER) $(IMAGE) make -C docs html
+	$(DOCKER) $(IMAGE) bash -c "source activate kernel_gateway_docs && make -C docs html"
 
 etc/api_examples/%: ## Start one of the notebook-http mode API examples on port 8888 in a docker container
 	$(DOCKER) -p 8888:8888 $(IMAGE) \
