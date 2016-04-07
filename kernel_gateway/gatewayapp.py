@@ -3,6 +3,8 @@
 """Kernel Gateway Jupyter application."""
 
 import os
+import socket
+import errno
 import logging
 import nbformat
 
@@ -25,6 +27,7 @@ from tornado import httpserver
 from tornado import web
 from tornado.log import enable_pretty_logging
 
+from notebook.notebookapp import random_ports
 from .services.api.handlers import default_handlers as default_api_handlers
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
@@ -65,6 +68,14 @@ class KernelGatewayApp(JupyterApp):
     @default('port')
     def port_default(self):
         return int(os.getenv(self.port_env, 8888))
+    
+    port_retries_env = 'KG_PORT_RETRIES'
+    port_retries = Integer(config=True,
+        help="Number of ports to try if the specified port is not available (KG_PORT_RETRIES env var)"
+    )
+    @default('port_retries')
+    def port_retries_default(self):
+        return int(os.getenv(self.port_retries_env, 50))
 
     ip_env = 'KG_IP'
     ip = Unicode(config=True,
@@ -421,9 +432,31 @@ class KernelGatewayApp(JupyterApp):
     def init_http_server(self):
         """Initializes a HTTP server for the Tornado web application on the
         configured interface and port.
+        
+        Tries to find an open port if the one configured is not available using
+        the same logic as the Jupyer Notebook server.
         """
         self.http_server = httpserver.HTTPServer(self.web_app)
-        self.http_server.listen(self.port, self.ip)
+        
+        for port in random_ports(self.port, self.port_retries+1):
+            try:
+                self.http_server.listen(port, self.ip)
+            except socket.error as e:
+                if e.errno == errno.EADDRINUSE:
+                    self.log.info('The port %i is already in use, trying another port.' % port)
+                    continue
+                elif e.errno in (errno.EACCES, getattr(errno, 'WSAEACCES', errno.EACCES)):
+                    self.log.warning("Permission to listen on port %i denied" % port)
+                    continue
+                else:
+                    raise
+            else:
+                self.port = port
+                break
+        else:
+            self.log.critical('ERROR: the notebook server could not be started because '
+                              'no available port could be found.')
+            self.exit(1)
 
     def start(self):
         """Starts an IO loop for the application."""

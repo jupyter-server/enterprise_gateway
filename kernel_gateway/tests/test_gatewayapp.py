@@ -25,6 +25,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         """Env vars should be honored for traitlets."""
         # Environment vars are always strings
         os.environ['KG_PORT'] = '1234'
+        os.environ['KG_PORT_RETRIES'] = '4321'
         os.environ['KG_IP'] = '1.1.1.1'
         os.environ['KG_AUTH_TOKEN'] = 'fake-token'
         os.environ['KG_ALLOW_CREDENTIALS'] = 'true'
@@ -44,6 +45,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         app = KernelGatewayApp()
 
         self.assertEqual(app.port, 1234)
+        self.assertEqual(app.port_retries, 4321)
         self.assertEqual(app.ip, '1.1.1.1')
         self.assertEqual(app.auth_token, 'fake-token')
         self.assertEqual(app.allow_credentials, 'true')

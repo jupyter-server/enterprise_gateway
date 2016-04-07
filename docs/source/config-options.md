@@ -36,7 +36,7 @@ KernelGatewayApp options
     Authorization token required for all requests (KG_AUTH_TOKEN env var)
 --KernelGatewayApp.base_url=<Unicode>
     Default: ''
-    The base path on which all API resources are mounted (KG_BASE_URL env var)
+    The base path for mounting all API resources (KG_BASE_URL env var)
 --KernelGatewayApp.config_file=<Unicode>
     Default: ''
     Full path of a config file.
@@ -45,8 +45,8 @@ KernelGatewayApp options
     Specify a config file to load.
 --KernelGatewayApp.default_kernel_name=<Unicode>
     Default: ''
-    The default kernel name to use when spawning a kernel
-    (KG_DEFAULT_KERNEL_NAME env var)
+    The default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env
+    var)
 --KernelGatewayApp.expose_headers=<Unicode>
     Default: ''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
@@ -58,9 +58,9 @@ KernelGatewayApp options
     IP address on which to listen (KG_IP env var)
 --KernelGatewayApp.list_kernels=<Bool>
     Default: False
-    Enables listing the running kernels through /api/kernels and /api/sessions
-    (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this by default but
-    kernel gateway does not .
+    Permits listing of the running kernels using API endpoints /api/kernels and
+    /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this
+    by default but kernel gateway does not.
 --KernelGatewayApp.log_datefmt=<Unicode>
     Default: '%Y-%m-%d %H:%M:%S'
     The date format used by logging formatters for %(asctime)s
@@ -81,6 +81,10 @@ KernelGatewayApp options
 --KernelGatewayApp.port=<Int>
     Default: 0
     Port on which to listen (KG_PORT env var)
+--KernelGatewayApp.port_retries=<Int>
+    Default: 0
+    Number of ports to try if the specified port is not available
+    (KG_PORT_RETRIES env var)
 --KernelGatewayApp.prespawn_count=<Int>
     Default: None
     Number of kernels to prespawn using the default language. (KG_PRESPAWN_COUNT
