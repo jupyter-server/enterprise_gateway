@@ -3,6 +3,12 @@
 ## 0.6.0 (2016-XX-XX)
 
 * Add `--KernelGateway.port_retries` option like in Jupyter Notebook
+* Fix compatibility with Notebook 4.2 session handler `create_session` call
+
+## 0.5.1 (2016-04-20)
+
+* Backport `--KernelGateway.port_retries` option like in Jupyter Notebook
+* Fix compatibility with Notebook 4.2 session handler `create_session` call
 
 ## 0.5.0 (2016-04-04)
 
@@ -19,6 +25,11 @@
 * Fix failure to install due to whitespace in `setup.py` version numbers
 * Fix call to kernel manager base class when starting a kernel
 * Fix test fixture hangs
+
+## 0.4.1 (2016-04-20)
+
+* Backport `--KernelGateway.port_retries` option like in Jupyter Notebook
+* Fix compatibility with Notebook 4.2 session handler `create_session` call
 
 ## 0.4.0 (2016-02-17)
 
