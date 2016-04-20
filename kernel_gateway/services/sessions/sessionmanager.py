@@ -50,7 +50,7 @@ class SessionManager(LoggingConfigurable):
         return unicode_type(uuid.uuid4())
 
     @gen.coroutine
-    def create_session(self, path=None, kernel_name=None):
+    def create_session(self, path=None, kernel_name=None, kernel_id=None):
         """Creates a session and returns its model.
 
         Launches a kernel and stores the session metadata for later lookup.
@@ -61,6 +61,8 @@ class SessionManager(LoggingConfigurable):
             Path value to store in the session metadata
         kernel_name : str
             Kernel spec name
+        kernel_id : str
+            Existing kernel ID to bind to the session (unsupported)
 
         Returns
         -------
