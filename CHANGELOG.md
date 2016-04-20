@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 (2016-04-20)
+## 0.6.0 (2016-XX-XX)
 
 * Add `--KernelGateway.port_retries` option like in Jupyter Notebook
 
