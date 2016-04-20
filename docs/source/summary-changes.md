@@ -2,8 +2,15 @@
 
 See `git log` for a more detailed summary of changes.
 
+## 0.6
+
+## 0.6.0 (2016-04-20)
+
+* Add `--KernelGateway.port_retries` option like in Jupyter Notebook
+
 ## 0.5
-## 0.5.0 (2016-04-04)
+
+### 0.5.0 (2016-04-04)
 
 * Support multiple cells per path in `notebook-http` mode
 * Add a Swagger specification of the `jupyter-websocket` API
