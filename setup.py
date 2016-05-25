@@ -70,6 +70,7 @@ containerized and scaled out using common technologies like
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3'
     ],
+    include_package_data=True,
 )
 
 if 'setuptools' in sys.modules:

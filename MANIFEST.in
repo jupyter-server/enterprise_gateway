@@ -1,0 +1,1 @@
+include kernel_gateway/services/api/swagger.*
