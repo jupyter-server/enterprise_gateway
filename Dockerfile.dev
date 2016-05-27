@@ -7,3 +7,7 @@ RUN pip install nose traitlets==4.2.0
 # Setup a sphinx environment for doc building
 COPY docs/environment.yml /tmp
 RUN conda env create -f /tmp/environment.yml
+
+# Add to the python2 environment for testing
+RUN bash -c 'source activate python2 && \
+    conda install -y requests nose'
