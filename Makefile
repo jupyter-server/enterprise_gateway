@@ -62,7 +62,7 @@ sdist: ## Build a dist/*.tar.gz source distribution
 
 test: test-python3 ## Run tests on Python 3 in a docker container
 
-test-python2: PRE_CMD:=source activate python2; pip install requests;
+test-python2: PRE_CMD:=source activate python2;
 test-python2: _test ## Run tests on Python 2 in a docker container
 
 test-python3: _test
