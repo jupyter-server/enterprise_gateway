@@ -97,10 +97,16 @@ class SeedingMappingKernelManager(MappingKernelManager):
         raise gen.Return(kernel_id)
 
 class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
-    """Extends the IOLoopKernelManager used by the SeedingMappingKernelManager
-    to include the environment variable 'KERNEL_GATEWAY' set to '1', indicating
-    that the notebook is executing within a Jupyter Kernel Gateway
+    """Extends the IOLoopKernelManager used by the SeedingMappingKernelManager.
+    
+    Sets the environment variable 'KERNEL_GATEWAY' to '1' to indicate that the
+    kernel is executing within a Jupyter Kernel Gateway instance. Removes the
+    KG_AUTH_TOKEN from the environment variables passed to the kernel when it 
+    starts.
     """
     def _launch_kernel(self, kernel_cmd, **kw):
-        kw['env']['KERNEL_GATEWAY'] = '1'
+        env = kw['env']
+        env['KERNEL_GATEWAY'] = '1'
+        if 'KG_AUTH_TOKEN' in env:
+            del env['KG_AUTH_TOKEN']
         return super(KernelGatewayIOLoopKernelManager, self)._launch_kernel(kernel_cmd, **kw)
