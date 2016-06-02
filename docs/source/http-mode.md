@@ -87,7 +87,7 @@ print(json.dumps(res))
 Now consider this companion cell which runs after the cell above and sets a custom response header and status:
 
 ```python
-# ResponseInfo GET /hello/world
+# ResponseInfo POST /person
 print(json.dumps({
     "headers" : {
         "Content-Type" : "application/json"
