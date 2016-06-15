@@ -471,6 +471,8 @@ class KernelGatewayApp(JupyterApp):
             self.io_loop.start()
         except KeyboardInterrupt:
             self.log.info("Interrupted...")
+        finally:
+            self.shutdown()
 
     def stop(self):
         """
