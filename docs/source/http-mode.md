@@ -119,7 +119,18 @@ Currently, every response is listed as having a status of `200 OK`.
 
 The minimum number of arguments needed to run in HTTP mode are `--KernelGatewayApp.api=notebook-http` and `--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
 
-If you  development, you can run the kernel gateway in `notebook-http` mode using the Makefile in this repository:
+The notebook-http mode will honor the `prespawn_count` command line argument. This will start the specified number of kernels and execute the `seed_uri` notebook on each one. Requests will be distributed across the pool of prespawned kernels, providing a minimal layer of scalability. An example which starts a pool of 5 kernels follows:
+
+```bash
+jupyter kernelgateway \
+    --KernelGatewayApp.api='notebook-http' \
+    --KernelGatewayApp.seed_uri='/srv/kernel_gateway/etc/api_examples/api_intro.ipynb' \
+    --KernelGatewayApp.prespawn_count=5
+```
+
+Refer to the [scotch recommendation API demo](https://github.com/jupyter/kernel_gateway_demos/tree/master/scotch_demo) for more detail.
+
+If you have a development setup, you can run the kernel gateway in `notebook-http` mode using the Makefile in this repository:
 
 ```bash
 make dev ARGS="--KernelGatewayApp.api='notebook-http' \
@@ -128,11 +139,3 @@ make dev ARGS="--KernelGatewayApp.api='notebook-http' \
 
 With the above Make command, all of the notebooks in `etc/api_examples` are
 mounted into `/srv/kernel_gateway/etc/api_examples/` and can be run in HTTP mode.
-
-The notebook-http mode will honor the `prespawn_count` command line argument. This will start the specified number of kernels and execute the `seed_uri` notebook on each one. Requests will be distributed across the pool of prespawned kernels, providing a minimal layer of scalability. An example which starts a pool of 5 kernels follows:
-
-```bash
-make dev ARGS="--KernelGatewayApp.api='notebook-http' \
-    --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb" \
-    --KernelGatewayApp.prespawn_count=5
-```
