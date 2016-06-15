@@ -1,7 +1,24 @@
-## KernelGatewayApp configuration options
+## Configuration options
 
-Run `jupyter kernelgateway --help-all` after installation to see the
-full set of server options. A snapshot of this help appears below:
+The kernel gateway adheres to the [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html). You can configure an instance of the kernel gateway using:
+
+1. A configuration file
+2. Command line parameters
+3. Environment variables
+
+To generate a template configuration file, run the following:
+
+```
+jupyter kernelgateway --generate-config
+```
+
+To see the same configuration options at the command line, run the following:
+
+```
+jupyter kernelgateway --help-all
+```
+
+A snapshot of this help appears below for ease of reference on the web.
 
 ```
 KernelGatewayApp options
