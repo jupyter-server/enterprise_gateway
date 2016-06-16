@@ -127,7 +127,7 @@ paths:
               description: Model for started kernel
               type: string
               format: url
-        402:
+        403:
           description: The maximum number of kernels have been created.
           schema:
             $ref: '#/definitions/Error'

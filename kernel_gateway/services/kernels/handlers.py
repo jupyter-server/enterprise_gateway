@@ -32,15 +32,14 @@ class MainKernelHandler(TokenAuthorizationMixin,
         Raises
         ------
         tornado.web.HTTPError
-            402 Payment Required (for lack of a better HTTP error code and
-            mimicking what Google does) if the limit is reached
+            403 Forbidden if the limit is reached
         """
         max_kernels = self.settings['kg_max_kernels']
         if max_kernels is not None:
             km = self.settings['kernel_manager']
             kernels = km.list_kernels()
             if len(kernels) >= max_kernels:
-                raise tornado.web.HTTPError(402, 'Resource Limit')
+                raise tornado.web.HTTPError(403, 'Resource Limit')
 
         # Try to get env vars from the request body
         model = self.get_json_body()

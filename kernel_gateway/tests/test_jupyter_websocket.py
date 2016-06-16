@@ -292,7 +292,7 @@ class TestDefaults(TestJupyterWebsocket):
             body='{}',
             raise_error=False
         )
-        self.assertEqual(response2.code, 402)
+        self.assertEqual(response2.code, 403)
 
         # Shut down the kernel
         kernel = json_decode(response.body)
