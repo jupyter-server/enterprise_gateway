@@ -178,7 +178,7 @@
                             }
                         }
                     },
-                    "402": {
+                    "403": {
                         "description": "The maximum number of kernels have been created.",
                         "schema": {
                             "$ref": "#/definitions/Error"
