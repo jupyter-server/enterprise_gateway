@@ -4,8 +4,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 version_info = (
+    1,
     0,
-    6,
     0,
     'dev',
 )
