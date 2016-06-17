@@ -16,10 +16,6 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
     """Personality for standard websocket functionality, registering
     endpoints that are part of the Jupyter Kernel Gateway API
     """
-    def __init__(self, parent, log, *args, **kwargs):
-        super(JupyterWebsocketPersonality, self).__init__(*args, **kwargs)
-        self.parent = parent
-        self.log = log
 
     def init_configurables(self):
         self.kernel_pool = KernelPool(
@@ -64,5 +60,5 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
         """Stop all kernels in the pool."""
         self.kernel_pool.shutdown()
 
-def create_personality(parent, log, *args, **kwargs):
-    return JupyterWebsocketPersonality(parent, log, *args, **kwargs)
+def create_personality(*args, **kwargs):
+    return JupyterWebsocketPersonality(*args, **kwargs)

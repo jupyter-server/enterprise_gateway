@@ -14,10 +14,8 @@ class NotebookHTTPPersonality(LoggingConfigurable):
     """Personality for notebook-http support, creating REST endpoints
     based on the notebook's annotated cells
     """
-    def __init__(self, parent, log, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
-        self.parent = parent
-        self.log = log
         self.api_parser = APICellParser(self.parent.kernel_manager.seed_kernelspec)
 
     def init_configurables(self):
@@ -85,5 +83,5 @@ class NotebookHTTPPersonality(LoggingConfigurable):
         """Stop all kernels in the pool."""
         self.kernel_pool.shutdown()
 
-def create_personality(parent, log, *args, **kwargs):
-    return NotebookHTTPPersonality(parent, log, *args, **kwargs)
+def create_personality(*args, **kwargs):
+    return NotebookHTTPPersonality(*args, **kwargs)
