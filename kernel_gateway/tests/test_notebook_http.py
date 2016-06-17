@@ -7,7 +7,7 @@ import sys
 import json
 
 from .test_gatewayapp import TestGatewayAppBase, RESOURCES
-from ..services.swagger.handlers import SwaggerSpecHandler
+from ..notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import gen_test
 
 class TestDefaults(TestGatewayAppBase):
@@ -16,7 +16,7 @@ class TestDefaults(TestGatewayAppBase):
         """Sets the notebook-http mode and points to a local test notebook as
         the basis for the API.
         """
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
 
@@ -239,7 +239,7 @@ class TestSourceDownload(TestGatewayAppBase):
         """Sets the notebook-http mode, points to a local test notebook as
         the basis for the API, and enables downloads of that notebook.
         """
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
         self.app.allow_notebook_download = True
@@ -260,7 +260,7 @@ class TestCustomResponse(TestGatewayAppBase):
         """Sets the notebook-http mode and points to a local test notebook as
         the basis for the API.
         """
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'responses_{}.ipynb'.format(sys.version_info.major))
 
@@ -309,7 +309,7 @@ class TestKernelPool(TestGatewayAppBase):
         the basis for the API, and spawns 3 kernels to service requests.
         """
         self.app.prespawn_count = 3
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
 
@@ -354,8 +354,7 @@ class TestKernelPool(TestGatewayAppBase):
 
     @gen_test
     def test_locking_semaphore_of_kernel_resources(self):
-        """Kernel pool should prevent more than one request from running on a
-        kernel at a time.
+        """Kernel pool should prevent more than one request from running on a kernel at a time.
         """
         futures = []
         for _ in range(self.app.prespawn_count*2+1):
@@ -376,7 +375,7 @@ class TestSwaggerSpec(TestGatewayAppBase):
     """Tests gateway behavior when generating a  custom base URL is configured."""
     def setup_app(self):
         """Sets a different notebook for testing the swagger generation."""
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'simple_api{}.ipynb'.format(sys.version_info.major))
 
@@ -414,7 +413,7 @@ class TestBaseURL(TestGatewayAppBase):
     def setup_app(self):
         """Sets the custom base URL and enables the notebook-defined API."""
         self.app.base_url = '/fake/path'
-        self.app.api = 'notebook-http'
+        self.app.api = 'kernel_gateway.notebook_http'
         self.app.allow_notebook_download = True
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))

@@ -3,7 +3,7 @@
 """Tornado handlers for kernel specs."""
 
 from tornado import web
-from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+from ..mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 import os
 
 class BaseSpecHandler(CORSMixin, web.StaticFileHandler):

@@ -6,7 +6,7 @@ import logging
 import unittest
 import os
 from kernel_gateway.gatewayapp import KernelGatewayApp, ioloop
-from ..services.swagger.handlers import SwaggerSpecHandler
+from ..notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')

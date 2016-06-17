@@ -3,7 +3,7 @@
 """Tests for swagger spec generation."""
 
 import unittest
-from kernel_gateway.services.swagger.builders import SwaggerSpecBuilder
+from kernel_gateway.notebook_http.swagger.builders import SwaggerSpecBuilder
 
 class TestSwaggerBuilders(unittest.TestCase):
     """Unit tests the swagger spec builder."""
