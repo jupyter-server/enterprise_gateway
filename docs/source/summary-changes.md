@@ -4,8 +4,12 @@ See `git log` for a more detailed summary of changes.
 
 ## 0.6
 
-## 0.6.0 (2016-XX-XX)
+### 0.6.0 (2016-06-17)
 
+* Switch HTTP status from 402 for 403 when server reaches the max kernel limit
+* Explicitly shutdown kernels when the server shuts down
+* Remove `KG_AUTH_TOKEN` from the environment of kernels
+* Fix missing swagger document in release
 * Add `--KernelGateway.port_retries` option like in Jupyter Notebook
 * Fix compatibility with Notebook 4.2 session handler `create_session` call
 
