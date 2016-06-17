@@ -10,7 +10,7 @@ from .request_utils import (parse_body, parse_args, format_request,
     headers_to_dict, parameterize_path)
 from tornado import gen
 from tornado.concurrent import Future
-from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+from ..mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from functools import partial
 from .errors import UnsupportedMethodError, CodeExecutionError
 

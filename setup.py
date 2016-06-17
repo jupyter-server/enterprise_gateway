@@ -40,15 +40,15 @@ containerized and scaled out using common technologies like
     packages=[
         'kernel_gateway',
         'kernel_gateway.base',
+        'kernel_gateway.jupyter_websocket',
+        'kernel_gateway.notebook_http',
+        'kernel_gateway.notebook_http.cell',
+        'kernel_gateway.notebook_http.swagger',
         'kernel_gateway.services',
         'kernel_gateway.services.activity',
-        'kernel_gateway.services.api',
-        'kernel_gateway.services.cell',
         'kernel_gateway.services.kernels',
         'kernel_gateway.services.kernelspecs',
-        'kernel_gateway.services.notebooks',
         'kernel_gateway.services.sessions',
-        'kernel_gateway.services.swagger',
     ],
     scripts=[
         'scripts/jupyter-kernelgateway'

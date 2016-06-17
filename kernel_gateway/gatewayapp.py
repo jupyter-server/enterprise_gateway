@@ -7,6 +7,7 @@ import socket
 import errno
 import logging
 import nbformat
+import importlib
 
 try:
     from urlparse import urlparse
@@ -28,21 +29,9 @@ from tornado import web
 from tornado.log import enable_pretty_logging
 
 from notebook.notebookapp import random_ports
-from .services.api.handlers import default_handlers as default_api_handlers
-from .services.kernels.handlers import default_handlers as default_kernel_handlers
-from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
-from .services.sessions.handlers import default_handlers as default_session_handlers
 from .services.sessions.sessionmanager import SessionManager
 from .services.activity.manager import ActivityManager
 from .services.kernels.manager import SeedingMappingKernelManager
-from .services.kernels.pool import KernelPool, ManagedKernelPool
-from .base.handlers import default_handlers as default_base_handlers
-from .services.notebooks.handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
-from .services.cell.parser import APICellParser
-from .services.swagger.handlers import SwaggerSpecHandler
-from .services.activity.handlers import ActivityHandler
-
-from notebook.utils import url_path_join
 
 class KernelGatewayApp(JupyterApp):
     """Application that provisions Jupyter kernels and proxies HTTP/Websocket
@@ -200,17 +189,21 @@ class KernelGatewayApp(JupyterApp):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
 
     api_env = 'KG_API'
-    api = Unicode('jupyter-websocket',
+    api = Unicode('kernel_gateway.jupyter_websocket',
         config=True,
-        help='Controls which API to expose, that of a Jupyter kernel or the seed notebook\'s, using values "jupyter-websocket" or "notebook-http" (KG_API env var)'
+        help="""The module which provides the active API personality.
+            'kernel_gateway.jupyter_websocket' and 'kernel_gateway.notebook_http'
+            are included in the Kernel Gateway package (KG_API env var)
+            """
     )
     @default('api')
     def api_default(self):
-        return os.getenv(self.api_env, 'jupyter-websocket')
+        return os.getenv(self.api_env, 'kernel_gateway.jupyter_websocket')
 
     def _api_changed(self, name, old, new):
-        if new not in ['notebook-http', 'jupyter-websocket']:
-            raise ValueError('Invalid API value, valid values are jupyter-websocket and notebook-http')
+        new_module = self._load_api_module(new)
+        if new_module is None:
+            raise ValueError('Invalid API value, module {} was not found'.format(new))
 
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
     allow_notebook_download = Bool(
@@ -220,6 +213,17 @@ class KernelGatewayApp(JupyterApp):
     @default('allow_notebook_download')
     def allow_notebook_download_default(self):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
+
+    def _load_api_module(self, module_name):
+        '''Tries to import the given module name'''
+        api_module = None
+        # some compatibility allowances
+        if module_name == 'jupyter-websocket':
+            module_name = 'kernel_gateway.jupyter_websocket'
+        elif module_name == 'notebook-http':
+            module_name = 'kernel_gateway.notebook_http'
+        api_module = importlib.import_module(module_name)
+        return api_module
 
     def _load_notebook(self, uri):
         """Loads a notebook from the local filesystem or HTTP URL.
@@ -269,7 +273,10 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
-        spec manager, session manager, kernel pool, and activity manager.
+        spec manager, session manager, activity manager, and personality.
+
+        Any kernel pool configured by the personality will be its responsibility
+        to shut down.
 
         Optionally, loads a notebook and prespawns the configured number of
         kernels.
@@ -312,100 +319,25 @@ class KernelGatewayApp(JupyterApp):
                     self.prespawn_count, self.max_kernels)
                 )
 
-        if self.api == 'notebook-http':
-            self.kernel_pool = ManagedKernelPool(
-                self.prespawn_count,
-                self.kernel_manager
-            )
-        else:
-            self.kernel_pool = KernelPool(
-                self.prespawn_count,
-                self.kernel_manager
-            )
+        api_module = self._load_api_module(self.api)
+        func = getattr(api_module, 'create_personality')
+        self.personality = func(parent=self, log=self.log)
+
+        self.personality.init_configurables()
 
     def init_webapp(self):
-        """Initializes Tornado web application with kernel handlers.
+        """Initializes Tornado web application with uri handlers.
 
         Adds the various managers and web-front configuration values to the
         Tornado settings for reference by the handlers.
-
-        Notes
-        -----
-        Uses the `api` setting to determine which handlers to add.
-        Developers should note: this may be refactored in the future.
         """
-        # Redefine handlers off the base_url path
-        handlers = []
-        if self.api == 'notebook-http':
-            # Register the NotebookDownloadHandler if configuration allows
-            if self.allow_notebook_download:
-                handlers.append((
-                    url_path_join('/', self.base_url, r'/_api/source'),
-                    NotebookDownloadHandler,
-                    {'path': self.seed_uri}
-                ))
-
-            # Discover the notebook endpoints and their implementations
-            parser = APICellParser(self.kernel_manager.seed_kernelspec)
-            endpoints = parser.endpoints(self.kernel_manager.seed_source)
-            response_sources = parser.endpoint_responses(self.kernel_manager.seed_source)
-            if len(endpoints) == 0:
-                raise RuntimeError('No endpoints were discovered. Check your notebook to make sure your cells are annotated correctly.')
-
-            # Cycle through the (endpoint_path, source) tuples and register their handlers
-            for endpoint_path, verb_source_map in endpoints:
-                parameterized_path = parameterize_path(endpoint_path)
-                parameterized_path = url_path_join('/', self.base_url, parameterized_path)
-                self.log.info('Registering endpoint_path: {}, methods: ({})'.format(
-                    parameterized_path,
-                    list(verb_source_map.keys())
-                ))
-                response_source_map = response_sources[endpoint_path] if endpoint_path in response_sources else {}
-                handler_args = { 'sources' : verb_source_map,
-                    'response_sources' : response_source_map,
-                    'kernel_pool' : self.kernel_pool,
-                    'kernel_name' : self.kernel_manager.seed_kernelspec
-                }
-                handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
-
-            # Register the swagger API spec handler
-            handlers.append(
-                (url_path_join('/', self.base_url, r'/_api/spec/swagger.json'),
-                SwaggerSpecHandler, {
-                    'notebook_path' : self.seed_uri,
-                    'source_cells': self.kernel_manager.seed_source,
-                    'kernel_spec' : self.kernel_manager.seed_kernelspec
-            }))
-
-            # Register the 404 catch-all last
-            handlers.append(default_base_handlers[-1])
-
-            # Enable the same pretty logging the notebook uses
-            enable_pretty_logging()
-        elif self.api == 'jupyter-websocket':
-            # append the activity monitor for websocket mode
-            handlers.append((
-                url_path_join('/', self.base_url, r'/_api/activity'),
-                ActivityHandler,
-                {}
-            ))
-            # append tuples for the standard kernel gateway endpoints
-            for handler in (
-                default_api_handlers +
-                default_kernel_handlers +
-                default_kernelspec_handlers +
-                default_session_handlers +
-                default_base_handlers
-            ):
-                # Create a new handler pattern rooted at the base_url
-                pattern = url_path_join('/', self.base_url, handler[0])
-                # Some handlers take args, so retain those in addition to the
-                # handler class ref
-                new_handler = tuple([pattern] + list(handler[1:]))
-                handlers.append(new_handler)
+        # Enable the same pretty logging the notebook uses
+        enable_pretty_logging()
 
         # Configure the tornado logging level too
         logging.getLogger().setLevel(self.log_level)
+
+        handlers = self.personality.create_request_handlers()
 
         self.web_app = web.Application(
             handlers=handlers,
@@ -471,8 +403,6 @@ class KernelGatewayApp(JupyterApp):
             self.io_loop.start()
         except KeyboardInterrupt:
             self.log.info("Interrupted...")
-        finally:
-            self.shutdown()
 
     def stop(self):
         """
@@ -484,7 +414,7 @@ class KernelGatewayApp(JupyterApp):
         self.io_loop.add_callback(_stop)
 
     def shutdown(self):
-        """Stops all kernels in the pool."""
-        self.kernel_pool.shutdown()
+        """Stop all kernels in the pool."""
+        self.personality.shutdown()
 
 launch_instance = KernelGatewayApp.launch_instance

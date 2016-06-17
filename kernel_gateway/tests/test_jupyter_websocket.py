@@ -142,10 +142,10 @@ class TestDefaults(TestJupyterWebsocket):
 
     @gen_test
     def test_config_bad_api_value(self):
-        """Should raise a ValueError for unsupported API modes."""
+        """Should raise an ImportError for nonexistent API personality modules."""
         def _set_api():
             self.app.api = 'notebook-gopher'
-        self.assertRaises(ValueError, _set_api)
+        self.assertRaises(ImportError, _set_api)
 
     @gen_test
     def test_auth_token(self):

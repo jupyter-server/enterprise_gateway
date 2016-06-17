@@ -5,7 +5,7 @@
 import unittest
 import re
 import sys
-from kernel_gateway.services.cell.parser import APICellParser
+from kernel_gateway.notebook_http.cell.parser import APICellParser
 
 class TestAPICellParser(unittest.TestCase):
     """Unit tests the APICellParser class."""
