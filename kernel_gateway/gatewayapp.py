@@ -29,6 +29,7 @@ from tornado import web
 from tornado.log import enable_pretty_logging
 
 from notebook.notebookapp import random_ports
+from ._version import __version__
 from .services.sessions.sessionmanager import SessionManager
 from .services.activity.manager import ActivityManager
 from .services.kernels.manager import SeedingMappingKernelManager
@@ -43,12 +44,14 @@ class KernelGatewayApp(JupyterApp):
     - starts the Tornado event loop
     """
     name = 'jupyter-kernel-gateway'
+    version =  __version__
     description = """
         Jupyter Kernel Gateway
 
         Provisions Jupyter kernels and proxies HTTP/Websocket traffic
         to them.
     """
+    
     # Server IP / PORT binding
     port_env = 'KG_PORT'
     port = Integer(config=True,
