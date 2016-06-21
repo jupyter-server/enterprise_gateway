@@ -51,7 +51,7 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
         return handlers
 
     def should_seed_cell(self, code):
-        """Determines whether the given code cell should be executed when
+        """Determines whether the given code cell source should be executed when
         seeding a new kernel."""
         # seed all code cells
         return True

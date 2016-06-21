@@ -1,8 +1,6 @@
 ## `notebook-http` Mode
 
-**NOTE** This mode may one day become a plug-in to the Jupyter Kernel Gateway or split into a separate project. The concepts documented here, however, will survive any move.
-
-The `KernelGatewayApp.api` command line argument can be set to `notebook-http`. In this mode, the kernel gateway exposes annotated cells in the `KernelGatewayApp.seed_uri` notebook as HTTP resources.
+The `KernelGatewayApp.api` command line argument can be set to `kernel_gateway.notebook_http`. This mode, or *personality*, has the kernel gateway expose annotated cells in the `KernelGatewayApp.seed_uri` notebook as HTTP resources.
 
 To turn a notebook cell into a HTTP handler, you must prefix it with a single line comment. The comment describes the HTTP method and resource, as in the following Python example:
 
@@ -117,13 +115,13 @@ Currently, every response is listed as having a status of `200 OK`.
 
 ### Running
 
-The minimum number of arguments needed to run in HTTP mode are `--KernelGatewayApp.api=notebook-http` and `--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
+The minimum number of arguments needed to run in HTTP mode are `--KernelGatewayApp.api=kernel_gateway.notebook_http` and `--KernelGatewayApp.seed_uri=some/notebook/file.ipynb`.
 
 The notebook-http mode will honor the `prespawn_count` command line argument. This will start the specified number of kernels and execute the `seed_uri` notebook on each one. Requests will be distributed across the pool of prespawned kernels, providing a minimal layer of scalability. An example which starts a pool of 5 kernels follows:
 
 ```bash
 jupyter kernelgateway \
-    --KernelGatewayApp.api='notebook-http' \
+    --KernelGatewayApp.api='kernel_gateway.notebook_http' \
     --KernelGatewayApp.seed_uri='/srv/kernel_gateway/etc/api_examples/api_intro.ipynb' \
     --KernelGatewayApp.prespawn_count=5
 ```
@@ -133,7 +131,7 @@ Refer to the [scotch recommendation API demo](https://github.com/jupyter/kernel_
 If you have a development setup, you can run the kernel gateway in `notebook-http` mode using the Makefile in this repository:
 
 ```bash
-make dev ARGS="--KernelGatewayApp.api='notebook-http' \
+make dev ARGS="--KernelGatewayApp.api='kernel_gateway.notebook_http' \
 --KernelGatewayApp.seed_uri=/srv/kernel_gateway/etc/api_examples/api_intro.ipynb"
 ```
 

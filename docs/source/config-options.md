@@ -36,7 +36,7 @@ KernelGatewayApp options
 --KernelGatewayApp.allow_notebook_download=<Bool>
     Default: False
     Optional API to download the notebook source code in notebook-http mode,
-    defaults to not allow
+    defaults to not allow (KG_ALLOW_NOTEBOOK_DOWNLOAD env var)
 --KernelGatewayApp.allow_origin=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)
@@ -44,10 +44,11 @@ KernelGatewayApp options
     Default: False
     Answer yes to any prompts.
 --KernelGatewayApp.api=<Unicode>
-    Default: 'jupyter-websocket'
-    Controls which API to expose, that of a Jupyter kernel or the seed
-    notebook's, using values "jupyter-websocket" or "notebook-http" (KG_API env
-    var)
+    Default: 'kernel_gateway.jupyter_websocket'
+    Controls which API to expose, that of a Jupyter notebook server, the seed
+    notebook's, or one supplied by another module, respectively using values
+    "kernel_gateway.jupyter_websocket", "kernel_gateway.notebook_http", or
+    another fully qualified module name (KG_API env var)
 --KernelGatewayApp.auth_token=<Unicode>
     Default: ''
     Authorization token required for all requests (KG_AUTH_TOKEN env var)

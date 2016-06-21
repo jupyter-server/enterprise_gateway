@@ -27,6 +27,7 @@ Contents:
    features
    websocket-mode
    http-mode
+   plug-in
 
 .. toctree::
    :maxdepth: 2
