@@ -38,7 +38,7 @@ class TestActivityManager(unittest.TestCase):
         """publish should set the value for an existing activity"""
         self.activity.publish(self.kernel_id, BUSY, True)
         self.assertEqual(self.activity.get()[self.kernel_id][BUSY], True, 'Kernel activity value was not properly set')
-        time = datetime.now()
+        time = datetime.utcnow()
         self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, time)
         self.assertEqual(self.activity.get()[self.kernel_id][LAST_MESSAGE_TO_KERNEL], time, 'Kernel activity value was not properly set')
 

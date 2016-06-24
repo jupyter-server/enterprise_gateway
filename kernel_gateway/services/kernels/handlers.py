@@ -126,7 +126,7 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
             Opening a connection to this kernel
         """
         if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_CLIENT_CONNECT, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_CLIENT_CONNECT, datetime.utcnow().isoformat())
             self.activity.increment_activity(self.kernel_id, CONNECTIONS)
         super(ZMQChannelsHandler, self).open(kernel_id)
 
@@ -135,7 +135,7 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
         kernel.
         """
         if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_CLIENT_DISCONNECT, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_CLIENT_DISCONNECT, datetime.utcnow().isoformat())
             self.activity.decrement_activity(self.kernel_id, CONNECTIONS)
         super(ZMQChannelsHandler, self).on_close()
 
@@ -160,9 +160,9 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
                 elif msg_content['execution_state'] == 'idle':
                     self.activity.publish(self.kernel_id, BUSY, False)
                 # Record the time the state was changed
-                self.activity.publish(self.kernel_id, LAST_TIME_STATE_CHANGED, datetime.now().isoformat())
+                self.activity.publish(self.kernel_id, LAST_TIME_STATE_CHANGED, datetime.utcnow().isoformat())
 
-            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_CLIENT, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_CLIENT, datetime.utcnow().isoformat())
         super(ZMQChannelsHandler, self)._on_zmq_reply(stream, msg_list)
 
     def on_message(self, msg):
@@ -175,7 +175,7 @@ class ZMQChannelsHandler(TokenAuthorizationMixin,
             Message sent to a kernel
         """
         if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, datetime.now().isoformat())
+            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, datetime.utcnow().isoformat())
         super(ZMQChannelsHandler, self).on_message(msg)
 
 default_handlers = []
