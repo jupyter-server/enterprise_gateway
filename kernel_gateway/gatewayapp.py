@@ -194,9 +194,10 @@ class KernelGatewayApp(JupyterApp):
     api_env = 'KG_API'
     api = Unicode('kernel_gateway.jupyter_websocket',
         config=True,
-        help="""The module which provides the active API personality.
-            'kernel_gateway.jupyter_websocket' and 'kernel_gateway.notebook_http'
-            are included in the Kernel Gateway package (KG_API env var)
+        help="""Controls which API to expose, that of a Jupyter notebook server, the seed
+            notebook's, or one provided by another module, respectively using values
+            'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
+            another fully qualified module name (KG_API env var)
             """
     )
     @default('api')

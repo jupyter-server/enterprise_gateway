@@ -74,7 +74,7 @@ class NotebookHTTPPersonality(LoggingConfigurable):
         return handlers
 
     def should_seed_cell(self, code):
-        """Determines whether the given code cell should be executed when
+        """Determines whether the given code cell source should be executed when
         seeding a new kernel."""
         # seed cells that are uninvolved with the presented API
         return (not self.api_parser.is_api_cell(code) and not self.api_parser.is_api_response_cell(code))

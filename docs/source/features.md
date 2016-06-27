@@ -7,6 +7,7 @@ The Jupyter Kernel Gateway has the following features:
   communicating with them using Websockets
 * [`notebook-http` mode](http-mode) which maps HTTP requests to
   cells in annotated notebooks
+* Option to enable other kernel communication mechanisms by plugging in third party personalities
 * Option to set a shared authentication token and require it from clients
 * Options to set CORS headers for servicing browser-based clients
 * Option to set a custom base URL (e.g., for running under tmpnb)
@@ -19,7 +20,7 @@ The Jupyter Kernel Gateway has the following features:
 * Option to serve annotated notebooks as HTTP endpoints, see
   [notebook-http](#notebook-http-mode)
 * Option to allow downloading of the notebook source when running
-  `notebook-http` mode
+  in `notebook-http` mode
 * Generation of [Swagger specs](http://swagger.io/introducing-the-open-api-initiative/)
   for notebook-defined API in `notebook-http` mode
 * A CLI for launching the kernel gateway: `jupyter kernelgateway OPTIONS`
