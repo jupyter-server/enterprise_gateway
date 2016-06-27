@@ -33,10 +33,6 @@ KernelGatewayApp options
 --KernelGatewayApp.allow_methods=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)
---KernelGatewayApp.allow_notebook_download=<Bool>
-    Default: False
-    Optional API to download the notebook source code in notebook-http mode,
-    defaults to not allow (KG_ALLOW_NOTEBOOK_DOWNLOAD env var)
 --KernelGatewayApp.allow_origin=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)
@@ -74,11 +70,6 @@ KernelGatewayApp options
 --KernelGatewayApp.ip=<Unicode>
     Default: ''
     IP address on which to listen (KG_IP env var)
---KernelGatewayApp.list_kernels=<Bool>
-    Default: False
-    Permits listing of the running kernels using API endpoints /api/kernels and
-    /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this
-    by default but kernel gateway does not.
 --KernelGatewayApp.log_datefmt=<Unicode>
     Default: '%Y-%m-%d %H:%M:%S'
     The date format used by logging formatters for %(asctime)s
@@ -111,4 +102,22 @@ KernelGatewayApp options
     Default: ''
     Runs the notebook (.ipynb) at the given URI on every kernel launched.
     (KG_SEED_URI env var)
+
+
+
+JupyterWebsocketPersonality options
+-----------------------------------
+--JupyterWebsocketPersonality.list_kernels=<Bool>
+    Default: False
+    Permits listing of the running kernels using API endpoints /api/kernels and
+    /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this
+    by default but kernel gateway does not.
+
+
+NotebookHTTPPersonality options
+-------------------------------
+--NotebookHTTPPersonality.allow_notebook_download=<Bool>
+    Default: False
+    Optional API to download the notebook source code in notebook-http mode,
+    defaults to not allow (KG_ALLOW_NOTEBOOK_DOWNLOAD env var)
 ```

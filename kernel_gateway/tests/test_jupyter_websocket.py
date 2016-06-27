@@ -560,9 +560,9 @@ class TestCustomDefaultKernel(TestJupyterWebsocket):
 
 class TestEnableDiscovery(TestJupyterWebsocket):
     """Tests gateway behavior with kernel listing enabled."""
-    def setup_app(self):
+    def setup_configurables(self):
         """Enables kernel listing for all tests."""
-        self.app.list_kernels = True
+        self.app.personality.list_kernels = True
 
     @gen_test
     def test_enable_kernel_list(self):
@@ -614,7 +614,10 @@ class TestBaseURL(TestJupyterWebsocket):
     def setup_app(self):
         """Sets the custom base URL and enables kernel listing."""
         self.app.base_url = '/fake/path'
-        self.app.list_kernels = True
+
+    def setup_configurables(self):
+        """Enables kernel listing for all tests."""
+        self.app.personality.list_kernels = True
 
     @gen_test
     def test_base_url(self):
@@ -777,9 +780,9 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
 
 class TestActivityAPI(TestJupyterWebsocket):
     """Tests gateway behavior when the activity API is enabled."""
-    def setup_app(self):
+    def setup_configurables(self):
         """Enables kernel listing so the activity API is available."""
-        self.app.list_kernels = True
+        self.app.personality.list_kernels = True
 
     @gen_test
     def test_api_lists_kernels_with_flag_set(self):

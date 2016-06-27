@@ -39,8 +39,6 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_SEED_URI'] = 'fake-notebook.ipynb'
         os.environ['KG_PRESPAWN_COUNT'] = '1'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
-        os.environ['KG_LIST_KERNELS'] = 'True'
-        os.environ['KG_ALLOW_NOTEBOOK_DOWNLOAD'] = 'True'
 
         app = KernelGatewayApp()
 
@@ -59,8 +57,6 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.seed_uri, 'fake-notebook.ipynb')
         self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
-        self.assertEqual(app.list_kernels, True)
-        self.assertEqual(app.allow_notebook_download, True)
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     """Base class for integration style tests using HTTP/Websockets against an
@@ -90,11 +86,17 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         self.app = KernelGatewayApp(log_level=logging.CRITICAL)
         self.setup_app()
         self.app.init_configurables()
+        self.setup_configurables()
         self.app.init_webapp()
         return self.app.web_app
 
     def setup_app(self):
         """Override to configure KernelGatewayApp instance before initializing
         configurables and the web app.
+        """
+        pass
+
+    def setup_configurables(self):
+        """Override to configure further settings, such as the personality.
         """
         pass

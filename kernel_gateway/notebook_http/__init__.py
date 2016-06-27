@@ -2,12 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 """Notebook HTTP personality for the Kernel Gateway"""
 
+import os
 from ..base.handlers import default_handlers as default_base_handlers
 from ..services.kernels.pool import ManagedKernelPool
 from .cell.parser import APICellParser
 from .swagger.handlers import SwaggerSpecHandler
 from .handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from notebook.utils import url_path_join
+from traitlets import Bool, default
 from traitlets.config.configurable import LoggingConfigurable
 
 class NotebookHTTPPersonality(LoggingConfigurable):
@@ -17,6 +19,15 @@ class NotebookHTTPPersonality(LoggingConfigurable):
     def __init__(self, *args, **kwargs):
         super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
         self.api_parser = APICellParser(self.parent.kernel_manager.seed_kernelspec)
+
+    allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
+    allow_notebook_download = Bool(
+        config=True,
+        help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
+    )
+    @default('allow_notebook_download')
+    def allow_notebook_download_default(self):
+        return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def init_configurables(self):
         self.kernel_pool = ManagedKernelPool(
@@ -31,7 +42,7 @@ class NotebookHTTPPersonality(LoggingConfigurable):
         """
         handlers = []
         # Register the NotebookDownloadHandler if configuration allows
-        if self.parent.allow_notebook_download:
+        if self.allow_notebook_download:
             handlers.append((
                 url_path_join('/', self.parent.base_url, r'/_api/source'),
                 NotebookDownloadHandler,
