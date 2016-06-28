@@ -34,6 +34,10 @@ from .services.sessions.sessionmanager import SessionManager
 from .services.activity.manager import ActivityManager
 from .services.kernels.manager import SeedingMappingKernelManager
 
+# Only present for generating help documentation
+from kernel_gateway.notebook_http import NotebookHTTPPersonality
+from kernel_gateway.jupyter_websocket import JupyterWebsocketPersonality
+
 class KernelGatewayApp(JupyterApp):
     """Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
@@ -52,6 +56,9 @@ class KernelGatewayApp(JupyterApp):
         to them.
     """
     
+    # Also include when generating help options
+    classes = [NotebookHTTPPersonality, JupyterWebsocketPersonality]
+
     # Server IP / PORT binding
     port_env = 'KG_PORT'
     port = Integer(config=True,
@@ -181,16 +188,6 @@ class KernelGatewayApp(JupyterApp):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
-    list_kernels_env = 'KG_LIST_KERNELS'
-    list_kernels = Bool(config=True,
-        help="""Permits listing of the running kernels using API endpoints /api/kernels
-            and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
-            allows this by default but kernel gateway does not."""
-    )
-    @default('list_kernels')
-    def list_kernels_default(self):
-        return os.getenv(self.list_kernels_env, 'False') == 'True'
-
     api_env = 'KG_API'
     api = Unicode('kernel_gateway.jupyter_websocket',
         config=True,
@@ -208,15 +205,6 @@ class KernelGatewayApp(JupyterApp):
         new_module = self._load_api_module(new)
         if new_module is None:
             raise ValueError('Invalid API value, module {} was not found'.format(new))
-
-    allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
-    allow_notebook_download = Bool(
-        config=True,
-        help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
-    )
-    @default('allow_notebook_download')
-    def allow_notebook_download_default(self):
-        return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     def _load_api_module(self, module_name):
         '''Tries to import the given module name'''
@@ -358,12 +346,20 @@ class KernelGatewayApp(JupyterApp):
             kg_expose_headers=self.expose_headers,
             kg_max_age=self.max_age,
             kg_max_kernels=self.max_kernels,
-            kg_list_kernels=self.list_kernels,
             kg_api=self.api,
             # Also set the allow_origin setting used by notebook so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin
         )
+
+        # promote the current personality's "config" tagged traitlet values to webapp settings
+        for trait_name, trait_value in self.personality.class_traits(config=True).items():
+            kg_name = 'kg_' + trait_name
+            # a personality's traitlets may not overwrite the kernel gateway's
+            if kg_name not in self.web_app.settings:
+                self.web_app.settings[kg_name] = trait_value.get(obj=self.personality)
+            else:
+                self.log.warning('The personality trait name, %s, conflicts with a kernel gateway trait.' , trait_name)
 
     def init_http_server(self):
         """Initializes a HTTP server for the Tornado web application on the

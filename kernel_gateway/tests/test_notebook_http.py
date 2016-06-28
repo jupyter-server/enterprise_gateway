@@ -242,7 +242,9 @@ class TestSourceDownload(TestGatewayAppBase):
         self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
-        self.app.allow_notebook_download = True
+
+    def setup_configurables(self):
+        self.app.personality.allow_notebook_download = True
 
     @gen_test
     def test_download_notebook_source(self):
@@ -414,9 +416,11 @@ class TestBaseURL(TestGatewayAppBase):
         """Sets the custom base URL and enables the notebook-defined API."""
         self.app.base_url = '/fake/path'
         self.app.api = 'kernel_gateway.notebook_http'
-        self.app.allow_notebook_download = True
         self.app.seed_uri = os.path.join(RESOURCES,
                                          'kernel_api{}.ipynb'.format(sys.version_info.major))
+
+    def setup_configurables(self):
+        self.app.personality.allow_notebook_download = True
 
     @gen_test
     def test_base_url(self):

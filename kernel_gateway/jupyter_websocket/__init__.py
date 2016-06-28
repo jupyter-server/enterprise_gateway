@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Jupyter websocket personality for the Kernel Gateway"""
 
+import os
 from ..base.handlers import default_handlers as default_base_handlers
 from ..services.activity.handlers import ActivityHandler
 from ..services.kernels.pool import KernelPool
@@ -10,12 +11,23 @@ from ..services.kernelspecs.handlers import default_handlers as default_kernelsp
 from ..services.sessions.handlers import default_handlers as default_session_handlers
 from .handlers import default_handlers as default_api_handlers
 from notebook.utils import url_path_join
+from traitlets import Bool, default
 from traitlets.config.configurable import LoggingConfigurable
 
 class JupyterWebsocketPersonality(LoggingConfigurable):
     """Personality for standard websocket functionality, registering
     endpoints that are part of the Jupyter Kernel Gateway API
     """
+
+    list_kernels_env = 'KG_LIST_KERNELS'
+    list_kernels = Bool(config=True,
+        help="""Permits listing of the running kernels using API endpoints /api/kernels
+            and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
+            allows this by default but kernel gateway does not."""
+    )
+    @default('list_kernels')
+    def list_kernels_default(self):
+        return os.getenv(self.list_kernels_env, 'False') == 'True'
 
     def init_configurables(self):
         self.kernel_pool = KernelPool(
