@@ -9,19 +9,26 @@ from traitlets.config.configurable import LoggingConfigurable
 
 class TemplatePersonality(LoggingConfigurable):
     def init_configurables(self):
-        """This function will be called when the kernel gateway has completed its own `init_configurables`, typically after its traitlets have been evaluated."""
+        """This function will be called when the kernel gateway has completed its own 
+        `init_configurables`, typically after its traitlets have been evaluated."""
         pass 
 
     def shutdown(self):
-        """During a proper shutdown of the kernel gateway, this will be called so that any held resources may be properly released."""
+        """During a proper shutdown of the kernel gateway, this will be called so that
+        any held resources may be properly released."""
         pass 
 
     def create_request_handlers(self):
-        """Returns a list of zero or more tuples of handler path, Tornado handler class name, and handler arguments, that should be registered in the kernel gateway's web application. Paths are used as given and should respect the kernel gateway's `base_url` traitlet value."""
+        """Returns a list of zero or more tuples of handler path, Tornado handler class
+        name, and handler arguments, that should be registered in the kernel gateway's 
+        web application. Paths are used as given and should respect the kernel gateway's 
+        `base_url` traitlet value."""
         pass 
 
     def should_seed_cell(self, code):
-        """Determines whether the kernel gateway will include the given notebook code cell when seeding a new kernel. Will only be called if a seed notebook has been specified."""
+        """Determines whether the kernel gateway will include the given notebook code 
+        cell when seeding a new kernel. Will only be called if a seed notebook has 
+        been specified."""
         pass
 
 def create_personality(self, parent):
