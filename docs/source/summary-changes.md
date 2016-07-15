@@ -4,7 +4,7 @@ See `git log` for a more detailed summary of changes.
 
 ## 1.0
 
-## 1.0.0 (2016-07-15)
+### 1.0.0 (2016-07-15)
 
 * Introduce an [API for developing mode plug-ins](http://jupyter-kernel-gateway.readthedocs.io/en/latest/plug-in.html)
 * Separate `jupyter-websocket` and `notebook-http` modes into  plug-in packages
