@@ -188,10 +188,8 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
 
             # Run the request and source code and yield until there's a result
             access_log.debug('Request code for notebook cell is: {}'.format(request_code))
-            request_future = self.execute_code(kernel_client, kernel_id, request_code)
-            yield request_future
-            source_future = self.execute_code(kernel_client, kernel_id, source_code)
-            source_result = yield source_future
+            yield self.execute_code(kernel_client, kernel_id, request_code)
+            source_result = yield self.execute_code(kernel_client, kernel_id, source_code)
 
             # If a response code cell exists, execute it
             if self.request.method in self.response_sources:
@@ -212,7 +210,8 @@ class NotebookAPIHandler(TokenAuthorizationMixin,
                     self.set_status(response['status'])
 
             # Write the result of the source code execution
-            self.write(source_result)
+            if source_result:
+                self.write(source_result)
         # If there was a problem executing an code, return a 500
         except CodeExecutionError as err:
             self.write(str(err))
