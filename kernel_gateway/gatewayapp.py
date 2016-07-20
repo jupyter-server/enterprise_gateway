@@ -14,7 +14,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import Unicode, Integer, Bool, default
+from traitlets import Unicode, Integer, Bool, default, observe
 
 from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
@@ -73,36 +73,40 @@ class KernelGatewayApp(JupyterApp):
 
     # Server IP / PORT binding
     port_env = 'KG_PORT'
-    port = Integer(config=True,
+    port_default_value = 8888
+    port = Integer(port_default_value, config=True,
         help="Port on which to listen (KG_PORT env var)"
     )
     @default('port')
     def port_default(self):
-        return int(os.getenv(self.port_env, 8888))
+        return int(os.getenv(self.port_env, self.port_default_value))
     
     port_retries_env = 'KG_PORT_RETRIES'
-    port_retries = Integer(config=True,
+    port_retries_default_value = 50
+    port_retries = Integer(port_retries_default_value, config=True,
         help="Number of ports to try if the specified port is not available (KG_PORT_RETRIES env var)"
     )
     @default('port_retries')
     def port_retries_default(self):
-        return int(os.getenv(self.port_retries_env, 50))
+        return int(os.getenv(self.port_retries_env, self.port_retries_default_value))
 
     ip_env = 'KG_IP'
-    ip = Unicode(config=True,
+    ip_default_value = '127.0.0.1'
+    ip = Unicode(ip_default_value, config=True,
         help="IP address on which to listen (KG_IP env var)"
     )
     @default('ip')
     def ip_default(self):
-        return os.getenv(self.ip_env, '127.0.0.1')
+        return os.getenv(self.ip_env, self.ip_default_value)
 
     # Base URL
     base_url_env = 'KG_BASE_URL'
-    base_url = Unicode(config=True,
+    base_url_default_value = '/'
+    base_url = Unicode(base_url_default_value, config=True,
         help="""The base path for mounting all API resources (KG_BASE_URL env var)""")
     @default('base_url')
     def base_url_default(self):
-        return os.getenv(self.base_url_env, '/')
+        return os.getenv(self.base_url_env, self.base_url_default_value)
 
     # Token authorization
     auth_token_env = 'KG_AUTH_TOKEN'
@@ -163,9 +167,9 @@ class KernelGatewayApp(JupyterApp):
         return os.getenv(self.max_age_env, '')
 
     max_kernels_env = 'KG_MAX_KERNELS'
-    max_kernels = Integer(config=True,
+    max_kernels = Integer(None, config=True,
         allow_none=True,
-        help='Limits the number of kernel instances allowed to run by this gateway. (KG_MAX_KERNELS env var)'
+        help='Limits the number of kernel instances allowed to run by this gateway. Unbounded by default. (KG_MAX_KERNELS env var)'
     )
     @default('max_kernels')
     def max_kernels_default(self):
@@ -173,19 +177,18 @@ class KernelGatewayApp(JupyterApp):
         return val if val is None else int(val)
 
     seed_uri_env = 'KG_SEED_URI'
-    seed_uri = Unicode(config=True,
+    seed_uri = Unicode(None, config=True,
         allow_none=True,
-        help='Runs the notebook (.ipynb) at the given URI on every kernel launched. (KG_SEED_URI env var)'
+        help='Runs the notebook (.ipynb) at the given URI on every kernel launched. No seed by default. (KG_SEED_URI env var)'
     )
     @default('seed_uri')
     def seed_uri_default(self):
         return os.getenv(self.seed_uri_env)
 
     prespawn_count_env = 'KG_PRESPAWN_COUNT'
-    prespawn_count = Integer(config=True,
-        default_value=None,
+    prespawn_count = Integer(None, config=True,
         allow_none=True,
-        help='Number of kernels to prespawn using the default language. (KG_PRESPAWN_COUNT env var)'
+        help='Number of kernels to prespawn using the default language. No prespawn by default. (KG_PRESPAWN_COUNT env var)'
     )
     @default('prespawn_count')
     def prespawn_count_default(self):
@@ -194,14 +197,15 @@ class KernelGatewayApp(JupyterApp):
 
     default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
-        help="""The default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)""")
+        help='Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)')
     @default('default_kernel_name')
     def default_kernel_name_default(self):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
     api_env = 'KG_API'
-    api = Unicode('kernel_gateway.jupyter_websocket',
+    api_default_value = 'kernel_gateway.jupyter_websocket'
+    api = Unicode(api_default_value,
         config=True,
         help="""Controls which API to expose, that of a Jupyter notebook server, the seed
             notebook's, or one provided by another module, respectively using values
@@ -211,23 +215,35 @@ class KernelGatewayApp(JupyterApp):
     )
     @default('api')
     def api_default(self):
-        return os.getenv(self.api_env, 'kernel_gateway.jupyter_websocket')
-
-    def _api_changed(self, name, old, new):
-        new_module = self._load_api_module(new)
-        if new_module is None:
-            raise ValueError('Invalid API value, module {} was not found'.format(new))
+        return os.getenv(self.api_env, self.api_default_value)
+    @observe('api')
+    def api_changed(self, event):
+        try:
+            new_module = self._load_api_module(event['new'])
+        except ImportError:
+            # re-raise with more sensible message to help the user
+            raise ImportError('API module {} not found'.format(event['new']))
 
     def _load_api_module(self, module_name):
-        '''Tries to import the given module name'''
+        """Tries to import the given module name.
+
+        Parameters
+        ----------
+        module_name: str
+            Module name to import
+
+        Returns
+        -------
+        module
+            Module with the given name loaded using importlib.import_module
+        """
         api_module = None
         # some compatibility allowances
         if module_name == 'jupyter-websocket':
             module_name = 'kernel_gateway.jupyter_websocket'
         elif module_name == 'notebook-http':
             module_name = 'kernel_gateway.notebook_http'
-        api_module = importlib.import_module(module_name)
-        return api_module
+        return importlib.import_module(module_name)
 
     def _load_notebook(self, uri):
         """Loads a notebook from the local filesystem or HTTP URL.

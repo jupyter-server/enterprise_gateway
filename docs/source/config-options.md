@@ -32,21 +32,14 @@ Arguments that take values are actually convenience aliases to full
 Configurables, whose aliases are listed on the help line. For more information
 on full configurables, see '--help-all'.
 
---debug
-    set log level to logging.DEBUG (maximize logging output)
 -y
     Answer yes to any questions instead of prompting.
 --generate-config
     generate default config file
---log-level=<Enum> (Application.log_level)
-    Default: 30
-    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
-    Set the log level by value or name.
---config=<Unicode> (JupyterApp.config_file)
-    Default: ''
-    Full path of a config file.
+--debug
+    set log level to logging.DEBUG (maximize logging output)
 --ip=<Unicode> (KernelGatewayApp.ip)
-    Default: ''
+    Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
 --api=<Unicode> (KernelGatewayApp.api)
     Default: 'kernel_gateway.jupyter_websocket'
@@ -54,17 +47,24 @@ on full configurables, see '--help-all'.
     notebook's, or one provided by another module, respectively using values
     'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
---port=<Int> (KernelGatewayApp.port)
-    Default: 0
-    Port on which to listen (KG_PORT env var)
+--config=<Unicode> (JupyterApp.config_file)
+    Default: ''
+    Full path of a config file.
 --port_retries=<Int> (KernelGatewayApp.port_retries)
-    Default: 0
+    Default: 50
     Number of ports to try if the specified port is not available
     (KG_PORT_RETRIES env var)
+--port=<Int> (KernelGatewayApp.port)
+    Default: 8888
+    Port on which to listen (KG_PORT env var)
 --seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
-    Default: ''
-    Runs the notebook (.ipynb) at the given URI on every kernel launched.
-    (KG_SEED_URI env var)
+    Default: None
+    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
+    seed by default. (KG_SEED_URI env var)
+--log-level=<Enum> (Application.log_level)
+    Default: 30
+    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
+    Set the log level by value or name.
 
 Class parameters
 ----------------
@@ -101,7 +101,7 @@ KernelGatewayApp options
     Default: ''
     Authorization token required for all requests (KG_AUTH_TOKEN env var)
 --KernelGatewayApp.base_url=<Unicode>
-    Default: ''
+    Default: '/'
     The base path for mounting all API resources (KG_BASE_URL env var)
 --KernelGatewayApp.config_file=<Unicode>
     Default: ''
@@ -111,8 +111,7 @@ KernelGatewayApp options
     Specify a config file to load.
 --KernelGatewayApp.default_kernel_name=<Unicode>
     Default: ''
-    The default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env
-    var)
+    Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)
 --KernelGatewayApp.expose_headers=<Unicode>
     Default: ''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
@@ -120,7 +119,7 @@ KernelGatewayApp options
     Default: False
     Generate default config file.
 --KernelGatewayApp.ip=<Unicode>
-    Default: ''
+    Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
 --KernelGatewayApp.log_datefmt=<Unicode>
     Default: '%Y-%m-%d %H:%M:%S'
@@ -136,24 +135,24 @@ KernelGatewayApp options
     Default: ''
     Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)
 --KernelGatewayApp.max_kernels=<Int>
-    Default: 0
+    Default: None
     Limits the number of kernel instances allowed to run by this gateway.
-    (KG_MAX_KERNELS env var)
+    Unbounded by default. (KG_MAX_KERNELS env var)
 --KernelGatewayApp.port=<Int>
-    Default: 0
+    Default: 8888
     Port on which to listen (KG_PORT env var)
 --KernelGatewayApp.port_retries=<Int>
-    Default: 0
+    Default: 50
     Number of ports to try if the specified port is not available
     (KG_PORT_RETRIES env var)
 --KernelGatewayApp.prespawn_count=<Int>
     Default: None
-    Number of kernels to prespawn using the default language. (KG_PRESPAWN_COUNT
-    env var)
+    Number of kernels to prespawn using the default language. No prespawn by
+    default. (KG_PRESPAWN_COUNT env var)
 --KernelGatewayApp.seed_uri=<Unicode>
-    Default: ''
-    Runs the notebook (.ipynb) at the given URI on every kernel launched.
-    (KG_SEED_URI env var)
+    Default: None
+    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
+    seed by default. (KG_SEED_URI env var)
 
 NotebookHTTPPersonality options
 -------------------------------
