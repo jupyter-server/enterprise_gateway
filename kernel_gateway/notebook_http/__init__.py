@@ -3,23 +3,20 @@
 """Notebook HTTP personality for the Kernel Gateway"""
 
 import os
+import tornado
 from ..base.handlers import default_handlers as default_base_handlers
 from ..services.kernels.pool import ManagedKernelPool
 from .cell.parser import APICellParser
 from .swagger.handlers import SwaggerSpecHandler
 from .handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from notebook.utils import url_path_join
-from traitlets import Bool, default
+from traitlets import Bool, Unicode, default
 from traitlets.config.configurable import LoggingConfigurable
 
 class NotebookHTTPPersonality(LoggingConfigurable):
     """Personality for notebook-http support, creating REST endpoints
     based on the notebook's annotated cells
     """
-    def __init__(self, *args, **kwargs):
-        super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
-        self.api_parser = APICellParser(self.parent.kernel_manager.seed_kernelspec)
-
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
     allow_notebook_download = Bool(
         config=True,
@@ -29,7 +26,19 @@ class NotebookHTTPPersonality(LoggingConfigurable):
     def allow_notebook_download_default(self):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
+    static_path_env = 'KG_STATIC_PATH'
+    static_path = Unicode(None,
+        config=True,
+        allow_none=True,
+        help="Serve static files on disk in the given path as /public, defaults to not serve" 
+    )
+    @default('static_path')
+    def static_path_default(self):
+        return os.getenv(self.static_path_env)
+
     def init_configurables(self):
+        """Create a managed kernel pool and cell parser."""
+        self.api_parser = APICellParser(self.parent.kernel_manager.seed_kernelspec)
         self.kernel_pool = ManagedKernelPool(
             self.parent.prespawn_count,
             self.parent.kernel_manager
@@ -43,10 +52,22 @@ class NotebookHTTPPersonality(LoggingConfigurable):
         handlers = []
         # Register the NotebookDownloadHandler if configuration allows
         if self.allow_notebook_download:
+            path = url_path_join('/', self.parent.base_url, r'/_api/source')
+            self.log.info('Registering resource: {}, methods: (GET)'.format(path))
             handlers.append((
-                url_path_join('/', self.parent.base_url, r'/_api/source'),
+                path,
                 NotebookDownloadHandler,
                 {'path': self.parent.seed_uri}
+            ))
+
+        # Register a static path handler if configuration allows
+        if self.static_path is not None:
+            path = url_path_join('/', self.parent.base_url, r'/public/(.*)')
+            self.log.info('Registering resource: {}, methods: (GET)'.format(path))
+            handlers.append((
+                path,
+                tornado.web.StaticFileHandler,
+                {'path': self.static_path}
             ))
 
         # Discover the notebook endpoints and their implementations
@@ -59,7 +80,7 @@ class NotebookHTTPPersonality(LoggingConfigurable):
         for endpoint_path, verb_source_map in endpoints:
             parameterized_path = parameterize_path(endpoint_path)
             parameterized_path = url_path_join('/', self.parent.base_url, parameterized_path)
-            self.log.info('Registering endpoint_path: {}, methods: ({})'.format(
+            self.log.info('Registering resource: {}, methods: ({})'.format(
                 parameterized_path,
                 list(verb_source_map.keys())
             ))
@@ -72,13 +93,15 @@ class NotebookHTTPPersonality(LoggingConfigurable):
             handlers.append((parameterized_path, NotebookAPIHandler, handler_args))
 
         # Register the swagger API spec handler
-        handlers.append(
-            (url_path_join('/', self.parent.base_url, r'/_api/spec/swagger.json'),
+        path = url_path_join('/', self.parent.base_url, r'/_api/spec/swagger.json')
+        handlers.append((
+            path,
             SwaggerSpecHandler, {
                 'notebook_path' : self.parent.seed_uri,
                 'source_cells': self.parent.kernel_manager.seed_source,
                 'kernel_spec' : self.parent.kernel_manager.seed_kernelspec
         }))
+        self.log.info('Registering resource: {}, methods: (GET)'.format(path))
 
         # Add the 404 catch-all last
         handlers.append(default_base_handlers[-1])
