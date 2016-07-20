@@ -21,6 +21,58 @@ jupyter kernelgateway --help-all
 A snapshot of this help appears below for ease of reference on the web.
 
 ```
+Jupyter Kernel Gateway
+
+Provisions Jupyter kernels and proxies HTTP/Websocket traffic to them.
+
+Options
+-------
+
+Arguments that take values are actually convenience aliases to full
+Configurables, whose aliases are listed on the help line. For more information
+on full configurables, see '--help-all'.
+
+--debug
+    set log level to logging.DEBUG (maximize logging output)
+-y
+    Answer yes to any questions instead of prompting.
+--generate-config
+    generate default config file
+--log-level=<Enum> (Application.log_level)
+    Default: 30
+    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
+    Set the log level by value or name.
+--config=<Unicode> (JupyterApp.config_file)
+    Default: ''
+    Full path of a config file.
+--ip=<Unicode> (KernelGatewayApp.ip)
+    Default: ''
+    IP address on which to listen (KG_IP env var)
+--api=<Unicode> (KernelGatewayApp.api)
+    Default: 'kernel_gateway.jupyter_websocket'
+    Controls which API to expose, that of a Jupyter notebook server, the seed
+    notebook's, or one provided by another module, respectively using values
+    'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
+    another fully qualified module name (KG_API env var)
+--port=<Int> (KernelGatewayApp.port)
+    Default: 0
+    Port on which to listen (KG_PORT env var)
+--port_retries=<Int> (KernelGatewayApp.port_retries)
+    Default: 0
+    Number of ports to try if the specified port is not available
+    (KG_PORT_RETRIES env var)
+--seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
+    Default: ''
+    Runs the notebook (.ipynb) at the given URI on every kernel launched.
+    (KG_SEED_URI env var)
+
+Class parameters
+----------------
+
+Parameters are set from command-line arguments of the form:
+`--Class.trait=value`. This line is evaluated in Python, so simple expressions
+are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
+
 KernelGatewayApp options
 ------------------------
 --KernelGatewayApp.allow_credentials=<Unicode>
@@ -42,8 +94,8 @@ KernelGatewayApp options
 --KernelGatewayApp.api=<Unicode>
     Default: 'kernel_gateway.jupyter_websocket'
     Controls which API to expose, that of a Jupyter notebook server, the seed
-    notebook's, or one supplied by another module, respectively using values
-    "kernel_gateway.jupyter_websocket", "kernel_gateway.notebook_http", or
+    notebook's, or one provided by another module, respectively using values
+    'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
 --KernelGatewayApp.auth_token=<Unicode>
     Default: ''
@@ -103,7 +155,12 @@ KernelGatewayApp options
     Runs the notebook (.ipynb) at the given URI on every kernel launched.
     (KG_SEED_URI env var)
 
-
+NotebookHTTPPersonality options
+-------------------------------
+--NotebookHTTPPersonality.allow_notebook_download=<Bool>
+    Default: False
+    Optional API to download the notebook source code in notebook-http mode,
+    defaults to not allow
 
 JupyterWebsocketPersonality options
 -----------------------------------
@@ -112,12 +169,4 @@ JupyterWebsocketPersonality options
     Permits listing of the running kernels using API endpoints /api/kernels and
     /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this
     by default but kernel gateway does not.
-
-
-NotebookHTTPPersonality options
--------------------------------
---NotebookHTTPPersonality.allow_notebook_download=<Bool>
-    Default: False
-    Optional API to download the notebook source code in notebook-http mode,
-    defaults to not allow (KG_ALLOW_NOTEBOOK_DOWNLOAD env var)
 ```
