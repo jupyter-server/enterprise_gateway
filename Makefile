@@ -22,9 +22,11 @@ bash: ## Start a bash shell within the dev container
 
 clean: ## Remove all built files from the host (but not the dev docker image)
 	@-rm -rf dist
+	@-rm -rf build
 	@-rm -rf *.egg-info
 	@-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
 	@-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
+	@-make -C docs clean
 
 dev: ARGS?=
 dev: PYARGS?=
