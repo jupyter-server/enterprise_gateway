@@ -16,7 +16,7 @@ except ImportError:
 
 from traitlets import Unicode, Integer, Bool, default
 
-from jupyter_core.application import JupyterApp
+from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
 
 # Install the pyzmq ioloop. This has to be done before anything else from
@@ -38,6 +38,16 @@ from .services.kernels.manager import SeedingMappingKernelManager
 from kernel_gateway.notebook_http import NotebookHTTPPersonality
 from kernel_gateway.jupyter_websocket import JupyterWebsocketPersonality
 
+# Add additional command line aliases
+aliases = dict(base_aliases)
+aliases.update({
+    'ip': 'KernelGatewayApp.ip',
+    'port': 'KernelGatewayApp.port',
+    'port_retries': 'KernelGatewayApp.port_retries',
+    'api': 'KernelGatewayApp.api',
+    'seed_uri': 'KernelGatewayApp.seed_uri'
+})
+
 class KernelGatewayApp(JupyterApp):
     """Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
@@ -58,6 +68,8 @@ class KernelGatewayApp(JupyterApp):
     
     # Also include when generating help options
     classes = [NotebookHTTPPersonality, JupyterWebsocketPersonality]
+    # Enable some command line shortcuts
+    aliases = aliases
 
     # Server IP / PORT binding
     port_env = 'KG_PORT'
