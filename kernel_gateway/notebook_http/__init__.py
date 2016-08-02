@@ -4,6 +4,7 @@
 
 import os
 import tornado
+import importlib
 from ..base.handlers import default_handlers as default_base_handlers
 from ..services.kernels.pool import ManagedKernelPool
 from .cell.parser import APICellParser
@@ -17,6 +18,29 @@ class NotebookHTTPPersonality(LoggingConfigurable):
     """Personality for notebook-http support, creating REST endpoints
     based on the notebook's annotated cells
     """
+    def __init__(self, *args, **kwargs):
+        super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
+        cell_parser_module = self._load_module(self.cell_parser)
+        func = getattr(cell_parser_module, 'create_parser')
+        self.api_parser = func(parent=self, log=self.log, kernelspec=self.parent.kernel_manager.seed_kernelspec, notebook_cells=self.parent.seed_notebook.cells)
+
+    cell_parser_env = 'KG_CELL_PARSER'
+    cell_parser = Unicode('kernel_gateway.notebook_http.cell.parser',
+        config=True,
+        help=""" Determines which module is used to parse the notebook for endpoints and
+            documentation. Valid module names include 'kernel_gateway.notebook_http.cell.parser'
+            and 'kernel_gateway.notebook_http.swagger.parser'. (KG_CELL_PARSER env var)
+            """
+    )
+    @default('cell_parser')
+    def cell_parser_default(self):
+        return os.getenv(self.cell_parser_env, 'kernel_gateway.notebook_http.cell.parser')
+
+    def _load_module(self, module_name):
+        '''Tries to import the given module name'''
+        _module = importlib.import_module(module_name)
+        return _module
+
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
     allow_notebook_download = Bool(
         config=True,
@@ -30,15 +54,14 @@ class NotebookHTTPPersonality(LoggingConfigurable):
     static_path = Unicode(None,
         config=True,
         allow_none=True,
-        help="Serve static files on disk in the given path as /public, defaults to not serve" 
+        help="Serve static files on disk in the given path as /public, defaults to not serve"
     )
     @default('static_path')
     def static_path_default(self):
         return os.getenv(self.static_path_env)
 
     def init_configurables(self):
-        """Create a managed kernel pool and cell parser."""
-        self.api_parser = APICellParser(self.parent.kernel_manager.seed_kernelspec)
+        """Create a managed kernel pool"""
         self.kernel_pool = ManagedKernelPool(
             self.parent.prespawn_count,
             self.parent.kernel_manager
@@ -98,8 +121,8 @@ class NotebookHTTPPersonality(LoggingConfigurable):
             path,
             SwaggerSpecHandler, {
                 'notebook_path' : self.parent.seed_uri,
-                'source_cells': self.parent.kernel_manager.seed_source,
-                'kernel_spec' : self.parent.kernel_manager.seed_kernelspec
+                'source_cells': self.parent.seed_notebook.cells,
+                'cell_parser' : self.api_parser
         }))
         self.log.info('Registering resource: {}, methods: (GET)'.format(path))
 

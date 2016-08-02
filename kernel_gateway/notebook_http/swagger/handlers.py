@@ -18,7 +18,7 @@ class SwaggerSpecHandler(TokenAuthorizationMixin,
     """
     output = None
 
-    def initialize(self, notebook_path, source_cells, kernel_spec):
+    def initialize(self, notebook_path, source_cells, cell_parser):
         """Builds the spec for the notebook-defined API.
 
         Parameters
@@ -26,15 +26,16 @@ class SwaggerSpecHandler(TokenAuthorizationMixin,
         notebook_path : str
             Path to the notebook, used to set the API title
         source_cells : list
-            Source code cell strings
-        kernel_spec : str
-            Name of the notebook kernel language
+            code cells
+        cell_parser : obj
+            Parser that will return endpoints and documentation
         """
         if self.output is None:
-            spec_builder = SwaggerSpecBuilder(kernel_spec)
+            spec_builder = SwaggerSpecBuilder(cell_parser)
             for source_cell in source_cells:
-                spec_builder.add_cell(source_cell)
-            spec_builder.set_title(notebook_path)
+                if 'source' in source_cell:
+                    spec_builder.add_cell(source_cell['source'])
+            spec_builder.set_default_title(notebook_path)
             SwaggerSpecHandler.output = json.dumps(spec_builder.build())
 
     def get(self, **kwargs):
