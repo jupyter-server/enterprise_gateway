@@ -31,7 +31,7 @@ def parameterize_path(path):
     Parameters
     ----------
     path : str
-        URL path with `/:name` segements
+        URL path with `/:name` segments
 
     Returns
     -------

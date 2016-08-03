@@ -160,6 +160,16 @@ NotebookHTTPPersonality options
     Default: False
     Optional API to download the notebook source code in notebook-http mode,
     defaults to not allow
+--NotebookHTTPPersonality.cell_parser=<Unicode>
+    Default: 'kernel_gateway.notebook_http.cell.parser'
+    Determines which module is used to parse the notebook for endpoints and
+    documentation. Valid module names include
+    'kernel_gateway.notebook_http.cell.parser' and
+    'kernel_gateway.notebook_http.swagger.parser'. (KG_CELL_PARSER env var)
+--NotebookHTTPPersonality.static_path=<Unicode>
+    Default: None
+    Serve static files on disk in the given path as /public, defaults to not
+    serve
 
 JupyterWebsocketPersonality options
 -----------------------------------
