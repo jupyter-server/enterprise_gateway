@@ -490,3 +490,24 @@ class TestBaseURL(TestGatewayAppBase):
             raise_error=False
         )
         self.assertEqual(response.code, 200)
+
+
+class TestForceKernel(TestGatewayAppBase):
+    """Tests gateway behavior when forcing a kernel spec."""
+    def setup_app(self):
+        """Sets the notebook-http mode, points to a local test notebook as
+        the basis for the API, and forces a Python kernel.
+        """
+        self.app.api = 'kernel_gateway.notebook_http'
+        self.app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
+        self.app.force_kernel_name = 'python{}'.format(sys.version_info.major)
+
+    @gen_test
+    def test_force_kernel_spec(self):
+        """Should start properly.."""
+        response = yield self.http_client.fetch(
+            self.get_url('/_api/spec/swagger.json'),
+            method='GET',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 200)

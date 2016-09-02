@@ -15,7 +15,10 @@ class SeedingMappingKernelManager(MappingKernelManager):
 
     @property
     def seed_kernelspec(self):
-        """Gets the kernel spec name required to run the seed notebook.
+        """Gets the kernel spec name for run the seed notebook.
+
+        Prefers the spec name forced by configuration over the spec in the
+        seed notebook itself.
 
         Returns
         -------
@@ -26,7 +29,10 @@ class SeedingMappingKernelManager(MappingKernelManager):
             return self._seed_kernelspec
 
         if self.parent.seed_notebook:
-            self._seed_kernelspec = self.parent.seed_notebook['metadata']['kernelspec']['name']
+            if self.parent.force_kernel_name:
+                self._seed_kernelspec = self.parent.force_kernel_name
+            else:
+                self._seed_kernelspec = self.parent.seed_notebook['metadata']['kernelspec']['name']
         else:
             self._seed_kernelspec = None
 
@@ -67,6 +73,8 @@ class SeedingMappingKernelManager(MappingKernelManager):
         """Starts a kernel and then executes a list of code cells on it if a
         seed notebook exists.
         """
+        if self.parent.force_kernel_name:
+            kwargs['kernel_name'] = self.parent.force_kernel_name
         kernel_id = yield gen.maybe_future(super(SeedingMappingKernelManager, self).start_kernel(*args, **kwargs))
 
         if kernel_id and self.seed_source is not None:

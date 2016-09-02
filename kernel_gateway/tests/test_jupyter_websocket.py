@@ -529,7 +529,7 @@ class TestDefaults(TestJupyterWebsocket):
     def test_kernel_env_auth_token(self):
         """Kernel should not have KG_AUTH_TOKEN in its environment."""
         os.environ['KG_AUTH_TOKEN'] = 'fake-secret'
-        
+
         try:
             ws = yield self.spawn_kernel()
             req = self.execute_request('import os; print(os.getenv("KG_AUTH_TOKEN"))')
@@ -557,6 +557,27 @@ class TestCustomDefaultKernel(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 500)
         self.assertTrue('raise NoSuchKernel' in str(response.body))
+
+
+class TestForceKernel(TestJupyterWebsocket):
+    """Tests gateway behavior when forcing a kernelspec."""
+    def setup_app(self):
+        self.app.prespawn_count = 2
+        self.app.seed_uri = os.path.join(RESOURCES,
+            'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.force_kernel_name = 'python{}'.format(sys.version_info.major)
+
+    @gen_test
+    def test_force_kernel_name(self):
+        """Should create a Python kernel."""
+        response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{"name": "fake-kernel"}',
+            raise_error=False
+        )
+        self.assertEqual(response.code, 201)
+
 
 class TestEnableDiscovery(TestJupyterWebsocket):
     """Tests gateway behavior with kernel listing enabled."""

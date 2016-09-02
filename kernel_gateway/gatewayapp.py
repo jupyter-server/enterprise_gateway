@@ -65,7 +65,7 @@ class KernelGatewayApp(JupyterApp):
         Provisions Jupyter kernels and proxies HTTP/Websocket traffic
         to them.
     """
-    
+
     # Also include when generating help options
     classes = [NotebookHTTPPersonality, JupyterWebsocketPersonality]
     # Enable some command line shortcuts
@@ -80,7 +80,7 @@ class KernelGatewayApp(JupyterApp):
     @default('port')
     def port_default(self):
         return int(os.getenv(self.port_env, self.port_default_value))
-    
+
     port_retries_env = 'KG_PORT_RETRIES'
     port_retries_default_value = 50
     port_retries = Integer(port_retries_default_value, config=True,
@@ -203,6 +203,13 @@ class KernelGatewayApp(JupyterApp):
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, '')
 
+    force_kernel_name_env = 'KG_FORCE_KERNEL_NAME'
+    force_kernel_name = Unicode(config=True,
+        help='Override any kernel name specified in a notebook or request (KG_FORCE_KERNEL_NAME env var)')
+    @default('force_kernel_name')
+    def force_kernel_name_default(self):
+        return os.getenv(self.force_kernel_name_env, '')
+
     api_env = 'KG_API'
     api_default_value = 'kernel_gateway.jupyter_websocket'
     api = Unicode(api_default_value,
@@ -250,8 +257,8 @@ class KernelGatewayApp(JupyterApp):
 
         Raises
         ------
-        RuntimeError if no installed kernel can handle the language specified
-        in the notebook.
+        RuntimeError if there is no kernel speci matching the one specified in
+        the notebook or forced via configuration.
 
         Returns
         -------
@@ -272,7 +279,8 @@ class KernelGatewayApp(JupyterApp):
             notebook = nbformat.reads(resp.text, 4)
 
         # Error if no kernel spec can handle the language requested
-        kernel_name = notebook['metadata']['kernelspec']['name']
+        kernel_name = self.force_kernel_name if self.force_kernel_name \
+            else notebook['metadata']['kernelspec']['name']
         self.kernel_spec_manager.get_kernel_spec(kernel_name)
 
         return notebook
