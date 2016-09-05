@@ -32,15 +32,26 @@ Arguments that take values are actually convenience aliases to full
 Configurables, whose aliases are listed on the help line. For more information
 on full configurables, see '--help-all'.
 
--y
-    Answer yes to any questions instead of prompting.
 --generate-config
     generate default config file
+-y
+    Answer yes to any questions instead of prompting.
 --debug
     set log level to logging.DEBUG (maximize logging output)
+--log-level=<Enum> (Application.log_level)
+    Default: 30
+    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
+    Set the log level by value or name.
+--port=<Int> (KernelGatewayApp.port)
+    Default: 8888
+    Port on which to listen (KG_PORT env var)
 --ip=<Unicode> (KernelGatewayApp.ip)
     Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
+--seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
+    Default: None
+    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
+    seed by default. (KG_SEED_URI env var)
 --api=<Unicode> (KernelGatewayApp.api)
     Default: 'kernel_gateway.jupyter_websocket'
     Controls which API to expose, that of a Jupyter notebook server, the seed
@@ -54,17 +65,6 @@ on full configurables, see '--help-all'.
     Default: 50
     Number of ports to try if the specified port is not available
     (KG_PORT_RETRIES env var)
---port=<Int> (KernelGatewayApp.port)
-    Default: 8888
-    Port on which to listen (KG_PORT env var)
---seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
-    Default: None
-    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
-    seed by default. (KG_SEED_URI env var)
---log-level=<Enum> (Application.log_level)
-    Default: 30
-    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
-    Set the log level by value or name.
 
 Class parameters
 ----------------
@@ -115,6 +115,10 @@ KernelGatewayApp options
 --KernelGatewayApp.expose_headers=<Unicode>
     Default: ''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
+--KernelGatewayApp.force_kernel_name=<Unicode>
+    Default: ''
+    Override any kernel name specified in a notebook or request
+    (KG_FORCE_KERNEL_NAME env var
 --KernelGatewayApp.generate_config=<Bool>
     Default: False
     Generate default config file.
