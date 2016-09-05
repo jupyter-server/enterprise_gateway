@@ -257,7 +257,7 @@ class KernelGatewayApp(JupyterApp):
 
         Raises
         ------
-        RuntimeError if there is no kernel speci matching the one specified in
+        RuntimeError if there is no kernel spec matching the one specified in
         the notebook or forced via configuration.
 
         Returns
