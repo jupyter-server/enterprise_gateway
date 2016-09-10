@@ -1,1 +1,2 @@
 include kernel_gateway/services/api/swagger.*
+include LICENSE.md
