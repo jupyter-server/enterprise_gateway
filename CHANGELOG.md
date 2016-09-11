@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2016-09-10)
+
+* Add LICENSE file to package distributions
+
 ## 1.1.0 (2016-09-08)
 
 * Add an option to force a specific kernel spec for all requests and seed notebooks
