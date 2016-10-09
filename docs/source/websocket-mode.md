@@ -11,6 +11,6 @@ The HTTP API consists of kernel, session, monitoring, and metadata resources. Al
 
 ### Websocket Resources
 
-The `/api/kernels/{kernel_id}/channels` resource multiplexes the [Jupyter kernel messaging protocol](http://jupyter-client.readthedocs.org/en/latest/messaging.html) over a single Websocket connection.
+The `/api/kernels/{kernel_id}/channels` resource multiplexes the [Jupyter kernel messaging protocol](https://jupyter-client.readthedocs.io/en/latest/messaging.html) over a single Websocket connection.
 
 See the [NodeJS](https://github.com/jupyter/kernel_gateway_demos/tree/master/node_client_example) and [Python](https://github.com/jupyter/kernel_gateway_demos/tree/master/python_client_example) client demos for two simple examples of using these resources to send code to kernels for interactive evaluation.
