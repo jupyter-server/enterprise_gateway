@@ -15,6 +15,6 @@ The Jupyter Kernel Gateway makes possible the following novel uses of kernels:
 
 The following diagram shows how you might use `tmpnb` to deploy a pool of kernel gateway instances in Docker containers to support on-demand interactive compute:
 
-![Example diagram of tmpnb deployment of kernel gateway instances](../../etc/tmpnb_kernel_gateway.png)
+![Example diagram of tmpnb deployment of kernel gateway instances](images/tmpnb_kernel_gateway.png)
 
 For more inspiration, see the [jupyter/kernel_gateway_demos](https://github.com/jupyter/kernel_gateway_demos).
