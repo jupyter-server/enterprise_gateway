@@ -16,7 +16,10 @@ containerized and scaled out using common technologies like
 `Cloud Foundry <https://github.com/cloudfoundry>`_, and 
 `Kubernetes <http://kubernetes.io/>`_.
 
-Contents:
+.. image:: images/kg_basic.png
+   :alt: Kernel Gateway basic deployment
+   :width: 70%
+   :align: center
 
 .. toctree::
    :maxdepth: 2
