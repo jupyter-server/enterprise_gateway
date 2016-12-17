@@ -31,7 +31,7 @@ class SessionManager(LoggingConfigurable):
         self._sessions = []
         self._columns = ['session_id', 'path', 'kernel_id']
 
-    def session_exists(self, path):
+    def session_exists(self, path, *args, **kwargs):
         """Checks to see if the session with the given path value exists.
 
         Parameters
@@ -50,7 +50,7 @@ class SessionManager(LoggingConfigurable):
         return unicode_type(uuid.uuid4())
 
     @gen.coroutine
-    def create_session(self, path=None, kernel_name=None, kernel_id=None):
+    def create_session(self, path=None, kernel_name=None, kernel_id=None, *args, **kwargs):
         """Creates a session and returns its model.
 
         Launches a kernel and stores the session metadata for later lookup.
@@ -76,7 +76,7 @@ class SessionManager(LoggingConfigurable):
         raise gen.Return(self.save_session(session_id, path=path,
                                            kernel_id=kernel_id))
 
-    def save_session(self, session_id, path=None, kernel_id=None):
+    def save_session(self, session_id, path=None, kernel_id=None, *args, **kwargs):
         """Saves the metadata for the session with the given `session_id`.
 
         Given a `session_id` (and any other of the arguments), this method
@@ -102,7 +102,7 @@ class SessionManager(LoggingConfigurable):
 
         return self.get_session(session_id=session_id)
 
-    def get_session_by_key(self, key, val):
+    def get_session_by_key(self, key, val, *args, **kwargs):
         """Gets the first session with the given key/value pair.
 
         Parameters
@@ -151,8 +151,8 @@ class SessionManager(LoggingConfigurable):
             if param not in self._columns:
                 raise TypeError("No such column: %r", param)
 
-        #multiple columns are never passed into kwargs so just using the
-        #first and only one.
+        # multiple columns are never passed into kwargs so just using the
+        # first and only one.
         column = list(kwargs.keys())[0]
         row = self.get_session_by_key(column, kwargs[column])
 
@@ -161,7 +161,7 @@ class SessionManager(LoggingConfigurable):
 
         return self.row_to_model(row)
 
-    def update_session(self, session_id, **kwargs):
+    def update_session(self, session_id, *args, **kwargs):
         """Updates the values in the session store.
 
         Update the values of the session model with the given `session_id`
@@ -198,7 +198,7 @@ class SessionManager(LoggingConfigurable):
 
         self._sessions.append(row)
 
-    def row_to_model(self, row):
+    def row_to_model(self, row, *args, **kwargs):
         """Turns a "row" in the in-memory session store into a model dictionary.
 
         Parameters
@@ -224,7 +224,7 @@ class SessionManager(LoggingConfigurable):
         }
         return model
 
-    def list_sessions(self):
+    def list_sessions(self, *args, **kwargs):
         """Returns a list of dictionaries containing all the information from
         the session store.
 
@@ -236,7 +236,7 @@ class SessionManager(LoggingConfigurable):
         l = [self.row_to_model(r) for r in self._sessions]
         return l
 
-    def delete_session(self, session_id):
+    def delete_session(self, session_id, *args, **kwargs):
         """Deletes the session in the session store with given `session_id`.
 
         Raises
