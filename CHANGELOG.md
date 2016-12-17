@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2 (2016-12-16)
+
+* Fix compatibility with Notebook 4.3 session handler `create_session` call
+
 ## 1.1.1 (2016-09-10)
 
 * Add LICENSE file to package distributions
