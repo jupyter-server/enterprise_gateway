@@ -1,84 +1,80 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: bash clean dev help install sdist test docs
+.PHONY: help build clean nuke dev dev-http docs install bdist sdist test release
 
-IMAGE:=jupyter/kernel-gateway-dev
-
-DOCKER_ARGS?=
-define DOCKER
-docker run -it --rm \
-	--workdir '/srv/kernel_gateway' \
-	-e PYTHONPATH='/srv/kernel_gateway' \
-	-v `pwd`:/srv/kernel_gateway $(DOCKER_ARGS)
-endef
+SA:=source activate
+ENV:=kernel-gateway-dev
+SHELL:=/bin/bash
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-bash: ## Start a bash shell within the dev container
-	@$(DOCKER) -p 8888:8888 $(IMAGE) bash
+build: ## Make a dev environment
+	conda create -y -n $(ENV) -c conda-forge --file requirements.txt \
+		--file requirements-test.txt
+	source activate $(ENV) && \
+		pip install -r requirements-doc.txt && \
+		pip install -e .
 
-clean: ## Remove all built files from the host (but not the dev docker image)
-	@-rm -rf dist
-	@-rm -rf build
-	@-rm -rf *.egg-info
-	@-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
-	@-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
-	@-make -C docs clean
+activate: ## eval `make activate`
+	@echo "$(SA) $(ENV)"
 
-dev: ARGS?=
-dev: PYARGS?=
-dev: ## Start kernel gateway on port 8888 in a docker container
-	$(DOCKER) -p 8888:8888 $(IMAGE) \
-		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' $(ARGS)
+clean: ## Make a clean source tree
+	-rm -rf dist
+	-rm -rf build
+	-rm -rf *.egg-info
+	-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
+	-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
+	-$(SA) $(ENV) && make -C docs clean
 
-docs: ## Build the sphinx documentation in a container
-	$(DOCKER) $(IMAGE) bash -c "source activate kernel_gateway_docs && make -C docs html"
+nuke: ## Make clean + remove conda env
+	-conda env remove -n $(ENV) -y
 
-etc/api_examples/%: ## Start one of the notebook-http mode API examples on port 8888 in a docker container
-	$(DOCKER) -p 8888:8888 $(IMAGE) \
-		python $(PYARGS) kernel_gateway --KernelGatewayApp.ip='0.0.0.0' \
+dev: ## Make a server in jupyter_websocket mode
+	$(SA) $(ENV) && python kernel_gateway
+
+dev-http: ## Make a server in notebook_http mode
+	$(SA) $(ENV) && python kernel_gateway \
 			--KernelGatewayApp.api='kernel_gateway.notebook_http' \
-			--KernelGatewayApp.seed_uri=/srv/kernel_gateway/$@.ipynb $(ARGS)
+			--KernelGatewayApp.seed_uri=etc/api_examples/api_intro.ipynb
 
-build: image
+docs: ## Make HTML documentation
+	$(SA) $(ENV) && make -C docs html
 
-image: ## Build the dev/test docker image
-	@docker build --rm -f Dockerfile.dev -t $(IMAGE) .
+install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
+	-conda env remove -y -n $(ENV)-install
+	conda create -y -n $(ENV)-install python=3 pip
+	$(SA) $(ENV)-install && \
+		pip install dist/*.whl && \
+			jupyter kernelgateway --help && \
+			pip uninstall -y jupyter_kernel_gateway
+	conda env remove -y -n $(ENV)-install
 
-install: ## Test install of dist/*.whl and dist/*.tar.gz
-	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.whl && \
-		jupyter kernelgateway --help && \
-		pip uninstall -y jupyter_kernel_gateway "
-	$(DOCKER) $(IMAGE) bash -c "pip install dist/*.tar.gz && \
-		jupyter kernelgateway --help && \
-		pip uninstall -y jupyter_kernel_gateway"
+	conda create -y -n $(ENV)-install python=3 pip
+	$(SA) $(ENV)-install && \
+		pip install dist/*.tar.gz && \
+			jupyter kernelgateway --help && \
+			pip uninstall -y jupyter_kernel_gateway
+	conda env remove -y -n $(ENV)-install
 
-bdist: ## Build dist/*.whl binary distribution
-	$(DOCKER) $(IMAGE) python setup.py bdist_wheel $(POST_SDIST) \
-	&& rm -rf *.egg-info
+bdist: ## Make a dist/*.whl binary distribution
+	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
+		&& rm -rf *.egg-info
 
-sdist: ## Build a dist/*.tar.gz source distribution
-	$(DOCKER) $(IMAGE) python setup.py sdist $(POST_SDIST) \
-	&& rm -rf *.egg-info
+sdist: ## Make a dist/*.tar.gz source distribution
+	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
+		&& rm -rf *.egg-info
 
-test: test-python3 ## Run tests on Python 3 in a docker container
-
-test-python2: PRE_CMD:=source activate python2;
-test-python2: _test ## Run tests on Python 2 in a docker container
-
-test-python3: _test
-
-_test: TEST?=
-_test:
+test: TEST?=
+test: ## Make a python3 test run
 ifeq ($(TEST),)
-	$(DOCKER) $(IMAGE) bash -c "$(PRE_CMD) nosetests"
+	$(SA) $(ENV) && nosetests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	@$(DOCKER) $(IMAGE) bash -c  "$(PRE_CMD) nosetests kernel_gateway.tests.$(TEST)"
+	$(SA) $(ENV) && nosetests kernel_gateway.tests.$(TEST)
 endif
 
 release: POST_SDIST=register upload
-release: bdist sdist ## Build wheel/source dists, register them on PyPI, and upload them all from a clean docker container
+release: bdist sdist ## Make a wheel + source release on PyPI

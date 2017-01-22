@@ -11,7 +11,7 @@ from .test_gatewayapp import TestGatewayAppBase, RESOURCES
 from kernel_gateway.gatewayapp import KernelGatewayApp
 from jupyter_client.kernelspec import NoSuchKernel
 
-from tornado.gen import coroutine, Return
+from tornado.gen import coroutine, Return, sleep
 from tornado.websocket import websocket_connect
 from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
@@ -805,7 +805,7 @@ class TestActivityAPI(TestJupyterWebsocket):
         """Enables kernel listing so the activity API is available."""
         self.app.personality.list_kernels = True
 
-    @gen_test
+    @gen_test(timeout=10)
     def test_api_lists_kernels_with_flag_set(self):
         """Server should report initial activity values for one kernel with
         one client connected to it.
@@ -825,6 +825,9 @@ class TestActivityAPI(TestJupyterWebsocket):
         # Close the websocket and get the activities
         ws.close()
 
+        # Give the socket time to disconnect
+        yield sleep(3)
+
         # Request the activity
         response = yield self.http_client.fetch(
             self.get_url('/_api/activity'),
@@ -836,4 +839,4 @@ class TestActivityAPI(TestJupyterWebsocket):
 
         self.assertEqual(first_kernel_id, second_kernel_id, 'Kernel IDs were not equal')
         self.assertEqual(first_activity_data['connections'], 1, 'The wrong number of connections existed during the first request')
-        self.assertEqual(second_activity_data['connections'], 0, 'The wrong number of connections existed during the first request')
+        self.assertEqual(second_activity_data['connections'], 0, 'The wrong number of connections existed during the second request')
