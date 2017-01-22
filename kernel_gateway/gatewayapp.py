@@ -400,12 +400,12 @@ class KernelGatewayApp(JupyterApp):
     def init_http_server(self):
         """Initializes a HTTP server for the Tornado web application on the
         configured interface and port.
-        
+
         Tries to find an open port if the one configured is not available using
         the same logic as the Jupyer Notebook server.
         """
         self.http_server = httpserver.HTTPServer(self.web_app)
-        
+
         for port in random_ports(self.port, self.port_retries+1):
             try:
                 self.http_server.listen(port, self.ip)
@@ -439,6 +439,8 @@ class KernelGatewayApp(JupyterApp):
             self.io_loop.start()
         except KeyboardInterrupt:
             self.log.info("Interrupted...")
+        finally:
+            self.shutdown()
 
     def stop(self):
         """
