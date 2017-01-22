@@ -11,7 +11,7 @@ env:
     - ASYNC_TEST_TIMEOUT=10
 install:
     - python setup.py bdist_wheel sdist
-    - pip install -f dist/*.whl coverage
+    - pip install dist/*.whl coverage
     - pip freeze
 script:
     - jupyter kernelgateway --help
