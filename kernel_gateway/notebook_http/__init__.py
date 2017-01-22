@@ -11,54 +11,65 @@ from .cell.parser import APICellParser
 from .swagger.handlers import SwaggerSpecHandler
 from .handlers import NotebookAPIHandler, parameterize_path, NotebookDownloadHandler
 from notebook.utils import url_path_join
-from traitlets import Bool, Unicode, default
+from traitlets import Bool, Unicode, Dict, default
 from traitlets.config.configurable import LoggingConfigurable
+
 
 class NotebookHTTPPersonality(LoggingConfigurable):
     """Personality for notebook-http support, creating REST endpoints
     based on the notebook's annotated cells
     """
-    def __init__(self, *args, **kwargs):
-        super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
-        cell_parser_module = self._load_module(self.cell_parser)
-        func = getattr(cell_parser_module, 'create_parser')
-        self.api_parser = func(parent=self, log=self.log, kernelspec=self.parent.kernel_manager.seed_kernelspec, notebook_cells=self.parent.seed_notebook.cells)
-
     cell_parser_env = 'KG_CELL_PARSER'
     cell_parser = Unicode('kernel_gateway.notebook_http.cell.parser',
         config=True,
-        help=""" Determines which module is used to parse the notebook for endpoints and
+        help="""Determines which module is used to parse the notebook for endpoints and
             documentation. Valid module names include 'kernel_gateway.notebook_http.cell.parser'
             and 'kernel_gateway.notebook_http.swagger.parser'. (KG_CELL_PARSER env var)
             """
     )
+
     @default('cell_parser')
     def cell_parser_default(self):
         return os.getenv(self.cell_parser_env, 'kernel_gateway.notebook_http.cell.parser')
 
-    def _load_module(self, module_name):
-        '''Tries to import the given module name'''
-        _module = importlib.import_module(module_name)
-        return _module
+    # Intentionally not defining an env var option for a dict type
+    comment_prefix = Dict({
+        'scala': '//',
+        None: '#'
+    }, config=True, help='Maps kernel language to code comment syntax')
 
     allow_notebook_download_env = 'KG_ALLOW_NOTEBOOK_DOWNLOAD'
-    allow_notebook_download = Bool(
-        config=True,
+    allow_notebook_download = Bool(config=True,
         help="Optional API to download the notebook source code in notebook-http mode, defaults to not allow"
     )
+
     @default('allow_notebook_download')
     def allow_notebook_download_default(self):
         return os.getenv(self.allow_notebook_download_env, 'False') == 'True'
 
     static_path_env = 'KG_STATIC_PATH'
-    static_path = Unicode(None,
-        config=True,
-        allow_none=True,
+    static_path = Unicode(None, config=True, allow_none=True,
         help="Serve static files on disk in the given path as /public, defaults to not serve"
     )
+
     @default('static_path')
     def static_path_default(self):
         return os.getenv(self.static_path_env)
+
+    def __init__(self, *args, **kwargs):
+        super(NotebookHTTPPersonality, self).__init__(*args, **kwargs)
+        # Import the module to use for cell endpoint parsing
+        cell_parser_module = importlib.import_module(self.cell_parser)
+        # Build the parser using the comment syntax for the notebook language
+        func = getattr(cell_parser_module, 'create_parser')
+        try:
+            lang = self.parent.seed_source['metadata']['language_info']['name']
+        except (AttributeError, KeyError):
+            lang = None
+        prefix = self.comment_prefix[lang]
+        self.api_parser = func(parent=self, log=self.log,
+                               comment_prefix=prefix,
+                               notebook_cells=self.parent.seed_notebook.cells)
 
     def init_configurables(self):
         """Create a managed kernel pool"""

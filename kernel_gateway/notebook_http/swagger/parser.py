@@ -48,35 +48,28 @@ class SwaggerCellParser(LoggingConfigurable):
     * `ID` is an operation's ID as documented in a Swagger comment block
     * `operationId` is a literal token.
 
+    Parameters
+    ----------
+    comment_prefix
+        Token indicating a comment in the notebook language
+
     Attributes
     ----------
-    kernelspec
-        Name of the kernelspec in the notebook to be parsed
-    kernelspec_comment_mapping : dict
-        Maps kernelspec names to language comment syntax
-    notebook_cells : list
+   notebook_cells : list
         The cells from the target notebook, one of which must contain a Swagger spec in a commented block
     operation_indicator : str
         Regex pattern for API annotations
     operation_response_indicator : str
         Regex pattern for API response metadata annotations
     """
-    kernelspec_comment_mapping = {
-        None:'#',
-        'scala':'//'
-    }
     operation_indicator = r'{}\s*operationId:\s*(.*)'
     operation_response_indicator = r'{}\s*ResponseInfo\s+operationId:\s*(.*)'
     notebook_cells = []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, comment_prefix, *args, **kwargs):
         super(SwaggerCellParser, self).__init__(*args, **kwargs)
-        try:
-            prefix = self.kernelspec_comment_mapping[self.kernelspec]
-        except KeyError:
-            prefix = self.kernelspec_comment_mapping[None]
-        self.kernelspec_operation_indicator = re.compile(self.operation_indicator.format(prefix))
-        self.kernelspec_operation_response_indicator = re.compile(self.operation_response_indicator.format(prefix))
+        self.kernelspec_operation_indicator = re.compile(self.operation_indicator.format(comment_prefix))
+        self.kernelspec_operation_response_indicator = re.compile(self.operation_response_indicator.format(comment_prefix))
         self.swagger = dict()
         operationIdsFound = []
         operationIdsDeclared = []
@@ -277,8 +270,8 @@ class SwaggerCellParser(LoggingConfigurable):
                     return self.swagger['paths'][endpoint][verb]
         # mismatched operationId? return a default
         return {
-            'responses' : {
-                200 : { 'description': 'Success'}
+            'responses': {
+                200: {'description': 'Success'}
             }
         }
 
@@ -291,7 +284,7 @@ class SwaggerCellParser(LoggingConfigurable):
         """
         if self.swagger is not None:
             return self.swagger
-        return { 'swagger' : '2.0', 'paths' : {}, 'info' : {'version' : '0.0.0', 'title' : 'Default Title'} };
+        return {'swagger': '2.0', 'paths': {}, 'info': {'version': '0.0.0', 'title': 'Default Title'}}
 
 def create_parser(*args, **kwargs):
     return SwaggerCellParser(*args, **kwargs)

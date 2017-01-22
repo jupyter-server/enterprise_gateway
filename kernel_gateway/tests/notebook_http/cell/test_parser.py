@@ -3,51 +3,15 @@
 """Tests for notebook cell parsing."""
 
 import unittest
-import re
 import sys
 from kernel_gateway.notebook_http.cell.parser import APICellParser
 
+
 class TestAPICellParser(unittest.TestCase):
     """Unit tests the APICellParser class."""
-    def _test_parser_with_kernel_spec(self, kernel_spec, expected_comment):
-        """Instantiates the parser using the given `kernel_spec` and asserts
-        whether it created the correct regular expression for the kernel
-        language comment syntax.
-
-        Parameters
-        ----------
-        kernel_spec : str
-            Kernel spec name
-        expected_comment : str
-            Comment token in the kernel spec language
-
-        Raises
-        ------
-        AssertionError
-            If the parser did not create the correct regex
-        """
-        parser = APICellParser(kernelspec=kernel_spec)
-        self.assertEqual(
-            parser.kernelspec_api_indicator,
-            re.compile(parser.api_indicator.format(expected_comment)),
-            'Exepected regular expression to start with {} for kernel spec {}'.format(
-                expected_comment,
-                kernel_spec
-            )
-        )
-
-    def test_init(self):
-        """Parser should pick the correct comment syntax."""
-        self._test_parser_with_kernel_spec('some_unknown_kernel', '#')
-        self._test_parser_with_kernel_spec('scala', '//')
-        self._test_parser_with_kernel_spec('python2', '#')
-        self._test_parser_with_kernel_spec('python3', '#')
-        self._test_parser_with_kernel_spec('ir', '#')
-        self._test_parser_with_kernel_spec('julia-0.3', '#')
-
     def test_is_api_cell(self):
         """Parser should correctly identify annotated API cells."""
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         self.assertTrue(parser.is_api_cell('# GET /yes'), 'API cell was not detected')
         self.assertFalse(parser.is_api_cell('no'), 'API cell was not detected')
 
@@ -59,7 +23,7 @@ class TestAPICellParser(unittest.TestCase):
             '# GET /hello/:foo',
             '# PUT /hello/world'
         ]
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         endpoints = parser.endpoints(source_cells)
         expected_values = ['/hello/world', '/hello/:foo', '/:foo']
 
@@ -86,7 +50,7 @@ class TestAPICellParser(unittest.TestCase):
             else:
                 return 2
 
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         endpoints = parser.endpoints(source_cells, custom_sort_fun)
         expected_values = ['/+', '/a', '/1']
 
@@ -96,7 +60,7 @@ class TestAPICellParser(unittest.TestCase):
 
     def test_get_cell_endpoint_and_verb(self):
         """Parser should extract API endpoint and verb from cell annotations."""
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         endpoint, verb = parser.get_cell_endpoint_and_verb('# GET /foo')
         self.assertEqual(endpoint, '/foo', 'Endpoint was not extracted correctly')
         self.assertEqual(verb, 'GET', 'Endpoint was not extracted correctly')
@@ -117,7 +81,7 @@ class TestAPICellParser(unittest.TestCase):
             'ignored',
             '# GET /foo/:bar'
         ]
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         endpoints = parser.endpoints(source_cells)
         self.assertEqual(len(endpoints), 2)
         # for ease of testing
@@ -139,7 +103,7 @@ class TestAPICellParser(unittest.TestCase):
             'ignored',
             '# ResponseInfo GET /foo/:bar'
         ]
-        parser = APICellParser(kernelspec='some_unknown_kernel')
+        parser = APICellParser(comment_prefix='#')
         endpoints = parser.endpoint_responses(source_cells)
         self.assertEqual(len(endpoints), 2)
         # for ease of testing

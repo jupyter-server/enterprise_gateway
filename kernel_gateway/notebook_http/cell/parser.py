@@ -53,33 +53,23 @@ class APICellParser(LoggingConfigurable):
 
     Parameters
     ----------
-    kernelspec
-        Name of the kernelspec in the notebook to be parsed
+    comment_prefix
+        Token indicating a comment in the notebook language
 
     Attributes
     ----------
-    kernelspec_comment_mapping : dict
-        Maps kernelspec names to language comment syntax
     api_indicator : str
         Regex pattern for API annotations
     api_response_indicator : str
         Regex pattern for API response metadata annotations
     """
-    kernelspec_comment_mapping = {
-        None:'#',
-        'scala':'//'
-    }
     api_indicator = r'{}\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
     api_response_indicator = r'{}\s+ResponseInfo\s+(GET|PUT|POST|DELETE)\s+(\/.*)+'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, comment_prefix, *args, **kwargs):
         super(APICellParser, self).__init__(*args, **kwargs)
-        try:
-            prefix = self.kernelspec_comment_mapping[self.kernelspec]
-        except KeyError:
-            prefix = self.kernelspec_comment_mapping[None]
-        self.kernelspec_api_indicator = re.compile(self.api_indicator.format(prefix))
-        self.kernelspec_api_response_indicator = re.compile(self.api_response_indicator.format(prefix))
+        self.kernelspec_api_indicator = re.compile(self.api_indicator.format(comment_prefix))
+        self.kernelspec_api_response_indicator = re.compile(self.api_response_indicator.format(comment_prefix))
 
     def is_api_cell(self, cell_source):
         """Gets if the cell source is annotated as an API endpoint.
@@ -151,8 +141,8 @@ class APICellParser(LoggingConfigurable):
         the eventual response output.
         """
         return {
-            'responses' : {
-                200 : { 'description': 'Success'}
+            'responses': {
+                200: {'description': 'Success'}
             }
         }
 
@@ -221,7 +211,7 @@ class APICellParser(LoggingConfigurable):
         dictionary
             Dictionary with a root "swagger" property
         """
-        return { 'swagger' : '2.0', 'paths' : {}, 'info' : {'version' : '0.0.0'} }
+        return {'swagger': '2.0', 'paths': {}, 'info': {'version': '0.0.0'}}
 
 def create_parser(*args, **kwargs):
     return APICellParser(*args, **kwargs)
