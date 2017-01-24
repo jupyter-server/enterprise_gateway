@@ -62,7 +62,7 @@ class TestGatewayAppConfig(unittest.TestCase):
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     """Base class for integration style tests using HTTP/Websockets against an
-    instance of the gateway app..
+    instance of the gateway app.
 
     Attributes
     ----------

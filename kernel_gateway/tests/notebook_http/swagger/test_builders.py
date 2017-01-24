@@ -14,7 +14,7 @@ class TestSwaggerBuilders(unittest.TestCase):
     def test_add_title_adds_title_to_spec(self):
         """Builder should store an API title."""
         expected = 'Some New Title'
-        builder = SwaggerSpecBuilder(APICellParser(kernelspec='some_spec'))
+        builder = SwaggerSpecBuilder(APICellParser(comment_prefix='#'))
         builder.set_default_title(expected)
         result = builder.build()
         self.assertEqual(result['info']['title'] ,expected,'Title was not set to new value')
@@ -28,7 +28,7 @@ class TestSwaggerBuilders(unittest.TestCase):
                 }
             }
         }
-        builder = SwaggerSpecBuilder(APICellParser(kernelspec='some_spec'))
+        builder = SwaggerSpecBuilder(APICellParser(comment_prefix='#'))
         builder.add_cell('# GET /some/resource')
         result = builder.build()
         self.assertEqual(result['paths']['/some/resource'] ,expected,'Title was not set to new value')
@@ -73,7 +73,7 @@ class TestSwaggerBuilders(unittest.TestCase):
             }
         }
         '''
-        builder = SwaggerSpecBuilder(SwaggerCellParser(kernelspec='some_spec', notebook_cells = [{"source":expected}]))
+        builder = SwaggerSpecBuilder(SwaggerCellParser(comment_prefix='#', notebook_cells = [{"source":expected}]))
         builder.add_cell(expected)
         result = builder.build()
         self.maxDiff = None
@@ -90,7 +90,7 @@ class TestSwaggerBuilders(unittest.TestCase):
 
     def test_add_undocumented_cell_does_not_add_non_api_cell_to_spec(self):
         """Builder should store ignore non-API cells."""
-        builder = SwaggerSpecBuilder(SwaggerCellParser(kernelspec='some_spec'))
+        builder = SwaggerSpecBuilder(SwaggerCellParser(comment_prefix='#'))
         builder.add_cell('regular code cell')
         builder.add_cell('# regular commented cell')
         result = builder.build()

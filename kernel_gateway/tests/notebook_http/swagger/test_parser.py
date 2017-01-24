@@ -3,21 +3,20 @@
 """Tests for notebook cell parsing."""
 
 import unittest
-import re
 import sys
 from kernel_gateway.notebook_http.swagger.parser import SwaggerCellParser
-from kernel_gateway.notebook_http.cell.parser import APICellParser
+
 
 class TestSwaggerAPICellParser(unittest.TestCase):
     """Unit tests the SwaggerCellParser class."""
     def test_basic_swagger_parse(self):
         """Parser should correctly identify Swagger cells."""
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
         self.assertTrue('swagger' in parser.swagger, 'Swagger doc was not detected')
 
     def test_basic_is_api_cell(self):
         """Parser should correctly identify operation cells."""
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
         self.assertTrue(parser.is_api_cell('#operationId:foo'), 'API cell was not detected with ' + str(parser.kernelspec_operation_indicator))
         self.assertTrue(parser.is_api_cell('# operationId:foo'), 'API cell was not detected with ' + str(parser.kernelspec_operation_indicator))
         self.assertTrue(parser.is_api_cell('#operationId: foo'), 'API cell was not detected with ' + str(parser.kernelspec_operation_indicator))
@@ -26,7 +25,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
 
     def test_basic_is_api_response_cell(self):
         """Parser should correctly identify ResponseInfo cells."""
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=[{"source":'```\n{"swagger":"2.0", "paths": {"": {"post": {"operationId": "foo", "parameters": [{"name": "foo"}]}}}}\n```\n'}])
         self.assertTrue(parser.is_api_response_cell('#ResponseInfo operationId:foo'), 'Response cell was not detected with ' + str(parser.kernelspec_operation_response_indicator))
         self.assertTrue(parser.is_api_response_cell('# ResponseInfo operationId:foo'), 'Response cell was not detected with ' + str(parser.kernelspec_operation_response_indicator))
         self.assertTrue(parser.is_api_response_cell('# ResponseInfo  operationId: foo'), 'Response cell was not detected with ' + str(parser.kernelspec_operation_response_indicator))
@@ -43,7 +42,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
             {"source":'# operationId:postHello'},
             {"source":'# operationId:postRoot'},
         ]
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells = source_cells)
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells = source_cells)
         endpoints = parser.endpoints(cell['source'] for cell in source_cells)
 
         expected_values = ['/hello/world', '/hello/:foo', '/:foo']
@@ -66,7 +65,6 @@ class TestSwaggerAPICellParser(unittest.TestCase):
         ]
 
         def custom_sort_fun(endpoint):
-            index = sys.maxsize
             if endpoint.find('1') >= 0:
                 return 0
             elif endpoint.find('a') >= 0:
@@ -74,7 +72,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
             else:
                 return 2
 
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=source_cells)
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
         endpoints = parser.endpoints((cell['source'] for cell in source_cells), custom_sort_fun)
         print(str(endpoints))
 
@@ -85,7 +83,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
 
     def test_get_cell_endpoint_and_verb(self):
         """Parser should extract API endpoint and verb from cell annotations."""
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=[{'source':'```\n{"swagger":"2.0", "paths": {"/foo": {"get": {"operationId": "getFoo"}}, "/bar/quo": {"post": {"operationId": "post_bar_Quo"}}}}\n```\n'}])
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=[{'source':'```\n{"swagger":"2.0", "paths": {"/foo": {"get": {"operationId": "getFoo"}}, "/bar/quo": {"post": {"operationId": "post_bar_Quo"}}}}\n```\n'}])
         endpoint, verb = parser.get_cell_endpoint_and_verb('# operationId: getFoo')
         self.assertEqual(endpoint, '/foo', 'Endpoint was not extracted correctly')
         self.assertEqual(verb.lower(), 'get', 'Endpoint was not extracted correctly')
@@ -108,7 +106,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
             {"source":'# operationId: getFoo'},
             {"source":'# operationId: putFoo'}
         ]
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=cells)
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=cells)
         endpoints = parser.endpoints(cell['source'] for cell in cells)
         self.assertEqual(len(endpoints), 2, endpoints)
         # for ease of testing
@@ -132,7 +130,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
             {"source":'ignored'},
             {"source":'# ResponseInfo operationId: putbar '}
         ]
-        parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=source_cells)
+        parser = SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
         endpoints = parser.endpoint_responses(cell['source'] for cell in source_cells)
         self.assertEqual(len(endpoints), 2)
         # for ease of testing
@@ -156,7 +154,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
                 {"source":'# operationId: extraOperation'},
             ]
             with self.assertLogs(level='WARNING') as warnings:
-                parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=source_cells)
+                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
                 for output in warnings.output:
                     self.assertRegex(output, 'extraOperation')
 
@@ -173,7 +171,7 @@ class TestSwaggerAPICellParser(unittest.TestCase):
                 {"source":'```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},
             ]
             with self.assertLogs(level='WARNING') as warnings:
-                parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=source_cells)
+                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
                 for output in warnings.output:
                     self.assertRegex(output, 'extraOperation')
 
@@ -183,12 +181,12 @@ class TestSwaggerAPICellParser(unittest.TestCase):
             in a cell
             """
             source_cells = [
-                {"source":'```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},
-                {"source":'# operationId: get'},
-                {"source":'# operationId: putbar'},
-                {"source":'# operationId: putbar '}
+                {"source": '```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},
+                {"source": '# operationId: get'},
+                {"source": '# operationId: putbar'},
+                {"source": '# operationId: putbar '}
             ]
             with self.assertLogs(level='WARNING') as warnings:
-                parser = SwaggerCellParser(kernelspec='some_unknown_kernel', notebook_cells=source_cells)
+                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
                 for output in warnings.output:
                     self.assertRegex(output, 'postbar')
