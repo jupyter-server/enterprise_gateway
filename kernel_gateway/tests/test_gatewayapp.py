@@ -40,6 +40,9 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_PRESPAWN_COUNT'] = '1'
         os.environ['KG_FORCE_KERNEL_NAME'] = 'fake_kernel_forced'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
+        os.environ['KG_KEYFILE'] = '/test/fake.key'
+        os.environ['KG_CERTFILE'] = '/test/fake.crt'
+        os.environ['KG_CLIENT_CA'] = '/test/fake_ca.crt'
 
         app = KernelGatewayApp()
 
@@ -59,6 +62,9 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
         self.assertEqual(app.force_kernel_name, 'fake_kernel_forced')
+        self.assertEqual(app.keyfile, '/test/fake.key')
+        self.assertEqual(app.certfile, '/test/fake.crt')
+        self.assertEqual(app.client_ca, '/test/fake_ca.crt')
 
 class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
     """Base class for integration style tests using HTTP/Websockets against an
