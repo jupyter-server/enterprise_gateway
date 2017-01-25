@@ -10,6 +10,7 @@ python:
 env:
     - ASYNC_TEST_TIMEOUT=10
 install:
+    - pip install --upgrade setuptools pip
     - python setup.py bdist_wheel sdist
     - pip install dist/*.whl coverage
     - pip freeze
