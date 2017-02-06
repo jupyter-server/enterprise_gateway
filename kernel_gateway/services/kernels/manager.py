@@ -2,7 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel manager that optionally seeds kernel memory."""
 
-from tornado import gen
+from functools import partial
+from tornado import gen, ioloop
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 from jupyter_client.ioloop import IOLoopKernelManager
 
@@ -61,12 +62,14 @@ class SeedingMappingKernelManager(MappingKernelManager):
         return self._seed_source
 
     def start_seeded_kernel(self, *args, **kwargs):
-        """Starts a kernel using the language specified in the seed notebook.
+        """Start a kernel using the language specified in the seed notebook.
 
-        If there is no seed notebook, start a kernel using the other parameters
-        specified.
+        Run synchronously so that any exceptions thrown while seed rise up
+        to the caller.
         """
-        self.start_kernel(kernel_name=self.seed_kernelspec, *args, **kwargs)
+        start = partial(self.start_kernel, kernel_name=self.seed_kernelspec,
+                        *args, **kwargs)
+        return ioloop.IOLoop.current().run_sync(start)
 
     @gen.coroutine
     def start_kernel(self, *args, **kwargs):
