@@ -202,7 +202,7 @@ NotebookHTTPPersonality options
 
 JupyterWebsocketPersonality options
 -----------------------------------
---JupyterWebsocketPersonality.env_whitelist_env=<List>
+--JupyterWebsocketPersonality.env_whitelist=<List>
     Default: []
     Environment variables allowed to be set when a client requests a new kernel
 --JupyterWebsocketPersonality.list_kernels=<Bool>
