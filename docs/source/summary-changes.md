@@ -6,7 +6,7 @@ See `git log` for a more detailed summary of changes.
 
 ### 1.2.0 (2017-02-12)
 
-* Whitelist `SPARK_OPTS` as an environment variable in kernel creation requests
+* Add command line option to whitelist environment variables for `POST /api/kernels`
 * Add support for HTTPS key and certificate files
 * Improve the flow and explanations in the `api_intro` notebook
 * Fix incorrect use of `metadata.kernelspec.name` as a language name instead of
