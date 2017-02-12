@@ -17,6 +17,7 @@ from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
 from tornado.escape import json_encode, json_decode, url_escape
 
+
 class TestJupyterWebsocket(TestGatewayAppBase):
     """Base class for jupyter-websocket mode tests that spawn kernels."""
     @coroutine
@@ -51,15 +52,15 @@ class TestJupyterWebsocket(TestGatewayAppBase):
 
         ws = yield websocket_connect(ws_url)
         raise Return(ws)
-        
+
     def execute_request(self, code):
         """Creates an execute_request message.
-        
+
         Parameters
         ----------
         code : str
             Code to execute
-        
+
         Returns
         -------
         dict
@@ -84,7 +85,7 @@ class TestJupyterWebsocket(TestGatewayAppBase):
             'metadata': {},
             'buffers': {}
         }
-        
+
     @coroutine
     def await_stream(self, ws):
         """Returns stream output associated with an execute_request."""
@@ -95,6 +96,7 @@ class TestJupyterWebsocket(TestGatewayAppBase):
             parent_msg_id = msg['parent_header']['msg_id']
             if msg_type == 'stream' and parent_msg_id == 'fake-msg-id':
                 raise Return(msg['content'])
+
 
 class TestDefaults(TestJupyterWebsocket):
     """Tests gateway behavior."""
@@ -494,22 +496,25 @@ class TestDefaults(TestJupyterWebsocket):
     @gen_test
     def test_kernel_env(self):
         """Kernel should start with environment vars defined in the request."""
+        self.app.personality.env_whitelist = ['TEST_VAR']
         kernel_body = json.dumps({
             'name': 'python',
             'env': {
                 'KERNEL_FOO': 'kernel-foo-value',
                 'NOT_KERNEL': 'ignored',
-                'KERNEL_GATEWAY' : 'overridden'
+                'KERNEL_GATEWAY': 'overridden',
+                'TEST_VAR': 'allowed'
             }
         })
         ws = yield self.spawn_kernel(kernel_body)
-        req = self.execute_request('import os; print(os.getenv("KERNEL_FOO"), os.getenv("NOT_KERNEL"), os.getenv("KERNEL_GATEWAY"))')
+        req = self.execute_request('import os; print(os.getenv("KERNEL_FOO"), os.getenv("NOT_KERNEL"), os.getenv("KERNEL_GATEWAY"), os.getenv("TEST_VAR"))')
         ws.write_message(json_encode(req))
         content = yield self.await_stream(ws)
         self.assertEqual(content['name'], 'stdout')
         self.assertIn('kernel-foo-value', content['text'])
         self.assertNotIn('ignored', content['text'])
         self.assertNotIn('overridden', content['text'])
+        self.assertIn('allowed', content['text'])
 
         ws.close()
 
@@ -539,6 +544,7 @@ class TestDefaults(TestJupyterWebsocket):
         finally:
             del os.environ['KG_AUTH_TOKEN']
             ws.close()
+
 
 class TestCustomDefaultKernel(TestJupyterWebsocket):
     """Tests gateway behavior when setting a custom default kernelspec."""
@@ -604,6 +610,7 @@ class TestEnableDiscovery(TestJupyterWebsocket):
         self.assertEqual(response.code, 200)
         self.assertTrue('{}' in str(response.body))
 
+
 class TestPrespawnKernels(TestJupyterWebsocket):
     """Tests gateway behavior when kernels are spawned at startup."""
     def setup_app(self):
@@ -629,6 +636,7 @@ class TestPrespawnKernels(TestJupyterWebsocket):
         app.prespawn_count = 3
         app.max_kernels = 2
         self.assertRaises(RuntimeError, app.init_configurables)
+
 
 class TestBaseURL(TestJupyterWebsocket):
     """Tests gateway behavior when a custom base URL is configured."""
@@ -670,6 +678,7 @@ class TestBaseURL(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 200)
 
+
 class TestRelativeBaseURL(TestJupyterWebsocket):
     """Tests gateway behavior when a relative base URL is configured."""
     def setup_app(self):
@@ -687,6 +696,7 @@ class TestRelativeBaseURL(TestJupyterWebsocket):
             method='GET'
         )
         self.assertEqual(response.code, 200)
+
 
 class TestSeedURI(TestJupyterWebsocket):
     """Tests gateway behavior when a seeding kernel memory with code from a
@@ -710,6 +720,7 @@ class TestSeedURI(TestJupyterWebsocket):
 
         ws.close()
 
+
 class TestRemoteSeedURI(TestSeedURI):
     """Tests gateway behavior when a seeding kernel memory with code from a
     remote notebook.
@@ -717,6 +728,7 @@ class TestRemoteSeedURI(TestSeedURI):
     def setup_app(self):
         """Sets the seed notebook to a remote notebook."""
         self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
+
 
 class TestBadSeedURI(TestJupyterWebsocket):
     """Tests gateway behavior when seeding kernel memory with notebook code
@@ -760,6 +772,7 @@ class TestBadSeedURI(TestJupyterWebsocket):
         app.seed_uri = os.path.join(RESOURCES, 'unknown_kernel.ipynb')
         self.assertRaises(NoSuchKernel, app.init_configurables)
 
+
 class TestKernelLanguageSupport(TestJupyterWebsocket):
     """Tests gateway behavior when a client requests a specific kernel spec."""
     def setup_app(self):
@@ -798,6 +811,7 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
         self.assertIn('Gur Mra bs Clguba', content['text'])
 
         ws.close()
+
 
 class TestActivityAPI(TestJupyterWebsocket):
     """Tests gateway behavior when the activity API is enabled."""

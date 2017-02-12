@@ -428,6 +428,7 @@ class KernelGatewayApp(JupyterApp):
             kg_max_age=self.max_age,
             kg_max_kernels=self.max_kernels,
             kg_api=self.api,
+            kg_personality=self.personality,
             # Also set the allow_origin setting used by notebook so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin

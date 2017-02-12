@@ -20,6 +20,11 @@ class MainKernelHandler(TokenAuthorizationMixin,
     """Extends the notebook main kernel handler with token auth, CORS, and
     JSON errors.
     """
+
+    @property
+    def env_whitelist(self):
+        return self.settings['kg_personality'].env_whitelist
+
     @gen.coroutine
     def post(self):
         """Overrides the super class method to honor the max number of allowed
@@ -46,8 +51,9 @@ class MainKernelHandler(TokenAuthorizationMixin,
         if model is not None and 'env' in model:
             if not isinstance(model['env'], dict):
                 raise tornado.web.HTTPError(400)
-            # Whitelist to KERNEL_* args only
-            env = {key: value for key, value in model['env'].items() if key.startswith('KERNEL_')}
+            # Whitelist KERNEL_* args and those allowed by configuration
+            env = {key: value for key, value in model['env'].items()
+                   if key.startswith('KERNEL_') or key in self.env_whitelist}
             # No way to override the call to start_kernel on the kernel manager
             # so do a temporary partial (ugh)
             orig_start = self.kernel_manager.start_kernel
