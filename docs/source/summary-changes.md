@@ -2,6 +2,17 @@
 
 See `git log` for a more detailed summary of changes.
 
+## 1.2
+
+### 1.2.0 (2017-02-12)
+
+* Whitelist `SPARK_OPTS` as an environment variable in kernel creation requests
+* Improve the flow and explanations in the `api_intro` notebook
+* Fix incorrect use of `metadata.kernelspec.name` as a language name instead of
+  `metadata.language.info`
+* Fix lingering kernel regression after Ctrl-C interrupt
+* Switch to a conda-based dev setup from docker
+
 ## 1.1
 
 ### 1.1.1 (2016-09-10)
