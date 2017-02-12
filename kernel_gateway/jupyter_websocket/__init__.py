@@ -32,7 +32,7 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
         return os.getenv(self.list_kernels_env, 'False') == 'True'
 
     env_whitelist_env = 'KG_ENV_WHITELIST'
-    env_whitelist_env = List(config=True,
+    env_whitelist = List(config=True,
                              help="""Environment variables allowed to be set when
                              a client requests a new kernel""")
 
