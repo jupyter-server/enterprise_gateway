@@ -10,10 +10,10 @@ spawning and communicating with Jupyter kernels, such as:
 * A HTTP API defined by annotated notebook cells that maps HTTP verbs and
   resources to code to execute on a kernel
 
-The server launches kernels in its local process/filesystem space. It can be 
-containerized and scaled out using common technologies like 
-`tmpnb <https://github.com/jupyter/tmpnb>`_, 
-`Cloud Foundry <https://github.com/cloudfoundry>`_, and 
+The server launches kernels in its local process/filesystem space. It can be
+containerized and scaled out using common technologies like
+`tmpnb <https://github.com/jupyter/tmpnb>`_,
+`Cloud Foundry <https://github.com/cloudfoundry>`_, and
 `Kubernetes <http://kubernetes.io/>`_.
 
 .. image:: images/kg_basic.png
@@ -42,7 +42,7 @@ containerized and scaled out using common technologies like
 .. toctree::
    :maxdepth: 2
    :caption: Contributor Documentation
-   
+
    devinstall
 
 .. toctree::
