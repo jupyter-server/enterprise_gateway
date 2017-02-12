@@ -37,7 +37,7 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
                              a client requests a new kernel""")
 
     @default('env_whitelist')
-    def env_whitelist(self):
+    def env_whitelist_default(self):
         return os.getenv(self.env_whitelist_env, '').split(',')
 
     def init_configurables(self):
