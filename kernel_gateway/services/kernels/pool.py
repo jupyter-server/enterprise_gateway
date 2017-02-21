@@ -2,8 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel pools that track and delegate to kernels."""
 
+from jupyter_client.session import Session
+
 from tornado.locks import Semaphore
 from tornado import gen
+
 
 class KernelPool(object):
     """Spawns a pool of kernels.
@@ -105,9 +108,9 @@ class ManagedKernelPool(KernelPool):
         self.kernel_pool.append(kernel_id)
         self.kernel_semaphore.release()
 
-    def _on_reply(self, kernel_id, msg_list):
+    def _on_reply(self, kernel_id, session, msg_list):
         """Invokes the iopub callback registered for the `kernel_id` and passes
-        it a deserialized list of kernel messsages.
+        it a deserialized list of kernel messages.
 
         Parameters
         ----------
@@ -116,8 +119,8 @@ class ManagedKernelPool(KernelPool):
         msg_list : list
             List of 0mq messages
         """
-        idents, msg_list = self.kernel_clients[kernel_id].session.feed_identities(msg_list)
-        msg = self.kernel_clients[kernel_id].session.deserialize(msg_list)
+        idents, msg_list = session.feed_identities(msg_list)
+        msg = session.deserialize(msg_list)
         self.on_recv_funcs[kernel_id](msg)
 
     def create_on_reply(self, kernel_id):
@@ -134,7 +137,12 @@ class ManagedKernelPool(KernelPool):
         function
             Callback function taking a kernel ID and 0mq message list
         """
-        return lambda msg_list: self._on_reply(kernel_id, msg_list)
+        kernel = self.kernel_clients[kernel_id]
+        session = Session(
+            config=kernel.session.config,
+            key=kernel.session.key,
+        )
+        return lambda msg_list: self._on_reply(kernel_id, session, msg_list)
 
     def on_recv(self, kernel_id, func):
         """Registers a callback function for iopub messages from a particular
