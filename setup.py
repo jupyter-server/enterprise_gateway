@@ -53,11 +53,11 @@ containerized and scaled out using common technologies like
         'scripts/jupyter-kernelgateway'
     ],
     install_requires=[
-        'jupyter_core>=4.0,<5.0',
-        'jupyter_client>=4.2.0,<5.0',
-        'notebook>=4.1.0,<5.0',
-        'traitlets>=4.2.0,<5.0',
-        'tornado>=4.2.0,<5.0',
+        'jupyter_core>=4.0',
+        'jupyter_client>=4.2.0',
+        'notebook>=5.0,<6.0',
+        'traitlets>=4.2.0',
+        'tornado>=4.2.0',
         'requests>=2.7,<3.0'
     ],
     classifiers=[
