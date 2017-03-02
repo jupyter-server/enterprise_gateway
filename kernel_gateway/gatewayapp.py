@@ -32,7 +32,6 @@ from tornado.log import enable_pretty_logging
 from notebook.notebookapp import random_ports
 from ._version import __version__
 from .services.sessions.sessionmanager import SessionManager
-from .services.activity.manager import ActivityManager
 from .services.kernels.manager import SeedingMappingKernelManager
 
 # Only present for generating help documentation
@@ -347,7 +346,7 @@ class KernelGatewayApp(JupyterApp):
 
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
-        spec manager, session manager, activity manager, and personality.
+        spec manager, session manager, and personality.
 
         Any kernel pool configured by the personality will be its responsibility
         to shut down.
@@ -373,12 +372,6 @@ class KernelGatewayApp(JupyterApp):
             connection_dir=self.runtime_dir,
             kernel_spec_manager=self.kernel_spec_manager,
             **kwargs
-        )
-
-        self.activity_manager = ActivityManager(
-            parent=self,
-            log=self.log,
-            kernel_manager=self.kernel_manager
         )
 
         self.session_manager = SessionManager(
@@ -415,7 +408,6 @@ class KernelGatewayApp(JupyterApp):
 
         self.web_app = web.Application(
             handlers=handlers,
-            activity_manager=self.activity_manager,
             kernel_manager=self.kernel_manager,
             session_manager=self.session_manager,
             contents_manager=self.contents_manager,

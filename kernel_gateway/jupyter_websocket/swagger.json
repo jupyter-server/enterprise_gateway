@@ -452,33 +452,6 @@
                     }
                 }
             }
-        },
-        "/_api/activity": {
-            "get": {
-                "summary": "Gets activity information for all of the kernels.",
-                "tags": [
-                    "activity"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Returns the available kernel specs to spawn new kernels.",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "kernel_id": {
-                                    "$ref": "#/definitions/KernelActivity"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "This method is not accessible when the kernel gateway when the `KernelGatewayApp.list_kernels` is `False`.",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -493,40 +466,6 @@
                 "message": {
                     "type": "string",
                     "description": "The message logged when the error occurred"
-                }
-            }
-        },
-        "KernelActivity": {
-            "description": "Activity information for a given kernel",
-            "type": "object",
-            "properties": {
-                "last_message_to_client": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "An ISO 8601 date and time representing the last time a message was sent to a client"
-                },
-                "last_time_state_changed": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "An ISO 8601 date and time representing the last time the kernel changed state (from one of busy/idle to idle/busy)"
-                },
-                "last_client_connect": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "An ISO 8601 date and time representing the last time a client connected to the kernel"
-                },
-                "last_client_disconnect": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "An ISO 8601 date and time representing the last time a client disconnected from the kernel"
-                },
-                "busy": {
-                    "type": "boolean",
-                    "description": "True if the kernel is busy executing code"
-                },
-                "connections": {
-                    "type": "integer",
-                    "description": "The number of clients connected to the kernel"
                 }
             }
         },

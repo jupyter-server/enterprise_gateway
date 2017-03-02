@@ -2,18 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel CRUD and communication."""
 
-import json
 import os
 
 import tornado
 import notebook.services.kernels.handlers as notebook_handlers
 from tornado import gen
 from functools import partial
-from datetime import datetime
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
-from ...services.activity.manager import (LAST_MESSAGE_TO_CLIENT,
-    LAST_MESSAGE_TO_KERNEL, LAST_TIME_STATE_CHANGED, BUSY, CONNECTIONS,
-    LAST_CLIENT_CONNECT, LAST_CLIENT_DISCONNECT)
+
 
 class MainKernelHandler(TokenAuthorizationMixin,
                         CORSMixin,
@@ -34,7 +30,8 @@ class MainKernelHandler(TokenAuthorizationMixin,
         variables for every request.
 
         Delegates the request to the super class implementation if no limit is
-        set or if the maximum is not reached. Otherwise, responds with an error.
+        set or if the maximum is not reached. Otherwise, responds with an
+        error.
 
         Raises
         ------
@@ -89,104 +86,18 @@ class MainKernelHandler(TokenAuthorizationMixin,
         """Method for properly handling CORS pre-flight"""
         self.finish()
 
+
 class KernelHandler(TokenAuthorizationMixin,
                     CORSMixin,
                     JSONErrorsMixin,
                     notebook_handlers.KernelHandler):
-    """Extends the notebook kernel handler with token auth, CORS, JSON
-    errors, and kernel activity tracking.
+    """Extends the notebook kernel handler with token auth, CORS, and
+    JSON errors.
     """
-
-    @property
-    def activity(self):
-        return self.settings['activity_manager']
-
-    def delete(self, kernel_id):
-        """Override the super class method to stop tracking activity for a
-        kernel that is being deleted.
-
-        Parameters
-        ----------
-        kernel_id
-            ID of the kernel to stop tracking
-        """
-        if self.settings.get('kg_list_kernels'):
-            self.activity.remove(kernel_id)
-        super(KernelHandler, self).delete(kernel_id)
-
     def options(self, **kwargs):
         """Method for properly handling CORS pre-flight"""
         self.finish()
 
-class ZMQChannelsHandler(TokenAuthorizationMixin,
-                         notebook_handlers.ZMQChannelsHandler):
-    """Extends the notebook websocket to zmq handler with token auth and
-    kernel activity tracking.
-    """
-    @property
-    def activity(self):
-        return self.settings['activity_manager']
-
-    def open(self, kernel_id):
-        """Overrides the super class method to track connections to a kenrel.
-
-        Parameters
-        ----------
-        kernel_id : str
-            Opening a connection to this kernel
-        """
-        if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_CLIENT_CONNECT, datetime.utcnow().isoformat())
-            self.activity.increment_activity(self.kernel_id, CONNECTIONS)
-        super(ZMQChannelsHandler, self).open(kernel_id)
-
-    def on_close(self):
-        """Overrides the super class method to track disconnections from a
-        kernel.
-        """
-        if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_CLIENT_DISCONNECT, datetime.utcnow().isoformat())
-            self.activity.decrement_activity(self.kernel_id, CONNECTIONS)
-        super(ZMQChannelsHandler, self).on_close()
-
-    def _on_zmq_reply(self, stream, msg_list):
-        """Overrides the super class method to track communication activity
-        from a kernel as well as kernel idle/busy status.
-
-        Parameters
-        ----------
-        kernel_id : str
-            Kernel sending the message
-        """
-        if self.settings.get('kg_list_kernels'):
-            msg_metadata = json.loads(msg_list[3].decode('UTF-8'))
-            # If the message coming back is a status message, we need to inspect it
-            if msg_metadata['msg_type'] == 'status':
-                msg_content = json.loads(msg_list[6].decode('UTF-8'))
-                # If the status is busy, set the busy to True
-                if msg_content['execution_state'] == 'busy':
-                    self.activity.publish(self.kernel_id, BUSY, True)
-                # Else if the status is idle, set the busy to False
-                elif msg_content['execution_state'] == 'idle':
-                    self.activity.publish(self.kernel_id, BUSY, False)
-                # Record the time the state was changed
-                self.activity.publish(self.kernel_id, LAST_TIME_STATE_CHANGED, datetime.utcnow().isoformat())
-
-            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_CLIENT, datetime.utcnow().isoformat())
-        super(ZMQChannelsHandler, self)._on_zmq_reply(stream, msg_list)
-
-    def on_message(self, msg):
-        """Overrides the super class method to track communication activity
-        to a kernel.
-
-        Parameters
-        ----------
-        msg : str
-            Message sent to a kernel
-        """
-        if self.settings.get('kg_list_kernels'):
-            self.activity.publish(self.kernel_id, LAST_MESSAGE_TO_KERNEL, datetime.utcnow().isoformat())
-        super(ZMQChannelsHandler, self).on_message(msg)
 
 default_handlers = []
 for path, cls in notebook_handlers.default_handlers:
