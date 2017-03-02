@@ -7,7 +7,7 @@ info:
   contact:
     name: Jupyter Project
     url: jupyter.org
-    
+
 produces:
   - application/json
 consumes:
@@ -27,22 +27,24 @@ parameters:
     description: session uuid
     type: string
     format: uuid
-    
+
 securityDefinitions:
   tokenHeader:
     type: apiKey
     name: Authorization
     in: header
     description: The authorization token to verify authorization. This is only
-      needed when `KernelGatewayApp.auth_token` is set. This should take the 
-      form of `token {value}` where `{value}` is the value of the token. Alternatively, the token can be passed as a query parameter.
+      needed when `KernelGatewayApp.auth_token` is set. This should take the form
+      of `token {value}` where `{value}` is the value of the token.
+      Alternatively, the token can be passed as a query parameter.
   tokenParam:
     type: apiKey
     name: token
     in: query
     description: The authorization token to verify authorization. This is only
-      needed when `KernelGatewayApp.auth_token` is set. This should take the 
-      form of `token={value}` where `{value}` is the value of the token. Alternatively, the token can be passed as a header.
+      needed when `KernelGatewayApp.auth_token` is set. This should take the form
+      of `token={value}` where `{value}` is the value of the token.
+      Alternatively, the token can be passed as a header.
 
 paths:
   /api:
@@ -75,9 +77,6 @@ paths:
           description: Returns a swagger specification in json
   /api/kernelspecs:
     get:
-      security: 
-        - tokenHeader: []
-        - tokenParam: []
       summary: Get kernel specs
       tags:
         - kernelspecs
@@ -208,36 +207,20 @@ paths:
             items:
               $ref: '#/definitions/Session'
         403:
-          description: This method is not accessible when the kernel gateway 
-            when the `KernelGatewayApp.list_kernels` is `False`. 
+          description: This method is not accessible when the kernel gateway
+            when the `list_kernels` option is `False`.
           schema:
             $ref: '#/definitions/Error'
     post:
-      summary: Create a new session, or return an existing session if a session 
-        for the notebook path already exists
+      summary: Create a new session, or return an existing session if a session
+        of the same name already exists.
       tags:
         - sessions
       parameters:
         - name: session
           in: body
           schema:
-            type: object
-            properties:
-              notebook:
-                type: object
-                required:
-                  - path
-                properties:
-                  path:
-                    type: string
-                    description: path to notebook file
-              kernel:
-                type: object
-                properties:
-                  name:
-                    type: string
-                    description: Kernel spec name, defaults to default kernel 
-                      spec
+            $ref: '#/definitions/Session'
       responses:
         201:
           description: Session created or returned
@@ -249,10 +232,10 @@ paths:
               type: string
               format: url
         501:
-          description: Kernel not available
+          description: Session not available
           schema:
             $ref: '#/definitions/Error'
-            
+
   /api/sessions/{session}:
     parameters:
       - $ref: '#/parameters/session'
@@ -266,8 +249,7 @@ paths:
           schema:
             $ref: '#/definitions/Session'
     patch:
-      summary: This can be used to rename the notebook, or move it to a new 
-        directory.
+      summary: This can be used to rename the session.
       tags:
         - sessions
       parameters:
@@ -275,15 +257,7 @@ paths:
           in: body
           required: true
           schema:
-            type: object
-            properties:
-              notebook:
-                type: object
-                properties:
-                  path:
-                    type: string
-                    format: path
-                    description: new path for notebook
+            $ref: '#/definitions/Session'
       responses:
         200:
           description: Session
@@ -301,7 +275,7 @@ paths:
         204:
           description: Session (and kernel) were deleted
         410:
-          description: Kernel was deleted before the session, and the session 
+          description: Kernel was deleted before the session, and the session
             was *not* deleted
 
 definitions:
@@ -323,6 +297,7 @@ definitions:
         description: Unique name for kernel
       KernelSpecFile:
         $ref: '#/definitions/KernelSpecFile'
+        description: Kernel spec json file
       resources:
         type: object
         properties:
@@ -337,7 +312,7 @@ definitions:
           logo-*:
             type: string
             format: filename
-            description: path for logo file.  Logo filenames are of the form 
+            description: path for logo file.  Logo filenames are of the form
               `logo-widthxheight`
   KernelSpecFile:
     description: Kernel spec json file
@@ -394,6 +369,23 @@ definitions:
       name:
         type: string
         description: kernel spec name
+      last_activity:
+        type: string
+        description: |
+          ISO 8601 timestamp for the last-seen activity on this kernel.
+          Use this in combination with execution_state == 'idle' to identify
+          which kernels have been idle since a given time.
+          Timestamps will be UTC, indicated 'Z' suffix.
+          Added in notebook server 5.0.
+      connections:
+        type: number
+        description: |
+          The number of active connections to this kernel.
+      execution_state:
+        type: string
+        description: |
+          Current execution state of the kernel (typically 'idle' or 'busy', but may be other values, such as 'starting').
+          Added in notebook server 5.0.
   Session:
     description: A session
     type: object
@@ -401,12 +393,15 @@ definitions:
       id:
         type: string
         format: uuid
-      notebook:
-        type: object
-        properties:
-          path:
-            type: string
-            description: path to notebook
+      path:
+        type: string
+        description: path to the session
+      name:
+        type: string
+        description: name of the session
+      type:
+        type: string
+        description: session type
       kernel:
         $ref: '#/definitions/Kernel'
   ApiInfo:
@@ -415,3 +410,4 @@ definitions:
     properties:
       version:
         type: string
+
