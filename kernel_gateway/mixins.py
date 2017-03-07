@@ -40,10 +40,11 @@ class TokenAuthorizationMixin(object):
     tornado.websocket.WebsocketHandlers.
     """
     def prepare(self):
-        """Ensures the correct `Authorization: token <value>` is present in
-        the request's header if an auth token is configured.
+        """Ensures the correct auth token is present, either as a parameter
+        `token=<value>` or as a header `Authorization: token <value>`.
+        Does nothing unless an auth token is configured in kg_auth_token.
 
-        If kg_auth_token is set and the token is not in the header, responds
+        If kg_auth_token is set and the token is not present, responds
         with 401 Unauthorized.
 
         Notes
@@ -54,8 +55,14 @@ class TokenAuthorizationMixin(object):
         """
         server_token = self.settings.get('kg_auth_token')
         if server_token:
-            client_token = self.request.headers.get('Authorization')
-            if client_token != 'token %s' % server_token:
+            client_token = self.get_argument('token', '')
+            if client_token == '':
+                client_token = self.request.headers.get('Authorization')
+                if client_token and client_token.startswith('token '):
+                    client_token = client_token[len('token '):]
+                else:
+                    client_token = None
+            if client_token != server_token:
                 return self.send_error(401)
         return super(TokenAuthorizationMixin, self).prepare()
 
