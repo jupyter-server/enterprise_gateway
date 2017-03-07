@@ -4,10 +4,69 @@
 
 import json
 import unittest
+from unittest.mock import Mock, MagicMock
 from tornado import web
-from kernel_gateway.mixins import JSONErrorsMixin
+from kernel_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
 
-class TestableHandler(JSONErrorsMixin):
+class SuperTokenAuthHandler(object):
+    """Super class for the handler using TokenAuthorizationMixin."""
+    is_prepared = False
+
+    def prepare(self):
+        # called by the mixin when authentication succeeds
+        self.is_prepared = True
+
+class TestableTokenAuthHandler(TokenAuthorizationMixin, SuperTokenAuthHandler):
+    """Implementation that uses the TokenAuthorizationMixin for testing."""
+    def __init__(self, token=''):
+        self.settings = { 'kg_auth_token': token }
+        self.response = None
+        self.status_code = None
+
+    def finish(self, response):
+        self.response = response
+
+    def send_error(self, status_code):
+        self.status_code = status_code
+
+
+class TestTokenAuthMixin(unittest.TestCase):
+    """Unit tests the Token authorization mixin."""
+    def setUp(self):
+        """Creates a handler that uses the mixin."""
+        self.mixin = TestableTokenAuthHandler('YouKnowMe')
+
+    def test_missing_token(self):
+        """Status should be 'unauthorized'."""
+        attrs = { 'headers' : {
+        } }
+        self.mixin.request = Mock(**attrs)
+        self.mixin.prepare()
+        self.assertEqual(self.mixin.is_prepared, False)
+        self.assertEqual(self.mixin.status_code, 401)
+
+    def test_valid_token(self):
+        """Status should be None."""
+        attrs = { 'headers' : {
+            'Authorization' : 'token YouKnowMe'
+        } }
+        self.mixin.request = Mock(**attrs)
+        self.mixin.prepare()
+        self.assertEqual(self.mixin.is_prepared, True)
+        self.assertEqual(self.mixin.status_code, None)
+
+    def test_wrong_token(self):
+        """Status should be 'unauthorized'."""
+        attrs = { 'headers' : {
+            'Authorization' : 'token NeverHeardOf'
+        } }
+        self.mixin.request = Mock(**attrs)
+        self.mixin.prepare()
+        self.assertEqual(self.mixin.is_prepared, False)
+        self.assertEqual(self.mixin.status_code, 401)
+
+
+class TestableJSONErrorsHandler(JSONErrorsMixin):
     """Implementation that uses the JSONErrorsMixin for testing."""
     def __init__(self):
         self.headers = {}
@@ -27,7 +86,7 @@ class TestJSONErrorsMixin(unittest.TestCase):
     """Unit tests the JSON errors mixin."""
     def setUp(self):
         """Creates a handler that uses the mixin."""
-        self.mixin = TestableHandler()
+        self.mixin = TestableJSONErrorsHandler()
 
     def test_status(self):
         """Status should be set on the response."""
