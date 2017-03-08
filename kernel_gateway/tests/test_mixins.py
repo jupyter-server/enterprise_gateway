@@ -4,7 +4,13 @@
 
 import json
 import unittest
-from unittest.mock import Mock, MagicMock
+
+try:
+    from unittest.mock import Mock, MagicMock
+except ImportError:
+    # Python 2.7: use backport
+    from mock import Mock, MagicMock
+
 from tornado import web
 from kernel_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
 
