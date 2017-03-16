@@ -39,6 +39,9 @@ class TokenAuthorizationMixin(object):
     """Mixes token auth into tornado.web.RequestHandlers and
     tornado.websocket.WebsocketHandlers.
     """
+    header_prefix = "token "
+    header_prefix_len = len(header_prefix)
+
     def prepare(self):
         """Ensures the correct auth token is present, either as a parameter
         `token=<value>` or as a header `Authorization: token <value>`.
@@ -55,11 +58,11 @@ class TokenAuthorizationMixin(object):
         """
         server_token = self.settings.get('kg_auth_token')
         if server_token:
-            client_token = self.get_argument('token', '')
-            if client_token == '':
+            client_token = self.get_argument('token', None)
+            if client_token == None:
                 client_token = self.request.headers.get('Authorization')
-                if client_token and client_token.startswith('token '):
-                    client_token = client_token[len('token '):]
+                if client_token and client_token.startswith(self.header_prefix):
+                    client_token = client_token[self.header_prefix_len:]
                 else:
                     client_token = None
             if client_token != server_token:
