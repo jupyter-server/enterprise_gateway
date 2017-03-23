@@ -59,7 +59,7 @@ class TokenAuthorizationMixin(object):
         server_token = self.settings.get('kg_auth_token')
         if server_token:
             client_token = self.get_argument('token', None)
-            if client_token == None:
+            if client_token is None:
                 client_token = self.request.headers.get('Authorization')
                 if client_token and client_token.startswith(self.header_prefix):
                     client_token = client_token[self.header_prefix_len:]
