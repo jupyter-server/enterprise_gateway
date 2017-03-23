@@ -34,11 +34,17 @@
         }
     },
     "securityDefinitions": {
-        "token": {
+        "tokenHeader": {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "The authorization token to verify authorization. This is only needed when `KernelGatewayApp.auth_token` is set. This should take the form of `token {value}` where `{value}` is the value of the token."
+            "description": "The authorization token to verify authorization. This is only needed when `KernelGatewayApp.auth_token` is set. This should take the form of `token {value}` where `{value}` is the value of the token. Alternatively, the token can be passed as a query parameter."
+        },
+        "tokenParam": {
+            "type": "apiKey",
+            "name": "token",
+            "in": "query",
+            "description": "The authorization token to verify authorization. This is only needed when `KernelGatewayApp.auth_token` is set. This should take the form of `token={value}` where `{value}` is the value of the token. Alternatively, the token can be passed as a header."
         }
     },
     "paths": {
@@ -91,7 +97,10 @@
             "get": {
                 "security": [
                     {
-                        "token": []
+                        "tokenHeader": []
+                    },
+                    {
+                        "tokenParam": []
                     }
                 ],
                 "summary": "Get kernel specs",
