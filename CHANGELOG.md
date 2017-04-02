@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2017-04-01)
+
+* Add support for auth token as a query parameter
+
 ## 1.2.0 (2017-02-12)
 
 * Add command line option to whitelist environment variables for `POST /api/kernels`
