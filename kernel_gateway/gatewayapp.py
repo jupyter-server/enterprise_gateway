@@ -522,7 +522,6 @@ class KernelGatewayApp(JupyterApp):
         Stops the HTTP server and IO loop associated with the application.
         """
         def _stop():
-            self.shutdown()
             self.http_server.stop()
             self.io_loop.stop()
         self.io_loop.add_callback(_stop)
