@@ -8,6 +8,7 @@ import errno
 import logging
 import nbformat
 import importlib
+import signal
 
 try:
     from urlparse import urlparse
@@ -505,6 +506,7 @@ class KernelGatewayApp(JupyterApp):
         self.log.info('Jupyter Kernel Gateway at http{}://{}:{}'.format(
             's' if self.keyfile else '', self.ip, self.port
         ))
+        signal.signal(signal.SIGTERM, self._signal_stop)
 
         self.io_loop = ioloop.IOLoop.current()
 
@@ -520,6 +522,7 @@ class KernelGatewayApp(JupyterApp):
         Stops the HTTP server and IO loop associated with the application.
         """
         def _stop():
+            self.shutdown()
             self.http_server.stop()
             self.io_loop.stop()
         self.io_loop.add_callback(_stop)
@@ -528,5 +531,8 @@ class KernelGatewayApp(JupyterApp):
         """Stop all kernels in the pool."""
         self.personality.shutdown()
 
+    def _signal_stop(self, sig, frame):
+        self.log.info("Received signal to terminate.")
+        ioloop.IOLoop.current().stop()
 
 launch_instance = KernelGatewayApp.launch_instance
