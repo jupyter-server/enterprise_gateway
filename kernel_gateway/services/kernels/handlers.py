@@ -3,6 +3,8 @@
 """Tornado handlers for kernel CRUD and communication."""
 
 import json
+import os
+
 import tornado
 import notebook.services.kernels.handlers as notebook_handlers
 from tornado import gen
@@ -51,9 +53,11 @@ class MainKernelHandler(TokenAuthorizationMixin,
         if model is not None and 'env' in model:
             if not isinstance(model['env'], dict):
                 raise tornado.web.HTTPError(400)
+            # start with current env
+            env = dict(os.environ)
             # Whitelist KERNEL_* args and those allowed by configuration
-            env = {key: value for key, value in model['env'].items()
-                   if key.startswith('KERNEL_') or key in self.env_whitelist}
+            env.update({key: value for key, value in model['env'].items()
+                   if key.startswith('KERNEL_') or key in self.env_whitelist})
             # No way to override the call to start_kernel on the kernel manager
             # so do a temporary partial (ugh)
             orig_start = self.kernel_manager.start_kernel
