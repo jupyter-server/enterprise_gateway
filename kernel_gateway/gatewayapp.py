@@ -506,9 +506,9 @@ class KernelGatewayApp(JupyterApp):
         self.log.info('Jupyter Kernel Gateway at http{}://{}:{}'.format(
             's' if self.keyfile else '', self.ip, self.port
         ))
-        signal.signal(signal.SIGTERM, self._signal_stop)
-
         self.io_loop = ioloop.IOLoop.current()
+
+        signal.signal(signal.SIGTERM, self._signal_stop)
 
         try:
             self.io_loop.start()
@@ -532,6 +532,6 @@ class KernelGatewayApp(JupyterApp):
 
     def _signal_stop(self, sig, frame):
         self.log.info("Received signal to terminate.")
-        ioloop.IOLoop.current().stop()
+        self.io_loop.stop()
 
 launch_instance = KernelGatewayApp.launch_instance
