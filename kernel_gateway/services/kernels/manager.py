@@ -86,6 +86,12 @@ class SeedingMappingKernelManager(MappingKernelManager):
             if kernel.kernel_name == self.seed_kernelspec:
                 # Create a client to talk to the kernel
                 client = kernel.client()
+                # Clone client session. Workaround duplicate signatures due to shared digest_history
+                # This shouldn't be necessary after upstream fixes.
+                client.session = type(client.session)(
+                    config=kernel.session.config,
+                    key=kernel.session.key,
+                )
                 # Only start channels and wait for ready in HTTP mode
                 client.start_channels()
                 client.wait_for_ready()

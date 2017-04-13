@@ -408,12 +408,6 @@ class TestDefaults(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 403)
 
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-            raise_error=False
-        )
-        self.assertEqual(response.code, 403)
-
     @gen_test
     def test_crud_sessions(self):
         """Server should create, list, and delete sessions."""
@@ -604,12 +598,6 @@ class TestEnableDiscovery(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 200)
         self.assertTrue('[]' in str(response.body))
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-        )
-        self.assertEqual(response.code, 200)
-        self.assertTrue('{}' in str(response.body))
-
 
 class TestPrespawnKernels(TestJupyterWebsocket):
     """Tests gateway behavior when kernels are spawned at startup."""
@@ -658,22 +646,10 @@ class TestBaseURL(TestJupyterWebsocket):
             raise_error=False
         )
         self.assertEqual(response.code, 404)
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.code, 404)
 
         # Should exist under path
         response = yield self.http_client.fetch(
             self.get_url('/fake/path/api/kernels'),
-            method='GET'
-        )
-        self.assertEqual(response.code, 200)
-
-        response = yield self.http_client.fetch(
-            self.get_url('/fake/path/_api/activity'),
             method='GET'
         )
         self.assertEqual(response.code, 200)
@@ -812,45 +788,3 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
 
         ws.close()
 
-
-class TestActivityAPI(TestJupyterWebsocket):
-    """Tests gateway behavior when the activity API is enabled."""
-    def setup_configurables(self):
-        """Enables kernel listing so the activity API is available."""
-        self.app.personality.list_kernels = True
-
-    @gen_test(timeout=10)
-    def test_api_lists_kernels_with_flag_set(self):
-        """Server should report initial activity values for one kernel with
-        one client connected to it.
-        """
-        ws = yield self.spawn_kernel()
-        req = self.execute_request('import time\ntime.sleep(1)')
-        ws.write_message(json_encode(req))
-
-        # Get the first set of activities
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.code, 200)
-        first_kernel_id, first_activity_data = json.loads(response.body.decode('UTF-8')).popitem()
-        # Close the websocket and get the activities
-        ws.close()
-
-        # Give the socket time to disconnect
-        yield sleep(3)
-
-        # Request the activity
-        response = yield self.http_client.fetch(
-            self.get_url('/_api/activity'),
-            method='GET',
-            raise_error=False
-        )
-        self.assertEqual(response.code, 200)
-        second_kernel_id, second_activity_data = json.loads(response.body.decode('UTF-8')).popitem()
-
-        self.assertEqual(first_kernel_id, second_kernel_id, 'Kernel IDs were not equal')
-        self.assertEqual(first_activity_data['connections'], 1, 'The wrong number of connections existed during the first request')
-        self.assertEqual(second_activity_data['connections'], 0, 'The wrong number of connections existed during the second request')

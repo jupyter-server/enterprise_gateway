@@ -4,7 +4,6 @@
 
 import os
 from ..base.handlers import default_handlers as default_base_handlers
-from ..services.activity.handlers import ActivityHandler
 from ..services.kernels.pool import KernelPool
 from ..services.kernels.handlers import default_handlers as default_kernel_handlers
 from ..services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
@@ -51,12 +50,7 @@ class JupyterWebsocketPersonality(LoggingConfigurable):
         base_url path. Assumes init_configurables() has already been called.
         """
         handlers = []
-        # append the activity monitor for websocket mode
-        handlers.append((
-            url_path_join('/', self.parent.base_url, r'/_api/activity'),
-            ActivityHandler,
-            {}
-        ))
+
         # append tuples for the standard kernel gateway endpoints
         for handler in (
             default_api_handlers +
