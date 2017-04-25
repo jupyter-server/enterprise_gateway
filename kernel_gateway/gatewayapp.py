@@ -15,7 +15,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import Unicode, Integer, default, observe
+from traitlets import Unicode, Integer, default, observe, CaselessStrEnum
 
 from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
@@ -27,12 +27,12 @@ ioloop.install()
 
 from tornado import httpserver
 from tornado import web
-from tornado.log import enable_pretty_logging
+from tornado.log import enable_pretty_logging, LogFormatter
 
 from notebook.notebookapp import random_ports
 from ._version import __version__
 from .services.sessions.sessionmanager import SessionManager
-from .services.kernels.manager import SeedingMappingKernelManager
+from .services.kernels.remotemanager import RemoteMappingKernelManager
 
 # Only present for generating help documentation
 from .notebook_http import NotebookHTTPPersonality
@@ -74,6 +74,13 @@ class KernelGatewayApp(JupyterApp):
     classes = [NotebookHTTPPersonality, JupyterWebsocketPersonality]
     # Enable some command line shortcuts
     aliases = aliases
+
+    _log_formatter_cls = LogFormatter
+
+    @default('log_format')
+    def _default_log_format(self):
+        """override default log format to include time"""
+        return u"%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]%(end_color)s %(message)s"
 
     # Server IP / PORT binding
     port_env = 'KG_PORT'
@@ -366,7 +373,8 @@ class KernelGatewayApp(JupyterApp):
         kwargs = {}
         if self.default_kernel_name:
             kwargs['default_kernel_name'] = self.default_kernel_name
-        self.kernel_manager = SeedingMappingKernelManager(
+
+        self.kernel_manager = RemoteMappingKernelManager(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
