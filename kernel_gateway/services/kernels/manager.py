@@ -111,6 +111,7 @@ class SeedingMappingKernelManager(MappingKernelManager):
                 client.stop_channels()
         raise gen.Return(kernel_id)
 
+
 class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
     """Extends the IOLoopKernelManager used by the SeedingMappingKernelManager.
 
@@ -119,6 +120,7 @@ class KernelGatewayIOLoopKernelManager(IOLoopKernelManager):
     KG_AUTH_TOKEN from the environment variables passed to the kernel when it 
     starts.
     """
+
     def _launch_kernel(self, kernel_cmd, **kw):
         env = kw['env']
         env['KERNEL_GATEWAY'] = '1'
