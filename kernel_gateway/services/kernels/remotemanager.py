@@ -47,6 +47,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
     remote_connection_file = None
+    conflicting_port = int(os.getenv('ELYRA_TEST_CONFLICTING_PORT', '0'))
 
     def format_kernel_cmd(self, extra_arguments=None):
         """Override for remote kernels so that we can have the kernel command built with a reference to the connection
@@ -72,12 +73,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
 
     def restart_kernel(self, now=False, **kw):
-        """Need to override and temporarily reset the ip to a local ip to avoid the check about non-local ip usage.
-           The ip will be overwritten with an appropriate ip address when _launch_kernel is called and the process
-           proxy is created.
-        """
-        self.ip = '127.0.0.1'
-
+        self.reset_connections()
         super(RemoteKernelManager, self).restart_kernel(now, **kw)
 
     def signal_kernel(self, signum):
@@ -94,7 +90,35 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
         if self.kernel_spec.remote_process_proxy_class is not None:
-            if connection_file:
+            if self.has_kernel:
                 self.kernel.cleanup()
 
         return super(RemoteKernelManager, self).cleanup(connection_file)
+
+    def reset_connections(self):
+        """Need to override and temporarily reset the ip to a local ip to avoid the check about non-local ip usage.
+           The ip will be overwritten with an appropriate ip address when _launch_kernel is called and the process
+           proxy is created.  In addition, since we have a higher propensity for port conflicts, assume that's the
+           case for restart and reset the ports - which requires a rebuild of the connection file.
+        """
+        self.ip = '127.0.0.1'
+        self.stdin_port = 0
+        self.iopub_port = 0
+        self.shell_port = 0
+        self.hb_port = 0
+        self.control_port = 0
+        self.cleanup_connection_file()
+#        self.conflicting_port = 0  - To be removed - FIXME
+#
+#    def testPortConflict(self):
+#        if self.conflicting_port > 0:
+#            self.control_port = self.conflicting_port
+#            self.stdin_port = self.conflicting_port + 1
+#            self.iopub_port = self.conflicting_port + 2
+#            self.shell_port = self.conflicting_port + 3
+#            self.hb_port = self.conflicting_port + 4
+#
+#    def start_kernel(self, **kw):
+#        self.testPortConflict()  - To be removed - FIXME
+#        super(RemoteKernelManager, self).start_kernel(**kw)
+#
