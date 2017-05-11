@@ -33,6 +33,7 @@ from notebook.notebookapp import random_ports
 from ._version import __version__
 from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
+from .services.kernelspecs.remotekernelspec import RemoteKernelSpecManager
 
 # Only present for generating help documentation
 from .notebook_http import NotebookHTTPPersonality
@@ -361,7 +362,7 @@ class KernelGatewayApp(JupyterApp):
         Optionally, loads a notebook and prespawns the configured number of
         kernels.
         """
-        self.kernel_spec_manager = KernelSpecManager(parent=self)
+        self.kernel_spec_manager = RemoteKernelSpecManager(parent=self)
 
         self.seed_notebook = None
         if self.seed_uri is not None:
