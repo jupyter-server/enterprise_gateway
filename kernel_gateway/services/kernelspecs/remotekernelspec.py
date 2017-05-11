@@ -2,7 +2,13 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel spec that knows about remote kernel types."""
 
-from jupyter_client.kernelspec import KernelSpec
+from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
+
+
+class RemoteKernelSpecManager(KernelSpecManager):
+
+    def _kernel_spec_class_default(self):
+        return 'kernel_gateway.services.kernelspecs.remotekernelspec.RemoteKernelSpec'
 
 
 class RemoteKernelSpec(KernelSpec):
