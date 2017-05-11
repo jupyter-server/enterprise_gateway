@@ -32,11 +32,7 @@ When a kernel is launched, one of the fields of the kernel's associated kernel s
 As you can see, other forms of process communication can be achieved by abstracting the launch mechanism.
 
 ### Remote Kernel Spec
-The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel specification, otherwise known as the *kernel spec*.  Elyra introduces a new subclass of KernelSpec named `RemoteKernelSpec`.  Currently, use of this class is indicated via the following command line option when Jupyter Kernel Gateway is started:
-
-```--KernelSpecManager.kernel_spec_class=kernel_gateway.services.kernelspecs.remotekernelspec.RemoteKernelSpec```
-
-although this will likely be built into the kernel gateway in the future.
+The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel specification, otherwise known as the *kernel spec*.  Elyra introduces a new subclass of KernelSpec named `RemoteKernelSpec`.  
 
 The `RemoteKernelSpec` class provides support for a new (and optional) field within the kernelspec file.  This field is currently named `remote_process_proxy_class` and identifies the class that provides the kernel's process abstraction.
 
