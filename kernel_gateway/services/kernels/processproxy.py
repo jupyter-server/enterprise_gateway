@@ -216,35 +216,32 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 class YarnProcessProxy(BaseProcessProxyABC):
     kernel_id = None
     application_id = None
-    yarn_api_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
+    yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
 
     def __init__(self, kernel_manager, kernel_cmd, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, kernel_cmd, **kw)
-
         self.kernel_manager.log.debug("yarn env: {}".format(kw['env']))
-
         # launch the local run.sh - which is configured for yarn-cluster...
-        #
         local_proc = launch_kernel(kernel_cmd, **kw)
         self.kernel_manager.log.debug("launch yarn-cluster: pid {}, cmd '{}'".format(local_proc.pid, kernel_cmd))
-        self.kernel_manager.log.info("YARN API endpoint is {}.".format(self.yarn_api_endpoint))
+        self.kernel_manager.log.info("YARN API endpoint is {}.".format(self.yarn_endpoint))
         self.kernel_manager.log.info("Kernel ID is {}.".format(self.kernel_id))
-        app = YarnProcessProxy.query_app_by_name(self.yarn_api_endpoint, str(self.kernel_id))
-        self.kernel_manager.log.info("App data: {}".format(app))
-        if app and 'id' in app:
-            self.application_id = app['id']
-            self.kernel_manager.log.info("Application ID is {}.".format(app['id']))
-        else:
-            self.kernel_manager.log.warn("No application ID found.")
+        self.prepare_app_id()
 
     def poll(self):
         self.kernel_manager.log.debug("YarnProcessProxy.poll")
-        app = YarnProcessProxy.query_app_by_id(self.yarn_api_endpoint, self.application_id)
-        if app and app.get('state', '') == 'RUNNING':
-            return None
+        if self.prepare_app_id():
+            app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
+            if app and app.get('state', '') == 'RUNNING':
+                return None
         return False
 
-    def send_signal(self, signum):
+    def send_signal(self, signum=9):
+        """
+        Currently only support 0 as poll and other as kill.
+        :param signum
+        :return: 
+        """
         self.kernel_manager.log.debug("YarnProcessProxy.send_signal {}".format(signum))
         if signum == 0:
             self.kernel_manager.log.info("YarnProcessProxy.send_signal call poll")
@@ -255,24 +252,42 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     def kill(self):
         self.kernel_manager.log.debug("YarnProcessProxy.kill")
-        YarnProcessProxy.kill_app_by_id(self.yarn_api_endpoint, self.application_id)
-        app = YarnProcessProxy.query_app_by_id(self.yarn_api_endpoint, self.application_id)
-        if app and app.get('state', '') != 'RUNNING':
-            return None
+        if self.prepare_app_id():
+            YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
+            app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
+            if app and app.get('state', '') != 'RUNNING':
+                return None
         return False
 
     @staticmethod
-    def query_app_by_name(yarn_api_endpoint, app_name):
+    def query_app_by_name(yarn_api_endpoint, app_name, pause_time=1):
+        """
+        Retrieve application by using app name as the key.
+        When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
+
+        :param yarn_api_endpoint
+        :param app_name: app name as key.
+        :param pause_time: Time interval between each retry.
+        :return: The JSON object of an application. 
+        """
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         data = resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
             for app in data['apps']['app']:
                 if app.get('name', '').find(app_name) >= 0:
                     return app
+        time.sleep(pause_time)
         return None
 
     @staticmethod
     def query_app_by_id(yarn_api_endpoint, app_id):
+        """
+        Retrieve an application by application ID.
+
+        :param yarn_api_endpoint
+        :param app_id
+        :return: The JSON object of an application.
+        """
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         data = resource_mgr.cluster_application(application_id=app_id).data
         if data and 'app' in data:
@@ -281,11 +296,32 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def kill_app_by_id(yarn_api_endpoint, app_id):
+        """
+        Kill an application. If the app's state is FINISHED or FAILED, will not be 
+        changed as KILLED.
+
+        :param yarn_api_endpoint
+        :param app_id 
+        """
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         subprocess.Popen(cmd)
         # TODO: extend the yarn_api_client to support cluster_application_kill with PUT
-        # resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
+        # resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
         # resource_mgr.cluster_application_kill(application_id=app_id)
+
+    def prepare_app_id(self):
+        """
+        :return: True if the application ID is ready, otherwise False. 
+        """
+        if not self.application_id:
+            app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
+            if app and len(app.get('id','')) > 0:
+                self.application_id = app['id']
+                self.kernel_manager.log.info("Application ID is ready: {}.".format(app['id']))
+            else:
+                self.kernel_manager.log.warn("No application ID ready yet, will retry later.")
+                return False
+        return True
