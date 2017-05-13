@@ -16,7 +16,6 @@ from socket import *
 from jupyter_client import launch_kernel
 from yarn_api_client.resource_manager import ResourceManager
 
-#
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
 
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
@@ -44,7 +43,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         pass
 
     def wait(self):
-        self.kernel_manager.log.debug("%s.wait") % self.__class__.__name__
+        self.kernel_manager.log.debug("{}.wait".format(self.__class__.__name__))
         poll_interval = 0.2
         wait_time = 5.0
         for i in range(int(wait_time / poll_interval)):
@@ -217,7 +216,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 class YarnProcessProxy(BaseProcessProxyABC):
     kernel_id = None
     application_id = None
-    yarn_api_endpoint = os.getenv('ELYRA_YARN_ENDPOINT' 'http://localhost:8088/ws/v1/cluster')
+    yarn_api_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
 
     def __init__(self, kernel_manager, kernel_cmd, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, kernel_cmd, **kw)
@@ -228,13 +227,19 @@ class YarnProcessProxy(BaseProcessProxyABC):
         #
         local_proc = launch_kernel(kernel_cmd, **kw)
         self.kernel_manager.log.debug("launch yarn-cluster: pid {}, cmd '{}'".format(local_proc.pid, kernel_cmd))
-        app = YarnProcessProxy.query_app_by_name(self.kernel_id)
+        self.kernel_manager.log.info("YARN API endpoint is {}.".format(self.yarn_api_endpoint))
+        self.kernel_manager.log.info("Kernel ID is {}.".format(self.kernel_id))
+        app = YarnProcessProxy.query_app_by_name(self.yarn_api_endpoint, str(self.kernel_id))
+        self.kernel_manager.log.info("App data: {}".format(app))
         if app and 'id' in app:
             self.application_id = app['id']
+            self.kernel_manager.log.info("Application ID is {}.".format(app['id']))
+        else:
+            self.kernel_manager.log.warn("No application ID found.")
 
     def poll(self):
         self.kernel_manager.log.debug("YarnProcessProxy.poll")
-        app = YarnProcessProxy.query_app_by_id(self.application_id, self.yarn_api_endpoint)
+        app = YarnProcessProxy.query_app_by_id(self.yarn_api_endpoint, self.application_id)
         if app and app.get('state', '') == 'RUNNING':
             return None
         return False
@@ -250,16 +255,14 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     def kill(self):
         self.kernel_manager.log.debug("YarnProcessProxy.kill")
-        YarnProcessProxy.kill_app_by_id(self.application_id, self.yarn_api_endpoint)
-        app = YarnProcessProxy.query_app_by_id(self.application_id, self.yarn_api_endpoint)
-        if app:
-            state = app.get('state', '')
-            if state == 'KILLED' or state == 'KILLING':
-                return None
+        YarnProcessProxy.kill_app_by_id(self.yarn_api_endpoint, self.application_id)
+        app = YarnProcessProxy.query_app_by_id(self.yarn_api_endpoint, self.application_id)
+        if app and app.get('state', '') != 'RUNNING':
+            return None
         return False
 
     @staticmethod
-    def query_app_by_name(app_name, yarn_api_endpoint):
+    def query_app_by_name(yarn_api_endpoint, app_name):
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         data = resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
@@ -269,7 +272,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return None
 
     @staticmethod
-    def query_app_by_id(app_id, yarn_api_endpoint):
+    def query_app_by_id(yarn_api_endpoint, app_id):
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         data = resource_mgr.cluster_application(application_id=app_id).data
         if data and 'app' in data:
@@ -277,12 +280,12 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return None
 
     @staticmethod
-    def kill_app_by_id(app_id, yarn_api_endpoint):
+    def kill_app_by_id(yarn_api_endpoint, app_id):
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         subprocess.Popen(cmd)
+        # TODO: extend the yarn_api_client to support cluster_application_kill with PUT
         # resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         # resource_mgr.cluster_application_kill(application_id=app_id)
-        # TODO: extend the yarn_api_client to support PUT method
