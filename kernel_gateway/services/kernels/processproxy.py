@@ -29,14 +29,26 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     kernel_manager = None
     kernel_id = None
 
-    def __init__(self, kernel_manager, cmd, **kw):
+    def __init__(self, kernel_manager, **kw):
         self.kernel_manager = kernel_manager
 
+    def launch_process(self, cmd, **kw):
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file).\
             replace('kernel-', '').replace('.json', '')
         env = kw['env']
         env['KERNEL_ID'] = self.kernel_id
+        return self
+
+    def get_connection_filename(self):
+        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
+           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
+           By default, we return what's already set.
+        """
+        return self.kernel_manager.connection_file
+
+    def cleanup(self):
+        pass
 
     @abc.abstractmethod
     def poll(self):
@@ -57,7 +69,10 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
 class StandaloneProcessProxy(BaseProcessProxyABC):
 
-    # FIXME - properly deal with hosts, username and password
+    # FIXME - properly deal with connection_file_dir, hosts, username and password
+
+    remote_connection_file_dir = os.getenv('ELYRA_REMOTE_CONNECTION_DIR', '/tmp/')
+
     username = os.getenv('ELYRA_REMOTE_USER')
     password = os.getenv('ELYRA_REMOTE_PWD')  # this should use password-less ssh
 
@@ -74,13 +89,22 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
     pid = 0
     remote_connection_file = None
 
-    def __init__(self, kernel_manager, kernel_cmd, **kw):
-        super(StandaloneProcessProxy, self).__init__(kernel_manager, kernel_cmd, **kw)
+    def __init__(self, kernel_manager, **kw):
+        super(StandaloneProcessProxy, self).__init__(kernel_manager, **kw)
+
+    def get_connection_filename(self):
+        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
+           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
+        """
+        self.remote_connection_file = StandaloneProcessProxy.remote_connection_file_dir + \
+                                      os.path.basename(self.kernel_manager.connection_file)
+        return self.remote_connection_file
+
+    def launch_process(self, kernel_cmd, **kw):
+        super(StandaloneProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.ip = StandaloneProcessProxy.determine_next_host()
         self.kernel_manager.ip = gethostbyname(self.ip)  # convert to ip if host is provided
-        # save off connection file name for cleanup later
-        self.remote_connection_file = kernel_manager.remote_connection_file
         # write out connection file - which has the remote IP - prior to copy...
         self.kernel_manager.cleanup_connection_file()
         self.kernel_manager.write_connection_file()
@@ -88,7 +112,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         cmd = self.build_startup_command(kernel_cmd)
         self.kernel_manager.log.debug('Invoking cmd: {}'.format(cmd))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
-        result = self.rsh(cmd, self.kernel_manager.connection_file, self.kernel_manager.remote_connection_file)
+        result = self.rsh(cmd, self.kernel_manager.connection_file, self.remote_connection_file)
         for line in result:
             result_pid = line.strip()
 
@@ -100,6 +124,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 
         self.kernel_manager.log.info("Remote kernel launched on '{}', pid={}"
                                      .format(self.kernel_manager.ip, self.pid))
+        return self
 
     def poll(self):
         result = self.remote_signal(0)
@@ -222,16 +247,21 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     kernel_id = None
     application_id = None
+    local_proc = None
 
-    def __init__(self,  kernel_manager, kernel_cmd, **kw):
-        super(YarnProcessProxy, self).__init__(kernel_manager, kernel_cmd, **kw)
+    def __init__(self,  kernel_manager, **kw):
+        super(YarnProcessProxy, self).__init__(kernel_manager, **kw)
+
+    def launch_process(self, kernel_cmd, **kw):
+        super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.kernel_manager.log.debug("yarn env: {}".format(kw['env']))
 
         # launch the local run.sh - which is configured for yarn-cluster...
         #
-        local_proc = launch_kernel(kernel_cmd, **kw)
-        self.kernel_manager.log.debug("launch yarn-cluster: pid {}, cmd '{}'".format(local_proc.pid, kernel_cmd))
+        self.local_proc = launch_kernel(kernel_cmd, **kw)
+        self.kernel_manager.log.debug("launch yarn-cluster: pid {}, cmd '{}'".format(self.local_proc.pid, kernel_cmd))
+        return self
 
     def poll(self):
         self.kernel_manager.log.debug("YarnProcessProxy.poll")
