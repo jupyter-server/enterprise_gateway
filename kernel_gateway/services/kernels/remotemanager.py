@@ -99,6 +99,12 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
         return super(RemoteKernelManager, self).cleanup(connection_file)
 
+    def write_connection_file(self):
+        self.log.debug(
+            "RemoteKernelManager: Writing connection file with ip={}, control={}, hb={}, iopub={}, stdin={}, shell={}"
+            .format(self.ip, self.control_port, self.hb_port, self.iopub_port, self.stdin_port, self.shell_port))
+        return super(RemoteKernelManager, self).write_connection_file()
+
     def reset_connections(self):
         """Need to override and temporarily reset the ip to a local ip to avoid the check about non-local ip usage.
            The ip will be overwritten with an appropriate ip address when _launch_kernel is called and the process
