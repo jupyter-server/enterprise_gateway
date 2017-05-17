@@ -22,6 +22,7 @@ logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.
 
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
 
+time_format="%Y-%m-%d %H:%M:%S"
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -295,21 +296,24 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return self.remote_connection_file
 
     def launch_process(self, kernel_cmd, **kw):
+        """Prior to starting the process, copy the connection file to every YARN node.
+        This is to avoid having to detect where the kernel application was moved to (which would be too late)
+        because each YARN node is likly to be the host of a kernel.
+        Note we need to write a new connection file so that that connection file has the IP of the host that serving a kernel.
+        Once launched we'll circle back and do this one final time relative to the host where the application landed.
+        To do so need to ensure application ID ready during launching, and once obtained, query YARN for the host address.
+
+        TODO: if YARN api endpoint in HTTPS mode then all http address fields will be blank in the JSON response.
+        """
         super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.kernel_manager.log.debug("yarn env: {}".format(kw['env']))
 
-        # Prior to starting the process, we need to copy the connection file to each of the possible nodes.  For
-        # now, that set of possible nodes is specified in the REMOTE_HOSTS environment variable (FIXME).
-        # This is done to avoid having to detect where the kernel application was moved to (which would be too late).
-        # Note, we need to write a new connection file so that that connection has the IP of the host that its
-        # serving.  Once launched we'll circle back and do this one final time relative to the host where
-        # the application landed.
         BaseProcessProxyABC.remote_hosts = YarnProcessProxy.query_yarn_nodes(self.yarn_endpoint)
         self.kernel_manager.log.debug("scp connection file {} to node(s)".format(self.kernel_manager.connection_file))
         remote_hosts = BaseProcessProxyABC.remote_hosts
         for host in remote_hosts:
-            self.kernel_manager.ip = gethostbyname(host)  # convert to ip if host is provided
+            self.kernel_manager.ip = gethostbyname(host)
             self.kernel_manager.cleanup_connection_file()
             self.kernel_manager.write_connection_file()
             self.rcp(host, self.kernel_manager.connection_file, self.remote_connection_file)
@@ -320,7 +324,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.start_time = YarnProcessProxy.get_current_time()
         self.kernel_manager.log.debug("YarnProcessProxy.init starting at {}".format(self.start_time))
         self.kernel_manager.log.info("YarnProcessProxy.init, YARN endpoint {}, launch yarn-cluster: pid {}, cmd '{}'".format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
-        # Ensure application ID ready during launching
         i, total = 1, 0.0
         while self.get_application_id() is None and total <= self.max_retries_span:
                 time.sleep(self.retry_interval * i)
@@ -328,8 +331,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
                 i += 1
         if self.application_id:
             self.kernel_manager.log.debug("Application ID ready during launching.")
-            # Once the Yarn Application Id obtained, query for the host address.
-            # TODO if HTTPS mode then all http address fields will be blank in JSON response
+            
             self.yarn_app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
             if self.yarn_app:
                 host = self.yarn_app.get('amHostHttpAddress', '').split(':')[0]
@@ -344,11 +346,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return self
 
     def poll(self):
-        """
-        Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
+        """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
-        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
+        TODO: 1) If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
+              2) Since now launch_process will likely ensure an application ID is avaialbe, may return None IFF its state is RUNNING.
         
         :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
         """
@@ -365,8 +367,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return result
 
     def send_signal(self, signum=9):
-        """
-        Currently only support 0 as poll and other as kill.
+        """Currently only support 0 as poll and other as kill.
         
         :param signum
         :return: 
@@ -385,8 +386,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
             return is_killed
 
     def kill(self):
-        """
-        Kill a kernel.
+        """Kill a kernel.
         
         :return: None if the application existed and is not in RUNNING state, False otherwise. 
         """
@@ -401,12 +401,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def query_app_by_name(yarn_api_endpoint, kernel_id):
-        """
-        Retrieve application by using kernel_id as the app name as the key.
+        """Retrieve application by using kernel_id as the unique app name.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
 
         :param yarn_api_endpoint
-        :param kernel_id: kernel id as the app name for query
+        :param kernel_id: as the unique app name for query
         :return: The JSON object of an application. 
         """
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
@@ -419,8 +418,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def query_yarn_nodes(yarn_api_endpoint):
-        """
-        Retrieve all nodes host name in a YARN cluster.
+        """Retrieve all nodes host name in a YARN cluster.
         
         :param yarn_api_endpoint: 
         :return: A list of "nodeHostName" from JSON object
@@ -435,8 +433,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def query_app_by_id(yarn_api_endpoint, app_id):
-        """
-        Retrieve an application by application ID.
+        """Retrieve an application by application ID.
 
         :param yarn_api_endpoint
         :param app_id
@@ -450,27 +447,24 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def kill_app_by_id(yarn_api_endpoint, app_id):
-        """
-        Kill an application. If the app's state is FINISHED or FAILED, will not be 
-        changed as KILLED.
+        """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
+        TODO: extend the yarn_api_client to support cluster_application_kill with PUT, e.g.:
+            resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
+            resource_mgr.cluster_application_kill(application_id=app_id)
 
         :param yarn_api_endpoint
         :param app_id 
-        :return: The response of killing
+        :return: The JSON response of killing the application.
         """
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         return subprocess.Popen(cmd)
-        # TODO: extend the yarn_api_client to support cluster_application_kill with PUT
-        # resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
-        # resource_mgr.cluster_application_kill(application_id=app_id)
+
 
     def get_application_id(self):
-        """
-        :return: Application ID if it is available, otherwise None.
-        """
+        # Return the kernel's YATN application ID if available, otherwise None.
         if not self.application_id:
             app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
             if app and len(app.get('id', '')) > 0:
@@ -482,11 +476,13 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return self.application_id
 
     @staticmethod
-    def get_current_time(time_format="%Y-%m-%d %H:%M:%S"):
+    def get_current_time():
+        # Return the current time stamp.
         return strftime(time_format, gmtime())
 
     @staticmethod
-    def get_time_diff(time_str1, time_str2, time_format="%Y-%m-%d %H:%M:%S"):
+    def get_time_diff(time_str1, time_str2):
+        # Return the difference between two timestamp in seconds.
         time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
         diff = max(time1, time2) - min(time1, time2)
         return diff.seconds
