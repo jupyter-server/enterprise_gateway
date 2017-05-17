@@ -347,18 +347,19 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """
         Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
-        So will regard the application as RUNNING when application ID not ready yet.
-        :return: None if the application ID is not ready, or the app is RUNNING. Otherwise False. 
+        So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
+        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
+        
+        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
         """
         current_time = YarnProcessProxy.get_current_time()
         self.kernel_manager.log.debug("YarnProcessProxy.poll starting at {}".format(current_time))
-        result = None
+        result = False
         if self.get_application_id():
-            running_state = set(["SUBMITTED", "ACCEPTED", "RUNNING"])
+            pseudo_running_state = set(["SUBMITTED", "ACCEPTED", "RUNNING"])
             app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
-            if app: # for current implementation, TODO: if app is None should also return False
-                if app.get('state', '') not in running_state:
-                    result = False
+            if app and app.get('state', '') in pseudo_running_state:
+                result = None
         time_diff = YarnProcessProxy.get_time_diff(current_time, YarnProcessProxy.get_current_time())
         self.kernel_manager.log.debug("YarnProcessProxy.poll ending after {} seconds".format(time_diff))
         return result
@@ -366,6 +367,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
     def send_signal(self, signum=9):
         """
         Currently only support 0 as poll and other as kill.
+        
         :param signum
         :return: 
         """
@@ -383,6 +385,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
             return is_killed
 
     def kill(self):
+        """
+        Kill a kernel.
+        
+        :return: None if the application existed and is not in RUNNING state, False otherwise. 
+        """
         self.kernel_manager.log.debug("YarnProcessProxy.kill at {}".format(YarnProcessProxy.get_current_time()))
         if self.get_application_id():
             resp = YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
@@ -393,14 +400,13 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return False
 
     @staticmethod
-    def query_app_by_name(yarn_api_endpoint, kernel_id, pause_time=1):
+    def query_app_by_name(yarn_api_endpoint, kernel_id):
         """
-        Retrieve application by using app name as the key.
+        Retrieve application by using kernel_id as the app name as the key.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
 
         :param yarn_api_endpoint
         :param kernel_id: kernel id as the app name for query
-        :param pause_time: Time interval between each retry.
         :return: The JSON object of an application. 
         """
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
@@ -409,13 +415,13 @@ class YarnProcessProxy(BaseProcessProxyABC):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0:
                     return app
-        time.sleep(pause_time)
         return None
 
     @staticmethod
     def query_yarn_nodes(yarn_api_endpoint):
         """
         Retrieve all nodes host name in a YARN cluster.
+        
         :param yarn_api_endpoint: 
         :return: A list of "nodeHostName" from JSON object
         """
@@ -477,7 +483,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def get_current_time(time_format="%Y-%m-%d %H:%M:%S"):
-        # utility method
         return strftime(time_format, gmtime())
 
     @staticmethod
@@ -485,4 +490,3 @@ class YarnProcessProxy(BaseProcessProxyABC):
         time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
         diff = max(time1, time2) - min(time1, time2)
         return diff.seconds
-
