@@ -118,7 +118,7 @@ def kill(self):
 ```
 The `kill()` method is used by the Jupyter framework to terminate the kernel process.  This method is only necessary when the request to shutdown the kernel - sent via the control port of the zero-MQ ports - does not respond in an appropriate amount of time.
 
-This method returns `None` if the process is still running, `False` otherwise.   
+This method returns `None` if the process is killed successfully, `False` otherwise.
 
 ### Extending Elyra
 Theoretically speaking (it may too soon to be any more confident than that) enabling a kernel for use in other frameworks amounts to the following:
