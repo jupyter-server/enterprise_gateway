@@ -59,7 +59,8 @@ containerized and scaled out using common technologies like
         'traitlets>=4.2.0',
         'tornado>=4.2.0',
         'requests>=2.7,<3.0',
-        'paramiko>=2.1.2'
+        'paramiko>=2.1.2',
+        'yarn-api-client>=0.2.3'
     ],
     classifiers=[
         'Intended Audience :: Developers',

@@ -36,39 +36,30 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     username = os.getenv('ELYRA_REMOTE_USER')
     password = os.getenv('ELYRA_REMOTE_PWD', '')  # this should use password-less ssh
 
-    remote_hosts = os.getenv('ELYRA_REMOTE_HOSTS', 'localhost').split(',')
-    host_index = 0
-
-    @staticmethod
-    def determine_next_host():
-        next_host = BaseProcessProxyABC.remote_hosts[StandaloneProcessProxy.host_index %
-                                                        StandaloneProcessProxy.remote_hosts.__len__()]
-        StandaloneProcessProxy.host_index += 1
-        return next_host
-
     remote_connection_file = None
     kernel_manager = None
+    log = None
     kernel_id = None
+    hosts = None
 
     def __init__(self, kernel_manager, **kw):
         self.kernel_manager = kernel_manager
-
-    def launch_process(self, cmd, **kw):
+        self.log = kernel_manager.log
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
-        env = kw['env']
-        env['KERNEL_ID'] = self.kernel_id
+        self.hosts = self.get_hosts()
+
+    @abc.abstractmethod
+    def launch_process(self, cmd, **kw):
+        env_dict = kw['env']
+        env_dict['KERNEL_ID'] = self.kernel_id
         return self
 
-    def get_connection_filename(self):
-        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
-           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
-           By default, we return what's already set.
-        """
-        return self.kernel_manager.connection_file
-
     def cleanup(self):
+        pass
+
+    def get_hosts(self):
         pass
 
     @abc.abstractmethod
@@ -76,7 +67,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         pass
 
     def wait(self):
-        self.kernel_manager.log.debug("{}.wait".format(self.__class__.__name__))
+        self.log.debug("{}.wait".format(self.__class__.__name__))
         poll_interval = 0.2
         wait_time = 5.0
         for i in range(int(wait_time / poll_interval)):
@@ -85,7 +76,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             else:
                 break
         else:
-            self.kernel_manager.log.warning("Wait timeout of 5 seconds exhausted. Continuing...")
+            self.log.warning("Wait timeout of 5 seconds exhausted. Continuing...")
 
     @abc.abstractmethod
     def send_signal(self, signum):
@@ -118,7 +109,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 lines = stderr.readlines()
 
         except Exception as e:
-            self.kernel_manager.log.error(
+            self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
                 .format(type(e).__name__, ip, StandaloneProcessProxy.username, e))
             raise e
@@ -142,25 +133,24 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
             if len(StandaloneProcessProxy.password) > 0:
-                self.kernel_manager.log.debug("Establishing a SSH connection with password.")
+                self.log.debug("Establishing a SSH connection with password.")
                 ssh.connect(ip, port=22, username=StandaloneProcessProxy.username,
                             password=StandaloneProcessProxy.password)
             else:
-                self.kernel_manager.log.debug("Establishing a SSH connection without password.")
+                self.log.debug("Establishing a SSH connection without password.")
                 ssh.connect(ip, port=22, username=StandaloneProcessProxy.username)
         except Exception as e:
-            self.kernel_manager.log.error(
+            self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
                 .format(type(e).__name__, ip, StandaloneProcessProxy.username, e))
             raise e
 
         try:
-            self.kernel_manager.log.debug("Copying file '{}' to file '{}@{}' ..."
-                                          .format(src_file, ip, dst_file))
+            self.log.debug("Copying file '{}' to file '{}@{}' ...".format(src_file, ip, dst_file))
             sftp = ssh.open_sftp()
             sftp.put(src_file, dst_file)
         except Exception as e:
-            self.kernel_manager.log.error(
+            self.log.error(
                 "Exception '{}' occurred attempting to copy file '{}' "
                 "to '{}' on '{}' with user '{}', message='{}'"
                 .format(type(e).__name__, src_file, dst_file, self.ip, StandaloneProcessProxy.username, e))
@@ -170,35 +160,41 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             if ssh is not None:
                 ssh.close()
 
+    def get_connection_filename(self):
+        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
+           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
+        """
+        if self.remote_connection_file is None:
+            self.remote_connection_file = BaseProcessProxyABC.remote_connection_file_dir + \
+                                      os.path.basename(self.kernel_manager.connection_file)
+        return self.remote_connection_file
+
 
 class StandaloneProcessProxy(BaseProcessProxyABC):
-
+    host_index = 0
     pid = 0
 
     def __init__(self, kernel_manager, **kw):
         super(StandaloneProcessProxy, self).__init__(kernel_manager, **kw)
 
-    def get_connection_filename(self):
-        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
-           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
-        """
-        self.remote_connection_file = StandaloneProcessProxy.remote_connection_file_dir + \
-                                      os.path.basename(self.kernel_manager.connection_file)
-        return self.remote_connection_file
+    def get_hosts(self):
+        if self.hosts is None:
+            self.hosts = os.getenv('ELYRA_REMOTE_HOSTS', 'localhost').split(',')
+        return self.hosts
 
     def launch_process(self, kernel_cmd, **kw):
         super(StandaloneProcessProxy, self).launch_process(kernel_cmd, **kw)
 
-        self.ip = StandaloneProcessProxy.determine_next_host()
+        self.ip = self.determine_next_host()
         # write out connection file - which has the remote IP - prior to copy...
         self.kernel_manager.ip = gethostbyname(self.ip)  # convert to ip if host is provided
         self.kernel_manager.cleanup_connection_file()
         self.kernel_manager.write_connection_file()
 
         cmd = self.build_startup_command(kernel_cmd)
-        self.kernel_manager.log.debug('Invoking cmd: {}'.format(cmd))
+        self.log.debug('Invoking cmd: {}'.format(cmd))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
-        result = self.rsh(self.ip, cmd, self.kernel_manager.connection_file, self.remote_connection_file)
+        result = self.rsh(self.ip, cmd, self.kernel_manager.connection_file, self.get_connection_filename())
         for line in result:
             result_pid = line.strip()
 
@@ -208,23 +204,22 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
             raise RuntimeError("Failure occurred starting remote kernel on '{}'.  Returned result: {}"
                                .format(self.ip, result))
 
-        self.kernel_manager.log.info("Remote kernel launched on '{}', pid={}"
-                                     .format(self.kernel_manager.ip, self.pid))
+        self.log.info("Remote kernel launched on '{}', pid={}".format(self.kernel_manager.ip, self.pid))
         return self
 
     def poll(self):
         result = self.remote_signal(0)
-        #  self.kernel_manager.log.debug('StandaloneProcessProxy.poll: {}'.format(result))
+        #  self.log.debug('StandaloneProcessProxy.poll: {}'.format(result))
         return result
 
     def send_signal(self, signum):
         result = self.remote_signal(signum)
-        self.kernel_manager.log.debug("StandaloneProcessProxy.send_signal({}): {}".format(signum, result))
+        self.log.debug("StandaloneProcessProxy.send_signal({}): {}".format(signum, result))
         return result
 
     def kill(self):
         result = self.remote_signal(signal.SIGKILL)
-        self.kernel_manager.log.debug("StandaloneProcessProxy.kill: {}".format(result))
+        self.log.debug("StandaloneProcessProxy.kill: {}".format(result))
         return result
 
     def remote_signal(self, signum):
@@ -239,7 +234,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         return False
 
     def cleanup(self):
-        cmd = 'rm -f {}; echo $?'.format(self.remote_connection_file)
+        cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
         result = self.rsh(self.ip, cmd)
         for line in result:
             val = line.strip()
@@ -273,6 +268,11 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 
         return cmd
 
+    def determine_next_host(self):
+        next_host = self.hosts[StandaloneProcessProxy.host_index % self.hosts.__len__()]
+        StandaloneProcessProxy.host_index += 1
+        return next_host
+
 
 class YarnProcessProxy(BaseProcessProxyABC):
     kernel_id = None
@@ -287,13 +287,10 @@ class YarnProcessProxy(BaseProcessProxyABC):
     def __init__(self,  kernel_manager, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, **kw)
 
-    def get_connection_filename(self):
-        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
-           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
-        """
-        self.remote_connection_file = StandaloneProcessProxy.remote_connection_file_dir + \
-                                      os.path.basename(self.kernel_manager.connection_file)
-        return self.remote_connection_file
+    def get_hosts(self):
+        if self.hosts is None:
+            self.hosts = YarnProcessProxy.query_yarn_nodes(self.yarn_endpoint)
+        return self.hosts
 
     def launch_process(self, kernel_cmd, **kw):
         """Prior to starting the process, copy the connection file to every YARN node.
@@ -307,42 +304,51 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """
         super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
-        self.kernel_manager.log.debug("yarn env: {}".format(kw['env']))
+        self.log.debug("yarn env: {}".format(kw['env']))
 
-        BaseProcessProxyABC.remote_hosts = YarnProcessProxy.query_yarn_nodes(self.yarn_endpoint)
-        self.kernel_manager.log.debug("scp connection file {} to node(s)".format(self.kernel_manager.connection_file))
-        remote_hosts = BaseProcessProxyABC.remote_hosts
-        for host in remote_hosts:
+        # FIXME - look into the parallel api provided by paramiko
+        self.log.debug("Copying connection file {} to host(s): {}".
+                       format(self.kernel_manager.connection_file, self.hosts))
+        for host in self.hosts:
             self.kernel_manager.ip = gethostbyname(host)
             self.kernel_manager.cleanup_connection_file()
             self.kernel_manager.write_connection_file()
-            self.rcp(host, self.kernel_manager.connection_file, self.remote_connection_file)
-            self.kernel_manager.log.debug("scp connection file to host {} finished".format(host))
+            self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
+            self.log.debug("Connection file copied to host {}.".format(host))
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
         self.start_time = YarnProcessProxy.get_current_time()
-        self.kernel_manager.log.debug("YarnProcessProxy.init starting at {}".format(self.start_time))
-        self.kernel_manager.log.info("YarnProcessProxy.init, YARN endpoint {}, launch yarn-cluster: pid {}, cmd '{}'".format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
+        self.log.debug("YarnProcessProxy.launch_process, YARN endpoint: {}, spark-submit: pid {}, cmd: '{}'".
+                       format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
         i, total = 1, 0.0
-        while self.get_application_id() is None and total <= self.max_retries_span:
-                time.sleep(self.retry_interval * i)
-                total += self.retry_interval * i
-                i += 1
-        if self.application_id:
-            self.kernel_manager.log.debug("Application ID ready during launching.")
-            
-            self.yarn_app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
-            if self.yarn_app:
-                host = self.yarn_app.get('amHostHttpAddress', '').split(':')[0]
-                self.kernel_manager.log.debug("Kernel {} running on host {}".format(self.kernel_id, host))
-                # Then set the kernel manager ip to the actual host where the application landed.
-                self.kernel_manager.ip = gethostbyname(host)
-                self.kernel_manager.cleanup_connection_file()
-                self.kernel_manager.write_connection_file()
-        else:
-            self.kernel_manager.log.info("Application ID not ready during launching, with {} tries in {} seconds.".format(i, self.max_retries_span))
+        app_state = None
+        host = ''
+        while host == '' or app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
+            delay = min(self.retry_interval*i, 3.0)
+            time.sleep(delay)
+            total += delay
 
+            self.get_application_id()
+            if self.application_id:
+
+                self.yarn_app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
+                if self.yarn_app:
+                    if host == '':
+                        host = self.yarn_app.get('amHostHttpAddress', '').split(':')[0]
+                        self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
+                        # Then set the kernel manager ip to the actual host where the application landed.
+                        self.kernel_manager.ip = gethostbyname(host)
+                        self.kernel_manager.cleanup_connection_file()
+                        self.kernel_manager.write_connection_file()
+
+                    app_state = self.yarn_app.get('state', '')
+
+            self.log.debug("Waiting for application to enter 'RUNNING' state. "
+                           "ID={}, AssignedHost={}, CurrentState={}, Attempt={}".
+                           format(self.application_id, host, app_state, i))
+
+            i += 1
         return self
 
     def poll(self):
@@ -355,7 +361,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
         """
         current_time = YarnProcessProxy.get_current_time()
-        self.kernel_manager.log.debug("YarnProcessProxy.poll starting at {}".format(current_time))
+        self.log.debug("YarnProcessProxy.poll starting at {}".format(current_time))
         result = False
         if self.get_application_id():
             pseudo_running_state = set(["SUBMITTED", "ACCEPTED", "RUNNING"])
@@ -363,7 +369,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
             if app and app.get('state', '') in pseudo_running_state:
                 result = None
         time_diff = YarnProcessProxy.get_time_diff(current_time, YarnProcessProxy.get_current_time())
-        self.kernel_manager.log.debug("YarnProcessProxy.poll ending after {} seconds".format(time_diff))
+        self.log.debug("YarnProcessProxy.poll ending after {} seconds".format(time_diff))
         return result
 
     def send_signal(self, signum=9):
@@ -372,17 +378,17 @@ class YarnProcessProxy(BaseProcessProxyABC):
         :param signum
         :return: 
         """
-        self.kernel_manager.log.debug("YarnProcessProxy.send_signal {}".format(signum))
+        self.log.debug("YarnProcessProxy.send_signal {}".format(signum))
         if signum == 0:
-            self.kernel_manager.log.info("YarnProcessProxy.send_signal call poll")
+            self.log.info("YarnProcessProxy.send_signal call poll")
             return self.poll()
         else:
-            self.kernel_manager.log.warn("YarnProcessProxy.send_signal call kill")
+            self.log.warn("YarnProcessProxy.send_signal call kill")
             is_killed = self.kill()
             if is_killed is None:
-                self.kernel_manager.log.debug("Kernel {} is killed.".format(self.kernel_id))
+                self.log.debug("Kernel {} is killed.".format(self.kernel_id))
             else:
-                self.kernel_manager.log.debug("Kernel {} is not killed.".format(self.kernel_id))
+                self.log.debug("Kernel {} is not killed.".format(self.kernel_id))
             return is_killed
 
     def kill(self):
@@ -390,14 +396,20 @@ class YarnProcessProxy(BaseProcessProxyABC):
         
         :return: None if the application existed and is not in RUNNING state, False otherwise. 
         """
-        self.kernel_manager.log.debug("YarnProcessProxy.kill at {}".format(YarnProcessProxy.get_current_time()))
+        self.log.debug("YarnProcessProxy.kill at {}".format(YarnProcessProxy.get_current_time()))
         if self.get_application_id():
             resp = YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
-            self.kernel_manager.log.debug("YarnProcessProxy.kill response: {}".format(resp))
+            self.log.debug("YarnProcessProxy.kill response: {}".format(resp))
             app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
             if app and app.get('state', '') != 'RUNNING':
                 return None
         return False
+
+    def cleanup(self):
+        self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
+        for host in self.hosts:
+            cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
+            self.rsh(host, cmd)
 
     @staticmethod
     def query_app_by_name(yarn_api_endpoint, kernel_id):
@@ -462,17 +474,16 @@ class YarnProcessProxy(BaseProcessProxyABC):
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         return subprocess.Popen(cmd)
 
-
     def get_application_id(self):
-        # Return the kernel's YATN application ID if available, otherwise None.
+        # Return the kernel's YARN application ID if available, otherwise None.
         if not self.application_id:
             app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
             if app and len(app.get('id', '')) > 0:
                 self.application_id = app['id']
                 time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-                self.kernel_manager.log.info("Application ID {} ready for kernel {}, {} seconds after starting.".format(app['id'], self.kernel_id, time_interval))
+                self.log.info("Application ID {} ready for kernel {}, {} seconds after starting.".format(app['id'], self.kernel_id, time_interval))
             else:
-                self.kernel_manager.log.warn("Application ID not ready for kernel {}, will retry later.".format(self.kernel_id))
+                self.log.warn("Application ID not ready for kernel {}, will retry later.".format(self.kernel_id))
         return self.application_id
 
     @staticmethod
