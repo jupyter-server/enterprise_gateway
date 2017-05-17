@@ -6,8 +6,6 @@ import os
 from ipython_genutils.importstring import import_item
 from .manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
 
-remote_connection_file_dir = os.getenv('ELYRA_REMOTE_CONNECTION_DIR', '/tmp/')
-
 
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """Extends the SeedingMappingKernelManager. 
@@ -46,17 +44,24 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The remote process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
-    remote_connection_file = None
-    conflicting_port = int(os.getenv('ELYRA_TEST_CONFLICTING_PORT', '0'))
+    remote_process = None
+#    conflicting_port = int(os.getenv('ELYRA_TEST_CONFLICTING_PORT', '0'))
+
+    def start_kernel(self, **kw):
+        if self.kernel_spec.remote_process_proxy_class is not None:
+            self.log.debug("Instantiating remote kernel proxy: {}".format(self.kernel_spec.display_name))
+            remote_process_class = import_item(self.kernel_spec.remote_process_proxy_class)
+            self.remote_process = remote_process_class(self, **kw)
+
+        return super(RemoteKernelManager, self).start_kernel(**kw)
 
     def format_kernel_cmd(self, extra_arguments=None):
         """Override for remote kernels so that we can have the kernel command built with a reference to the connection
-           file relative to the destination system, not this local system.  
+           file (potentially) relative to the destination system, not this local system.  
         """
         if self.kernel_spec.remote_process_proxy_class is not None:
             local_connection_file = self.connection_file
-            self.connection_file = remote_connection_file_dir + os.path.basename(local_connection_file)
-            self.remote_connection_file = self.connection_file
+            self.connection_file = self.remote_process.get_connection_filename()
             cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
             self.log.debug("Formatted remote kernel cmd is: '{}'".format(cmd))
             self.connection_file = local_connection_file
@@ -67,8 +72,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     def _launch_kernel(self, kernel_cmd, **kw):
         if self.kernel_spec.remote_process_proxy_class is not None:
             self.log.debug("Launching remote kernel: {}".format(self.kernel_spec.display_name))
-            remote_process = import_item(self.kernel_spec.remote_process_proxy_class)
-            return remote_process(self, kernel_cmd, **kw)
+            return self.remote_process.launch_process(kernel_cmd, **kw)
 
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
 
