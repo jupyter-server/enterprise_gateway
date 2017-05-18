@@ -408,22 +408,39 @@ class YarnProcessProxy(BaseProcessProxyABC):
             cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
             self.rsh(host, cmd)
 
+    def get_application_id(self):
+        # Return the kernel's YARN application ID if available, otherwise None.
+        if not self.application_id:
+            app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
+            if app and len(app.get('id', '')) > 0:
+                self.application_id = app['id']
+                time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
+                self.log.info("Application ID {} ready for kernel {}, {} seconds after starting.".format(app['id'], self.kernel_id, time_interval))
+            else:
+                self.log.warn("Application ID not ready for kernel {}, will retry later.".format(self.kernel_id))
+        return self.application_id
+
     @staticmethod
     def query_app_by_name(yarn_api_endpoint, kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
+        Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
+        For now, the app/kernel with the top most application ID will be returned as the target app, assuming the app
+        ID will be incremented automatically on the YARN side.
 
         :param yarn_api_endpoint
         :param kernel_id: as the unique app name for query
         :return: The JSON object of an application. 
         """
+        top_most_app_id = ''
+        target_app = None
         resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
         data = resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
             for app in data['apps']['app']:
-                if app.get('name', '').find(kernel_id) >= 0:
-                    return app
-        return None
+                if app.get('name', '').find(kernel_id) >= 0 and app.get('id', '') > top_most_app_id:
+                    target_app = app
+        return target_app
 
     @staticmethod
     def query_yarn_nodes(yarn_api_endpoint):
@@ -455,6 +472,20 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return None
 
     @staticmethod
+    def query_app_state_by_id(yarn_api_endpoint, app_id):
+        """Return the state of an application.
+
+        :param yarn_api_endpoint: 
+        :param app_id: 
+        :return: 
+        """
+        url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
+        cmd = ['curl', '-X', 'GET', url]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, stderr = process.communicate()
+        return json.loads(output).get('state', '') if output else None
+
+    @staticmethod
     def kill_app_by_id(yarn_api_endpoint, app_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
         TODO: extend the yarn_api_client to support cluster_application_kill with PUT, e.g.:
@@ -469,19 +500,9 @@ class YarnProcessProxy(BaseProcessProxyABC):
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
-        return subprocess.Popen(cmd)
-
-    def get_application_id(self):
-        # Return the kernel's YARN application ID if available, otherwise None.
-        if not self.application_id:
-            app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
-            if app and len(app.get('id', '')) > 0:
-                self.application_id = app['id']
-                time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-                self.log.info("Application ID {} ready for kernel {}, {} seconds after starting.".format(app['id'], self.kernel_id, time_interval))
-            else:
-                self.log.warn("Application ID not ready for kernel {}, will retry later.".format(self.kernel_id))
-        return self.application_id
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, stderr = process.communicate()
+        return json.loads(output) if output else None
 
     @staticmethod
     def get_current_time():
