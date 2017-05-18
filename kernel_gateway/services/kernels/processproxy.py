@@ -15,14 +15,11 @@ from ipython_genutils.py3compat import with_metaclass
 from socket import *
 from jupyter_client import launch_kernel
 from yarn_api_client.resource_manager import ResourceManager
-from time import gmtime, strftime
 from datetime import datetime
 
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
 
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
-
-time_format="%Y-%m-%d %H:%M:%S"
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -488,12 +485,13 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def get_current_time():
-        # Return the current time stamp.
-        return strftime(time_format, gmtime())
+        # Return the current time stamp in milliseconds.
+        return str(datetime.now())[:-2]
 
     @staticmethod
     def get_time_diff(time_str1, time_str2):
-        # Return the difference between two timestamp in seconds.
+        # Return the difference between two timestamps in milliseconds.
+        time_format = "%Y-%m-%d %H:%M:%S.%f"
         time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
         diff = max(time1, time2) - min(time1, time2)
         return diff.seconds
