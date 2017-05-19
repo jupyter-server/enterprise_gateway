@@ -21,6 +21,7 @@ logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.
 
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
 
+
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
 
@@ -352,9 +353,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
-        TODO: 1) If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
-              2) Since now launch_process will likely ensure an application ID is avaialbe, may return None IFF its state is RUNNING.
-        
+        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
+
         :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
         """
         current_time = YarnProcessProxy.get_current_time()
@@ -362,11 +362,9 @@ class YarnProcessProxy(BaseProcessProxyABC):
         result = False
         if self.get_application_id():
             pseudo_running_state = set(["SUBMITTED", "ACCEPTED", "RUNNING"])
-            app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
-            if app and app.get('state', '') in pseudo_running_state:
+            state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+            if state in pseudo_running_state:
                 result = None
-        time_diff = YarnProcessProxy.get_time_diff(current_time, YarnProcessProxy.get_current_time())
-        self.log.debug("YarnProcessProxy.poll ending after {} seconds".format(time_diff))
         return result
 
     def send_signal(self, signum=9):
