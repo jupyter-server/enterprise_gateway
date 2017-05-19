@@ -52,6 +52,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def launch_process(self, cmd, **kw):
         env_dict = kw['env']
         env_dict['KERNEL_ID'] = self.kernel_id
+
+        self.log.debug("BaseProcessProxy env: {}".format(kw['env']))
+
         return self
 
     def cleanup(self):
@@ -86,17 +89,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def rsh(self, host, command, src_file=None, dst_file=None):
         ssh = None
-        ip = gethostbyname(host)
+        host_ip = gethostbyname(host)
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
             if len(StandaloneProcessProxy.password) > 0:
-                ssh.connect(ip, port=22, username=StandaloneProcessProxy.username,
+                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username,
                             password=StandaloneProcessProxy.password)
             else:
-                ssh.connect(ip, port=22, username=StandaloneProcessProxy.username)
+                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username)
 
             if src_file is not None and dst_file is not None:
                 self.rcp(host, src_file, dst_file, ssh)
@@ -109,7 +112,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, host_ip, StandaloneProcessProxy.username, e))
             raise e
 
         finally:
@@ -121,7 +124,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def rcp(self, host, src_file, dst_file, ssh=None):
 
         close_connection = False
-        ip = gethostbyname(host)
+        host_ip = gethostbyname(host)
 
         if ssh is None:
             close_connection = True
@@ -132,26 +135,26 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
             if len(StandaloneProcessProxy.password) > 0:
                 self.log.debug("Establishing a SSH connection with password.")
-                ssh.connect(ip, port=22, username=StandaloneProcessProxy.username,
+                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username,
                             password=StandaloneProcessProxy.password)
             else:
                 self.log.debug("Establishing a SSH connection without password.")
-                ssh.connect(ip, port=22, username=StandaloneProcessProxy.username)
+                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username)
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, host_ip, StandaloneProcessProxy.username, e))
             raise e
 
         try:
-            self.log.debug("Copying file '{}' to file '{}@{}' ...".format(src_file, ip, dst_file))
+            self.log.debug("Copying file '{}' to file '{}@{}' ...".format(src_file, host_ip, dst_file))
             sftp = ssh.open_sftp()
             sftp.put(src_file, dst_file)
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to copy file '{}' "
                 "to '{}' on '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, src_file, dst_file, self.ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, src_file, dst_file, host_ip, StandaloneProcessProxy.username, e))
             raise e
 
         if close_connection:
@@ -279,6 +282,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
     max_retries_span = int(os.getenv('ELYRA_YARN_MAX_RETRIES_SPAN', 5))
     retry_interval = float(os.getenv('ELYRA_YARN_RETRY_INTERVAL', 0.2))
+    initial_states = set(["NEW", "SUBMITTED", "ACCEPTED", "RUNNING"])
+    final_states = set(["FINISHED", "KILLED"])  # Don't include FAILED state
     yarn_app = None
     start_time = None
 
@@ -293,7 +298,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
     def launch_process(self, kernel_cmd, **kw):
         """Prior to starting the process, copy the connection file to every YARN node.
         This is to avoid having to detect where the kernel application was moved to (which would be too late)
-        because each YARN node is likly to be the host of a kernel.
+        because each YARN node is likely to be the host of a kernel.
         Note we need to write a new connection file so that that connection file has the IP of the host that serving a kernel.
         Once launched we'll circle back and do this one final time relative to the host where the application landed.
         To do so need to ensure application ID ready during launching, and once obtained, query YARN for the host address.
@@ -302,9 +307,89 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """
         super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
-        self.log.debug("yarn env: {}".format(kw['env']))
+        self.distribute_connection_files()
 
-        # FIXME - look into the parallel api provided by paramiko
+        # launch the local run.sh - which is configured for yarn-cluster...
+        self.local_proc = launch_kernel(kernel_cmd, **kw)
+
+        # confirm yarn application is in RUNNING state
+        self.confirm_yarn_application_startup(kernel_cmd, **kw)
+
+        return self
+
+    def poll(self):
+        """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
+        Thus application ID will probably not be available immediately for poll.
+        So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
+        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
+
+        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
+        """
+        state = None
+        result = False
+        if self.get_application_id():
+            state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+            if state in YarnProcessProxy.initial_states:
+                result = None
+
+        self.log.debug("YarnProcessProxy.poll, application ID: {}, kernel ID: {}, state: {}"
+                        .format(self.application_id, self.kernel_id, state))
+
+        return result
+
+    def send_signal(self, signum):
+        """Currently only support 0 as poll and other as kill.
+        
+        :param signum
+        :return: 
+        """
+        self.log.debug("YarnProcessProxy.send_signal {}".format(signum))
+        if signum == 0:
+            return self.poll()
+        elif signum == signal.SIGINT:
+            self.log.debug("YarnProcessProxy.send_signal, SIGINT requests will be ignored")
+            return self.poll()
+        else:
+            return self.kill()
+
+    def kill(self):
+        """Kill a kernel.
+        
+        :return: None if the application existed and is not in RUNNING state, False otherwise. 
+        """
+        state = None
+        result = False
+        if self.get_application_id():
+            resp = YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
+            self.log.debug("YarnProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
+
+            i, state = 1, YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+            while state not in YarnProcessProxy.final_states and i <= YarnProcessProxy.max_retries_span:
+                delay = min(YarnProcessProxy.retry_interval * i, 1.0)
+                time.sleep(delay)
+                state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+                i = i+1
+
+            if state in YarnProcessProxy.final_states:
+                result = None
+
+        self.log.debug("YarnProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
+                       .format(self.application_id, self.kernel_id, state))
+
+        return result
+
+    def cleanup(self):
+        self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
+        for host in self.hosts:
+            cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
+            self.rsh(host, cmd)
+
+        # reset application id to force new query - handles kernel restarts/interrupts
+        self.application_id = None
+
+    def distribute_connection_files(self):
+        # FIXME - look into the parallelizing this.  Note: That requires a means of making each of
+        # newly written files independent of each other
         self.log.debug("Copying connection file {} to host(s): {}".
                        format(self.kernel_manager.connection_file, self.hosts))
         for host in self.hosts:
@@ -314,8 +399,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
             self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
             self.log.debug("Connection file copied to host {}.".format(host))
 
-        # launch the local run.sh - which is configured for yarn-cluster...
-        self.local_proc = launch_kernel(kernel_cmd, **kw)
+    def confirm_yarn_application_startup(self, kernel_cmd, **kw):
+        """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
+            unexpectedly encountered (FINISHED, KILLED) then we must throw, otherwise the rest of the JKG will
+            believe its talking to a valid kernel (FIXME - confirm this).
+        """
         self.start_time = YarnProcessProxy.get_current_time()
         self.log.debug("YarnProcessProxy.launch_process, YARN endpoint: {}, spark-submit: pid {}, cmd: '{}'".
                        format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
@@ -323,11 +411,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
         app_state = None
         host = ''
         while host == '' or app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
-            delay = min(self.retry_interval*i, 3.0)
+            delay = min(YarnProcessProxy.retry_interval * i, 1.0)
             time.sleep(delay)
             total += delay
 
-            self.get_application_id()
+            self.get_application_id(True)
             if self.application_id:
 
                 self.yarn_app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
@@ -346,76 +434,30 @@ class YarnProcessProxy(BaseProcessProxyABC):
                            "ID={}, AssignedHost={}, CurrentState={}, Attempt={}".
                            format(self.application_id, host, app_state, i))
 
+            if app_state in YarnProcessProxy.final_states:
+                self.log.error("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
+                               format(self.application_id, app_state))
+                raise RuntimeError("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
+                               format(self.application_id, app_state))
             i += 1
-        return self
+        self.is_restart = False
 
-    def poll(self):
-        """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
-        Thus application ID will probably not be available immediately for poll.
-        So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
-        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
-
-        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
-        """
-        current_time = YarnProcessProxy.get_current_time()
-        self.log.debug("YarnProcessProxy.poll starting at {}".format(current_time))
-        result = False
-        if self.get_application_id():
-            pseudo_running_state = set(["SUBMITTED", "ACCEPTED", "RUNNING"])
-            state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
-            if state in pseudo_running_state:
-                result = None
-        return result
-
-    def send_signal(self, signum=9):
-        """Currently only support 0 as poll and other as kill.
-        
-        :param signum
-        :return: 
-        """
-        self.log.debug("YarnProcessProxy.send_signal {}".format(signum))
-        if signum == 0:
-            self.log.info("YarnProcessProxy.send_signal call poll")
-            return self.poll()
-        else:
-            self.log.warn("YarnProcessProxy.send_signal call kill")
-            is_killed = self.kill()
-            if is_killed is None:
-                self.log.debug("Kernel {} is killed.".format(self.kernel_id))
-            else:
-                self.log.debug("Kernel {} is not killed.".format(self.kernel_id))
-            return is_killed
-
-    def kill(self):
-        """Kill a kernel.
-        
-        :return: None if the application existed and is not in RUNNING state, False otherwise. 
-        """
-        self.log.debug("YarnProcessProxy.kill at {}".format(YarnProcessProxy.get_current_time()))
-        if self.get_application_id():
-            resp = YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
-            self.log.debug("YarnProcessProxy.kill response: {}".format(resp))
-            app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
-            if app and app.get('state', '') != 'RUNNING':
-                return None
-        return False
-
-    def cleanup(self):
-        self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
-        for host in self.hosts:
-            cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-            self.rsh(host, cmd)
-
-    def get_application_id(self):
-        # Return the kernel's YARN application ID if available, otherwise None.
+    def get_application_id(self, ignore_final_states=False):
+        # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
+        # from scratch, do not consider kernels in final states.  FIXME - may need to treat FAILED state differently.
         if not self.application_id:
             app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
-            if app and len(app.get('id', '')) > 0:
+            state_condition = True
+            if app and ignore_final_states:
+                state_condition = app.get('state','') not in YarnProcessProxy.final_states
+
+            if app and len(app.get('id', '')) > 0 and state_condition:
                 self.application_id = app['id']
                 time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-                self.log.info("Application ID {} ready for kernel {}, {} seconds after starting.".format(app['id'], self.kernel_id, time_interval))
+                self.log.info("Application ID: {} ready for kernel: {}, state: {}, {} seconds after starting."
+                              .format(app['id'], self.kernel_id, app.get('state',''), time_interval))
             else:
-                self.log.warn("Application ID not ready for kernel {}, will retry later.".format(self.kernel_id))
+                self.log.warn("Application ID not ready for kernel: {}, will retry later.".format(self.kernel_id))
         return self.application_id
 
     @staticmethod
@@ -438,6 +480,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id', '') > top_most_app_id:
                     target_app = app
+                    top_most_app_id = app.get('id','')
         return target_app
 
     @staticmethod
