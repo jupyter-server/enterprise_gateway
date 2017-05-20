@@ -284,7 +284,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
     retry_interval = float(os.getenv('ELYRA_YARN_RETRY_INTERVAL', 0.2))
     initial_states = set(["NEW", "SUBMITTED", "ACCEPTED", "RUNNING"])
     final_states = set(["FINISHED", "KILLED"])  # Don't include FAILED state
-    yarn_app = None
     start_time = None
 
     def __init__(self,  kernel_manager, **kw):
@@ -407,28 +406,25 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.start_time = YarnProcessProxy.get_current_time()
         self.log.debug("YarnProcessProxy.launch_process, YARN endpoint: {}, spark-submit: pid {}, cmd: '{}'".
                        format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
-        i, total = 1, 0.0
+        i = 1
         app_state = None
         host = ''
         while host == '' or app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
-            delay = min(YarnProcessProxy.retry_interval * i, 1.0)
-            time.sleep(delay)
-            total += delay
+            time.sleep(min(YarnProcessProxy.retry_interval * i, 1.0))
+            i += 1
 
-            self.get_application_id(True)
-            if self.application_id:
-
-                self.yarn_app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
-                if self.yarn_app:
-                    if host == '':
-                        host = self.yarn_app.get('amHostHttpAddress', '').split(':')[0]
+            if self.get_application_id(True):
+                if app_state != 'RUNNING':
+                    app_state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+                if host == '':
+                    app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
+                    if app and app.get('amHostHttpAddress', '') != '':
+                        host = app.get('amHostHttpAddress').split(':')[0]
                         self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
                         # Then set the kernel manager ip to the actual host where the application landed.
                         self.kernel_manager.ip = gethostbyname(host)
                         self.kernel_manager.cleanup_connection_file()
                         self.kernel_manager.write_connection_file()
-
-                    app_state = self.yarn_app.get('state', '')
 
             self.log.debug("Waiting for application to enter 'RUNNING' state. "
                            "ID={}, AssignedHost={}, CurrentState={}, Attempt={}".
@@ -438,8 +434,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
                 self.log.error("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
                                format(self.application_id, app_state))
                 raise RuntimeError("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
-                               format(self.application_id, app_state))
-            i += 1
+                                   format(self.application_id, app_state))
+
         self.is_restart = False
 
     def get_application_id(self, ignore_final_states=False):
@@ -556,4 +552,4 @@ class YarnProcessProxy(BaseProcessProxyABC):
         time_format = "%Y-%m-%d %H:%M:%S.%f"
         time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
         diff = max(time1, time2) - min(time1, time2)
-        return diff.seconds
+        return "%s.%s" % (diff.seconds, diff.microseconds / 100)
