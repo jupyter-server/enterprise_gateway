@@ -285,13 +285,14 @@ class YarnProcessProxy(BaseProcessProxyABC):
     initial_states = set(["NEW", "SUBMITTED", "ACCEPTED", "RUNNING"])
     final_states = set(["FINISHED", "KILLED"])  # Don't include FAILED state
     start_time = None
+    resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
 
     def __init__(self,  kernel_manager, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, **kw)
 
     def get_hosts(self):
         if self.hosts is None:
-            self.hosts = YarnProcessProxy.query_yarn_nodes(self.yarn_endpoint)
+            self.hosts = YarnProcessProxy.query_yarn_nodes()
         return self.hosts
 
     def launch_process(self, kernel_cmd, **kw):
@@ -303,6 +304,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         To do so need to ensure application ID ready during launching, and once obtained, query YARN for the host address.
 
         TODO: if YARN api endpoint in HTTPS mode then all http address fields will be blank in the JSON response.
+        Since even in HTTPS mode YARN REST API call can still be issued, we'd better ensure the end point is a HTTP one.
         """
         super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
@@ -310,6 +312,10 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
+
+        # Initialize an instance level ResourceManager object
+        if YarnProcessProxy.resource_mgr is None:
+            YarnProcessProxy.resource_mgr = ResourceManager(serviceEndpoint=YarnProcessProxy.yarn_api_endpoint)
 
         # confirm yarn application is in RUNNING state
         self.confirm_yarn_application_startup(kernel_cmd, **kw)
@@ -327,7 +333,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         state = None
         result = False
         if self.get_application_id():
-            state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+            state = YarnProcessProxy.query_app_state_by_id(self.application_id)
             if state in YarnProcessProxy.initial_states:
                 result = None
 
@@ -415,9 +421,9 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
             if self.get_application_id(True):
                 if app_state != 'RUNNING':
-                    app_state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+                    app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 if host == '':
-                    app = YarnProcessProxy.query_app_by_id(self.yarn_endpoint, self.application_id)
+                    app = YarnProcessProxy.query_app_by_id(self.application_id)
                     if app and app.get('amHostHttpAddress', '') != '':
                         host = app.get('amHostHttpAddress').split(':')[0]
                         self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
@@ -436,13 +442,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
                 raise RuntimeError("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
                                    format(self.application_id, app_state))
 
-        self.is_restart = False
-
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.  FIXME - may need to treat FAILED state differently.
         if not self.application_id:
-            app = YarnProcessProxy.query_app_by_name(self.yarn_endpoint, self.kernel_id)
+            app = YarnProcessProxy.query_app_by_name(self.kernel_id)
             state_condition = True
             if app and ignore_final_states:
                 state_condition = app.get('state','') not in YarnProcessProxy.final_states
@@ -457,21 +461,19 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return self.application_id
 
     @staticmethod
-    def query_app_by_name(yarn_api_endpoint, kernel_id):
+    def query_app_by_name(kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
         Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
         For now, the app/kernel with the top most application ID will be returned as the target app, assuming the app
         ID will be incremented automatically on the YARN side.
 
-        :param yarn_api_endpoint
         :param kernel_id: as the unique app name for query
         :return: The JSON object of an application. 
         """
         top_most_app_id = ''
         target_app = None
-        resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
-        data = resource_mgr.cluster_applications().data
+        data = YarnProcessProxy.resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id', '') > top_most_app_id:
@@ -480,14 +482,12 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return target_app
 
     @staticmethod
-    def query_yarn_nodes(yarn_api_endpoint):
+    def query_yarn_nodes():
         """Retrieve all nodes host name in a YARN cluster.
         
-        :param yarn_api_endpoint: 
         :return: A list of "nodeHostName" from JSON object
         """
-        resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
-        data = resource_mgr.cluster_nodes().data
+        data = YarnProcessProxy.resource_mgr.cluster_nodes().data
         nodes_list = list([])
         if data and 'nodes' in data:
             for node in data['nodes'].get('node', None):
@@ -495,47 +495,42 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return nodes_list
 
     @staticmethod
-    def query_app_by_id(yarn_api_endpoint, app_id):
+    def query_app_by_id(app_id):
         """Retrieve an application by application ID.
 
-        :param yarn_api_endpoint
         :param app_id
         :return: The JSON object of an application.
         """
-        resource_mgr = ResourceManager(serviceEndpoint=yarn_api_endpoint)
-        data = resource_mgr.cluster_application(application_id=app_id).data
+        data = YarnProcessProxy.resource_mgr.cluster_application(application_id=app_id).data
         if data and 'app' in data:
             return data['app']
         return None
 
     @staticmethod
-    def query_app_state_by_id(yarn_api_endpoint, app_id):
+    def query_app_state_by_id(app_id):
         """Return the state of an application.
 
-        :param yarn_api_endpoint: 
         :param app_id: 
         :return: 
         """
-        url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
+        url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'GET', url]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, stderr = process.communicate()
         return json.loads(output).get('state', '') if output else None
 
     @staticmethod
-    def kill_app_by_id(yarn_api_endpoint, app_id):
+    def kill_app_by_id(app_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
         TODO: extend the yarn_api_client to support cluster_application_kill with PUT, e.g.:
-            resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
-            resource_mgr.cluster_application_kill(application_id=app_id)
+            YarnProcessProxy.resource_mgr.cluster_application_kill(application_id=app_id)
 
-        :param yarn_api_endpoint
         :param app_id 
         :return: The JSON response of killing the application.
         """
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
-        url = '%s/apps/%s/state' % (yarn_api_endpoint, app_id)
+        url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, stderr = process.communicate()
