@@ -75,20 +75,28 @@ Its primary functionality, however, is to override the `_launch_kernel` method (
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/remotemanager.py
 
 ### Process Proxy
-Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four process methods as abstract methods.  There are two built-in classes `StandaloneProcessProxy` - representing a proof of concept class that remotes a kernel via ssh but still uses yarn/client mode and `YarnProcessProxy` - representing the design target of launching kernels hosts as yarn applications via yarn/cluster mode.  These class definitions can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/processproxy.py
+Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four process methods as abstract methods.  There are two built-in classes `StandaloneProcessProxy` - representing a proof of concept class that remotes a kernel via ssh but still uses yarn/client mode and `YarnProcessProxy` - representing the design target of launching kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/processproxy.py
 
 Constructors of these classes should call the `BaseProcessProxyABC` constructor - which will automatically place an variable named `KERNEL_ID` into the corresponding kernel spec's environment variable list. 
 
 The constructor signature looks as follows:
 
 ```python
-def __init__(self, kernel_manager, kernel_cmd, **kw):
+def __init__(self, kernel_manager, **kw):
 ```
 
 where 
 * `kernel_manager` is an instance of a `RemoteKernelManager` class that is associated with the corresponding `RemoteKernelSpec` instance.
-* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is an artifact of the kernel manager `_launch_kernel()` method.
-* `**kw` is a set key-word arguments.   Its use is a function the process being launched.  The base constructor adds the `KERNEL_ID` environment variable into the dictionary located at `kw['env']`, for example.
+* `**kw` is a set key-word arguments. The base constructor adds the `KERNEL_ID` environment variable into the dictionary located at `kw['env']`, for example.
+
+```python
+def launch_process(self, kernel_cmd, *kw):
+```
+where
+* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is an artifact of the kernel manager `_launch_kernel()` method.  
+* `**kw` is a set key-word arguments. 
+
+The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for performing the appropriate actions relative to the target type.  The process must be in a running state prior to returning from this method - otherwise attempts to use the connections will not be successful since the (remote) kernel needs to have created the sockets.
 
 ```python
 def poll(self):
@@ -111,7 +119,6 @@ The `send_signal()` method is used by the Jupyter framework to send a signal to 
 It should be noted that for normal processes - both local and remote - `poll()` and `kill()` functionality can be implemented via `send_signal` with `signum` values of `0` and `9`, respectively.
 
 This method returns `None` if the process is still running, `False` otherwise.   
-
 
 ```python
 def kill(self):
