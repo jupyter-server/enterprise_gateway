@@ -47,15 +47,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
         self.hosts = self.get_hosts()
+        env_dict = kw['env']
+        env_dict['KERNEL_ID'] = self.kernel_id
+        self.log.debug("BaseProcessProxy env: {}".format(kw['env']))
 
     @abc.abstractmethod
     def launch_process(self, cmd, **kw):
-        env_dict = kw['env']
-        env_dict['KERNEL_ID'] = self.kernel_id
-
-        self.log.debug("BaseProcessProxy env: {}".format(kw['env']))
-
-        return self
+        pass
 
     def cleanup(self):
         pass
@@ -95,11 +93,11 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            if len(StandaloneProcessProxy.password) > 0:
-                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username,
-                            password=StandaloneProcessProxy.password)
+            if len(BaseProcessProxyABC.password) > 0:
+                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username,
+                            password=BaseProcessProxyABC.password)
             else:
-                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username)
+                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username)
 
             if src_file is not None and dst_file is not None:
                 self.rcp(host, src_file, dst_file, ssh)
@@ -112,7 +110,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, host_ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, host_ip, BaseProcessProxyABC.username, e))
             raise e
 
         finally:
@@ -133,17 +131,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            if len(StandaloneProcessProxy.password) > 0:
+            if len(BaseProcessProxyABC.password) > 0:
                 self.log.debug("Establishing a SSH connection with password.")
-                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username,
-                            password=StandaloneProcessProxy.password)
+                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username,
+                            password=BaseProcessProxyABC.password)
             else:
                 self.log.debug("Establishing a SSH connection without password.")
-                ssh.connect(host_ip, port=22, username=StandaloneProcessProxy.username)
+                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username)
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, host_ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, host_ip, BaseProcessProxyABC.username, e))
             raise e
 
         try:
@@ -154,7 +152,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             self.log.error(
                 "Exception '{}' occurred attempting to copy file '{}' "
                 "to '{}' on '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, src_file, dst_file, host_ip, StandaloneProcessProxy.username, e))
+                .format(type(e).__name__, src_file, dst_file, host_ip, BaseProcessProxyABC.username, e))
             raise e
 
         if close_connection:
@@ -192,7 +190,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         self.kernel_manager.cleanup_connection_file()
         self.kernel_manager.write_connection_file()
 
-        cmd = self.build_startup_command(kernel_cmd)
+        cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug('Invoking cmd: {}'.format(cmd))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
         result = self.rsh(self.ip, cmd, self.kernel_manager.connection_file, self.get_connection_filename())
@@ -243,7 +241,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
             return None
         return False
 
-    def build_startup_command(self, argv_cmd):
+    def build_startup_command(self, argv_cmd, **kw):
         """
         Builds the command to invoke by concatenating envs from kernelspec followed by the kernel argvs.
 
@@ -255,11 +253,14 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
             cmd += 'export {}={};'.format(key, json.dumps(value))
 
         # Add additional envs not in kernelspec...
-        username = os.getenv('KERNEL_USERNAME')
-        if username is not None:
-            cmd += 'export KERNEL_USERNAME="{}";'.format(username)
-        if self.kernel_id is not None:
-            cmd += 'export KERNEL_ID="{}";'.format(self.kernel_id)
+        env_dict = kw['env']
+
+        kuser = env_dict['KERNEL_USERNAME']
+        if kuser is not None:
+            cmd += 'export KERNEL_USERNAME="{}";'.format(kuser)
+        kid = env_dict['KERNEL_ID']
+        if kid is not None:
+            cmd += 'export KERNEL_ID="{}";'.format(kid)
 
         cmd += 'nohup'
         for arg in argv_cmd:
