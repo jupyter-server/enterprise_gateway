@@ -365,14 +365,14 @@ class YarnProcessProxy(BaseProcessProxyABC):
         state = None
         result = False
         if self.get_application_id():
-            resp = YarnProcessProxy.kill_app_by_id(self.yarn_endpoint, self.application_id)
+            resp = YarnProcessProxy.kill_app_by_id(self.application_id)
             self.log.debug("YarnProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
 
-            i, state = 1, YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+            i, state = 1, YarnProcessProxy.query_app_state_by_id(self.application_id)
             while state not in YarnProcessProxy.final_states and i <= YarnProcessProxy.max_retries_span:
                 delay = min(YarnProcessProxy.retry_interval * i, 1.0)
                 time.sleep(delay)
-                state = YarnProcessProxy.query_app_state_by_id(self.yarn_endpoint, self.application_id)
+                state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 i = i+1
 
             if state in YarnProcessProxy.final_states:
