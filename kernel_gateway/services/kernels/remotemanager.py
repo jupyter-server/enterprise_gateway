@@ -52,6 +52,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             self.log.debug("Instantiating remote kernel proxy: {}".format(self.kernel_spec.display_name))
             remote_process_class = import_item(self.kernel_spec.remote_process_proxy_class)
             self.remote_process = remote_process_class(self, **kw)
+            self.ip = '0.0.0.0'  # use the zero-ip from the start, can prevent having to write out connection file again
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
@@ -111,7 +112,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
            proxy is created.  In addition, since we have a higher propensity for port conflicts, assume that's the
            case for restart and reset the ports - which requires a rebuild of the connection file.
         """
-        self.ip = '127.0.0.1'
+        self.ip = '0.0.0.0'
         self.stdin_port = 0
         self.iopub_port = 0
         self.shell_port = 0

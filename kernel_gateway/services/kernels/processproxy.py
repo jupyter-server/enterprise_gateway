@@ -6,10 +6,10 @@ import os
 import signal
 import abc
 import json
-import socket
 import paramiko
 import logging
 import time
+import tornado
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
@@ -20,6 +20,9 @@ from datetime import datetime
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
 
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
+kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
+max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '5'))
+poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '1.0'))
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -46,7 +49,10 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
+
+        # ask the subclass for the set of applicable hosts
         self.hosts = self.get_hosts()
+        # add the applicable kernel_id to the env dict
         env_dict = kw['env']
         env_dict['KERNEL_ID'] = self.kernel_id
         self.log.debug("BaseProcessProxy env: {}".format(kw['env']))
@@ -67,15 +73,14 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def wait(self):
         self.log.debug("{}.wait".format(self.__class__.__name__))
-        poll_interval = 0.2
-        wait_time = 5.0
-        for i in range(int(wait_time / poll_interval)):
+        for i in range(max_poll_attempts):
             if self.poll():
                 time.sleep(poll_interval)
             else:
                 break
         else:
-            self.log.warning("Wait timeout of 5 seconds exhausted. Continuing...")
+            self.log.warning("Wait timeout of {} seconds exhausted. Continuing...".
+                             format(max_poll_attempts*poll_interval))
 
     @abc.abstractmethod
     def send_signal(self, signum):
@@ -281,10 +286,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
     application_id = None
     local_proc = None
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
-    max_retries_span = int(os.getenv('ELYRA_YARN_MAX_RETRIES_SPAN', 5))
-    retry_interval = float(os.getenv('ELYRA_YARN_RETRY_INTERVAL', 0.2))
-    initial_states = set(["NEW", "SUBMITTED", "ACCEPTED", "RUNNING"])
-    final_states = set(["FINISHED", "KILLED"])  # Don't include FAILED state
+    initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
+    final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
     start_time = None
     resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
 
@@ -300,7 +303,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """Prior to starting the process, copy the connection file to every YARN node.
         This is to avoid having to detect where the kernel application was moved to (which would be too late)
         because each YARN node is likely to be the host of a kernel.
-        Note we need to write a new connection file so that that connection file has the IP of the host that serving a kernel.
         Once launched we'll circle back and do this one final time relative to the host where the application landed.
         To do so need to ensure application ID ready during launching, and once obtained, query YARN for the host address.
 
@@ -314,11 +316,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
 
-        # Initialize an instance level ResourceManager object
-        if YarnProcessProxy.resource_mgr is None:
-            YarnProcessProxy.resource_mgr = ResourceManager(serviceEndpoint=YarnProcessProxy.yarn_api_endpoint)
-
-        # confirm yarn application is in RUNNING state
         self.confirm_yarn_application_startup(kernel_cmd, **kw)
 
         return self
@@ -327,19 +324,19 @@ class YarnProcessProxy(BaseProcessProxyABC):
         """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
-        TODO: If due to resources issue a kernel in ACCEPTED state for too long, may regard it as a dead kernel and restart/kill.
 
         :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
         """
         state = None
         result = False
+
         if self.get_application_id():
             state = YarnProcessProxy.query_app_state_by_id(self.application_id)
             if state in YarnProcessProxy.initial_states:
                 result = None
 
-        self.log.debug("YarnProcessProxy.poll, application ID: {}, kernel ID: {}, state: {}"
-                        .format(self.application_id, self.kernel_id, state))
+        self.log.debug("YarnProcessProxy.poll, application ID: {}, kernel ID: {}, state: {}".
+                       format(self.application_id, self.kernel_id, state))
 
         return result
 
@@ -360,7 +357,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     def kill(self):
         """Kill a kernel.
-        
         :return: None if the application existed and is not in RUNNING state, False otherwise. 
         """
         state = None
@@ -370,14 +366,16 @@ class YarnProcessProxy(BaseProcessProxyABC):
             self.log.debug("YarnProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
 
             i, state = 1, YarnProcessProxy.query_app_state_by_id(self.application_id)
-            while state not in YarnProcessProxy.final_states and i <= YarnProcessProxy.max_retries_span:
-                delay = min(YarnProcessProxy.retry_interval * i, 1.0)
-                time.sleep(delay)
+            while state not in YarnProcessProxy.final_states and i <= max_poll_attempts:
+                time.sleep(poll_interval)
                 state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 i = i+1
 
             if state in YarnProcessProxy.final_states:
                 result = None
+
+        if self.local_proc:
+            self.local_proc.kill()
 
         self.log.debug("YarnProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
@@ -394,16 +392,12 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.application_id = None
 
     def distribute_connection_files(self):
-        # FIXME - look into the parallelizing this.  Note: That requires a means of making each of
-        # newly written files independent of each other
+        # FIXME - look into the parallelizing this - only necessary on push mode
         self.log.debug("Copying connection file {} to host(s): {}".
                        format(self.kernel_manager.connection_file, self.hosts))
+
         for host in self.hosts:
-            self.kernel_manager.ip = gethostbyname(host)
-            self.kernel_manager.cleanup_connection_file()
-            self.kernel_manager.write_connection_file()
             self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
-            self.log.debug("Connection file copied to host {}.".format(host))
 
     def confirm_yarn_application_startup(self, kernel_cmd, **kw):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
@@ -411,37 +405,58 @@ class YarnProcessProxy(BaseProcessProxyABC):
             believe its talking to a valid kernel (FIXME - confirm this).
         """
         self.start_time = YarnProcessProxy.get_current_time()
-        self.log.debug("YarnProcessProxy.launch_process, YARN endpoint: {}, spark-submit: pid {}, cmd: '{}'".
-                       format(self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
+        self.log.debug("YarnProcessProxy - confirm startup, Kernel ID: {}, YARN endpoint: {}, spark-submit pid {}, cmd: '{}'".
+                       format(self.kernel_id, self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
         i = 1
         app_state = None
         host = ''
-        while host == '' or app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
-            time.sleep(min(YarnProcessProxy.retry_interval * i, 1.0))
-            i += 1
+        while app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
 
             if self.get_application_id(True):
-                if app_state != 'RUNNING':
-                    app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
-                if host == '':
-                    app = YarnProcessProxy.query_app_by_id(self.application_id)
-                    if app and app.get('amHostHttpAddress', '') != '':
+                app = YarnProcessProxy.query_app_by_id(self.application_id)
+                if app and app.get('state','') != '':
+                    app_state = app.get('state','')
+                if app and host == '':
+                    if app.get('amHostHttpAddress', '') != '':
                         host = app.get('amHostHttpAddress').split(':')[0]
                         self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
-                        # Then set the kernel manager ip to the actual host where the application landed.
-                        self.kernel_manager.ip = gethostbyname(host)
+                        # Set the kernel manager ip to the actual host where the application landed.
+                        assigned_ip = gethostbyname(host)
+                        # if push mode, assign IP and rewrite connection file.
+                        self.kernel_manager.ip = assigned_ip
                         self.kernel_manager.cleanup_connection_file()
                         self.kernel_manager.write_connection_file()
 
-            self.log.debug("Waiting for application to enter 'RUNNING' state. "
-                           "ID={}, AssignedHost={}, CurrentState={}, Attempt={}".
-                           format(self.application_id, host, app_state, i))
-
             if app_state in YarnProcessProxy.final_states:
-                self.log.error("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
-                               format(self.application_id, app_state))
-                raise RuntimeError("Yarn application {} unexpectedly found in state '{}' during kernel startup!".
+                self.log.error("Kernel '{}' with application ID {} unexpectedly found in state '{}' during kernel startup!".
+                               format(self.kernel_id, self.application_id, app_state))
+                raise tornado.web.HTTPError(500, "Yarn application {} unexpectedly found in state '{}' during kernel startup!".
                                    format(self.application_id, app_state))
+
+            if app_state != 'RUNNING':
+                time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
+                if time_interval > kernel_launch_timeout:
+                    self.log.error("Kernel '{}' startup timed out waiting for YARN resource to become available "
+                                   "after {} seconds for application ID {}!".
+                                   format(self.kernel_id, time_interval, self.application_id))
+                    self.kill()  # be sure to terminate yarn application
+                    # FIXME - Determine why a second kernel startup attempt occurs after throwing exception - this is
+                    # definitely submitted from within elyra somehow.
+                    # FIXME - Look into how to pass back custom message (see mixins.py)
+                    raise tornado.web.HTTPError(503, "YARN resources unavailable after {} "
+                                                     "seconds for application ID {}, kernel ID {}!".
+                                                format(time_interval, self.application_id, self.kernel_id))
+
+                self.log.debug("Waiting for application to enter 'RUNNING' state. "
+                               "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
+                               format(self.kernel_id, self.application_id, host, app_state, i))
+                time.sleep(poll_interval)
+                i += 1
+            else:
+                self.log.info("Kernel '{}' with application ID {} has been assigned to host {}. "
+                               "CurrentState={}, Attempt={}".
+                               format(self.kernel_id, self.application_id, host, app_state, i))
+                # if pull mode, copy connection file from assigned host, set ports, ip, key, scheme, write out file
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
@@ -455,10 +470,10 @@ class YarnProcessProxy(BaseProcessProxyABC):
             if app and len(app.get('id', '')) > 0 and state_condition:
                 self.application_id = app['id']
                 time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-                self.log.info("Application ID: {} ready for kernel: {}, state: {}, {} seconds after starting."
+                self.log.info("Application ID: {} assigned for kernel: {}, state: {}, {} seconds after starting."
                               .format(app['id'], self.kernel_id, app.get('state',''), time_interval))
             else:
-                self.log.warn("Application ID not ready for kernel: {}, will retry later.".format(self.kernel_id))
+                self.log.info("Application ID not yet assigned for kernel: {}, will retry later.".format(self.kernel_id))
         return self.application_id
 
     @staticmethod
@@ -544,8 +559,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     @staticmethod
     def get_time_diff(time_str1, time_str2):
-        # Return the difference between two timestamps in milliseconds.
+        # Return the difference between two timestamps in seconds (with milliseconds).
         time_format = "%Y-%m-%d %H:%M:%S.%f"
         time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
         diff = max(time1, time2) - min(time1, time2)
-        return "%s.%s" % (diff.seconds, diff.microseconds / 100)
+        return float("%d.%d" % (diff.seconds, diff.microseconds / 1000))
