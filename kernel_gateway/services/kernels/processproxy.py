@@ -19,24 +19,20 @@ from datetime import datetime
 
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
 
+# TODO - properly deal with environment variables - some should be promoted to properties
+remote_connection_file_dir = os.getenv('ELYRA_REMOTE_CONNECTION_DIR', '/tmp/')
+username = os.getenv('ELYRA_REMOTE_USER')
+password = os.getenv('ELYRA_REMOTE_PWD', '')  # this should use password-less ssh
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
 kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '5'))
 poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '1.0'))
-
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
 
     Defines the required methods for process proxy classes
     """
-
-    # FIXME - properly deal with connection_file_dir, hosts, username and password
-    remote_connection_file_dir = os.getenv('ELYRA_REMOTE_CONNECTION_DIR', '/tmp/')
-
-    username = os.getenv('ELYRA_REMOTE_USER')
-    password = os.getenv('ELYRA_REMOTE_PWD', '')  # this should use password-less ssh
-
     remote_connection_file = None
     kernel_manager = None
     log = None
@@ -90,19 +86,24 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def kill(self):
         pass
 
+    def _getSSHClient(self, host):
+        host_ip = gethostbyname(host)
+
+        ssh = paramiko.SSHClient()
+        ssh.load_system_host_keys()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        if len(password) > 0:
+            ssh.connect(host_ip, port=22, username=username, password=password)
+        else:
+            ssh.connect(host_ip, port=22, username=username)
+
+        return ssh
+
     def rsh(self, host, command, src_file=None, dst_file=None):
         ssh = None
-        host_ip = gethostbyname(host)
         try:
-            ssh = paramiko.SSHClient()
-            ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            if len(BaseProcessProxyABC.password) > 0:
-                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username,
-                            password=BaseProcessProxyABC.password)
-            else:
-                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username)
+            ssh = self._getSSHClient(host)
 
             if src_file is not None and dst_file is not None:
                 self.rcp(host, src_file, dst_file, ssh)
@@ -115,7 +116,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         except Exception as e:
             self.log.error(
                 "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, host_ip, BaseProcessProxyABC.username, e))
+                .format(type(e).__name__, host, username, e))
             raise e
 
         finally:
@@ -124,44 +125,39 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         return lines
 
-    def rcp(self, host, src_file, dst_file, ssh=None):
-
+    def rcp(self, host, src_file, dst_file, ssh=None, pull=False):
+        """ Copies src_file to dst_file.  If pull is True, the file is pulled (via get), 
+            else the file is pushed (via put).  If a current ssh connection is not included,
+            one will be created and closed.  
+        """
         close_connection = False
-        host_ip = gethostbyname(host)
-
-        if ssh is None:
-            close_connection = True
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            if len(BaseProcessProxyABC.password) > 0:
-                self.log.debug("Establishing a SSH connection with password.")
-                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username,
-                            password=BaseProcessProxyABC.password)
-            else:
-                self.log.debug("Establishing a SSH connection without password.")
-                ssh.connect(host_ip, port=22, username=BaseProcessProxyABC.username)
-        except Exception as e:
-            self.log.error(
-                "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, host_ip, BaseProcessProxyABC.username, e))
-            raise e
 
         try:
-            self.log.debug("Copying file '{}' to file '{}@{}' ...".format(src_file, host_ip, dst_file))
-            sftp = ssh.open_sftp()
-            sftp.put(src_file, dst_file)
-        except Exception as e:
-            self.log.error(
-                "Exception '{}' occurred attempting to copy file '{}' "
-                "to '{}' on '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, src_file, dst_file, host_ip, BaseProcessProxyABC.username, e))
-            raise e
+            if ssh is None:
+                close_connection = True
+            try:
+                ssh = self._getSSHClient(host)
 
-        if close_connection:
-            if ssh is not None:
+            except Exception as e:
+                self.log.error(
+                    "Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
+                    .format(type(e).__name__, host, username, e))
+                raise e
+
+            msg_direction = "from" if pull else "on"
+            try:
+                self.log.debug("Copying file '{}' to file '{}' {} host '{}' ...".
+                               format(src_file, dst_file, msg_direction, host))
+                sftp = ssh.open_sftp()
+                sftp.get(src_file, dst_file) if pull else sftp.put(src_file, dst_file)
+
+            except Exception as e:
+                self.log.error("Exception '{}' occurred attempting to copy file '{}' to '{}' {} '{}' with user '{}', "
+                               "message='{}'".format(type(e).__name__, src_file, dst_file, msg_direction, host,
+                                                     username, e))
+                raise e
+        finally:
+            if close_connection and ssh is not None:
                 ssh.close()
 
     def get_connection_filename(self):
@@ -169,7 +165,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
            It is the remote process proxy's responsibility to ensure the file is located in the correct place.
         """
         if self.remote_connection_file is None:
-            self.remote_connection_file = BaseProcessProxyABC.remote_connection_file_dir + \
+            self.remote_connection_file = remote_connection_file_dir + \
                                       os.path.basename(self.kernel_manager.connection_file)
         return self.remote_connection_file
 
@@ -190,10 +186,6 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         super(StandaloneProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.ip = self.determine_next_host()
-        # write out connection file - which has the remote IP - prior to copy...
-        self.kernel_manager.ip = gethostbyname(self.ip)  # convert to ip if host is provided
-        self.kernel_manager.cleanup_connection_file()
-        self.kernel_manager.write_connection_file()
 
         cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug('Invoking cmd: {}'.format(cmd))
@@ -207,6 +199,15 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         except ValueError:
             raise RuntimeError("Failure occurred starting remote kernel on '{}'.  Returned result: {}"
                                .format(self.ip, result))
+
+        # Enable the following to exercise pull-style logic...
+        #self.log.debug("Testing pull connection file logic from {}@{} to {}...".
+        #               format(self.ip, self.get_connection_filename(),self.kernel_manager.connection_file))
+        #self.kernel_manager.cleanup_connection_file()  # remove file prior to pull
+        #self.rcp(self.ip, self.get_connection_filename(), self.kernel_manager.connection_file, pull=True)
+        #self.kernel_manager.load_connection_file()  # load file contents into members
+        #self.kernel_manager.ip = gethostbyname(self.ip)  # force update to remote ip - not required in normal pull
+        #self.kernel_manager.write_connection_file()  # write members to file so its marked as written
 
         self.log.info("Remote kernel launched on '{}', pid={}".format(self.kernel_manager.ip, self.pid))
         return self
@@ -238,6 +239,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
         return False
 
     def cleanup(self):
+        val = None
         cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
         result = self.rsh(self.ip, cmd)
         for line in result:
@@ -282,7 +284,7 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 
 
 class YarnProcessProxy(BaseProcessProxyABC):
-    kernel_id = None
+
     application_id = None
     local_proc = None
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
@@ -290,9 +292,16 @@ class YarnProcessProxy(BaseProcessProxyABC):
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
     start_time = None
     resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
+    pull_connection_files = False
 
     def __init__(self,  kernel_manager, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, **kw)
+        if kernel_manager.kernel_spec.language.lower() == 'scala':
+            self.pull_connection_files = (os.getenv('ELYRA_PULL_CONNECTION_FILES', 'False') == 'True')
+        elif kernel_manager.kernel_spec.language.lower() == 'python':
+            self.pull_connection_files = (os.getenv('ELYRA_PULL_CONNECTION_FILES', 'True') == 'True')
+        elif kernel_manager.kernel_spec.language.lower() == 'r':
+            self.pull_connection_files = (os.getenv('ELYRA_PULL_CONNECTION_FILES', 'False') == 'True')
 
     def get_hosts(self):
         if self.hosts is None:
@@ -300,18 +309,23 @@ class YarnProcessProxy(BaseProcessProxyABC):
         return self.hosts
 
     def launch_process(self, kernel_cmd, **kw):
-        """Prior to starting the process, copy the connection file to every YARN node.
-        This is to avoid having to detect where the kernel application was moved to (which would be too late)
-        because each YARN node is likely to be the host of a kernel.
-        Once launched we'll circle back and do this one final time relative to the host where the application landed.
-        To do so need to ensure application ID ready during launching, and once obtained, query YARN for the host address.
-
-        TODO: if YARN api endpoint in HTTPS mode then all http address fields will be blank in the JSON response.
-        Since even in HTTPS mode YARN REST API call can still be issued, we'd better ensure the end point is a HTTP one.
+        """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
+            Yarn node so that its in place when the kernel is started.  This step is skipped if pull mode is configured,
+            which results in the kernel process determining ports and generating encoding key.
+            Once started, the method will poll the Yarn application (after discovering the application ID via the
+            kernel ID) until the application is in RUNNING state.  Note that this polling may timeout and result in
+            a 503 Http error (Service unavailable).
+            Once in RUNNING state, the selected host is determined.  If pull mode is configured, the remote file is 
+            copied locally and member variables are loaded based on its contents.  If pull mode is not configured, the
+            kernel manager's IP is updated to the selected node.
         """
+        # TODO: if YARN api endpoint in HTTPS mode then all http address fields will be blank in the JSON response.
+        #   Since even in HTTPS mode YARN REST API call can still be issued, we'd better ensure the end point is a HTTP one.
+
         super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
 
-        self.distribute_connection_files()
+        if not self.pull_connection_files:
+            self.distribute_connection_files()
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
@@ -392,7 +406,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.application_id = None
 
     def distribute_connection_files(self):
-        # FIXME - look into the parallelizing this - only necessary on push mode
+        # TODO - look into the parallelizing this - only necessary on push mode
         self.log.debug("Copying connection file {} to host(s): {}".
                        format(self.kernel_manager.connection_file, self.hosts))
 
@@ -402,7 +416,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
     def confirm_yarn_application_startup(self, kernel_cmd, **kw):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
             unexpectedly encountered (FINISHED, KILLED) then we must throw, otherwise the rest of the JKG will
-            believe its talking to a valid kernel (FIXME - confirm this).
+            believe its talking to a valid kernel.
         """
         self.start_time = YarnProcessProxy.get_current_time()
         self.log.debug("YarnProcessProxy - confirm startup, Kernel ID: {}, YARN endpoint: {}, spark-submit pid {}, cmd: '{}'".
@@ -410,7 +424,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
         i = 1
         app_state = None
         host = ''
-        while app_state != 'RUNNING':  # Require running state for exit.  FIXME - this needs to be revisited
+        assigned_ip = ''
+        while app_state != 'RUNNING':  # Require running state for exit.  TODO - this needs to be revisited
 
             if self.get_application_id(True):
                 app = YarnProcessProxy.query_app_by_id(self.application_id)
@@ -422,10 +437,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
                         self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
                         # Set the kernel manager ip to the actual host where the application landed.
                         assigned_ip = gethostbyname(host)
-                        # if push mode, assign IP and rewrite connection file.
-                        self.kernel_manager.ip = assigned_ip
-                        self.kernel_manager.cleanup_connection_file()
-                        self.kernel_manager.write_connection_file()
 
             if app_state in YarnProcessProxy.final_states:
                 self.log.error("Kernel '{}' with application ID {} unexpectedly found in state '{}' during kernel startup!".
@@ -440,9 +451,9 @@ class YarnProcessProxy(BaseProcessProxyABC):
                                    "after {} seconds for application ID {}!".
                                    format(self.kernel_id, time_interval, self.application_id))
                     self.kill()  # be sure to terminate yarn application
-                    # FIXME - Determine why a second kernel startup attempt occurs after throwing exception - this is
+                    # TODO - Determine why a second kernel startup attempt occurs after throwing exception - this is
                     # definitely submitted from within elyra somehow.
-                    # FIXME - Look into how to pass back custom message (see mixins.py)
+                    # TODO - Look into how to pass back custom message (see mixins.py)
                     raise tornado.web.HTTPError(503, "YARN resources unavailable after {} "
                                                      "seconds for application ID {}, kernel ID {}!".
                                                 format(time_interval, self.application_id, self.kernel_id))
@@ -452,15 +463,25 @@ class YarnProcessProxy(BaseProcessProxyABC):
                                format(self.kernel_id, self.application_id, host, app_state, i))
                 time.sleep(poll_interval)
                 i += 1
-            else:
+            else: # state = RUNNING (all good)
                 self.log.info("Kernel '{}' with application ID {} has been assigned to host {}. "
                                "CurrentState={}, Attempt={}".
                                format(self.kernel_id, self.application_id, host, app_state, i))
-                # if pull mode, copy connection file from assigned host, set ports, ip, key, scheme, write out file
+
+                # Fixup connection file based on assigned host
+                self.kernel_manager.ip = assigned_ip
+                self.kernel_manager.cleanup_connection_file()
+
+                # if pull mode, copy connection file from assigned host and load contents
+                if self.pull_connection_files:
+                    self.rcp(host, self.get_connection_filename(), self.kernel_manager.connection_file, pull=True)
+                    self.kernel_manager.load_connection_file()   # load file contents into members
+
+                self.kernel_manager.write_connection_file()  # write members to file so its marked as written
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
-        # from scratch, do not consider kernels in final states.  FIXME - may need to treat FAILED state differently.
+        # from scratch, do not consider kernels in final states.  TODO - may need to treat FAILED state differently.
         if not self.application_id:
             app = YarnProcessProxy.query_app_by_name(self.kernel_id)
             state_condition = True
