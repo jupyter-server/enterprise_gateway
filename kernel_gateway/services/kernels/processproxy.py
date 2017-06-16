@@ -188,6 +188,11 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 
         self.ip = self.determine_next_host()
 
+        # write out connection file - which has the remote IP - prior to copy...
+        self.kernel_manager.ip = gethostbyname(self.ip)  # convert to ip if host is provided
+        self.kernel_manager.cleanup_connection_file()
+        self.kernel_manager.write_connection_file()
+
         cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug('Invoking cmd: {}'.format(cmd))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
