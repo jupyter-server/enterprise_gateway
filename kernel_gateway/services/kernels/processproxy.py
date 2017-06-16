@@ -471,12 +471,11 @@ class YarnProcessProxy(BaseProcessProxyABC):
                     try:
                         if self.rcp(host=host, src_file=self.get_connection_filename(), dst_file=self.kernel_manager.connection_file, pull=True):
                             need_pull_file = False
-                            self.log.debug("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
-                            self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)  # load file contents into members
-                            self.update_connection_ip(assigned_ip)
+                            self.log.info("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
+                            self.update_connection(assigned_ip)
                     except Exception as e:
                         if type(e) is IOError and e.errno == 2:
-                            self.log.error("No such file when pulling {} for {}, need to retry.".format(
+                            self.log.debug("No such file when pulling {} for {}, need to retry.".format(
                                 self.get_connection_filename(), self.application_id))
                         else:
                             self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
@@ -484,13 +483,14 @@ class YarnProcessProxy(BaseProcessProxyABC):
                             self.kill()
                             raise e
                 else:
-                    self.update_connection_ip(assigned_ip)
+                    self.update_connection(assigned_ip)
 
-    def update_connection_ip(self, assigned_ip):
+    def update_connection(self, assigned_ip):
+        self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)  # load file contents into members
         self.kernel_manager.cleanup_connection_file()
         self.kernel_manager.ip = assigned_ip
         self.kernel_manager.write_connection_file()  # write members to file so its marked as written
-        self.log.debug("Successfully updated the ip in conncetion file '{}'.".format(self.kernel_manager.connection_file))
+        self.log.debug("Successfully updated the ip in connection file '{}'.".format(self.kernel_manager.connection_file))
 
     def handle_timeout(self, time_interval, threshold):
         if time_interval > threshold:
