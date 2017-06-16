@@ -139,9 +139,11 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return lines
 
     def rcp(self, host, src_file, dst_file, ssh=None, pull=False):
-        """ Copies src_file to dst_file.  If pull is True, the file is pulled (via get), 
+        """ Copies src_file to dst_file.  If pull is True, the file is pulled (via get),
             else the file is pushed (via put).  If a current ssh connection is not included,
-            one will be created and closed.  
+            one will be created and closed.
+
+        :return: True if the remote copy succeeds, otherwise raise Exception.
         """
         close_connection = False
         if ssh is None:
@@ -160,6 +162,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         finally:
             if close_connection and ssh:
                 ssh.close()
+        return True
 
     def get_connection_filename(self):
         """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
@@ -427,64 +430,82 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.start_time = YarnProcessProxy.get_current_time()
         self.log.debug("YarnProcessProxy - confirm startup, Kernel ID: {}, YARN endpoint: {}, spark-submit pid {}, "
                        "cmd: '{}'".format(self.kernel_id, self.yarn_endpoint, self.local_proc.pid, kernel_cmd))
-        i = 1
+        i = 0
         app_state = None
         host = ''
         assigned_ip = ''
-        while app_state != 'RUNNING':  # Require running state for exit.  TODO - this needs to be revisited
+        need_pull_file = False
+        if self.pull_connection_files:
+            need_pull_file = True
+            self.kernel_manager.reset_connections()
+            self.log.debug("Reset connection profile {} in pull mode.".format(self.kernel_manager.connection_file))
+        while app_state != 'RUNNING' or need_pull_file:
+            # Ensure app in RUNNING state and if pull mode, connection file ready TODO - this needs to be revisited
+            time.sleep(poll_interval)
+            i += 1
+            time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
+            self.handle_timeout(time_interval, kernel_launch_timeout)
+
             if self.get_application_id(True):
-                app = YarnProcessProxy.query_app_by_id(self.application_id)
-                if app and app.get('state'):
-                    app_state = app.get('state')
-                if app and host == '' and app.get('amHostHttpAddress'):
-                    host = app.get('amHostHttpAddress').split(':')[0]
-                    self.log.debug("Kernel {} assigned to host {}".format(self.kernel_id, host))
-                    # Set the kernel manager ip to the actual host where the application landed.
-                    assigned_ip = gethostbyname(host)
+                app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
+                if host == '':
+                    app = YarnProcessProxy.query_app_by_id(self.application_id)
+                    if app and app.get('amHostHttpAddress'):
+                        host = app.get('amHostHttpAddress').split(':')[0]
+                        self.log.debug("Kernel '{}' with app ID {} has been assigned to host {}. CurrentState={}, Attempt={}"
+                                  .format(self.kernel_id, self.application_id, host, app_state, i))
+                        # Set the kernel manager ip to the actual host where the application landed.
+                        assigned_ip = gethostbyname(host)
 
-            if app_state in YarnProcessProxy.final_states:
-                raise tornado.web.HTTPError(500, "Kernel '{}' with Yarn application ID {} unexpectedly found in"
+                if app_state in YarnProcessProxy.final_states:
+                    raise tornado.web.HTTPError(500, "Kernel '{}' with Yarn application ID {} unexpectedly found in"
                         "state '{}' during kernel startup!".format(self.kernel_id, self.application_id, app_state))
-
-            if app_state != 'RUNNING':
-                time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-                if time_interval > kernel_launch_timeout:
-                    # TODO - Determine why a second kernel startup attempt occurs after throwing exception - this is
-                    # definitely submitted from within elyra somehow.
-                    # TODO - Look into how to pass back custom message (see mixins.py)
-                    if self.get_application_id(True):
-                        error_http_message = "YARN resources unavailable after {} seconds for application ID {}, kernel ID {}!".format(
-                            time_interval, self.application_id, self.kernel_id)
-                        error_http_code = 503
-                    else:
-                        error_http_message = "Application ID is None. Failed to submit a new application to YARN."
-                        error_http_code = 500
-                    self.kill()  # be sure to terminate yarn application if it exists
-                    raise tornado.web.HTTPError(error_http_code, error_http_message)
-
-                self.log.debug("Waiting for application to enter 'RUNNING' state. "
+                elif app_state != 'RUNNING':
+                    self.log.debug("Waiting for application to enter 'RUNNING' state. "
                                "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
                                format(self.kernel_id, self.application_id, host, app_state, i))
-                time.sleep(poll_interval)
-                i += 1
-            else: # state = RUNNING (all good)
-                self.log.info("Kernel '{}' with application ID {} has been assigned to host {}. CurrentState={}, "
-                              "Attempt={}".format(self.kernel_id, self.application_id, host, app_state, i))
-                # Fixup connection file based on assigned host
-                self.kernel_manager.ip = assigned_ip
-                self.kernel_manager.cleanup_connection_file()
-                # if pull mode, copy connection file from assigned host and load contents
-                if self.pull_connection_files:
+                elif self.pull_connection_files:
+                    self.log.debug("Pulling connection file {} on host {} to local, ApplicationID={}, Attempt={}".
+                                   format(self.get_connection_filename(), host, self.application_id, i))
                     try:
-                        self.rcp(host, self.get_connection_filename(), self.kernel_manager.connection_file, pull=True)
+                        if self.rcp(host=host, src_file=self.get_connection_filename(), dst_file=self.kernel_manager.connection_file, pull=True):
+                            need_pull_file = False
+                            self.log.info("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
+                            self.update_connection(assigned_ip)
                     except Exception as e:
-                        self.kill()
-                        self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
-                            "Kernel ID '{}'".format(type(e).__name__, host, self.application_id, self.kernel_id))
-                        raise e
-                    self.kernel_manager.load_connection_file()   # load file contents into members
+                        if type(e) is IOError and e.errno == 2:
+                            self.log.debug("No such file when pulling {} for {}, need to retry.".format(
+                                self.get_connection_filename(), self.application_id))
+                        else:
+                            self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
+                                    "Kernel ID '{}'".format(type(e).__name__, host, self.application_id, self.kernel_id))
+                            self.kill()
+                            raise e
+                else:
+                    self.update_connection(assigned_ip)
 
-                self.kernel_manager.write_connection_file()  # write members to file so its marked as written
+    def update_connection(self, assigned_ip):
+        self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)  # load file contents into members
+        self.kernel_manager.cleanup_connection_file()
+        self.kernel_manager.ip = assigned_ip
+        self.kernel_manager.write_connection_file()  # write members to file so its marked as written
+        self.log.debug("Successfully updated the ip in connection file '{}'.".format(self.kernel_manager.connection_file))
+
+    def handle_timeout(self, time_interval, threshold):
+        if time_interval > threshold:
+            timeout_message = "Application ID is None. Failed to submit a new application to YARN."
+            error_http_code = 500
+            if self.get_application_id(True):
+                if YarnProcessProxy.query_app_state_by_id(self.application_id) != "RUNNING":
+                    timeout_message = "YARN resources unavailable after {} seconds for app {}!".format(
+                        time_interval, self.application_id)
+                    error_http_code = 503
+                elif self.pull_connection_files:
+                    timeout_message = "App {} is RUNNING, but waited too long to pull connection file".format(self.application_id)
+            self.kill()
+            timeout_message = "Kernel {} launch timeout due to: {}".format(self.kernel_id, timeout_message)
+            self.log.error(timeout_message)
+            raise tornado.web.HTTPError(error_http_code, timeout_message)
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
