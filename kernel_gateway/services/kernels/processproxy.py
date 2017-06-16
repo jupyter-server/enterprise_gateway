@@ -447,6 +447,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
             self.handle_timeout(time_interval, kernel_launch_timeout)
 
             if self.get_application_id(True):
+                if app_state != 'RUNNING':
+                    app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 if host == '':
                     app = YarnProcessProxy.query_app_by_id(self.application_id)
                     if app and app.get('amHostHttpAddress'):
@@ -463,7 +465,6 @@ class YarnProcessProxy(BaseProcessProxyABC):
                     self.log.debug("Waiting for application to enter 'RUNNING' state. "
                                "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
                                format(self.kernel_id, self.application_id, host, app_state, i))
-                    app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 elif self.pull_connection_files:
                     self.log.debug("Pulling connection file {} on host {} to local, ApplicationID={}, Attempt={}".
                                    format(self.get_connection_filename(), host, self.application_id, i))
