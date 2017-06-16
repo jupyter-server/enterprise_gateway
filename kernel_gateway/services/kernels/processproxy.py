@@ -447,8 +447,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
             self.handle_timeout(time_interval, kernel_launch_timeout)
 
             if self.get_application_id(True):
-                if app_state != 'RUNNING':
-                    app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
+                app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
                 if host == '':
                     app = YarnProcessProxy.query_app_by_id(self.application_id)
                     if app and app.get('amHostHttpAddress'):
