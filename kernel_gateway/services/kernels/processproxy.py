@@ -13,7 +13,7 @@ import tornado
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
-from jupyter_client import launch_kernel
+from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 from datetime import datetime
 
@@ -22,14 +22,14 @@ logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.
 # TODO - properly deal with environment variables - some should be promoted to properties
 # Pop certain env variables that don't need to be logged, e.g. password
 env_pop_list = ['ELYRA_REMOTE_PWD', 'LS_COLORS']
-remote_connection_file_dir = os.getenv('ELYRA_REMOTE_CONNECTION_DIR', '/tmp/')
 username = os.getenv('ELYRA_REMOTE_USER')
 password = os.getenv('ELYRA_REMOTE_PWD')  # this should use password-less ssh
 proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/jnbg/proxy_launch.log')
-kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
+elyra_kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '5'))
 poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '1.0'))
 
+local_ip = localinterfaces.public_ips()[0]
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -41,6 +41,16 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     log = None
     kernel_id = None
     hosts = None
+    kernel_launch_timeout = elyra_kernel_launch_timeout
+
+    # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
+    # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if the JKG is restarted and the
+    # persisted kernel-sessions indicate that its now running on a different server.  In those case, we use the ip
+    # member variable to determine if the persisted state is local or remote and use signals with the pid to implement
+    # the poll, kill and send_signal methods.
+    local_proc = None
+    ip = None
+    pid = 0
 
     def __init__(self, kernel_manager, **kw):
         self.kernel_manager = kernel_manager
@@ -51,8 +61,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # ask the subclass for the set of applicable hosts
         self.hosts = self.get_hosts()
-        # add the applicable kernel_id to the env dict
+
         env_dict = kw['env']
+        # see if KERNEL_LAUNCH_TIMEOUT was included from user
+        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', elyra_kernel_launch_timeout))
+
+        # add the applicable kernel_id to the env dict
         env_dict['KERNEL_ID'] = self.kernel_id
         for k in env_pop_list:
             env_dict.pop(k, None)
@@ -68,12 +82,16 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def get_hosts(self):
         pass
 
-    @abc.abstractmethod
     def poll(self):
-        pass
+        # If we have a local process, use its method, else send signal 0 to determine its heartbeat.
+        if self.local_proc:
+            return self.local_proc.poll()
+
+        return self.send_signal(0)
 
     def wait(self):
-        self.log.debug("{}.wait".format(self.__class__.__name__))
+        # Rather than issue a blocking wait call (if we have the local_proc), use poll with max attempts so
+        # we don't block forever.
         for i in range(max_poll_attempts):
             if self.poll():
                 time.sleep(poll_interval)
@@ -83,13 +101,36 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             self.log.warning("Wait timeout of {} seconds exhausted. Continuing...".
                              format(max_poll_attempts*poll_interval))
 
-    @abc.abstractmethod
     def send_signal(self, signum):
-        pass
+        # if we have a local process, use its method, else determine if the ip is local or remote and issue
+        # the appropriate version to signal the process.
+        result = None
+        if self.local_proc:
+            result = self.local_proc.send_signal(signum)
+        else:
+            if self.ip and self.pid > 0:
+                if self.is_local_ip(self.ip):
+                    result = self.local_signal(signum)
+                else:
+                    result = self.remote_signal(signum)
+        return result
 
-    @abc.abstractmethod
     def kill(self):
-        pass
+        # If we have a local process, use its method, else send signal SIGKILL to terminate.
+        result = None
+        if self.local_proc:
+            result = self.local_proc.kill()
+            self.log.debug("BaseProcessProxy.kill(): {}".format(result))
+        else:
+            if self.ip and self.pid > 0:
+                if self.is_local_ip(self.ip):
+                    result = self.local_signal(signal.SIGKILL)
+                else:
+                    result = self.remote_signal(signal.SIGKILL)
+        return result
+
+    def is_local_ip(self, ip):
+        return localinterfaces.is_public_ip(ip) or localinterfaces.is_local_ip(ip)
 
     def _getSSHClient(self, host):
         """
@@ -123,13 +164,15 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         try:
             if src_file is not None and dst_file is not None:
                 self.rcp(host, src_file, dst_file, ssh)
+
+            # Let caller perform logging since this can be used by poll() calls (every 3 seconds)
+            #self.log.debug("Executing command '{}' on host '{}' ...".format(command, host))
             stdin, stdout, stderr = ssh.exec_command(command, timeout=30)
             lines = stdout.readlines()
             if len(lines) == 0:  # if nothing in stdout, return stderr
                 lines = stderr.readlines()
         except Exception as e:
-            self.log.error("Exception '{}' occurred attempting to connect to '{}' with user '{}', message='{}'"
-                .format(type(e).__name__, host, username, e))
+            # Let caller decide if exception should be logged
             raise e
 
         finally:
@@ -145,6 +188,14 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         :return: True if the remote copy succeeds, otherwise raise Exception.
         """
+        msg_direction = "from" if pull else "on"
+
+        # Check if we're performing a loopback copy.  If so, skip it...
+        if self.is_local_ip(gethostbyname(host)) and src_file == dst_file:
+            self.log.debug("Copy of file '{}' to '{}' {} host '{}' skipped - loopback detected.".
+                            format(src_file, dst_file, msg_direction, host))
+            return True
+
         close_connection = False
         if ssh is None:
             close_connection = True
@@ -152,31 +203,76 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         msg_direction = "from" if pull else "on"
         try:
-            self.log.debug("Copying file '{}' to file '{}' {} host '{}' ...".format(src_file, dst_file, msg_direction, host))
+            self.log.debug("Copying file '{}' to file '{}' {} host '{}' ...".
+                           format(src_file, dst_file, msg_direction, host))
             sftp = ssh.open_sftp()
             sftp.get(src_file, dst_file) if pull else sftp.put(src_file, dst_file)
         except Exception as e:
-            self.log.error("Exception '{}' occurred attempting to copy file '{}' to '{}' {} '{}' with user '{}', "
-                        "message='{}'".format(type(e).__name__, src_file, dst_file, msg_direction, host, username, e))
+            # Let caller decide if exception should be logged
             raise e
         finally:
             if close_connection and ssh:
                 ssh.close()
         return True
 
+    def remote_signal(self, signum):
+        val = None
+        # Use a negative signal number to signal process group
+        cmd = 'kill -{} {}; echo $?'.format(signum, self.pid)
+        if signum > 0:  # only log if meaningful signal (not for poll)
+            self.log.debug("Sending signal: -{} to pid: {} on host: {}".format(signum, self.pid, self.ip))
+        result = self.rsh(self.ip, cmd)
+        for line in result:
+            val = line.strip()
+        if val == '0':
+            return None
+        return False
+
+    def local_signal(self, signum):
+        # Use a negative signal number to signal process group
+        if self.pid > 0:
+            cmd = ['kill', '-'+str(signum), str(self.pid)]
+            result = subprocess.call(cmd)
+            if result == 0:
+                return None
+        return False
+
     def get_connection_filename(self):
-        """Allows the remote process to indicate a new connection file name - that may exist on a remote system.
-           It is the remote process proxy's responsibility to ensure the file is located in the correct place.
         """
-        if self.remote_connection_file is None:
-            self.remote_connection_file = remote_connection_file_dir + \
-                                      os.path.basename(self.kernel_manager.connection_file)
-        return self.remote_connection_file
+            Although we're just using the same connection file (location) on the remote system, go ahead and 
+            keep this method in case we want the remote connection file to be in a different location.  Should
+            we decide to keep the current code, we should probably force the local location by requiring that
+            either JUPYTER_DATA_DIR or JUPYTER_RUNTIME_DIR envs be set and issue a warning if not - which could
+            also be done from this method.
+        """
+        return self.kernel_manager.connection_file
+
+    def get_process_info(self):
+        process_info = {'pid': self.pid, 'ip': self.ip}
+        return process_info
+
+    def load_process_info(self, process_info):
+        self.pid = process_info['pid']
+        self.ip = process_info['ip']
+
+
+class LocalProcessProxy(BaseProcessProxyABC):
+
+    def __init__(self, kernel_manager, **kw):
+        super(LocalProcessProxy, self).__init__(kernel_manager, **kw)
+
+    def launch_process(self, kernel_cmd, **kw):
+        super(LocalProcessProxy, self).launch_process(kernel_cmd, **kw)
+
+        # launch the local run.sh
+        self.local_proc = launch_kernel(kernel_cmd, **kw)
+        self.pid = self.local_proc.pid
+        self.ip = local_ip
+        return self
 
 
 class StandaloneProcessProxy(BaseProcessProxyABC):
     host_index = 0
-    pid = 0
 
     def __init__(self, kernel_manager, **kw):
         super(StandaloneProcessProxy, self).__init__(kernel_manager, **kw)
@@ -189,15 +285,15 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
     def launch_process(self, kernel_cmd, **kw):
         super(StandaloneProcessProxy, self).launch_process(kernel_cmd, **kw)
 
-        self.ip = self.determine_next_host()
+        self.ip = gethostbyname(self.determine_next_host())  # convert to ip if host is provided
 
         # write out connection file - which has the remote IP - prior to copy...
-        self.kernel_manager.ip = gethostbyname(self.ip)  # convert to ip if host is provided
+        self.kernel_manager.ip = self.ip
         self.kernel_manager.cleanup_connection_file()
         self.kernel_manager.write_connection_file()
 
         cmd = self.build_startup_command(kernel_cmd, **kw)
-        self.log.debug('Invoking cmd: {}'.format(cmd))
+        self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.ip))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
         result = self.rsh(self.ip, cmd, self.kernel_manager.connection_file, self.get_connection_filename())
         for line in result:
@@ -209,47 +305,13 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
             raise RuntimeError("Failure occurred starting remote kernel on '{}'.  Returned result: {}"
                                .format(self.ip, result))
 
-        # Enable the following to exercise pull-style logic...
-        #self.log.debug("Testing pull connection file logic from {}@{} to {}...".
-        #               format(self.ip, self.get_connection_filename(),self.kernel_manager.connection_file))
-        #self.kernel_manager.cleanup_connection_file()  # remove file prior to pull
-        #self.rcp(self.ip, self.get_connection_filename(), self.kernel_manager.connection_file, pull=True)
-        #self.kernel_manager.load_connection_file()  # load file contents into members
-        #self.kernel_manager.ip = gethostbyname(self.ip)  # force update to remote ip - not required in normal pull
-        #self.kernel_manager.write_connection_file()  # write members to file so its marked as written
-
         self.log.info("Remote kernel launched on '{}', pid={}".format(self.kernel_manager.ip, self.pid))
         return self
-
-    def poll(self):
-        result = self.remote_signal(0)
-        #  self.log.debug('StandaloneProcessProxy.poll: {}'.format(result))
-        return result
-
-    def send_signal(self, signum):
-        result = self.remote_signal(signum)
-        self.log.debug("StandaloneProcessProxy.send_signal({}): {}".format(signum, result))
-        return result
-
-    def kill(self):
-        result = self.remote_signal(signal.SIGKILL)
-        self.log.debug("StandaloneProcessProxy.kill: {}".format(result))
-        return result
-
-    def remote_signal(self, signum):
-        val = None
-        # Use a negative signal number to signal process group
-        cmd = 'kill -{} {}; echo $?'.format(signum, self.pid)
-        result = self.rsh(self.ip, cmd)
-        for line in result:
-            val = line.strip()
-        if val == '0':
-            return None
-        return False
 
     def cleanup(self):
         val = None
         cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
+        self.log.debug("Removing connection file via: '{}' on host: {}".format(cmd, self.ip))
         result = self.rsh(self.ip, cmd)
         for line in result:
             val = line.strip()
@@ -295,13 +357,13 @@ class StandaloneProcessProxy(BaseProcessProxyABC):
 class YarnProcessProxy(BaseProcessProxyABC):
 
     application_id = None
-    local_proc = None
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
     start_time = None
     resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
     pull_connection_files = False
+    assigned_ip = None
 
     def __init__(self,  kernel_manager, **kw):
         super(YarnProcessProxy, self).__init__(kernel_manager, **kw)
@@ -338,6 +400,8 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
+        self.pid = self.local_proc.pid
+        self.ip = local_ip
 
         self.confirm_yarn_application_startup(kernel_cmd, **kw)
 
@@ -358,9 +422,9 @@ class YarnProcessProxy(BaseProcessProxyABC):
             if state in YarnProcessProxy.initial_states:
                 result = None
 
-        self.log.debug("YarnProcessProxy.poll, application ID: {}, kernel ID: {}, state: {}".
-                       format(self.application_id, self.kernel_id, state))
-
+        # The following produces too much output (every 3 seconds by default), so commented-out at this time.
+        #self.log.debug("YarnProcessProxy.poll, application ID: {}, kernel ID: {}, state: {}".
+        #               format(self.application_id, self.kernel_id, state))
         return result
 
     def send_signal(self, signum):
@@ -397,30 +461,35 @@ class YarnProcessProxy(BaseProcessProxyABC):
             if state in YarnProcessProxy.final_states:
                 result = None
 
-        if self.local_proc:
-            self.local_proc.kill()
+        super(YarnProcessProxy, self).kill()
 
         self.log.debug("YarnProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
-
         return result
 
     def cleanup(self):
-        self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
-        for host in self.hosts:
+        if self.pull_connection_files:
+            self.log.debug("Removing connection file from assigned host: {}".format(self.assigned_ip))
             cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-            self.rsh(host, cmd)
+            self.rsh(self.assigned_ip, cmd)
+        else:  # push mode
+            self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
+            for host in self.hosts:
+                cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
+                self.rsh(host, cmd)
 
         # reset application id to force new query - handles kernel restarts/interrupts
         self.application_id = None
+        self.assigned_ip = None
 
     def distribute_connection_files(self):
         # TODO - look into the parallelizing this - only necessary on push mode
-        self.log.debug("Copying connection file {} to host(s): {}".
-                       format(self.kernel_manager.connection_file, self.hosts))
+        if not self.pull_connection_files:
+            self.log.debug("Copying connection file {} to host(s): {}".
+                           format(self.kernel_manager.connection_file, self.hosts))
 
-        for host in self.hosts:
-            self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
+            for host in self.hosts:
+                self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
 
     def confirm_yarn_application_startup(self, kernel_cmd, **kw):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
@@ -433,18 +502,12 @@ class YarnProcessProxy(BaseProcessProxyABC):
         i = 0
         app_state = None
         host = ''
-        assigned_ip = ''
-        need_pull_file = False
-        if self.pull_connection_files:
-            need_pull_file = True
-            self.kernel_manager.reset_connections()
-            self.log.debug("Reset connection profile {} in pull mode.".format(self.kernel_manager.connection_file))
-        while app_state != 'RUNNING' or need_pull_file:
-            # Ensure app in RUNNING state and if pull mode, connection file ready TODO - this needs to be revisited
+        ready_to_connect = False  # we're ready to connect when state is RUNNING and we have a connection file to use
+
+        while not ready_to_connect:
             time.sleep(poll_interval)
             i += 1
-            time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
-            self.handle_timeout(time_interval, kernel_launch_timeout)
+            self.handle_timeout()
 
             if self.get_application_id(True):
                 app_state = YarnProcessProxy.query_app_state_by_id(self.application_id)
@@ -455,53 +518,65 @@ class YarnProcessProxy(BaseProcessProxyABC):
                         self.log.debug("Kernel '{}' with app ID {} has been assigned to host {}. CurrentState={}, Attempt={}"
                                   .format(self.kernel_id, self.application_id, host, app_state, i))
                         # Set the kernel manager ip to the actual host where the application landed.
-                        assigned_ip = gethostbyname(host)
+                        self.assigned_ip = gethostbyname(host)
 
                 if app_state in YarnProcessProxy.final_states:
                     raise tornado.web.HTTPError(500, "Kernel '{}' with Yarn application ID {} unexpectedly found in"
                         "state '{}' during kernel startup!".format(self.kernel_id, self.application_id, app_state))
-                elif app_state != 'RUNNING':
+
+                if app_state != 'RUNNING':
                     self.log.debug("Waiting for application to enter 'RUNNING' state. "
                                "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
                                format(self.kernel_id, self.application_id, host, app_state, i))
-                elif self.pull_connection_files:
-                    self.log.debug("Pulling connection file {} on host {} to local, ApplicationID={}, Attempt={}".
-                                   format(self.get_connection_filename(), host, self.application_id, i))
-                    try:
-                        if self.rcp(host=host, src_file=self.get_connection_filename(), dst_file=self.kernel_manager.connection_file, pull=True):
-                            need_pull_file = False
-                            self.log.info("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
-                            self.update_connection(assigned_ip)
-                    except Exception as e:
-                        if type(e) is IOError and e.errno == 2:
-                            self.log.debug("No such file when pulling {} for {}, need to retry.".format(
-                                self.get_connection_filename(), self.application_id))
-                        else:
-                            self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
-                                    "Kernel ID '{}'".format(type(e).__name__, host, self.application_id, self.kernel_id))
-                            self.kill()
-                            raise e
-                else:
-                    self.update_connection(assigned_ip)
+                else:  # We're in RUNNING state - check on connection file
+                    if self.pull_connection_files:
+                        self.log.debug("Pulling connection file {} on host {} to local, ApplicationID={}, Attempt={}".
+                                       format(self.get_connection_filename(), host, self.application_id, i))
+                        try:
+                            if self.rcp(host=host, src_file=self.get_connection_filename(), dst_file=self.kernel_manager.connection_file, pull=True):
+                                self.log.info("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
+                                ready_to_connect = True
+                        except Exception as e:
+                            if type(e) is IOError and e.errno == 2:
+                                self.log.debug("No such file when pulling {} for {}, need to retry.".format(
+                                    self.get_connection_filename(), self.application_id))
+                            else:
+                                self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
+                                        "Kernel ID '{}'".format(type(e).__name__, host, self.application_id, self.kernel_id))
+                                self.kill()
+                                raise e
+                    else: # Using push mode so we have a connection file
+                        ready_to_connect = True
 
-    def update_connection(self, assigned_ip):
-        self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)  # load file contents into members
-        self.kernel_manager.cleanup_connection_file()
-        self.kernel_manager.ip = assigned_ip
+        if ready_to_connect:
+            self.update_connection()
+
+    def update_connection(self):
+        # Reset the ports to 0 so load can take place (which resets the members to value from file)...
+        self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
+            self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
+
+        self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)
+        self.kernel_manager.cleanup_connection_file() # remove the file (retaining members)
+        self.kernel_manager.ip = self.assigned_ip # overwrite the ip to our remote target
         self.kernel_manager.write_connection_file()  # write members to file so its marked as written
-        self.log.debug("Successfully updated the ip in connection file '{}'.".format(self.kernel_manager.connection_file))
+        self.log.debug("Successfully updated connection file '{}'.".format(self.kernel_manager.connection_file))
 
-    def handle_timeout(self, time_interval, threshold):
-        if time_interval > threshold:
-            timeout_message = "Application ID is None. Failed to submit a new application to YARN."
+    def handle_timeout(self):
+        time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
+
+        if time_interval > self.kernel_launch_timeout:
+            timeout_message = "Application ID is None. Failed to submit a new application to YARN within {} seconds.".\
+                format(self.kernel_launch_timeout)
             error_http_code = 500
             if self.get_application_id(True):
                 if YarnProcessProxy.query_app_state_by_id(self.application_id) != "RUNNING":
-                    timeout_message = "YARN resources unavailable after {} seconds for app {}!".format(
-                        time_interval, self.application_id)
+                    timeout_message = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!".\
+                        format(time_interval, self.application_id, self.kernel_launch_timeout)
                     error_http_code = 503
                 elif self.pull_connection_files:
-                    timeout_message = "App {} is RUNNING, but waited too long to pull connection file".format(self.application_id)
+                    timeout_message = "App {} is RUNNING, but waited too long ({} secs) to pull connection file".\
+                        format(self.application_id, self.kernel_launch_timeout)
             self.kill()
             timeout_message = "Kernel {} launch timeout due to: {}".format(self.kernel_id, timeout_message)
             self.log.error(timeout_message)
@@ -524,6 +599,16 @@ class YarnProcessProxy(BaseProcessProxyABC):
             else:
                 self.log.info("Application ID not yet assigned for kernel: {}, will retry later.".format(self.kernel_id))
         return self.application_id
+
+    def get_process_info(self):
+        process_info = super(YarnProcessProxy, self).get_process_info()
+        process_info.update({'application_id': self.application_id, 'assigned_ip': self.assigned_ip})
+        return process_info
+
+    def load_process_info(self, process_info):
+        super(YarnProcessProxy, self).load_process_info(process_info)
+        self.application_id = process_info['application_id']
+        self.assigned_ip = process_info['assigned_ip']
 
     @staticmethod
     def query_app_by_name(kernel_id):
