@@ -15,17 +15,20 @@ class RemoteKernelSpec(KernelSpec):
     """RemoteKernelSpec is a subclass to identify and process attributes relative to remote kernel support.
     
     """
-    process_proxy_class = None
 
     def __init__(self, resource_dir, **kernel_dict):
         super(RemoteKernelSpec, self).__init__(resource_dir, **kernel_dict)
-        if 'remote_process_proxy_class' in kernel_dict and kernel_dict['remote_process_proxy_class'] is not None:
-            self.process_proxy_class = kernel_dict['remote_process_proxy_class']
-        else: # ensure all kernelspecs have a process proxy entry
-            self.process_proxy_class = 'kernel_gateway.services.kernels.processproxy.LocalProcessProxy'
+        # defaults...
+        self.process_proxy_class = 'kernel_gateway.services.kernels.processproxy.LocalProcessProxy'
+        self.process_proxy_connection_file_mode = None
+
+        if 'process_proxy' in kernel_dict and kernel_dict['process_proxy']:
+            self.process_proxy_class = kernel_dict['process_proxy']['class_name']
+            if kernel_dict['process_proxy']['connection_file_mode']:
+                self.process_proxy_connection_file_mode = kernel_dict['process_proxy']['connection_file_mode'].lower()
 
     def to_dict(self):
         d = super(RemoteKernelSpec, self).to_dict()
-        d.update({'remote_process_proxy_class': self.process_proxy_class})
-        print("kernel_dict: %r" % d)
+        d.update({'process_proxy': {'class_name': self.process_proxy_class,
+                                    'connection_file_mode': self.process_proxy_connection_file_mode}})
         return d

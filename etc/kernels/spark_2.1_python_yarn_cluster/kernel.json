@@ -1,10 +1,14 @@
 {
   "language": "python",
   "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
-  "remote_process_proxy_class": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
+  "process_proxy": {
+    "class_name": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
+    "connection_file_mode": "socket"
+  },
   "env": {
     "SPARK_HOME": "/usr/iop/current/spark2-client",
-    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}"
+    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}",
+    "LAUNCH_OPTS": "--response_addr ${KERNEL_RESPONSE_ADDR:-ERROR__NO__KERNEL_RESPONSE_ADDR}"
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",
