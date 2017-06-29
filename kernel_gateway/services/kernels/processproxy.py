@@ -512,7 +512,7 @@ class YarnProcessProxy(BaseProcessProxyABC):
         self.log.debug("Response socket bound to port: {}".format(port))
         s.listen(1)
         s.settimeout(1.0)
-        kw['env']['KERNEL_RESPONSE_ADDR'] = (local_ip + ':' + str(port))
+        kw['env']['KERNEL_RESPONSE_ADDRESS'] = (local_ip + ':' + str(port))
         self.response_socket = s
 
     def confirm_yarn_application_startup(self, kernel_cmd, **kw):

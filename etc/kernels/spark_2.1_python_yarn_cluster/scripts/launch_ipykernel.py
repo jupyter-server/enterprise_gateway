@@ -31,15 +31,15 @@ def return_connection_info(connection_file, ip, reponse_addr):
 
 if __name__ == "__main__":
     """
-        Usage: spark-submit launch_ipykernel [connection_file] [--response_addr <response_addr>]
+        Usage: spark-submit launch_ipykernel [connection_file] [--response-address <response_addr>]
     """
 
     parser = argparse.ArgumentParser()
     parser.add_argument('connection_file', help='Connection file to write connection info')
-    parser.add_argument('--response_addr', nargs='?', metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
+    parser.add_argument('--response-address', nargs='?', metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
-    response_addr = arguments['response_addr']
+    response_addr = arguments['response_address']  # Although argument uses dash, argparse converts to underscore.
 
     # create a Spark session
     spark = SparkSession.builder.getOrCreate()

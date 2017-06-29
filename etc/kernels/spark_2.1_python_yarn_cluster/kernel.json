@@ -8,7 +8,7 @@
   "env": {
     "SPARK_HOME": "/usr/iop/current/spark2-client",
     "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}",
-    "LAUNCH_OPTS": "--response_addr ${KERNEL_RESPONSE_ADDR:-ERROR__NO__KERNEL_RESPONSE_ADDR}"
+    "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}"
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",
