@@ -14,7 +14,6 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
 
     This class is responsible for managing remote kernels. 
     """
-    process_proxy_class = None
 
     def _kernel_manager_class_default(self):
         return 'kernel_gateway.services.kernels.remotemanager.RemoteKernelManager'
@@ -22,21 +21,6 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
     @gen.coroutine
     def start_kernel(self, kernel_id=None, *args, **kwargs):
         self.log.debug("RemoteMappingKernelManager.start_kernel: {}".format(kwargs['kernel_name']))
-        if kwargs['kernel_name']:
-            kernel_spec = self.kernel_spec_manager.get_kernel_spec(kwargs['kernel_name'])
-            if self.process_proxy_class:
-                # Detect process proxy type changes (when changing kernels) and reset remote
-                # process proxy class if necessary.  Note, we need to keep the kernel_manager_class
-                # pointing at this RemoteKernelManager.  If a local kernel is desired, this multi-kernel
-                # manager will do the right thing.
-                #
-                if self.process_proxy_class != kernel_spec.process_proxy_class:
-                    self.log.debug("Detected process_proxy_class change from %s to %s",
-                                   self.process_proxy_class, kernel_spec.process_proxy_class)
-                    self.process_proxy_class = kernel_spec.process_proxy_class
-                    self.log.debug("Kernel manager class is {}".format(self.kernel_manager_class))
-            else:
-                self.process_proxy_class = kernel_spec.process_proxy_class
         kernel_id = yield gen.maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         raise gen.Return(kernel_id)
@@ -67,7 +51,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         if km.kernel_spec.process_proxy_class:
             process_proxy_class = import_item(km.kernel_spec.process_proxy_class)
             kw = {'env': {}}
-            km.process_proxy = process_proxy_class(km, **kw)
+            km.process_proxy = process_proxy_class(km, km.kernel_spec.process_proxy_connection_file_mode, **kw)
             km.process_proxy.load_process_info(process_info)
 
             # Confirm we can even poll the process.  If not, remove the persisted session.
@@ -95,14 +79,13 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
-    process_proxy = None
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
             self.log.debug("Instantiating kernel '{}' with process proxy: {}".
                            format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
             process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
-            self.process_proxy = process_proxy_class(self, **kw)
+            self.process_proxy = process_proxy_class(self, self.kernel_spec.process_proxy_connection_file_mode, **kw)
             self.ip = '0.0.0.0'  # use the zero-ip from the start, can prevent having to write out connection file again
 
         return super(RemoteKernelManager, self).start_kernel(**kw)

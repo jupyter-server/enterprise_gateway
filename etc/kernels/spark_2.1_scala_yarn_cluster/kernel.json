@@ -1,7 +1,10 @@
 {
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Cluster Mode)",
-  "remote_process_proxy_class": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
+  "process_proxy": {
+    "class_name": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
+    "connection_file_mode": "push"
+  },
   "env": {
     "SPARK_HOME": "/usr/iop/current/spark2-client",
     "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}",
