@@ -233,6 +233,12 @@ yes | cp -r "${ELYRA_DEV_FOLDER}/etc/kernels"/* "${KERNELS_FOLDER}/"
 # if notebook version < 5.1.0 then install custom build of 5.0.0 plus kernel culling (https://github.com/jupyter/notebook/pull/2215)
 pip show notebook | grep -E "Version: [6-9]|Version: 5.[1-9]" > /dev/null || pip install "${NOTEBOOK_PIP_INSTALL_PACKAGE}"
 
+# replace SPARK_HOME in kernel.json files
+if [[ -n "${SPARK_HOME}" && -e "${SPARK_HOME}" ]]; then
+    find "${KERNELS_FOLDER}" -name "kernel.json" -type f -print -exec \
+        sed -i "s|\"SPARK_HOME\": \"/usr/.*/current/spark2-client\"|\"SPARK_HOME\": \"${SPARK_HOME}\"|g" {} \;
+fi
+
 # OPTIONAL: for developers, remove --proxy-user from kernel.json files if we are not in a Kerberos secured cluster
 find "${KERNELS_FOLDER}" -name kernel.json -type f -print -exec \
     sed -i 's/ --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}//g' {} \;
