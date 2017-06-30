@@ -210,7 +210,7 @@ python -m pip install --upgrade --force pip
 # install customized version of the Yarn client API with support for HTTPS
 pip install "git+http://github.com/lresende/yarn-client.git#egg=yarn_api_client"
 
-# edit-install Elyra, optional from user fork and from a dev branch
+# edit-install Elyra, optionally from user fork (if USERNAME is set) and from a dev branch (if BRANCH is set)
 pip install --upgrade -e "git+https://github.com/${USERNAME:-SparkTC}/elyra.git@${BRANCH:-elyra}#egg=jupyter-kernel-gateway"
 
 # pip-install the Apache Toree installer
@@ -229,6 +229,9 @@ mv "${SCALA_KERNEL_DIR}" "${KERNELS_FOLDER}/spark_2.1_scala_yarn_cluster"
 
 # overwrite Toree's kernel files and create remaining kernels from Elyra (including Toree Scala, IPython, R)
 yes | cp -r "${ELYRA_DEV_FOLDER}/etc/kernels"/* "${KERNELS_FOLDER}/"
+
+# if notebook version < 5.1.0 then install custom build of 5.0.0 plus kernel culling (https://github.com/jupyter/notebook/pull/2215)
+pip show notebook | grep -E "Version: [6-9]|Version: 5.[1-9]" > /dev/null || pip install "${NOTEBOOK_PIP_INSTALL_PACKAGE}"
 
 # OPTIONAL: for developers, remove --proxy-user from kernel.json files if we are not in a Kerberos secured cluster
 find "${KERNELS_FOLDER}" -name kernel.json -type f -print -exec \
@@ -278,6 +281,76 @@ tail -F install_packages.Rout
 # OPTIONAL: check the installed packages
 ls /usr/lib64/R/library/
 ```
+
+#### Starting Elyra
+
+Create a script to start ELyra, `start_elyra.sh`, replace the variables that are flagged with `TODO: `:
+
+```Bash
+#!/bin/bash
+
+# TODO: chose SPARK_HOME based on your cluster installation (TODO: update for your cluster)
+export SPARK_HOME="${SPARK_HOME:-/usr/iop/current/spark2-client}"
+export SPARK_HOME="${SPARK_HOME:-/usr/hdp/current/spark2-client}"
+
+CLUSTER_NAME=$(hostname | sed -e 's/[0-9].fyre.ibm.com//')
+
+# TODO: specify Yarn ResourceManager node, here it is on node 2 (TODO: update for your cluster)
+export ELYRA_YARN_ENDPOINT=http://${CLUSTER_NAME}2.fyre.ibm.com:8088/ws/v1/cluster
+
+# TODO: specify Yarn worker nodes, here they are node 3 and node 4 (TODO: update for your cluster)
+export ELYRA_REMOTE_HOSTS=${CLUSTER_NAME}3,${CLUSTER_NAME}4
+
+#export ELYRA_REMOTE_USER=spark
+#export ELYRA_REMOTE_PWD=""
+#export ELYRA_TEST_BLOCK_LAUNCH=0.0
+
+export ELYRA_PROXY_LAUNCH_LOG=/tmp/proxy_launch.log
+
+# launching kernels on Yarn may take longer than the default of 20 seconds
+export ELYRA_KERNEL_LAUNCH_TIMEOUT=40
+
+#export ELYRA_CONNECTION_FILE_MODE=socket
+
+export JUPYTER_DATA_DIR=/tmp      # /var/lib/elyra
+export JUPYTER_RUNTIME_DIR=/tmp   # /var/run/elyra/runtime
+
+START_CMD="jupyter kernelgateway --ip=0.0.0.0 --port=8888 --port_retries=0 --log-level=DEBUG --MappingKernelManager.cull_idle_timeout=3600 --MappingKernelManager.cull_interval=60 --JupyterWebsocketPersonality.list_kernels=True"
+
+LOG=~/jkg.log
+PIDFILE=~/jkg.pid
+
+eval "$START_CMD > $LOG 2>&1 &"
+if [ "$?" -eq 0 ]; then
+  echo $! > $PIDFILE
+else
+  exit 1
+fi
+
+# print Docker command to connect a NB2KG notebook to this Elyra server
+cat <<EOF
+
+Elyra ("jupyter-kernel-gateway") process ID: $(cat $PIDFILE)
+
+To connect your NB2KG notebook client from your Mac, run:
+
+  docker run -t --rm \\
+    -e KG_URL='http://$(ifconfig | grep "inet " | grep -vE " 127.0.0.1| 172." | awk '{print $2}'):8888' \\
+    -p 8888:8888 \\
+    -e KG_HTTP_USER=guest \\
+    -e KG_HTTP_PASS=guest-password \\
+    -e VALIDATE_KG_CERT='no' \\
+    -e LOG_LEVEL=INFO \\
+    -e KG_REQUEST_TIMEOUT=40 \\
+    -e KG_CONNECT_TIMEOUT=40 \\
+    -v \${HOME}/notebooks/:/tmp/notebooks \\
+    -w /tmp/notebooks \\
+    biginsights/jupyter-nb-nb2kg:dev
+EOF
+```
+It will start Elyra ("jupyter-kernel-gateway") in the background.
+ - to follow the log output, run `tail -F jkg.log` 
+ - to stop Elyra, run `kill $(cat ~/jkg.pid)`
 
 
 #### Connecting a Notebook Client to Elyra
