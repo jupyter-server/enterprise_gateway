@@ -195,6 +195,7 @@ SPARK_HOME="${SPARK_HOME:-/usr/hdp/current/spark2-client}"    # HDP
 #TOREE_PIP_INSTALL_PACKAGE="https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0/snapshots/dev1/toree-pip/toree-0.2.0.dev1.tar.gz"  # Toree 0.2.0.dev1 SNAPSHOT
 TOREE_PIP_INSTALL_PACKAGE="http://${ELYRA_DOWNLOAD_SERVER}/dist/toree/toree-0.2.0.dev1.tar.gz"
 
+NOTEBOOK_PIP_INSTALL_PACKAGE="http://${ELYRA_DOWNLOAD_SERVER}/dist/notebook/notebook-5.1.0.dev0-py2.py3-none-any.whl"
 
 yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
 yum install -y \
