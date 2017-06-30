@@ -384,6 +384,11 @@ class KernelGatewayApp(JupyterApp):
             **kwargs
         )
 
+        # Detect older version of notebook
+        func = getattr(self.kernel_manager, 'initialize_culler', None)
+        if not func:
+            self.log.warning("Older version of Notebook detected - idle kernels will not be culled.  Culling requires Notebook >= 5.1.0.")
+
         self.session_manager = SessionManager(
             log=self.log,
             kernel_manager=self.kernel_manager

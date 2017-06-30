@@ -68,7 +68,10 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
             lambda: self._handle_kernel_died(kernel_id),
             'dead',
         )
-        self.initialize_culler()
+        # Only initialize culling if available.  Warning message will be issued in gatewayapp at startup.
+        func = getattr(self, 'initialize_culler', None)
+        if func:
+            func()
         return True
 
 
