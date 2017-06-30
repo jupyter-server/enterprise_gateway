@@ -211,8 +211,21 @@ python -m pip install --upgrade --force pip
 # install customized version of the Yarn client API with support for HTTPS
 pip install "git+http://github.com/lresende/yarn-client.git#egg=yarn_api_client"
 
-# edit-install Elyra, optionally from user fork (if USERNAME is set) and from a dev branch (if BRANCH is set)
-pip install --upgrade -e "git+https://github.com/${USERNAME:-SparkTC}/elyra.git@${BRANCH:-elyra}#egg=jupyter-kernel-gateway"
+################################################################################
+# chose one of 3 options to install Elyra
+################################################################################
+
+# OPTION 1: install latest Elyra build from internal staging server 
+pip install --upgrade http://${ELYRA_DOWNLOAD_SERVER}/dist/elyra/jupyter_kernel_gateway-2.0.0.dev-py2.py3-none-any.whl
+
+# OPTION 2: edit-install Elyra, optionally from user fork (if USERNAME is set) and from a dev branch (if BRANCH is set)
+#pip install --upgrade --src="pip_src" -e "git+https://github.com/${USERNAME:-SparkTC}/elyra.git@${BRANCH:-elyra}#egg=jupyter-kernel-gateway"
+
+# OPTION 3: clone Elyra repo to local folder (set ELYRA_DEV_FOLDER, default: elyra) and do a pip edit-install from that
+#git clone "https://github.com/${USERNAME:-SparkTC}/elyra.git" --branch "${BRANCH:-elyra}" "${ELYRA_DEV_FOLDER:-elyra}"
+#pip install -e "${ELYRA_DEV_FOLDER:-elyra}"
+
+################################################################################
 
 # pip-install the Apache Toree installer
 pip install "${TOREE_PIP_INSTALL_PACKAGE}"
