@@ -14,5 +14,5 @@ PROG_HOME="$(cd "`dirname "$0"`"/; pwd)"
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
-     "${PROG_HOME}/launch_IRkernel.R" \
+     "${PROG_HOME}/scripts/launch_IRkernel.R" \
      "$@"

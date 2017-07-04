@@ -10,7 +10,7 @@
     "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}"
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/bin/run.sh",
     "{connection_file}"
   ]
 }
