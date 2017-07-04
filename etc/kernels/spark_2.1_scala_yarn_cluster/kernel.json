@@ -7,7 +7,7 @@
   },
   "env": {
     "SPARK_HOME": "/usr/iop/current/spark2-client",
-    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
     "__TOREE_OPTS__": "",
     "DEFAULT_INTERPRETER": "Scala"
   },
