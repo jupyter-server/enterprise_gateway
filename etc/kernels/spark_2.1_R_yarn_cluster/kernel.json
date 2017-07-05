@@ -7,10 +7,10 @@
   },
   "env": {
     "SPARK_HOME": "/usr/iop/current/spark2-client",
-    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}"
+    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}"
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/bin/run.sh",
     "{connection_file}"
   ]
 }
