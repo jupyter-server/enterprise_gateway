@@ -10,9 +10,12 @@ echo "Starting IRkernel for Spark 2.1 in Yarn Cluster mode as user ${KERNEL_USER
 echo
 
 PROG_HOME="$(cd "`dirname "$0"`"/; pwd)"
+INCLD_FILES="--files ${PROG_HOME}/../scripts/create_connection_file.py"
 
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
+     "${INCLD_FILES}" \
      "${PROG_HOME}/scripts/launch_IRkernel.R" \
+     "${LAUNCH_OPTS}" \
      "$@"
