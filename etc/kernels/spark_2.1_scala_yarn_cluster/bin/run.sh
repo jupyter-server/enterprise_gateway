@@ -23,9 +23,11 @@ if [ "${TOREE_OPTS}" = "" ]; then
    TOREE_OPTS=${__TOREE_OPTS__}
 fi
 
-# Toree launcher jar path, plus required lib jars (toree-assembly, lift-json)
-TOREE_LAUNCHER=${PROG_HOME}/lib/toreelauncher_2.11-1.jar
-JARS="${TOREE_ASSEMBLY},${PROG_HOME}/lib/lift-json_2.11-2.6.3.jar"
+# Toree launcher jar path, plus required lib jars (toree-assembly)
+JARS="${TOREE_ASSEMBLY}"
+# Toree launcher app path
+LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
+LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
 
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
@@ -33,6 +35,7 @@ eval exec \
      "${SPARK_OPTS}" \
      --jars "${JARS}" \
      --class launcher.ToreeLauncher \
-     "${TOREE_LAUNCHER}" \
+     "${LAUNCHER_APP}" \
      "${TOREE_OPTS}" \
+     "${LAUNCH_OPTS}" \
      "$@"
