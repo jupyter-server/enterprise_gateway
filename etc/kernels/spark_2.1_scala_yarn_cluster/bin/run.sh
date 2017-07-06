@@ -23,10 +23,19 @@ if [ "${TOREE_OPTS}" = "" ]; then
    TOREE_OPTS=${__TOREE_OPTS__}
 fi
 
+# Toree launcher jar path, plus required lib jars (toree-assembly)
+JARS="${TOREE_ASSEMBLY}"
+# Toree launcher app path
+LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
+LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
+
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
+     --name "${KERNEL_ID}" \
      "${SPARK_OPTS}" \
-     --class org.apache.toree.Main \
-     "${TOREE_ASSEMBLY}" \
+     --jars "${JARS}" \
+     --class launcher.ToreeLauncher \
+     "${LAUNCHER_APP}" \
      "${TOREE_OPTS}" \
+     "${LAUNCH_OPTS}" \
      "$@"
