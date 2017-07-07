@@ -7,6 +7,12 @@ library(argparser)
 return_connection_info <- function(connection_file, ip, response_addr){
 
   response_parts <- strsplit(response_addr, ":")
+
+  if (length(response_parts[[1]])!=2){
+    cat("Invalid format for response address. Assuming pull mode...")
+    return(1)
+  }
+
   response_ip <- response_parts[[1]][1]
   response_port <- response_parts[[1]][2]
 
