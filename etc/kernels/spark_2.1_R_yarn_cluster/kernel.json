@@ -6,7 +6,7 @@
     "connection_file_mode": "push"
   },
   "env": {
-    "SPARK_HOME": "/usr/iop/current/spark2-client",
+    "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}"
   },
   "argv": [
