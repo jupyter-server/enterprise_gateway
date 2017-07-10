@@ -29,6 +29,7 @@ JARS="${TOREE_ASSEMBLY}"
 LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
 LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
 
+set -x
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      --name "${KERNEL_ID}" \
@@ -39,3 +40,4 @@ eval exec \
      "${TOREE_OPTS}" \
      "${LAUNCH_OPTS}" \
      "$@"
+set +x

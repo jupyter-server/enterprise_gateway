@@ -99,8 +99,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return self.send_signal(0)
 
     def wait(self):
-        # Rather than issue a blocking wait call (if we have the local_proc), use poll with max attempts so
-        # we don't block forever.
+        # If we have a local_proc, call its wait method.  This will cleanup any defunct processes when the kernel
+        # is shutdown (when using waitAppCompletion = false).  Otherwise (if no local_proc) we'll use polling to
+        # determine if a (remote or revived) process is still active.
+        if self.local_proc:
+            return self.local_proc.wait()
+
         for i in range(max_poll_attempts):
             if self.poll():
                 time.sleep(poll_interval)
@@ -483,14 +487,23 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
     def cleanup(self):
         if self.connection_file_mode == CF_MODE_PUSH:
-            self.log.debug("Removing connection files from host(s): {}".format(self.hosts))
+            self.log.debug("YarnProcessProxy.cleanup: Removing connection files from host(s): {}".format(self.hosts))
             for host in self.hosts:
                 cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
                 self.rsh(host, cmd)
         else:  # pull or socket mode
-            self.log.debug("Removing connection file from assigned host: {}".format(self.assigned_ip))
+            self.log.debug("YarnProcessProxy.cleanup: Removing connection file from assigned host: {}".format(self.assigned_ip))
             cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
             self.rsh(self.assigned_ip, cmd)
+
+        # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
+        # a local_proc.
+        if self.local_proc:
+            self.log.debug("YarnProcessProxy.cleanup: Clearing possible defunct process, pid={}...".format(self.local_proc.pid))
+            if super(YarnProcessProxy, self).poll():
+                super(YarnProcessProxy, self).kill()
+            super(YarnProcessProxy, self).wait()
+            self.local_proc = None
 
         # reset application id to force new query - handles kernel restarts/interrupts
         self.application_id = None

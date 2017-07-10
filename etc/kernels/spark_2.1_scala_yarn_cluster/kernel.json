@@ -3,11 +3,11 @@
   "display_name": "Spark 2.1 - Scala (YARN Cluster Mode)",
   "process_proxy": {
     "class_name": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
-    "connection_file_mode": "socket"
+    "connection_file_mode": "pull"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
     "__TOREE_OPTS__": "",
     "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}",
     "DEFAULT_INTERPRETER": "Scala"
