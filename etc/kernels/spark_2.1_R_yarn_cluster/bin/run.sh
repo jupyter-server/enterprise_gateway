@@ -16,5 +16,6 @@ eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
      "${PROG_HOME}/scripts/launch_IRkernel.R" \
+     "${LAUNCH_OPTS}" \
      "$@"
 set +x
