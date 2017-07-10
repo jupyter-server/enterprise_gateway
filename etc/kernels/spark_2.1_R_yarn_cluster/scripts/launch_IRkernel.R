@@ -1,6 +1,4 @@
-library(IRkernel)
 library(SparkR)
-library(uuid)
 library(argparser)
 
 # Return connection information
@@ -24,11 +22,11 @@ return_connection_info <- function(connection_file, ip, response_addr){
       write_resp <- writeLines(sendme, con)
     },
     error=function(cond) {
-            message(paste("Unable to connect to response address", url))
+            message(paste("Unable to connect to response address", response_addr ))
             message("Here's the original error message:")
             message(cond)
             # Choose a return value in case of error
-            return(1)
+            return(NA)
     },
     finally={
       close(con)
@@ -64,8 +62,14 @@ assign("sc", sc, envir = .GlobalEnv)
 # If connection file does not exist on local FS, create it.
 #  If there is a response address, use pull socket mode
 if (!file.exists(argv$connection_file)){
-    key <- UUIDgenerate()
-    system(paste('python', 'create_connection_file.py', argv$connection_file, local_ip, key))
+    key <- uuid::UUIDgenerate()
+    connection_file <- argv$connection_file
+    
+    python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
+               "python -c \"from jupyter_client.connect import write_connection_file;
+                write_connection_file(fname='${connection_file}', ip='${local_ip}', key='${key}')\""))
+
+    system(python_cmd)
 
     if (length(argv$response_address){
       return_connection_info(argv$connection_file, local_ip, argv$response_address)
