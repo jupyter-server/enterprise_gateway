@@ -3,7 +3,7 @@
   "display_name": "Spark 2.1 - Scala (YARN Cluster Mode)",
   "process_proxy": {
     "class_name": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
-    "connection_file_mode": "socket"
+    "connection_file_mode": "pull"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
