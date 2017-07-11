@@ -3,6 +3,7 @@
 """Kernel managers that operate against a remote process."""
 
 import os
+import errno
 import signal
 import abc
 import json
@@ -205,8 +206,14 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # Check if we're performing a loopback copy.  If so, skip it...
         if self.is_local_ip(gethostbyname(host)) and src_file == dst_file:
+            # Note: we still need to enforce existence since FileNotFoundError is retried.
+            exists = os.path.isfile(dst_file)
+            if not exists:
+                raise IOError(errno.ENOENT, os.strerror(errno.ENOENT), dst_file)
+
+            # file exists
             self.log.debug("Copy of file '{}' to '{}' {} host '{}' skipped - loopback detected.".
-                            format(src_file, dst_file, msg_direction, host))
+                               format(src_file, dst_file, msg_direction, host))
             return True
 
         close_connection = False
@@ -413,8 +420,10 @@ class YarnProcessProxy(BaseProcessProxyABC):
 
         if self.connection_file_mode == CF_MODE_PUSH:
             self.distribute_connection_files()
-        elif self.connection_file_mode == CF_MODE_SOCKET:
-            self.prepare_socket(**kw)
+        else: # PULL or SOCKET mode
+            self.kernel_manager.cleanup_connection_file()
+            if self.connection_file_mode == CF_MODE_SOCKET:
+                self.prepare_socket(**kw)
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
@@ -566,19 +575,23 @@ class YarnProcessProxy(BaseProcessProxyABC):
                                "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
                                format(self.kernel_id, self.application_id, host, app_state, i))
                 else:  # We're in RUNNING state - check on connection file
+                    self.log.debug("KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
+                               format(self.kernel_id, self.application_id, host, app_state, i))
                     if self.connection_file_mode == CF_MODE_PUSH:  # Using push mode so we have a connection file
                         ready_to_connect = True
                     else:  # pull or socket mode
                         if self.connection_file_mode == CF_MODE_PULL:
-                            self.log.debug("Pulling connection file {} on host {} to local, ApplicationID={}, Attempt={}".
-                                           format(self.get_connection_filename(), host, self.application_id, i))
                             try:
-                                if self.rcp(host=host, src_file=self.get_connection_filename(), dst_file=self.kernel_manager.connection_file, pull=True):
-                                    self.log.info("Successfully pulled '{}' from host '{}'".format(self.get_connection_filename(), host))
+                                exists = True  # optimistic view
+                                if self.rcp(host=host, src_file=self.get_connection_filename(),
+                                            dst_file=self.kernel_manager.connection_file, pull=True):
+                                    self.log.debug(
+                                        "Pulled connection file {} on host {} to local, ApplicationID={}, Attempt={}".
+                                        format(self.get_connection_filename(), host, self.application_id, i))
                                     ready_to_connect = True
                             except Exception as e:
-                                if type(e) is IOError and e.errno == 2:
-                                    self.log.debug("No such file when pulling {} for {}, need to retry.".format(
+                                if type(e) is IOError and e.errno == errno.ENOENT:
+                                    self.log.debug("No such file '{}' for app '{}', retrying...".format(
                                         self.get_connection_filename(), self.application_id))
                                 else:
                                     self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
@@ -627,14 +640,22 @@ class YarnProcessProxy(BaseProcessProxyABC):
             self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
 
         if json_info:
+            json_info['ip'] = self.assigned_ip  # overwrite the ip to our remote target
             self.kernel_manager.load_connection_info(info=json_info)
-        else:
-            self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)
 
-        self.kernel_manager.cleanup_connection_file() # remove the file (retaining members)
-        self.kernel_manager.ip = self.assigned_ip # overwrite the ip to our remote target
-        self.kernel_manager.write_connection_file()  # write members to file so its marked as written
-        self.log.debug("Successfully updated connection file '{}'.".format(self.kernel_manager.connection_file))
+            if self.is_local_ip(self.assigned_ip):
+                # if loopback - file is already good to go and loaded.
+                self.log.debug("Using existing connection file '{}'.".format(self.kernel_manager.connection_file))
+            else:
+                self.kernel_manager.cleanup_connection_file()  # remove the original file (retaining members)
+                self.kernel_manager.write_connection_file()    # write members to file so its marked as written
+                self.log.debug("Successfully updated connection file '{}'.".format(self.kernel_manager.connection_file))
+        else:
+            # push or pull mode - so we already have the file in place - just load
+            self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)
+            self.kernel_manager.ip = self.assigned_ip # overwrite the ip to our remote target
+
+        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files
 
     def handle_timeout(self):
         time_interval = YarnProcessProxy.get_time_diff(self.start_time, YarnProcessProxy.get_current_time())
