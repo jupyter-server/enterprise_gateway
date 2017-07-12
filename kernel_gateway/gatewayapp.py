@@ -529,6 +529,8 @@ class KernelGatewayApp(JupyterApp):
             self.io_loop.start()
         except KeyboardInterrupt:
             self.log.info("Interrupted...")
+            # Ignore further interrupts (ctrl-c)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
         finally:
             self.shutdown()
 
