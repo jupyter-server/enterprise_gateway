@@ -561,78 +561,89 @@ class YarnProcessProxy(BaseProcessProxyABC):
                     app = YarnProcessProxy.query_app_by_id(self.application_id)
                     if app and app.get('amHostHttpAddress'):
                         host = app.get('amHostHttpAddress').split(':')[0]
-                        self.log.debug("Kernel '{}' with app ID {} has been assigned to host {}. CurrentState={}, Attempt={}"
-                                  .format(self.kernel_id, self.application_id, host, app_state, i))
                         # Set the kernel manager ip to the actual host where the application landed.
                         self.assigned_ip = gethostbyname(host)
 
                 if app_state in YarnProcessProxy.final_states:
-                    raise tornado.web.HTTPError(500, "Kernel '{}' with Yarn application ID {} unexpectedly found in"
+                    raise tornado.web.HTTPError(500, "Kernel '{}' with Yarn application ID '{}' unexpectedly found in"
                         "state '{}' during kernel startup!".format(self.kernel_id, self.application_id, app_state))
 
-                if app_state != 'RUNNING':
-                    self.log.debug("Waiting for application to enter 'RUNNING' state. "
-                               "KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
-                               format(self.kernel_id, self.application_id, host, app_state, i))
-                else:  # We're in RUNNING state - check on connection file
-                    self.log.debug("KernelID={}, ApplicationID={}, AssignedHost={}, CurrentState={}, Attempt={}".
-                               format(self.kernel_id, self.application_id, host, app_state, i))
-                    if self.connection_file_mode == CF_MODE_PUSH:  # Using push mode so we have a connection file
-                        ready_to_connect = True
-                    else:  # pull or socket mode
-                        if self.connection_file_mode == CF_MODE_PULL:
-                            try:
-                                exists = True  # optimistic view
-                                if self.rcp(host=host, src_file=self.get_connection_filename(),
-                                            dst_file=self.kernel_manager.connection_file, pull=True):
-                                    self.log.debug(
-                                        "Pulled connection file {} on host {} to local, ApplicationID={}, Attempt={}".
-                                        format(self.get_connection_filename(), host, self.application_id, i))
-                                    ready_to_connect = True
-                            except Exception as e:
-                                if type(e) is IOError and e.errno == errno.ENOENT:
-                                    self.log.debug("No such file '{}' for app '{}', retrying...".format(
-                                        self.get_connection_filename(), self.application_id))
-                                else:
-                                    self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}' "
-                                            "Kernel ID '{}'".format(type(e).__name__, host, self.application_id, self.kernel_id))
-                                    self.kill()
-                                    raise e
+                self.log.debug("{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".
+                               format(i, app_state, host, self.kernel_id, self.application_id))
+                if host != '':
+                    if self.connection_file_mode == CF_MODE_SOCKET:
+                        ready_to_connect, json_info = self.handle_socket_mode(host)
+                    elif self.connection_file_mode == CF_MODE_PULL:
+                        ready_to_connect = self.handle_pull_mode(host)
+                    else:  # assume push mode since that's the prior behavior
+                        ready_to_connect = self.handle_push_mode(app_state)
 
-                        if self.connection_file_mode == CF_MODE_SOCKET:
-                            if self.response_socket:
-                                conn = None
-                                try:
-                                    conn, addr = self.response_socket.accept()
-                                    while 1:
-                                        self.log.debug("Connected to {}...".format(addr))
-                                        data = conn.recv(1024)
-                                        if not data:
-                                            break
-                                        json_info = json.loads(data)
-                                        ready_to_connect = True
-                                except Exception as e:
-                                    if type(e) is timeout:
-                                        self.log.debug("Waiting for {} to connect back to receive connection info...".
-                                            format(self.application_id))
-                                    else:
-                                        self.log.error(
-                                            "Exception '{}' occured when waiting for connection file response for app '{}' "
-                                            "Kernel ID '{}'".format(type(e).__name__, self.application_id,
-                                                                    self.kernel_id))
-                                        self.kill()
-                                        raise e
-                                finally:
-                                    if conn:
-                                        conn.close()
-                            else:
-                                raise tornado.web.HTTPError(500,
-                                    "Unexpected runtime found for Kernel '{}' with Yarn application ID {}!  "
-                                    "No response socket exists".format(self.kernel_id, self.application_id))
         if ready_to_connect:
             self.update_connection(json_info)
 
         return
+
+    def handle_socket_mode(self, assigned_host):
+        # Polls the socket using accept.  When data is found, returns ready indicator and json data
+        json_info = None
+        ready_to_connect = False
+        if self.response_socket:
+            conn = None
+            try:
+                conn, addr = self.response_socket.accept()
+                while 1:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    self.log.debug("Received data for app '{}' on host '{}' on connection {}...".
+                                   format(self.application_id, assigned_host, addr))
+                    json_info = json.loads(data)
+                    ready_to_connect = True
+            except Exception as e:
+                if type(e) is timeout:
+                    self.log.debug("Waiting for app '{}' to send connection info from host '{}'  - retyring...".
+                                   format(self.application_id, assigned_host))
+                else:
+                    self.log.error(
+                        "Exception '{}' occured waiting for connection file response for app '{}' "
+                        "on host '{}' and KernelID '{}'".format(type(e).__name__, self.application_id,
+                                                assigned_host, self.kernel_id))
+                    self.kill()
+                    raise e
+            finally:
+                if conn:
+                    conn.close()
+        else:
+            raise tornado.web.HTTPError(500,
+                                        "Unexpected runtime found for KernelID '{}' with Yarn application ID {}!  "
+                                        "No response socket exists".format(self.kernel_id, self.application_id))
+        return (ready_to_connect, json_info)
+
+    def handle_pull_mode(self, assigned_host):
+        # Checks the remote file for existence.  If found, file is pulled and ready indicator is returned.
+        ready_to_connect = False
+        try:
+            if self.rcp(host=assigned_host, src_file=self.get_connection_filename(),
+                        dst_file=self.kernel_manager.connection_file, pull=True):
+                self.log.debug(
+                    "Pulled connection file '{}' from host '{}', app '{}'".
+                        format(self.get_connection_filename(), assigned_host, self.application_id))
+                ready_to_connect = True
+        except Exception as e:
+            if type(e) is IOError and e.errno == errno.ENOENT:
+                self.log.debug("Connection file '{}' not available on host '{}', app '{}' - retrying...".
+                    format(self.get_connection_filename(), assigned_host, self.application_id))
+            else:
+                self.log.error("Exception '{}' occured when pulling connection file from host '{}', app '{}', "
+                               "KernelID '{}'".format(type(e).__name__, assigned_host, self.application_id,
+                                                       self.kernel_id))
+                self.kill()
+                raise e
+        return ready_to_connect
+
+    def handle_push_mode(self, state):
+        # Push mode already has the connection file in place, so require running state.
+        return state == 'RUNNING'
 
     def update_connection(self, json_info=None):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
