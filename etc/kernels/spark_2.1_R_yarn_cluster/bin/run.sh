@@ -9,7 +9,7 @@ echo
 echo "Starting IRkernel for Spark 2.1 in Yarn Cluster mode as user ${KERNEL_USERNAME:-UNSPECIFIED}"
 echo
 
-PROG_HOME="$(cd "`dirname "$0"`"/; pwd)"
+PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 
 set -x
 eval exec \
