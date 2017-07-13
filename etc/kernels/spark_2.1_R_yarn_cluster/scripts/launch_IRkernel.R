@@ -71,7 +71,7 @@ if (!file.exists(argv$connection_file)){
 
     system(python_cmd)
 
-    if (length(argv$response_address){
+    if (length(argv$response_address)){
       return_connection_info(argv$connection_file, local_ip, argv$response_address)
     }
 }
