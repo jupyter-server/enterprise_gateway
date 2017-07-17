@@ -42,8 +42,8 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
             parent=self, log=self.log, kernel_name=kernel_name,
             **constructor_kwargs)
 
+        # Load connection info into member vars - no need to write out connection file
         km.load_connection_info(connection_info)
-        km.write_connection_file()
 
         km._launch_args = launch_args
 
