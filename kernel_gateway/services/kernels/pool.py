@@ -2,11 +2,13 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel pools that track and delegate to kernels."""
 
+import os
 from jupyter_client.session import Session
 
 from tornado.locks import Semaphore
 from tornado import gen
 
+prespawn_username = os.getenv('ELYRA_PRESPAWN_USERNAME', 'elyra')
 
 class KernelPool(object):
     """Spawns a pool of kernels.
@@ -26,8 +28,10 @@ class KernelPool(object):
         # Make sure we've got a int
         if not prespawn_count:
             prespawn_count = 0
+        env = dict(os.environ)
+        env['KERNEL_USERNAME'] = prespawn_username
         for _ in range(prespawn_count):
-            self.kernel_manager.start_seeded_kernel()
+            self.kernel_manager.start_seeded_kernel(env=env)
 
     def shutdown(self):
         """Shuts down all running kernels."""
