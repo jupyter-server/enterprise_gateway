@@ -89,7 +89,6 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                            format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
             process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
             self.process_proxy = process_proxy_class(self, self.kernel_spec.process_proxy_connection_file_mode, **kw)
-            self.ip = '0.0.0.0'  # use the zero-ip from the start, can prevent having to write out connection file again
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
