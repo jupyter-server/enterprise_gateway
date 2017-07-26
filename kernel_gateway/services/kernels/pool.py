@@ -28,7 +28,7 @@ class KernelPool(object):
         # Make sure we've got a int
         if not prespawn_count:
             prespawn_count = 0
-        env = dict(os.environ)
+        env = dict(os.environ.copy())
         env['KERNEL_USERNAME'] = prespawn_username
         for _ in range(prespawn_count):
             self.kernel_manager.start_seeded_kernel(env=env)
