@@ -856,7 +856,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         """
         url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'GET', url]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         output, stderr = process.communicate()
         return json.loads(output).get('state') if output else None
 
@@ -873,6 +873,6 @@ class YarnProcessProxy(RemoteProcessProxy):
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         output, stderr = process.communicate()
         return json.loads(output) if output else None
