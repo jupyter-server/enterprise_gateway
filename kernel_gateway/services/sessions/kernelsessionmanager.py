@@ -11,7 +11,6 @@ import json
 import threading
 kernels_lock = threading.Lock()
 
-
 class KernelSessionManager(LoggingConfigurable):
     """
         KernelSessionManager is used to manage kernel sessions.  It loads the complete set of persisted kernel
@@ -27,7 +26,7 @@ class KernelSessionManager(LoggingConfigurable):
         super(KernelSessionManager, self).__init__(**kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = dict()
-        self.kernel_session_file = os.path.join(self.get_sessions_loc(), 'kernels.json')
+        self.kernel_session_file = os.path.join(self._get_sessions_loc(), 'kernels.json')
         self._load_sessions()
 
     def create_session(self, kernel_id, **kwargs):
@@ -38,7 +37,7 @@ class KernelSessionManager(LoggingConfigurable):
         # Compose the kernel_session entry
         kernel_session = dict()
         kernel_session['kernel_id'] = kernel_id
-        kernel_session['username'] = kwargs['env']['KERNEL_USERNAME']
+        kernel_session['username'] = self._get_kernel_username(kwargs.get('env',{}))
         kernel_session['kernel_name'] = km.kernel_name
 
         # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
@@ -124,8 +123,12 @@ class KernelSessionManager(LoggingConfigurable):
             fp.close()
 
     @staticmethod
-    def get_sessions_loc():
+    def _get_sessions_loc():
         path = os.path.join(jupyter_data_dir(), 'sessions')
         if not os.path.exists(path):
             os.makedirs(path, 0o755)
         return path
+
+    @staticmethod
+    def _get_kernel_username(env_dict):
+        return env_dict.get('KERNEL_USERNAME', 'unspecified')

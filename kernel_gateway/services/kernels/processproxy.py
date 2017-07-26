@@ -66,16 +66,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # ask the subclass for the set of applicable hosts
         self.hosts = self.get_hosts()
 
-        env_dict = kw['env']
-        # see if KERNEL_LAUNCH_TIMEOUT was included from user
-        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', elyra_kernel_launch_timeout))
-
-        # add the applicable kernel_id to the env dict
-        env_dict['KERNEL_ID'] = self.kernel_id
-        for k in env_pop_list:
-            env_dict.pop(k, None)
-        self.log.debug("BaseProcessProxy env: {}".format(kw['env']))
-
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if the JKG is restarted and the
         # persisted kernel-sessions indicate that its now running on a different server.  In those case, we use the ip
@@ -87,7 +77,19 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def launch_process(self, cmd, **kw):
-        pass
+        env_dict = kw.get('env')
+        if env_dict is None:
+            env_dict = dict(os.environ.copy())
+            kw.update({'env': env_dict})
+
+        # see if KERNEL_LAUNCH_TIMEOUT was included from user
+        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', elyra_kernel_launch_timeout))
+
+        # add the applicable kernel_id to the env dict
+        env_dict['KERNEL_ID'] = self.kernel_id
+        for k in env_pop_list:
+            env_dict.pop(k, None)
+        self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kw.get('env')))
 
     def cleanup(self):
         pass
