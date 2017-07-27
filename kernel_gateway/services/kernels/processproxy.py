@@ -302,7 +302,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
-    def prepare_socket(self, **kw):
+    def prepare_socket(self, kernel_cmd, **kw):
         if self.connection_file_mode == CF_MODE_SOCKET:
             s = socket(AF_INET, SOCK_STREAM)
             s.bind((local_ip, 0))
@@ -310,7 +310,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
             s.listen(1)
             s.settimeout(socket_timeout)
-            kw['env']['KERNEL_RESPONSE_ADDRESS'] = (local_ip + ':' + str(port))
+            kernel_cmd.append('--response-address ' + (local_ip + ':' + str(port)))
             self.response_socket = s
 
     def handle_socket_mode(self):
@@ -449,7 +449,7 @@ class StandaloneProcessProxy(RemoteProcessProxy):
         else: # PULL or SOCKET mode
             self.kernel_manager.cleanup_connection_file()
             if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(**kw)
+                self.prepare_socket(kernel_cmd, **kw)
 
         cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.assigned_host))
@@ -499,9 +499,6 @@ class StandaloneProcessProxy(RemoteProcessProxy):
         kid = env_dict.get('KERNEL_ID')
         if kid:
             cmd += 'export KERNEL_ID="{}";'.format(kid)
-        kra = env_dict.get('KERNEL_RESPONSE_ADDRESS')
-        if kra:
-            cmd += 'export KERNEL_RESPONSE_ADDRESS="{}";'.format(kra)
 
         for key, value in self.kernel_manager.kernel_spec.env.items():
             cmd += "export {}={};".format(key, json.dumps(value).replace("'","''"))
@@ -596,7 +593,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         else: # PULL or SOCKET mode
             self.kernel_manager.cleanup_connection_file()
             if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(**kw)
+                self.prepare_socket(kernel_cmd, **kw)
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
