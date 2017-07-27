@@ -8,7 +8,7 @@
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
-    "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}"
+    "LAUNCH_OPTS": ""
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_client/bin/run.sh",
