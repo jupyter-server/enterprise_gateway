@@ -2,7 +2,7 @@
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "kernel_gateway.services.kernels.processproxy.StandaloneProcessProxy",
+    "class_name": "kernel_gateway.services.kernels.processproxy.DistributedProcessProxy",
     "connection_file_mode": "socket"
   },
   "env": {
