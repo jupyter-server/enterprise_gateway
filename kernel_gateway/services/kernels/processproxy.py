@@ -302,7 +302,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
-    def prepare_socket(self, **kw):
+    def prepare_socket(self, kernel_cmd, **kw):
         if self.connection_file_mode == CF_MODE_SOCKET:
             s = socket(AF_INET, SOCK_STREAM)
             s.bind((local_ip, 0))
@@ -310,7 +310,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
             s.listen(1)
             s.settimeout(socket_timeout)
-            kw['env']['KERNEL_RESPONSE_ADDRESS'] = (local_ip + ':' + str(port))
+            kernel_cmd.append('--RemoteProcessProxy.response-address ' + (local_ip + ':' + str(port)))
             self.response_socket = s
 
     def handle_socket_mode(self):
@@ -421,18 +421,18 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         return float("%d.%d" % (diff.seconds, diff.microseconds / 1000))
 
 
-class StandaloneProcessProxy(RemoteProcessProxy):
+class DistributedProcessProxy(RemoteProcessProxy):
     host_index = 0
 
     def __init__(self, kernel_manager, connection_file_mode, **kw):
-        super(StandaloneProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+        super(DistributedProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
 
     def get_hosts(self):
         # Called during construction to set self.hosts
         return os.getenv('ELYRA_REMOTE_HOSTS', 'localhost').split(',')
 
     def launch_process(self, kernel_cmd, **kw):
-        super(StandaloneProcessProxy, self).launch_process(kernel_cmd, **kw)
+        super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.assigned_host = self.determine_next_host()
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
@@ -449,7 +449,7 @@ class StandaloneProcessProxy(RemoteProcessProxy):
         else: # PULL or SOCKET mode
             self.kernel_manager.cleanup_connection_file()
             if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(**kw)
+                self.prepare_socket(kernel_cmd, **kw)
 
         cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.assigned_host))
@@ -499,9 +499,6 @@ class StandaloneProcessProxy(RemoteProcessProxy):
         kid = env_dict.get('KERNEL_ID')
         if kid:
             cmd += 'export KERNEL_ID="{}";'.format(kid)
-        kra = env_dict.get('KERNEL_RESPONSE_ADDRESS')
-        if kra:
-            cmd += 'export KERNEL_RESPONSE_ADDRESS="{}";'.format(kra)
 
         for key, value in self.kernel_manager.kernel_spec.env.items():
             cmd += "export {}={};".format(key, json.dumps(value).replace("'","''"))
@@ -515,8 +512,8 @@ class StandaloneProcessProxy(RemoteProcessProxy):
         return cmd
 
     def determine_next_host(self):
-        next_host = self.hosts[StandaloneProcessProxy.host_index % self.hosts.__len__()]
-        StandaloneProcessProxy.host_index += 1
+        next_host = self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
+        DistributedProcessProxy.host_index += 1
         return next_host
 
     def confirm_remote_startup(self, kernel_cmd, **kw):
@@ -561,7 +558,7 @@ class StandaloneProcessProxy(RemoteProcessProxy):
             raise tornado.web.HTTPError(error_http_code, timeout_message)
 
 
-class YarnProcessProxy(RemoteProcessProxy):
+class YarnClusterProcessProxy(RemoteProcessProxy):
 
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
     resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
@@ -569,12 +566,12 @@ class YarnProcessProxy(RemoteProcessProxy):
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 
     def __init__(self,  kernel_manager, connection_file_mode, **kw):
-        super(YarnProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+        super(YarnClusterProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
         self.application_id = None
 
     def get_hosts(self):
         # Called during construction to set self.hosts
-        return YarnProcessProxy.query_yarn_nodes()
+        return YarnClusterProcessProxy.query_yarn_nodes()
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
@@ -589,14 +586,14 @@ class YarnProcessProxy(RemoteProcessProxy):
             mode is configured, the kernel manager's IP is updated to the selected node.
         """
 
-        super(YarnProcessProxy, self).launch_process(kernel_cmd, **kw)
+        super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         if self.connection_file_mode == CF_MODE_PUSH:
             self.distribute_connection_files()
         else: # PULL or SOCKET mode
             self.kernel_manager.cleanup_connection_file()
             if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(**kw)
+                self.prepare_socket(kernel_cmd, **kw)
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
@@ -620,8 +617,8 @@ class YarnProcessProxy(RemoteProcessProxy):
         result = False
 
         if self.get_application_id():
-            state = YarnProcessProxy.query_app_state_by_id(self.application_id)
-            if state in YarnProcessProxy.initial_states:
+            state = YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
+            if state in YarnClusterProcessProxy.initial_states:
                 result = None
 
         # The following produces too much output (every 3 seconds by default), so commented-out at this time.
@@ -651,19 +648,19 @@ class YarnProcessProxy(RemoteProcessProxy):
         state = None
         result = False
         if self.get_application_id():
-            resp = YarnProcessProxy.kill_app_by_id(self.application_id)
+            resp = YarnClusterProcessProxy.kill_app_by_id(self.application_id)
             self.log.debug("YarnProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
 
-            i, state = 1, YarnProcessProxy.query_app_state_by_id(self.application_id)
-            while state not in YarnProcessProxy.final_states and i <= max_poll_attempts:
+            i, state = 1, YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
+            while state not in YarnClusterProcessProxy.final_states and i <= max_poll_attempts:
                 time.sleep(poll_interval)
-                state = YarnProcessProxy.query_app_state_by_id(self.application_id)
+                state = YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
                 i = i+1
 
-            if state in YarnProcessProxy.final_states:
+            if state in YarnClusterProcessProxy.final_states:
                 result = None
 
-        super(YarnProcessProxy, self).kill()
+        super(YarnClusterProcessProxy, self).kill()
 
         self.log.debug("YarnProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
@@ -686,9 +683,9 @@ class YarnProcessProxy(RemoteProcessProxy):
         if self.local_proc:
             self.log.debug("YarnProcessProxy.cleanup: Clearing possible defunct process, pid={}...".
                            format(self.local_proc.pid))
-            if super(YarnProcessProxy, self).poll():
-                super(YarnProcessProxy, self).kill()
-            super(YarnProcessProxy, self).wait()
+            if super(YarnClusterProcessProxy, self).poll():
+                super(YarnClusterProcessProxy, self).kill()
+            super(YarnClusterProcessProxy, self).wait()
             self.local_proc = None
 
         # reset application id to force new query - handles kernel restarts/interrupts
@@ -721,7 +718,7 @@ class YarnProcessProxy(RemoteProcessProxy):
                 # Once we have an application ID, start monitoring state, obtain assigned host and get connection info
                 self.app_state = self.get_application_state()
 
-                if self.app_state in YarnProcessProxy.final_states:
+                if self.app_state in YarnClusterProcessProxy.final_states:
                     raise tornado.web.HTTPError(500, "KernelID: '{}', ApplicationID: '{}' unexpectedly found in"
                         "state '{}' during kernel startup!".format(self.kernel_id, self.application_id, self.app_state))
 
@@ -744,7 +741,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         # Gets the current application state using the application_id already obtained.  Once the assigned host
         # has been identified, it is nolonger accessed.
         app_state = None
-        app = YarnProcessProxy.query_app_by_id(self.application_id)
+        app = YarnClusterProcessProxy.query_app_by_id(self.application_id)
 
         if app:
             if app.get('state'):
@@ -764,7 +761,7 @@ class YarnProcessProxy(RemoteProcessProxy):
                 format(self.kernel_launch_timeout)
             error_http_code = 500
             if self.get_application_id(True):
-                if YarnProcessProxy.query_app_state_by_id(self.application_id) != "RUNNING":
+                if YarnClusterProcessProxy.query_app_state_by_id(self.application_id) != "RUNNING":
                     timeout_message = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!".\
                         format(time_interval, self.application_id, self.kernel_launch_timeout)
                     error_http_code = 503
@@ -780,10 +777,10 @@ class YarnProcessProxy(RemoteProcessProxy):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.  TODO - may need to treat FAILED state differently.
         if not self.application_id:
-            app = YarnProcessProxy.query_app_by_name(self.kernel_id)
+            app = YarnClusterProcessProxy.query_app_by_name(self.kernel_id)
             state_condition = True
             if app and ignore_final_states:
-                state_condition = app.get('state') not in YarnProcessProxy.final_states
+                state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
 
             if app and len(app.get('id', '')) > 0 and state_condition:
                 self.application_id = app['id']
@@ -795,12 +792,12 @@ class YarnProcessProxy(RemoteProcessProxy):
         return self.application_id
 
     def get_process_info(self):
-        process_info = super(YarnProcessProxy, self).get_process_info()
+        process_info = super(YarnClusterProcessProxy, self).get_process_info()
         process_info.update({'application_id': self.application_id})
         return process_info
 
     def load_process_info(self, process_info):
-        super(YarnProcessProxy, self).load_process_info(process_info)
+        super(YarnClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
 
     @staticmethod
@@ -816,7 +813,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         """
         top_most_app_id = ''
         target_app = None
-        data = YarnProcessProxy.resource_mgr.cluster_applications().data
+        data = YarnClusterProcessProxy.resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
@@ -830,7 +827,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         
         :return: A list of "nodeHostName" from JSON object
         """
-        data = YarnProcessProxy.resource_mgr.cluster_nodes().data
+        data = YarnClusterProcessProxy.resource_mgr.cluster_nodes().data
         nodes_list = list([])
         if data and 'nodes' in data and 'node' in data['nodes']:
             for node in data['nodes']['node']:
@@ -844,7 +841,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         :param app_id
         :return: The JSON object of an application.
         """
-        data = YarnProcessProxy.resource_mgr.cluster_application(application_id=app_id).data
+        data = YarnClusterProcessProxy.resource_mgr.cluster_application(application_id=app_id).data
         if data and 'app' in data:
             return data['app']
         return None
@@ -856,7 +853,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         :param app_id: 
         :return: 
         """
-        url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
+        url = '%s/apps/%s/state' % (YarnClusterProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'GET', url]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         output, stderr = process.communicate()
@@ -873,7 +870,7 @@ class YarnProcessProxy(RemoteProcessProxy):
         """
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
-        url = '%s/apps/%s/state' % (YarnProcessProxy.yarn_endpoint, app_id)
+        url = '%s/apps/%s/state' % (YarnClusterProcessProxy.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         output, stderr = process.communicate()

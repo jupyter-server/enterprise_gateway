@@ -1,6 +1,23 @@
 library(SparkR)
 library(argparser)
 
+# Initializas the Spark session/context and SQL context
+initialize_spark_session <- function() {
+    # Make sure SparkR package is loaded last; this is necessary
+    # to avoid the need to fully qualify package namspace (using ::)
+    old <- getOption("defaultPackages")
+    options(defaultPackages = c(old, "SparkR"))
+
+    # Initialize a new spark Session
+    spark <- SparkR::sparkR.session(enableHiveSupport = FALSE)
+    assign("spark", spark, envir = .GlobalEnv)
+
+    # Initialize spark context and sql context
+    sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils", "getJavaSparkContext", spark)
+    sqlContext <<- SparkR::sparkRSQL.init(sc)
+    assign("sc", sc, envir = .GlobalEnv)
+}
+
 # Return connection information
 return_connection_info <- function(connection_file, ip, response_addr){
 
@@ -38,26 +55,12 @@ local_ip <- "0.0.0.0"
 
 # Check arguments
 parser <- arg_parser('R-kernel-launcher')
-parser <- add_argument(parser, "--response-address",
+parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting JKG and expecting response")
 parser <- add_argument(parser, "connection_file",
        help="Connection file name to be used; dictated by JKG")
 
 argv <- parse_args(parser)
-
-# Make sure SparkR package is loaded last; this is necessary
-# to avoid the need to fully qualify package namspace (using ::)
-old <- getOption("defaultPackages")
-options(defaultPackages = c(old, "SparkR"))
-
-# Initialize a new spark Session
-spark <- SparkR::sparkR.session(enableHiveSupport = FALSE)
-assign("spark", spark, envir = .GlobalEnv)
-
-# Initialize spark context and sql context
-sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils", "getJavaSparkContext", spark)
-sqlContext <<- SparkR::sparkRSQL.init(sc)
-assign("sc", sc, envir = .GlobalEnv)
 
 # If connection file does not exist on local FS, create it.
 #  If there is a response address, use pull socket mode
@@ -71,10 +74,12 @@ if (!file.exists(argv$connection_file)){
 
     system(python_cmd)
 
-    if (length(argv$response_address)){
-      return_connection_info(argv$connection_file, local_ip, argv$response_address)
+    if (length(argv$RemoteProcessProxy.response_address)){
+      return_connection_info(argv$connection_file, local_ip, argv$RemoteProcessProxy.response_address)
     }
 }
+
+initialize_spark_session()
 
 # Start the kernel
 IRkernel::main(argv$connection_file)

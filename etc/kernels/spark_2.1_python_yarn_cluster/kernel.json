@@ -2,13 +2,13 @@
   "language": "python",
   "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
   "process_proxy": {
-    "class_name": "kernel_gateway.services.kernels.processproxy.YarnProcessProxy",
+    "class_name": "kernel_gateway.services.kernels.processproxy.YarnClusterProcessProxy",
     "connection_file_mode": "socket"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
-    "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}"
+    "LAUNCH_OPTS": ""
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",

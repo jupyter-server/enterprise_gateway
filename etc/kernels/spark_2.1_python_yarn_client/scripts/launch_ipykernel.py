@@ -92,15 +92,15 @@ def return_connection_info(connection_file, ip, response_addr):
 
 if __name__ == "__main__":
     """
-        Usage: spark-submit launch_ipykernel [connection_file] [--response-address <response_addr>]
+        Usage: spark-submit launch_ipykernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
     """
 
     parser = argparse.ArgumentParser()
     parser.add_argument('connection_file', help='Connection file to write connection info')
-    parser.add_argument('--response-address', nargs='?', metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
+    parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?', metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
-    response_addr = arguments['response_address']  # Although argument uses dash, argparse converts to underscore.
+    response_addr = arguments['response_address']
     ip = "0.0.0.0"
 
     # If the connection file doesn't exist, then we're using 'pull' or 'socket' mode - otherwise 'push' mode.
