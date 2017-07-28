@@ -9,7 +9,7 @@
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
     "__TOREE_OPTS__": "",
-    "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}",
+    "LAUNCH_OPTS": "",
     "DEFAULT_INTERPRETER": "Scala"
   },
   "argv": [
