@@ -310,7 +310,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
             s.listen(1)
             s.settimeout(socket_timeout)
-            kernel_cmd.append('--response-address ' + (local_ip + ':' + str(port)))
+            kernel_cmd.append('--RemoteProcessProxy.response-address ' + (local_ip + ':' + str(port)))
             self.response_socket = s
 
     def handle_socket_mode(self):
