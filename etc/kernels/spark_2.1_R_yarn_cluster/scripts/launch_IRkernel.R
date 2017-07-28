@@ -55,7 +55,7 @@ local_ip <- "0.0.0.0"
 
 # Check arguments
 parser <- arg_parser('R-kernel-launcher')
-parser <- add_argument(parser, "--RemoteProcessProxy.response-address", dest="response_address",
+parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting JKG and expecting response")
 parser <- add_argument(parser, "connection_file",
        help="Connection file name to be used; dictated by JKG")
