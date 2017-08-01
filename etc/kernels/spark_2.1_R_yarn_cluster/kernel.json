@@ -2,8 +2,7 @@
   "language": "R",
   "display_name": "Spark 2.1 - R (YARN Cluster Mode)",
   "process_proxy": {
-    "class_name": "kernel_gateway.services.kernels.processproxy.YarnClusterProcessProxy",
-    "connection_file_mode": "socket"
+    "class_name": "kernel_gateway.services.kernels.processproxy.YarnClusterProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -12,6 +11,8 @@
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/bin/run.sh",
-    "{connection_file}"
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}"
   ]
 }

@@ -1,5 +1,4 @@
-Elyra has been forked from :
-https://github.com/jupyter/kernel_gateway
+Elyra has been forked from: https://github.com/jupyter/kernel_gateway
 
 At the time of the fork, the last commit hash on master was:
 595e34ababe24f88697968c7deb7de735760a6ae
@@ -23,7 +22,7 @@ This component is the core communication mechanism between the Notebook and the 
 
 **Kernel Process**
 
-When a kernel is launched, one of the fields of the kernel's associated kernel specification is used to identify a command to invoke.  In today's implementation, this command information, along with other environment variables (also described in the kernel specification), is passed to `popen` which returns a process class.  This class supports four basic methods following its creation:
+When a kernel is launched, one of the fields of the kernel's associated kernel specification is used to identify a command to invoke.  In today's implementation, this command information, along with other environment variables (also described in the kernel specification), is passed to `popen()` which returns a process class.  This class supports four basic methods following its creation:
 1. `poll()` to determine if the process is still running
 2. `wait()` to block the caller until the process has terminated
 3. `send_signal(signum)` to send a signal to the process 
@@ -34,34 +33,34 @@ As you can see, other forms of process communication can be achieved by abstract
 ### Remote Kernel Spec
 The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel specification, otherwise known as the *kernel spec*.  Elyra introduces a new subclass of KernelSpec named `RemoteKernelSpec`.  
 
-The `RemoteKernelSpec` class provides support for a new (and optional) stanza within the kernelspec file.  This stanza is currently named `process_proxy` and identifies the class that provides the kernel's process abstraction along with an optional mode of conveying the connection file.
+The `RemoteKernelSpec` class provides support for a new (and optional) stanza within the kernelspec file.  This stanza is named `process_proxy` and identifies the class that provides the kernel's process abstraction (while allowing for future extensions).
 
-Here's an example of a kernel specification that uses the `StandaloneProcessProxy` class for its abstraction:
+Here's an example of a kernel specification that uses the `DistributedProcessProxy` class for its abstraction:
 ```json
 {
-  "language": "scala", 
-  "display_name": "Spark 2.1 - Scala (sa)", 
+  "language": "scala",
+  "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "kernel_gateway.services.kernels.processproxy.StandaloneProcessProxy",
-    "connection_file_mode": "push"
+    "class_name": "kernel_gateway.services.kernels.processproxy.DistributedProcessProxy"
   },
   "env": {
-    "__TOREE_SPARK_OPTS__": "--master=yarn --deploy-mode=client", 
-    "SPARK_HOME": "/opt/apache/spark2-client", 
-    "__TOREE_OPTS__": "", 
-    "DEFAULT_INTERPRETER": "Scala", 
-    "PYTHONPATH": "/opt/apache/spark2-client/python:/opt/apache/spark2-client/python/lib/py4j-0.10.4-src.zip", 
-    "PYTHON_EXEC": "python"
-  }, 
+    "SPARK_HOME": "/usr/hdp/current/spark2-client",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "__TOREE_OPTS__": "",
+    "LAUNCH_OPTS": "",
+    "DEFAULT_INTERPRETER": "Scala"
+  },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_scala/bin/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_client/bin/run.sh",
     "--profile",
-    "{connection_file}"
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}"
   ]
 }
 ```
 
-The `RemoteKernelSpec` class definition can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernelspecs/remotekernelspec.py
+The `RemoteKernelSpec` class definition can be found in [remotekernelspec.py](https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernelspecs/remotekernelspec.py)
 
 See the [Process Proxy](#process-proxy) section for more details.
 
@@ -75,23 +74,23 @@ See the [Process Proxy](#process-proxy) section for more details.
 
 Its primary functionality, however, is to override the `_launch_kernel` method (which is the method closest to the process invocation) and instantiates the appropriate process proxy instance - which is then returned in place of the process instance used in today's implementation.  Any interaction with the process then takes place via the process proxy.
 
-Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/remotemanager.py
+Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in [remotemanager.py](https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/remotemanager.py)
 
 ### Process Proxy
-Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic process methods.  There are two built-in classes `StandaloneProcessProxy` - representing a proof of concept class that remotes a kernel via ssh but still uses yarn/client mode and `YarnProcessProxy` - representing the design target of launching kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/processproxy.py
+Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic process methods.  There are two immediate subclasses of `BaseProcessProxyABC` - `LocalProcessProxy` and `RemoteProcessProxy`.  
 
-Constructors of these classes should call the `BaseProcessProxyABC` constructor - which will automatically place a variable named `KERNEL_ID` into the corresponding kernel spec's environment variable list. 
+`LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain a `process_proxy` stanza will use `LocalProcessProxy`.  
+
+`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are two built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in [processproxy.py](https://github.com/SparkTC/elyra/blob/elyra/kernel_gateway/services/kernels/processproxy.py)
 
 The constructor signature looks as follows:
 
 ```python
-def __init__(self, kernel_manager, connection_file_mode, **kw):
+def __init__(self, kernel_manager):
 ```
 
 where 
 * `kernel_manager` is an instance of a `RemoteKernelManager` class that is associated with the corresponding `RemoteKernelSpec` instance.
-* `connection_file_mode` is an optional string from the set {`push`, `pull`, `socket`} indicating the means by which the connection file is sent to or returned from the kernel.
-* `**kw` is a set key-word arguments. The base constructor adds the `KERNEL_ID` environment variable into the dictionary located at `kw['env']`, for example.
 
 ```python
 @abstractmethod
@@ -103,13 +102,14 @@ where
 
 The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for performing the appropriate actions relative to the target type.  The process must be in a running state prior to returning from this method - otherwise attempts to use the connections will not be successful since the (remote) kernel needs to have created the sockets.
 
+All process proxy subclasses classes should ensure `BaseProcessProxyABC.launch_process()` is called - which will automatically place a variable named `KERNEL_ID` (consisting of the kernel's unique ID) into the corresponding kernel's environment variable list since `KERNEL_ID` is a primary mechanism for associating remote applications to a specific kernel instance.
+
 ```python
 def poll(self):
 ```
-The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the framework's heartbeat mechanism calls `poll()` every 3 seconds.  As a result, if the corresponding process proxy takes time to determine the process's availability, you may want to increase the heartbeat interval.
+The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the framework's heartbeat mechanism calls `poll()` every 3 seconds.  As a result, if the corresponding process proxy takes time to determine the process's availability, you may want to increase the heartbeat interval (via [`--KernelRestarter.time_to_dead`](http://jupyter-console.readthedocs.io/en/latest/config_options.html)).
 
-This method returns `None` if the process is still running, `False` otherwise.   
-*Note: The return value is based on the `popen()` contract.*
+This method returns `None` if the process is still running, `False` otherwise (per the `popen()` contract).
 
 ```python
 def wait(self):
@@ -132,36 +132,64 @@ The `kill()` method is used by the Jupyter framework to terminate the kernel pro
 
 This method returns `None` if the process is killed successfully, `False` otherwise.
 
-### Connection file mode and launchers
-As noted above there are currently three connection file modes available: `push`, `pull`, and `socket`.  
+#### RemoteProcessProxy
+As noted above, `RemoteProcessProxy` is an abstract base class that derives from `BaseProcessProxyABC`.  Subclasses of `RemoteProcessProxy` must implement two methods - `confirm_remote_startup()` and `handle_timeout()`:
+```python
+@abstractmethod
+def confirm_remote_startup(self, kernel_cmd, **kw):
+```
+where
+* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is an artifact of the kernel manager `_launch_kernel()` method.  
+* `**kw` is a set key-word arguments. 
 
-**Push mode** is the least preferred but doesn't require any additional implementation relative to the kernel.  In this mode, the connection file (port information) is produced on the Elyra server and copied to the desired remote system.  As a result, there is a risk that the ports selected on the Elyra server will not be available when used on the remote system resulting in a failed kernel startup and requiring a restart from the client.
+`confirm_remote_startup()` is responsible for detecting that the remote kernel has been appropriately launched and is ready to receive requests.  This can include gather application status from the remote resource manager but is really a function of having received the connection information from the remote kernel launcher.  (See [Launchers](#launchers))
 
-**Pull mode** is more preferred since it builds the connection file on the kernel's destination.  Once built, Elyra will pull the connection file back to its server and convey the connection information to the underlying classes enabling use of the kernel.  By creating the kernel at its source, the chances of port conflicts is dramatically reduced.  However, to produce the connection file, a launcher application (see below) is generally necessary - although such a mechanism has other advantages.
+```python
+@abstractmethod
+def handle_timeout(self):
+```
 
-**Socket mode** is the most preferred.  This mode conveys the connection information back to Elyra via a socket that Elyra originally conveyed when launching the kernel via the environment variable: `KERNEL_RESPONSE_ADDRESS`.  The format of the response address is `<ip>:<port>` and will be conveyed to the launcher application via the parameter `--response-address <ip>:<port>`.  This approach is most preferred because it eliminates the need to copy a file from the remote system and the remote system sends the data - indicating that its ready.
+`handle_timeout()` is responsible for detecting that the remote kernel has failed to startup in an acceptable time.  It should be called from `confirm_remote_startup()`.  If the timeout expires, `handle_timeout()` should throw HTTP Error 500 (`Internal Server Error`).
 
-Which modes are supported is a function of the process proxy implementation.  Currently, the `StandaloneProcessProxy` only supports `push` mode, while the `YarnProcessProxy` supports all three.
+Kernel launch timeout expiration is expressed via the environment variable `KERNEL_LAUNCH_TIMEOUT`.  If this value does not exist, it defaults to the Elyra process environment variable `ELYRA_KERNEL_LAUNCH_TIMEOUT` - which defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from `NB2KG`, the launch timeout can be specified as a client attribute of the Notebook session.
 
-Besides the process proxy implementation, support for connection file modes is also a function of the target kernel and how it is launched.  In order to normalize behaviors across kernels, optimize connectivity and avoid kernel modifications, Elyra introduces the notion of kernel _launchers_.  
+### Launchers
+As noted above a kernel is considered started once the launcher has conveyed its connection information back to the Elyra server process. Conveyance of connection information from a remote kernel is the responsibility of the remote kernel _launcher_.
 
-#### Launchers
-As noted above, launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications.  Besides providing a location where connection file creation can occur, they also provide a 'hook' for other kinds of behaviors - like establishing virtual environments or sandboxes, providing collaboration behavior, etc.
+Launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications.  Besides providing a location where connection file creation can occur, they also provide a 'hook' for other kinds of behaviors - like establishing virtual environments or sandboxes, providing collaboration behavior, etc.
 
-Like the other options listed in the kernel.json env stanza, launcher options will be conveyed via the `LAUNCH_OPTS` entry as follows...
+There are three primary tasks of a launcher:
+1. Creation of the connection file on the remote (target) system
+2. Conveyance of the connection information back to the Elyra process
+3. Invocation of the target kernel
+
+Launchers are minimally invoked with two parameters (both of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - a path to the **_non-existent_** connection file represented by the placeholder `{connection_file}` and a response address consisting of the Elyra server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`.  
+
+Depending on the target kernel, the connection file parameter may or may not be identified by an argument name.  However, the response address is identified by the parameter `--RemoteProcessProxy.response_address`.  Its value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points back to the Elyra server - which is listening for a response on the provided port.
+
+Here's a [kernel.json](https://github.com/SparkTC/elyra/blob/elyra/etc/kernels/spark_2.1_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
 ```json
+{
+  "language": "python",
+  "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
+  "process_proxy": {
+    "class_name": "kernel_gateway.services.kernels.processproxy.YarnClusterProcessProxy"
+  },
   "env": {
-    "SPARK_HOME": "/usr/iop/current/spark2-client",
-    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}",
-    "LAUNCH_OPTS": "--response-address ${KERNEL_RESPONSE_ADDRESS:-ERROR__NO__KERNEL_RESPONSE_ADDRESS}"
+    "SPARK_HOME": "/usr/hdp/current/spark2-client",
+    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
+    "LAUNCH_OPTS": ""
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",
-    "{connection_file}"
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}"
   ]
+}
 ```
-then referenced in the run.sh script as the initial arguments to the launcher (`launch_ipykernel.py` below) ...
+Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in the [run.sh](https://github.com/SparkTC/elyra/blob/elyra/etc/kernels/spark_2.1_python_yarn_cluster/bin/run.sh) script as the initial arguments to the launcher (see [launch_ipykernel.py](https://github.com/SparkTC/elyra/blob/elyra/etc/kernels/spark_2.1_python_yarn_cluster/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
@@ -173,10 +201,10 @@ eval exec \
 
 ### Extending Elyra
 Theoretically speaking, enabling a kernel for use in other frameworks amounts to the following:
-1. Build a kernel specification file that identifies the process proxy class and connection file mode to be used.
-2. Implement the process proxy class such that it supports the four primitive functions of `poll()`, `wait()`, `send_signal(signum)` and `kill()`.
-3. Insert invocation of a launcher (if necessary) which builds the connection file - making it available to Elyra.
-
+1. Build a kernel specification file that identifies the process proxy class to be used.
+2. Implement the process proxy class such that it supports the four primitive functions of `poll()`, `wait()`, `send_signal(signum)` and `kill()` along with `launch_process()`.  
+3. If the process proxy corresponds to a remote process, derive the process proxy class from `RemoteProcessProxy` and implement `confirm_remote_startup()` and `handle_timeout()`.
+4. Insert invocation of a launcher (if necessary) which builds the connection file and returns its contents on the `{response_address}` socket.
 
 ### Installation
 Elyra is intended to be installed on a Kerberized HDP cluster with Spark2 and Yarn services installed and running. To support Scala kernels, Apache Toree must be installed. To support IPython kernels and R kernels to run on Yarn worker nodes, various packages have to be installed on each Yarn worker node. The commands below may have to customized to specific cluster environments.

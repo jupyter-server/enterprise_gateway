@@ -3,6 +3,7 @@
 """Kernel managers that operate against a remote process."""
 
 import os
+import re
 from ipython_genutils.importstring import import_item
 from .manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
 from tornado import gen
@@ -82,19 +83,37 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
+    process_proxy = None
+    response_address = None
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
             self.log.debug("Instantiating kernel '{}' with process proxy: {}".
                            format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
             process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
-            self.process_proxy = process_proxy_class(self, self.kernel_spec.process_proxy_connection_file_mode, **kw)
+            self.process_proxy = process_proxy_class(kernel_manager=self)
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
+    def format_kernel_cmd(self, extra_arguments=None):
+        """replace templated args (e.g. {response_address})"""
+        cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
+
+        if self.response_address:
+            ns = dict(response_address=self.response_address,)
+            ns.update(self._launch_args)
+
+            pat = re.compile(r'\{([A-Za-z0-9_]+)\}')
+            def from_ns(match):
+                """Get the key out of ns if it's there, otherwise no change."""
+                return ns.get(match.group(1), match.group())
+
+            return [ pat.sub(from_ns, arg) for arg in cmd ]
+        return cmd
+
     def _launch_kernel(self, kernel_cmd, **kw):
         if self.kernel_spec.process_proxy_class:
-            self.log.debug("Launching kernel: {}".format(self.kernel_spec.display_name))
+            self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
             return self.process_proxy.launch_process(kernel_cmd, **kw)
 
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
