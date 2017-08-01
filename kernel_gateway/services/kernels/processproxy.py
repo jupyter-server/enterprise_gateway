@@ -17,6 +17,7 @@ from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 from datetime import datetime
+from urlparse import urlparse
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
@@ -561,7 +562,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
-    resource_mgr = ResourceManager(serviceEndpoint=yarn_endpoint)
+    yarn_master = urlparse(yarn_endpoint).hostname
+    resource_mgr = ResourceManager(address=yarn_master)
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 
