@@ -2,8 +2,7 @@
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "kernel_gateway.services.kernels.processproxy.DistributedProcessProxy",
-    "connection_file_mode": "socket"
+    "class_name": "kernel_gateway.services.kernels.processproxy.DistributedProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -15,6 +14,8 @@
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_client/bin/run.sh",
     "--profile",
-    "{connection_file}"
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}"
   ]
 }
