@@ -33,12 +33,6 @@ max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('ELYRA_SOCKET_TIMEOUT', '5.0'))
 
-# Connection File Mode values...
-CF_MODE_PUSH = 'push'
-CF_MODE_PULL = 'pull'
-CF_MODE_SOCKET = 'socket'
-connection_file_modes = {CF_MODE_PUSH, CF_MODE_PULL, CF_MODE_SOCKET}
-
 local_ip = localinterfaces.public_ips()[0]
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -47,17 +41,10 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     Defines the required methods for process proxy classes
     """
 
-    def __init__(self, kernel_manager, connection_file_mode, **kw):
+    def __init__(self, kernel_manager):
         self.kernel_manager = kernel_manager
         # use the zero-ip from the start, can prevent having to write out connection file again
         self.kernel_manager.ip = '0.0.0.0'
-
-        self.connection_file_mode = connection_file_mode
-        if self.connection_file_mode:
-            if self.connection_file_mode not in connection_file_modes:
-                self.log.warning("Unknown connection file mode detected '{}'!  Continuing...".
-                                 format(self.connection_file_mode))
-
         self.log = kernel_manager.log
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
@@ -266,8 +253,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
 class LocalProcessProxy(BaseProcessProxyABC):
 
-    def __init__(self, kernel_manager, connection_file_mode, **kw):
-        super(LocalProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+    def __init__(self, kernel_manager):
+        super(LocalProcessProxy, self).__init__(kernel_manager)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
     def launch_process(self, kernel_cmd, **kw):
@@ -281,18 +268,18 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
 
 class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
-    def __init__(self, kernel_manager, connection_file_mode, **kw):
-        super(RemoteProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+
+    def __init__(self, kernel_manager):
+        super(RemoteProcessProxy, self).__init__(kernel_manager)
         self.response_socket = None
         self.start_time = None
         self.assigned_ip = None
         self.assigned_host = ''
-        if not self.connection_file_mode:
-            self.connection_file_mode = os.getenv('ELYRA_CONNECTION_FILE_MODE', CF_MODE_PUSH).lower()
-            self.log.info("Connection file mode not set.  Using mode: '{}'".format(self.connection_file_mode))
+        self.prepare_socket()
 
     def launch_process(self, kernel_cmd, **kw):
         super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kw)
+        self.kernel_manager.cleanup_connection_file()
 
     @abc.abstractmethod
     def handle_timeout(self):
@@ -302,33 +289,34 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
-    def prepare_socket(self, kernel_cmd, **kw):
-        if self.connection_file_mode == CF_MODE_SOCKET:
-            s = socket(AF_INET, SOCK_STREAM)
-            s.bind((local_ip, 0))
-            port = s.getsockname()[1]
-            self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
-            s.listen(1)
-            s.settimeout(socket_timeout)
-            kernel_cmd.append('--RemoteProcessProxy.response-address ' + (local_ip + ':' + str(port)))
-            self.response_socket = s
+    def prepare_socket(self):
+        s = socket(AF_INET, SOCK_STREAM)
+        s.bind((local_ip, 0))
+        port = s.getsockname()[1]
+        self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
+        s.listen(1)
+        s.settimeout(socket_timeout)
+        self.kernel_manager.response_address = local_ip + ':' + str(port)
+        self.response_socket = s
 
-    def handle_socket_mode(self):
+    def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
-        connect_info = None
         ready_to_connect = False
         if self.response_socket:
             conn = None
+            data = ''
             try:
                 conn, addr = self.response_socket.accept()
                 while 1:
-                    data = conn.recv(1024)
-                    if not data:
+                    buffer = conn.recv(1024)
+                    if not buffer: # send is complete
+                        self.log.debug("Received data for KernelID '{}' on host '{}' on connection {}..."
+                                       .format(self.kernel_id, self.assigned_host, addr))
+                        connect_info = json.loads(data)
+                        ready_to_connect = True
+                        self.update_connection(connect_info)
                         break
-                    self.log.debug("Received data for KernelID '{}' on host '{}' on connection {}..."
-                                   .format(self.kernel_id, self.assigned_host, addr))
-                    connect_info = json.loads(data)
-                    ready_to_connect = True
+                    data = data + buffer # append what we received until we get no more...
             except Exception as e:
                 if type(e) is timeout:
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retyring..."
@@ -346,32 +334,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             raise tornado.web.HTTPError(500,
                                         "Unexpected runtime found for KernelID '{}'!  "
                                         "No response socket exists".format(self.kernel_id))
-        return ready_to_connect, connect_info
-
-    def handle_pull_mode(self):
-        # Checks the remote file for existence.  If found, file is pulled and ready indicator is returned.
-        ready_to_connect = False
-        try:
-            if self.rcp(host=self.assigned_host, src_file=self.get_connection_filename(),
-                        dst_file=self.kernel_manager.connection_file, pull=True):
-                self.log.debug(
-                    "Pulled connection file '{}' from host '{}', KernelID '{}'".
-                        format(self.get_connection_filename(), self.assigned_host, self.kernel_id))
-                ready_to_connect = True
-        except Exception as e:
-            if type(e) is IOError and e.errno == errno.ENOENT:
-                self.log.debug("Connection file '{}' not available on host '{}', KernelID '{}' - retrying..."
-                    .format(self.get_connection_filename(), self.assigned_host, self.kernel_id))
-            else:
-                self.log.error("Exception '{}' occured when pulling connection file from host '{}', KernelID '{}'"
-                               .format(type(e).__name__, self.assigned_host, self.kernel_id))
-                self.kill()
-                raise e
         return ready_to_connect
-
-    def handle_push_mode(self):
-        # Push mode already has the connection file in place, so return True.
-        return True
 
     def update_connection(self, connect_info=None):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
@@ -424,8 +387,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 class DistributedProcessProxy(RemoteProcessProxy):
     host_index = 0
 
-    def __init__(self, kernel_manager, connection_file_mode, **kw):
-        super(DistributedProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+    def __init__(self, kernel_manager):
+        super(DistributedProcessProxy, self).__init__(kernel_manager)
 
     def get_hosts(self):
         # Called during construction to set self.hosts
@@ -437,19 +400,6 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.assigned_host = self.determine_next_host()
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
         self.assigned_ip = self.ip
-
-        if self.connection_file_mode == CF_MODE_PUSH:
-            # write out connection file - which has the remote IP - prior to copy...
-            self.kernel_manager.ip = self.ip
-            self.kernel_manager.cleanup_connection_file()
-            self.kernel_manager.write_connection_file()
-            self.log.debug("Copying connection file {} to host: {}".
-                           format(self.kernel_manager.connection_file, self.assigned_host))
-            self.rcp(self.assigned_host, self.kernel_manager.connection_file, self.get_connection_filename())
-        else: # PULL or SOCKET mode
-            self.kernel_manager.cleanup_connection_file()
-            if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(kernel_cmd, **kw)
 
         cmd = self.build_startup_command(kernel_cmd, **kw)
         self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.assigned_host))
@@ -523,7 +473,6 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
-        connect_info = None  # contains the connection info when socket-mode is used
         while not ready_to_connect:
             i += 1
             self.handle_timeout()
@@ -532,28 +481,17 @@ class DistributedProcessProxy(RemoteProcessProxy):
                            format(i, self.assigned_host, self.kernel_id))
 
             if self.assigned_host != '':
-                # Handle connection info only after we have a host
-                if self.connection_file_mode == CF_MODE_SOCKET:
-                    ready_to_connect, connect_info = self.handle_socket_mode()
-                elif self.connection_file_mode == CF_MODE_PULL:
-                    ready_to_connect = self.handle_pull_mode()
-                else:  # assume push mode since that's the prior behavior
-                    ready_to_connect = self.handle_push_mode()
-
-        if ready_to_connect:
-            self.update_connection(connect_info)
+                ready_to_connect = self.receive_connection_info()
 
     def handle_timeout(self):
         time.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            timeout_message = "Failed to launch remote kernel within {} seconds.". format(self.kernel_launch_timeout)
             error_http_code = 500
-            if self.connection_file_mode != CF_MODE_PUSH:
-                timeout_message = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
+            reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             self.kill()
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, timeout_message)
+            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
 
@@ -565,8 +503,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 
-    def __init__(self,  kernel_manager, connection_file_mode, **kw):
-        super(YarnClusterProcessProxy, self).__init__(kernel_manager, connection_file_mode, **kw)
+    def __init__(self,  kernel_manager):
+        super(YarnClusterProcessProxy, self).__init__(kernel_manager)
         self.application_id = None
 
     def get_hosts(self):
@@ -585,15 +523,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             kernel launcher sends the connection information - which is then written out upon its reception.  If push
             mode is configured, the kernel manager's IP is updated to the selected node.
         """
-
         super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kw)
-
-        if self.connection_file_mode == CF_MODE_PUSH:
-            self.distribute_connection_files()
-        else: # PULL or SOCKET mode
-            self.kernel_manager.cleanup_connection_file()
-            if self.connection_file_mode == CF_MODE_SOCKET:
-                self.prepare_socket(kernel_cmd, **kw)
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kw)
@@ -632,11 +562,11 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param signum
         :return: 
         """
-        self.log.debug("YarnProcessProxy.send_signal {}".format(signum))
+        self.log.debug("YarnClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
             return self.poll()
         elif signum == signal.SIGINT:
-            self.log.debug("YarnProcessProxy.send_signal, SIGINT requests will be ignored")
+            self.log.debug("YarnClusterProcessProxy.send_signal, SIGINT requests will be ignored")
             return self.poll()
         else:
             return self.kill()
@@ -649,7 +579,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         result = False
         if self.get_application_id():
             resp = YarnClusterProcessProxy.kill_app_by_id(self.application_id)
-            self.log.debug("YarnProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
+            self.log.debug("YarnClusterProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
 
             i, state = 1, YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
             while state not in YarnClusterProcessProxy.final_states and i <= max_poll_attempts:
@@ -662,26 +592,20 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         super(YarnClusterProcessProxy, self).kill()
 
-        self.log.debug("YarnProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
+        self.log.debug("YarnClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
         return result
 
     def cleanup(self):
-        if self.connection_file_mode == CF_MODE_PUSH:
-            self.log.debug("YarnProcessProxy.cleanup: Removing connection files from host(s): {}".format(self.hosts))
-            for host in self.hosts:
-                cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-                self.rsh(host, cmd)
-        else:  # pull or socket mode
-            self.log.debug("YarnProcessProxy.cleanup: Removing connection file from assigned host: {}".
-                           format(self.assigned_host))
-            cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-            self.rsh(self.assigned_ip, cmd)
+        self.log.debug("YarnClusterProcessProxy.cleanup: Removing connection file from assigned host: {}".
+                       format(self.assigned_host))
+        cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
+        self.rsh(self.assigned_ip, cmd)
 
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
         if self.local_proc:
-            self.log.debug("YarnProcessProxy.cleanup: Clearing possible defunct process, pid={}...".
+            self.log.debug("YarnClusterProcessProxy.cleanup: Clearing possible defunct process, pid={}...".
                            format(self.local_proc.pid))
             if super(YarnClusterProcessProxy, self).poll():
                 super(YarnClusterProcessProxy, self).kill()
@@ -692,15 +616,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.application_id = None
         self.assigned_ip = None
 
-    def distribute_connection_files(self):
-        # TODO - look into the parallelizing this - only necessary on push mode
-        if self.connection_file_mode == CF_MODE_PUSH:
-            self.log.debug("Copying connection file {} to host(s): {}".
-                           format(self.kernel_manager.connection_file, self.hosts))
-
-            for host in self.hosts:
-                self.rcp(host, self.kernel_manager.connection_file, self.get_connection_filename())
-
     def confirm_remote_startup(self, kernel_cmd, **kw):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
             unexpectedly encountered (FINISHED, KILLED) then we must throw, otherwise the rest of the JKG will
@@ -709,7 +624,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
-        connect_info = None  # contains the connection info when socket-mode is used
         while not ready_to_connect:
             i += 1
             self.handle_timeout()
@@ -726,16 +640,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                                format(i, self.app_state, self.assigned_host, self.kernel_id, self.application_id))
 
                 if self.assigned_host != '':
-                    # Handle connection info only after we have a host
-                    if self.connection_file_mode == CF_MODE_SOCKET:
-                        ready_to_connect, connect_info = self.handle_socket_mode()
-                    elif self.connection_file_mode == CF_MODE_PULL:
-                        ready_to_connect = self.handle_pull_mode()
-                    else:  # assume push mode since that's the prior behavior
-                        ready_to_connect = self.handle_push_mode()
-
-        if ready_to_connect:
-            self.update_connection(connect_info)
+                    ready_to_connect = self.receive_connection_info()
 
     def get_application_state(self):
         # Gets the current application state using the application_id already obtained.  Once the assigned host
@@ -757,19 +662,19 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            timeout_message = "Application ID is None. Failed to submit a new application to YARN within {} seconds.".\
+            reason = "Application ID is None. Failed to submit a new application to YARN within {} seconds.".\
                 format(self.kernel_launch_timeout)
             error_http_code = 500
             if self.get_application_id(True):
                 if YarnClusterProcessProxy.query_app_state_by_id(self.application_id) != "RUNNING":
-                    timeout_message = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!".\
+                    reason = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!".\
                         format(time_interval, self.application_id, self.kernel_launch_timeout)
                     error_http_code = 503
-                elif self.connection_file_mode != CF_MODE_PUSH:
-                    timeout_message = "App {} is RUNNING, but waited too long ({} secs) to get connection file".\
+                else:
+                    reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file".\
                         format(self.application_id, self.kernel_launch_timeout)
             self.kill()
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, timeout_message)
+            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
 
