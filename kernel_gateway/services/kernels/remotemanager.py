@@ -52,7 +52,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         if km.kernel_spec.process_proxy_class:
             process_proxy_class = import_item(km.kernel_spec.process_proxy_class)
             kw = {'env': {}}
-            km.process_proxy = process_proxy_class(km, km.kernel_spec.process_proxy_connection_file_mode, **kw)
+            km.process_proxy = process_proxy_class(km)
             km.process_proxy.load_process_info(process_info)
 
             # Confirm we can even poll the process.  If not, remove the persisted session.
