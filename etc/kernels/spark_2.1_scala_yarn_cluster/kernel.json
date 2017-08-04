@@ -6,7 +6,7 @@
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.am.waitTime=1d",
     "__TOREE_OPTS__": "",
     "LAUNCH_OPTS": "",
     "DEFAULT_INTERPRETER": "Scala"
