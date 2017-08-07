@@ -51,9 +51,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
 
-        # ask the subclass for the set of applicable hosts
-        self.hosts = self.get_hosts()
-
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if the JKG is restarted and the
         # persisted kernel-sessions indicate that its now running on a different server.  In those case, we use the ip
@@ -80,9 +77,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kw.get('env')))
 
     def cleanup(self):
-        pass
-
-    def get_hosts(self):
         pass
 
     def poll(self):
@@ -390,6 +384,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
     def __init__(self, kernel_manager):
         super(DistributedProcessProxy, self).__init__(kernel_manager)
+        self.hosts = self.get_hosts()
 
     def get_hosts(self):
         # Called during construction to set self.hosts
@@ -500,18 +495,14 @@ class DistributedProcessProxy(RemoteProcessProxy):
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
-    yarn_master = urlparse(yarn_endpoint).hostname
-    resource_mgr = ResourceManager(address=yarn_master)
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 
     def __init__(self,  kernel_manager):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager)
         self.application_id = None
-
-    def get_hosts(self):
-        # Called during construction to set self.hosts
-        return YarnClusterProcessProxy.query_yarn_nodes()
+        yarn_master = urlparse(YarnClusterProcessProxy.yarn_endpoint).hostname
+        self.resource_mgr = ResourceManager(address=yarn_master)
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
@@ -533,7 +524,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.ip = local_ip
 
         self.log.debug("Yarn cluster kernel launched using YARN endpoint: {}, pid: {}, Kernel ID: {}, cmd: '{}'"
-                       .format(self.yarn_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
+                       .format(YarnClusterProcessProxy.yarn_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
@@ -648,7 +639,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # Gets the current application state using the application_id already obtained.  Once the assigned host
         # has been identified, it is nolonger accessed.
         app_state = None
-        app = YarnClusterProcessProxy.query_app_by_id(self.application_id)
+        app = self.query_app_by_id(self.application_id)
 
         if app:
             if app.get('state'):
@@ -684,7 +675,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.  TODO - may need to treat FAILED state differently.
         if not self.application_id:
-            app = YarnClusterProcessProxy.query_app_by_name(self.kernel_id)
+            app = self.query_app_by_name(self.kernel_id)
             state_condition = True
             if app and ignore_final_states:
                 state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
@@ -707,8 +698,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         super(YarnClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
 
-    @staticmethod
-    def query_app_by_name(kernel_id):
+    def query_app_by_name(self, kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
         Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
@@ -720,7 +710,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """
         top_most_app_id = ''
         target_app = None
-        data = YarnClusterProcessProxy.resource_mgr.cluster_applications().data
+        data = self.resource_mgr.cluster_applications().data
         if data and 'apps' in data and 'app' in data['apps']:
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
@@ -728,27 +718,25 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                     top_most_app_id = app.get('id')
         return target_app
 
-    @staticmethod
-    def query_yarn_nodes():
+    def query_yarn_nodes(self):
         """Retrieve all nodes host name in a YARN cluster.
         
         :return: A list of "nodeHostName" from JSON object
         """
-        data = YarnClusterProcessProxy.resource_mgr.cluster_nodes().data
+        data = self.resource_mgr.cluster_nodes().data
         nodes_list = list([])
         if data and 'nodes' in data and 'node' in data['nodes']:
             for node in data['nodes']['node']:
                 nodes_list.append(node['nodeHostName'])
         return nodes_list
 
-    @staticmethod
-    def query_app_by_id(app_id):
+    def query_app_by_id(self, app_id):
         """Retrieve an application by application ID.
 
         :param app_id
         :return: The JSON object of an application.
         """
-        data = YarnClusterProcessProxy.resource_mgr.cluster_application(application_id=app_id).data
+        data = self.resource_mgr.cluster_application(application_id=app_id).data
         if data and 'app' in data:
             return data['app']
         return None
