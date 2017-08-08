@@ -396,7 +396,9 @@ class KernelGatewayApp(JupyterApp):
 
         self.kernel_session_manager = KernelSessionManager(
             log=self.log,
-            kernel_manager=self.kernel_manager
+            kernel_manager=self.kernel_manager,
+            config=self.config, # required to get command-line options visible
+            **kwargs
         )
         # Attempt to start persisted sessions
         self.kernel_session_manager.start_sessions()
