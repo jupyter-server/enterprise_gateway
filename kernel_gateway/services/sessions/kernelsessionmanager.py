@@ -4,6 +4,7 @@
 
 import os
 from traitlets.config.configurable import LoggingConfigurable
+from traitlets import Bool
 from jupyter_core.paths import jupyter_data_dir
 import json
 
@@ -22,42 +23,48 @@ class KernelSessionManager(LoggingConfigurable):
         As kernels are created and destroyed, the KernelSessionManager is called upon to keep kernel session
         state consistent.
     """
-    def __init__(self, kernel_manager, **kwargs):
-        super(KernelSessionManager, self).__init__(**kwargs)
+
+    enable_persistence = Bool(default_value=False, config=True,
+        help="""Enable kernel session persistence.  Default = False"""
+    )
+
+    def __init__(self, kernel_manager, *args, **kwargs):
+        super(KernelSessionManager, self).__init__(*args, **kwargs)
         self.kernel_manager = kernel_manager
-        self._sessions = dict()
-        self.kernel_session_file = os.path.join(self._get_sessions_loc(), 'kernels.json')
-        self._load_sessions()
+        if self.enable_persistence:
+            self._sessions = dict()
+            self.kernel_session_file = os.path.join(self._get_sessions_loc(), 'kernels.json')
+            self._load_sessions()
 
     def create_session(self, kernel_id, **kwargs):
         # Persists information about the kernel session within the designated repository.
+        if self.enable_persistence:
+            km = self.kernel_manager.get_kernel(kernel_id)
 
-        km = self.kernel_manager.get_kernel(kernel_id)
+            # Compose the kernel_session entry
+            kernel_session = dict()
+            kernel_session['kernel_id'] = kernel_id
+            kernel_session['username'] = self._get_kernel_username(kwargs.get('env',{}))
+            kernel_session['kernel_name'] = km.kernel_name
 
-        # Compose the kernel_session entry
-        kernel_session = dict()
-        kernel_session['kernel_id'] = kernel_id
-        kernel_session['username'] = self._get_kernel_username(kwargs.get('env',{}))
-        kernel_session['kernel_name'] = km.kernel_name
-
-        # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
-        kernel_session['connection_info'] = km.get_connection_info()
-        kernel_session['launch_args'] = kwargs.copy()
-        kernel_session['process_info'] = km.process_proxy.get_process_info() if km.process_proxy else {}
-        self._save_session(kernel_id, kernel_session)
+            # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
+            kernel_session['connection_info'] = km.get_connection_info()
+            kernel_session['launch_args'] = kwargs.copy()
+            kernel_session['process_info'] = km.process_proxy.get_process_info() if km.process_proxy else {}
+            self._save_session(kernel_id, kernel_session)
 
     def refresh_session(self, kernel_id, **kwargs):
         # Persists information about the kernel session within the designated repository.
+        if self.enable_persistence:
+            km = self.kernel_manager.get_kernel(kernel_id)
 
-        km = self.kernel_manager.get_kernel(kernel_id)
+            # Compose the kernel_session entry
+            kernel_session = self._sessions[kernel_id]
 
-        # Compose the kernel_session entry
-        kernel_session = self._sessions[kernel_id]
-
-        # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
-        kernel_session['connection_info'] = km.get_connection_info()
-        kernel_session['process_info'] = km.process_proxy.get_process_info() if km.process_proxy else {}
-        self._save_session(kernel_id, kernel_session)
+            # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
+            kernel_session['connection_info'] = km.get_connection_info()
+            kernel_session['process_info'] = km.process_proxy.get_process_info() if km.process_proxy else {}
+            self._save_session(kernel_id, kernel_session)
 
     def _save_session(self, kernel_id, kernel_session):
         # Write/commit the addition, update dictionary
@@ -78,12 +85,13 @@ class KernelSessionManager(LoggingConfigurable):
 
     def start_sessions(self):
         # Track which sessions didn't restart...
-        sessions_to_remove = []
-        for kernel_id, kernel_session in self._sessions.items():
-            if not self._start_session(kernel_session):
-                sessions_to_remove.append(kernel_id)
+        if self.enable_persistence:
+            sessions_to_remove = []
+            for kernel_id, kernel_session in self._sessions.items():
+                if not self._start_session(kernel_session):
+                    sessions_to_remove.append(kernel_id)
 
-        self._delete_sessions(sessions_to_remove)
+            self._delete_sessions(sessions_to_remove)
 
     def _start_session(self, kernel_session):
         # Attempt to start kernel from persisted state.  if started, record kernel_session in dictionary
@@ -102,8 +110,9 @@ class KernelSessionManager(LoggingConfigurable):
 
     def delete_session(self, kernel_id):
         # Removes saved session from dictionary and persisted store
-        self._delete_sessions([kernel_id])
-        self.log.info("Deleted persisted kernel session for id: %s" % kernel_id)
+        if self.enable_persistence:
+            self._delete_sessions([kernel_id])
+            self.log.info("Deleted persisted kernel session for id: %s" % kernel_id)
 
     def _delete_sessions(self, kernel_ids):
         # Remove unstarted sessions and rewrite
