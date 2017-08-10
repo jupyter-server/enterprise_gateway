@@ -11,6 +11,8 @@ import json
 
 import threading
 kernels_lock = threading.Lock()
+kernel_session_location = os.getenv('ELYRA_KERNEL_SESSION_LOCATION', jupyter_data_dir())
+
 
 class KernelSessionManager(LoggingConfigurable):
     """
@@ -131,11 +133,11 @@ class KernelSessionManager(LoggingConfigurable):
             json.dump(self._sessions, fp)
             fp.close()
 
-    @staticmethod
-    def _get_sessions_loc():
-        path = os.path.join(jupyter_data_dir(), 'sessions')
+    def _get_sessions_loc(self):
+        path = os.path.join(kernel_session_location, 'sessions')
         if not os.path.exists(path):
             os.makedirs(path, 0o755)
+        self.log.info("Kernel session persistence location: {}".format(path))
         return path
 
     @staticmethod
