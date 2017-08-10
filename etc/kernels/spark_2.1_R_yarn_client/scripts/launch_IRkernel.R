@@ -51,6 +51,19 @@ return_connection_info <- function(connection_file, ip, response_addr){
   )
 }
 
+# Figure out the connection_file to use
+determine_connection_file <- function(connection_file){
+    # If the directory of the given connection_file exists, use it.
+    if (dir.exists(dirname(connection_file))) {
+        return(connection_file)
+    }
+    # Else, create a temporary filename and return that.
+    base_file = tools::file_path_sans_ext(basename(connection_file))
+    temp_file = tempfile(pattern=paste(base_file,"_",sep=""), fileext=".json")
+    cat(paste("Using connection file ",temp_file," instead of ",connection_file,"",sep="'"))
+    return(temp_file)
+}
+
 local_ip <- "0.0.0.0"
 
 # Check arguments
@@ -64,10 +77,11 @@ argv <- parse_args(parser)
 
 # If connection file does not exist on local FS, create it.
 #  If there is a response address, use pull socket mode
-if (!file.exists(argv$connection_file)){
+connection_file <- argv$connection_file
+if (!file.exists(connection_file)){
     key <- uuid::UUIDgenerate()
-    connection_file <- argv$connection_file
-    
+    connection_file <- determine_connection_file(connection_file)
+
     python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
                "python -c \"from jupyter_client.connect import write_connection_file;
                 write_connection_file(fname='${connection_file}', ip='${local_ip}', key='${key}')\""))
@@ -75,14 +89,16 @@ if (!file.exists(argv$connection_file)){
     system(python_cmd)
 
     if (length(argv$RemoteProcessProxy.response_address)){
-      return_connection_info(argv$connection_file, local_ip, argv$RemoteProcessProxy.response_address)
+      return_connection_info(connection_file, local_ip, argv$RemoteProcessProxy.response_address)
     }
 }
 
 initialize_spark_session()
 
 # Start the kernel
-IRkernel::main(argv$connection_file)
+IRkernel::main(connection_file)
+
+unlink(connection_file)
 
 # Stop the context and exit
 sparkR.session.stop()

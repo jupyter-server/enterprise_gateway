@@ -1,5 +1,6 @@
-import os.path
+import os
 import socket
+import tempfile
 import json
 import uuid
 import argparse
@@ -90,6 +91,17 @@ def return_connection_info(connection_file, ip, response_addr):
         s.close()
 
 
+def determine_connection_file(conn_file):
+    # If the directory exists, use the original file, else create a temporary file.
+    if not os.path.exists(os.path.dirname(conn_file)):
+        prev_connection_file = conn_file
+        basename = os.path.splitext(os.path.basename(conn_file))[0]
+        fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
+        os.close(fd)
+        print("Using connection file '{}' instead of '{}'".format(conn_file, prev_connection_file))
+
+    return conn_file
+
 if __name__ == "__main__":
     """
         Usage: spark-submit launch_ipykernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
@@ -103,10 +115,10 @@ if __name__ == "__main__":
     response_addr = arguments['response_address']
     ip = "0.0.0.0"
 
-    # If the connection file doesn't exist, then we're using 'pull' or 'socket' mode - otherwise 'push' mode.
-    # If 'pull' or 'socket', create the file, then return it to server (if response address provided, i.e., 'socket')
+    # If the connection file doesn't exist, then create it.
     if not os.path.isfile(connection_file):
         key = str_to_bytes(str(uuid.uuid4()))
+        connection_file = determine_connection_file(connection_file)
         write_connection_file(fname=connection_file, ip=ip, key=key)
 
         if response_addr:
@@ -117,6 +129,11 @@ if __name__ == "__main__":
 
     # launch the IPython kernel instance
     embed_kernel(connection_file=connection_file, ip=ip)
+
+    try:
+        os.remove(connection_file)
+    except:
+        pass
 
     # stop the SparkContext after the kernel is stopped/killed
     spark.stop()

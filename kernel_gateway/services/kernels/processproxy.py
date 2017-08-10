@@ -28,7 +28,7 @@ logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.
 env_pop_list = ['ELYRA_REMOTE_PWD', 'LS_COLORS']
 username = os.getenv('ELYRA_REMOTE_USER')
 password = os.getenv('ELYRA_REMOTE_PWD')  # this should use password-less ssh
-proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/var/log/elyra/proxy_launch.log')
+proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/tmp/proxy_launch.log')
 elyra_kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
@@ -133,7 +133,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def is_local_ip(self, ip):
         return localinterfaces.is_public_ip(ip) or localinterfaces.is_local_ip(ip)
 
-    def _getSSHClient(self, host):
+    def _get_ssh_client(self, host):
         """
         Create a SSH Client based on host, username and password if provided.
         If there is any AuthenticationException/SSHException, raise HTTP Error 403 as permission denied.
@@ -161,7 +161,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return ssh
 
     def rsh(self, host, command):
-        ssh = self._getSSHClient(host)
+        ssh = self._get_ssh_client(host)
         try:
             stdin, stdout, stderr = ssh.exec_command(command, timeout=30)
             lines = stdout.readlines()
@@ -176,34 +176,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 ssh.close()
 
         return lines
-
-    def rcp(self, host, src_file, dst_file, pull=False):
-        """ Copies src_file to dst_file.  If pull is True, the file is pulled (via get),
-            else the file is pushed (via put).  If a current ssh connection is not included,
-            one will be created and closed.
-
-        :return: True if the remote copy succeeds, otherwise raise Exception.
-        """
-
-        # Check if we're performing a loopback copy.  If so, skip it...
-        if self.is_local_ip(gethostbyname(host)) and src_file == dst_file:
-            # Note: we still need to enforce existence since FileNotFoundError is retried.
-            exists = os.path.isfile(dst_file)
-            if not exists:
-                raise IOError(errno.ENOENT, os.strerror(errno.ENOENT), dst_file)
-            return True
-
-        ssh = self._getSSHClient(host)
-        try:
-            sftp = ssh.open_sftp()
-            sftp.get(src_file, dst_file) if pull else sftp.put(src_file, dst_file)
-        except Exception as e:
-            # Let caller decide if exception should be logged
-            raise e
-        finally:
-            if ssh:
-                ssh.close()
-        return True
 
     def remote_signal(self, signum):
         val = None
@@ -274,6 +246,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def launch_process(self, kernel_cmd, **kw):
         super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kw)
+        # remove connection file because a) its not necessary any longer since launchers will return
+        # the connection information which will (sufficiently) remain in memory and b) launchers
+        # landing on this node may want to write to this file and be denied access.
         self.kernel_manager.cleanup_connection_file()
 
     @abc.abstractmethod
@@ -305,8 +280,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 while 1:
                     buffer = conn.recv(1024)
                     if not buffer: # send is complete
-                        self.log.debug("Received data for KernelID '{}' on host '{}' on connection {}..."
-                                       .format(self.kernel_id, self.assigned_host, addr))
                         connect_info = json.loads(data)
                         ready_to_connect = True
                         self.update_connection(connect_info)
@@ -318,8 +291,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                    .format(self.kernel_id, self.assigned_host))
                 else:
                     self.log.error(
-                        "Exception '{}' occurred waiting for connection file response for KernelId '{}' "
-                        "on host '{}'".format(type(e).__name__, self.kernel_id, self.assigned_host))
+                        "The following exception occurred waiting for connection file response for KernelId '{}' "
+                        "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e)))
                     self.kill()
                     raise e
             finally:
@@ -331,28 +304,21 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                         "No response socket exists".format(self.kernel_id))
         return ready_to_connect
 
-    def update_connection(self, connect_info=None):
+    def update_connection(self, connect_info):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
         self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
             self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
 
         if connect_info:
+            # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
             connect_info['ip'] = self.assigned_ip  # overwrite the ip to our remote target
             self.kernel_manager.load_connection_info(info=connect_info)
-
-            if self.is_local_ip(self.assigned_ip):
-                # if loopback - file is already good to go and loaded.
-                self.log.debug("Using existing connection file '{}'.".format(self.kernel_manager.connection_file))
-            else:
-                self.kernel_manager.cleanup_connection_file()  # remove the original file (retaining members)
-                self.kernel_manager.write_connection_file()    # write members to file so its marked as written
-                self.log.debug("Successfully updated connection file '{}'.".format(self.kernel_manager.connection_file))
+            self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
+                           .format(self.kernel_id, self.assigned_host, connect_info))
         else:
-            # push or pull mode - so we already have the file in place - just load
-            self.kernel_manager.load_connection_file(connection_file=self.kernel_manager.connection_file)
-            self.kernel_manager.ip = self.assigned_ip # overwrite the ip to our remote target
+            raise RuntimeError("RemoteProcessProxy.update_connection: connection information is null!")
 
-        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files
+        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()
@@ -416,17 +382,6 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
-
-    def cleanup(self):
-        val = None
-        cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-        self.log.debug("Removing connection file via: '{}' on host: {}".format(cmd, self.ip))
-        result = self.rsh(self.ip, cmd)
-        for line in result:
-            val = line.strip()
-        if val == '0':
-            return None
-        return False
 
     def build_startup_command(self, argv_cmd, **kw):
         """
@@ -590,10 +545,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def cleanup(self):
-        self.log.debug("YarnClusterProcessProxy.cleanup: Removing connection file from assigned host: {}".
-                       format(self.assigned_host))
-        cmd = 'rm -f {}; echo $?'.format(self.get_connection_filename())
-        self.rsh(self.assigned_ip, cmd)
+        super(YarnClusterProcessProxy, self).cleanup()
 
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
