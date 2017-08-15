@@ -130,6 +130,20 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     result = self.remote_signal(signal.SIGKILL)
         return result
 
+    def terminate(self):
+        # If we have a local process, use its method, else send signal SIGTERM to terminate.
+        result = None
+        if self.local_proc:
+            result = self.local_proc.terminate()
+            self.log.debug("BaseProcessProxy.terminate(): {}".format(result))
+        else:
+            if self.ip and self.pid > 0:
+                if self.is_local_ip(self.ip):
+                    result = self.local_signal(signal.SIGTERM)
+                else:
+                    result = self.remote_signal(signal.SIGTERM)
+        return result
+
     def is_local_ip(self, ip):
         return localinterfaces.is_public_ip(ip) or localinterfaces.is_local_ip(ip)
 
@@ -293,7 +307,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     self.log.error(
                         "The following exception occurred waiting for connection file response for KernelId '{}' "
                         "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e)))
-                    self.kill()
+                    self.terminate()
                     raise e
             finally:
                 if conn:
@@ -441,7 +455,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if time_interval > self.kernel_launch_timeout:
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
-            self.kill()
+            self.terminate()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
@@ -505,7 +519,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def send_signal(self, signum):
-        """Currently only support 0 as poll and other as kill.
+        """Currently only support 0 as poll and other as terminate.
         
         :param signum
         :return: 
@@ -517,7 +531,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.log.debug("YarnClusterProcessProxy.send_signal, SIGINT requests will be ignored")
             return self.poll()
         else:
-            return self.kill()
+            return self.terminate()
 
     def kill(self):
         """Kill a kernel.
@@ -544,6 +558,31 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                        .format(self.application_id, self.kernel_id, state))
         return result
 
+    def terminate(self):
+        """Terminate a kernel process with a "-15" instead of a "-9" signal
+        :return: None
+        """
+        state = None
+        result = False
+        if self.get_application_id():
+            resp = YarnClusterProcessProxy.kill_app_by_id(self.application_id)
+            self.log.debug("YarnClusterProcessProxy.kill_app_by_id response: {}, confirming app state is not RUNNING".format(resp))
+
+            i, state = 1, YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
+            while state not in YarnClusterProcessProxy.final_states and i <= max_poll_attempts:
+                time.sleep(poll_interval)
+                state = YarnClusterProcessProxy.query_app_state_by_id(self.application_id)
+                i = i+1
+
+            if state in YarnClusterProcessProxy.final_states:
+                result = None
+
+        super(YarnClusterProcessProxy, self).terminate()
+
+        self.log.debug("YarnClusterProcessProxy.terminate, application ID: {}, kernel ID: {}, state: {}"
+                       .format(self.application_id, self.kernel_id, state))
+        return result
+
     def cleanup(self):
         super(YarnClusterProcessProxy, self).cleanup()
 
@@ -553,7 +592,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.log.debug("YarnClusterProcessProxy.cleanup: Clearing possible defunct process, pid={}...".
                            format(self.local_proc.pid))
             if super(YarnClusterProcessProxy, self).poll():
-                super(YarnClusterProcessProxy, self).kill()
+                super(YarnClusterProcessProxy, self).terminate()
             super(YarnClusterProcessProxy, self).wait()
             self.local_proc = None
 
@@ -618,7 +657,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 else:
                     reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file".\
                         format(self.application_id, self.kernel_launch_timeout)
-            self.kill()
+            self.terminate()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
