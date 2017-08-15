@@ -57,7 +57,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Jupyter Kernel Gateway'
+project = u'Jupyter Elyra'
 copyright = u'2016, Project Jupyter Team'
 author = u'Project Jupyter Team'
 
@@ -65,7 +65,7 @@ author = u'Project Jupyter Team'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-_version_py = '../../kernel_gateway/_version.py'
+_version_py = '../../elyra/_version.py'
 version_ns = {}
 exec(compile(open(_version_py).read(), _version_py, 'exec'), version_ns)
 # The short X.Y version.
@@ -151,7 +151,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['../_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -214,7 +214,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'KernelGatewaydoc'
+htmlhelp_basename = 'Elyradoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -236,7 +236,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'KernelGateway.tex', u'Kernel Gateway Documentation',
+  (master_doc, 'Elyra.tex', u'Elyra Documentation',
    u'Project Jupyter team', 'manual'),
 ]
 
@@ -266,7 +266,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'kernel_gateway', u'Kernel Gateway Documentation',
+    (master_doc, 'elyra', u'Elyra Documentation',
      [author], 1)
 ]
 
@@ -280,8 +280,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'kernel_gateway', u'Kernel Gateway Documentation',
-   author, 'kernel_gateway', 'One line description of project.',
+  (master_doc, 'elyra', u'Elyra Documentation',
+   author, 'elyra', 'One line description of project.',
    'Miscellaneous'),
 ]
 

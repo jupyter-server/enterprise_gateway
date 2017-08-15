@@ -26,20 +26,15 @@ clean: ## Make a clean source tree
 	-rm -rf dist
 	-rm -rf build
 	-rm -rf *.egg-info
-	-find kernel_gateway -name __pycache__ -exec rm -fr {} \;
-	-find kernel_gateway -name '*.pyc' -exec rm -fr {} \;
+	-find elyra -name __pycache__ -exec rm -fr {} \;
+	-find elyra -name '*.pyc' -exec rm -fr {} \;
 	-$(SA) $(ENV) && make -C docs clean
 
 nuke: ## Make clean + remove conda env
 	-conda env remove -n $(ENV) -y
 
 dev: ## Make a server in jupyter_websocket mode
-	$(SA) $(ENV) && python kernel_gateway
-
-dev-http: ## Make a server in notebook_http mode
-	$(SA) $(ENV) && python kernel_gateway \
-			--KernelGatewayApp.api='kernel_gateway.notebook_http' \
-			--KernelGatewayApp.seed_uri=etc/api_examples/api_intro.ipynb
+	$(SA) $(ENV) && python elyra
 
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
@@ -49,15 +44,15 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
 		pip install dist/*.whl && \
-			jupyter kernelgateway --help && \
-			pip uninstall -y jupyter_kernel_gateway
+			jupyter elyra --help && \
+			pip uninstall -y elyra
 	conda env remove -y -n $(ENV)-install
 
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
 		pip install dist/*.tar.gz && \
-			jupyter kernelgateway --help && \
-			pip uninstall -y jupyter_kernel_gateway
+			jupyter elyra --help && \
+			pip uninstall -y elyra
 	conda env remove -y -n $(ENV)-install
 
 bdist: ## Make a dist/*.whl binary distribution
@@ -74,7 +69,7 @@ ifeq ($(TEST),)
 	$(SA) $(ENV) && nosetests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && nosetests kernel_gateway.tests.$(TEST)
+	$(SA) $(ENV) && nosetests elyra.tests.$(TEST)
 endif
 
 release: POST_SDIST=register upload

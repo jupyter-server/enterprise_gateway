@@ -1,7 +1,7 @@
-Jupyter Kernel Gateway
+Jupyter Elyra
 ======================
 
-Jupyter Kernel Gateway is a web server that supports different mechanisms for
+Jupyter Elyra is a web server that supports different mechanisms for
 spawning and communicating with Jupyter kernels, such as:
 
 * A Jupyter Notebook server-compatible HTTP API used for requesting kernels
@@ -17,7 +17,7 @@ containerized and scaled out using common technologies like
 `Kubernetes <http://kubernetes.io/>`_.
 
 .. image:: images/kg_basic.png
-   :alt: Kernel Gateway basic deployment
+   :alt: Elyra basic deployment
    :width: 70%
    :align: center
 
@@ -28,9 +28,6 @@ containerized and scaled out using common technologies like
    getting-started
    uses
    features
-   websocket-mode
-   http-mode
-   plug-in
 
 .. toctree::
    :maxdepth: 2
@@ -51,7 +48,7 @@ containerized and scaled out using common technologies like
 
 .. toctree::
    :maxdepth: 2
-   :caption: About Jupyter Kernel Gateway
+   :caption: About Jupyter Elyra
 
    summary-changes
 
