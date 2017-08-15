@@ -7,7 +7,7 @@ import sys
 import json
 
 from .test_gatewayapp import TestGatewayAppBase, RESOURCES
-from ..notebook_http.swagger.handlers import SwaggerSpecHandler
+from kernel_gateway.notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import gen_test
 
 class TestDefaults(TestGatewayAppBase):

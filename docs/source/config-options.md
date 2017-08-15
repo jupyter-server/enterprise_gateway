@@ -1,6 +1,6 @@
 ## Configuration options
 
-The kernel gateway adheres to the [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html). You can configure an instance of the kernel gateway using:
+Jupyter Elyra adheres to the [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html). You can configure an instance of elyra using:
 
 1. A configuration file
 2. Command line parameters
@@ -9,19 +9,19 @@ The kernel gateway adheres to the [Jupyter common configuration approach](https:
 To generate a template configuration file, run the following:
 
 ```
-jupyter kernelgateway --generate-config
+jupyter elyra --generate-config
 ```
 
 To see the same configuration options at the command line, run the following:
 
 ```
-jupyter kernelgateway --help-all
+jupyter elyra --help-all
 ```
 
 A snapshot of this help appears below for ease of reference on the web.
 
 ```
-Jupyter Kernel Gateway
+Jupyter Elyra
 
 Provisions Jupyter kernels and proxies HTTP/Websocket traffic to them.
 
@@ -86,6 +86,9 @@ are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
 
 KernelGatewayApp options
 ------------------------
+Most all of the EyraApp options are derived from Jupyter Kernel Gateway.  
+As a result, the following option can be prefixed with 'ElyraApp' or 'KernelGatewayApp'.
+
 --KernelGatewayApp.allow_credentials=<Unicode>
     Default: ''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
