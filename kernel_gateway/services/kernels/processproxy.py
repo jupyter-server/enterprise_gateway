@@ -17,7 +17,10 @@ from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 from datetime import datetime
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))

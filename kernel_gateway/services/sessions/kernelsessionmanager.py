@@ -58,6 +58,7 @@ class KernelSessionManager(LoggingConfigurable):
     def refresh_session(self, kernel_id, **kwargs):
         # Persists information about the kernel session within the designated repository.
         if self.enable_persistence:
+            self.log.debug("Refreshing kernel session for id: {}".format(kernel_id))
             km = self.kernel_manager.get_kernel(kernel_id)
 
             # Compose the kernel_session entry
