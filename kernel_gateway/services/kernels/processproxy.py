@@ -459,6 +459,28 @@ class DistributedProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
+    
+    def kill(self):
+        """ Kill a kernel. Issues a SIGTERM signal, polls, if still alive, escalates with a SIGKILL
+        :return:
+        """
+        result = False
+
+        # Kill kernel with a -15 signal
+        result = super(DistributedProcessProxy, self).terminate()
+
+        # Wait and poll to check for process
+        i = 1
+        while super(DistributedProcessProxy, self).poll() is None and i <= max_poll_attempts:
+            time.sleep(poll_interval)
+            i = i+1
+        if super(DistributedProcessProxy, self).poll() is None:  # Check one last time
+            result = super(DistributedProcessProxy, self).kill()
+
+        self.log.debug("DistributedProxyProcess.kill, '{}', pid: {}, KernelID: {}"
+                       .format(self.assigned_host, self.pid, self.kernel_id))
+
+        return result
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
