@@ -467,11 +467,11 @@ class DistributedProcessProxy(RemoteProcessProxy):
         result = False
 
         # Kill kernel with a -15 signal
-        result = super(DistributedProcessProxy, self).terminate()
+        result = self.terminate()
 
         # Wait and poll to check for process
         i = 1
-        while super(DistributedProcessProxy, self).poll() is None and i <= max_poll_attempts:
+        while self.poll() is None and i <= max_poll_attempts:
             time.sleep(poll_interval)
             i = i+1
         if i > max_poll_attempts:  # Send -9 signal if process is still alive
