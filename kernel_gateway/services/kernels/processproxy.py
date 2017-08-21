@@ -117,21 +117,27 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return result
 
     def kill(self):
-        # If we have a local process, use its method, else send signal SIGKILL to terminate.
+        # If we have a local process, use its method, else signal soft kill first before hard kill.
         result = None
         if self.local_proc:
             result = self.local_proc.kill()
             self.log.debug("BaseProcessProxy.kill(): {}".format(result))
+
         else:
-            if self.ip and self.pid > 0:
-                if self.is_local_ip(self.ip):
-                    result = self.local_signal(signal.SIGKILL)
-                else:
-                    result = self.remote_signal(signal.SIGKILL)
+            result = self.terminate()  # Send -15 signal first
+            while self.poll() is None and i <= max_poll_attempts:
+                time.sleep(poll_interval)
+                i = i + 1
+            if i > max_poll_attempts:  # Send -9 signal if process is still alive
+                if self.ip and self.pid > 0:
+                    if self.is_local_ip(self.ip):
+                        result = self.local_signal(signal.SIGKILL)
+                    else:
+                        result = self.remote_signal(signal.SIGKILL)
         return result
 
     def terminate(self):
-        # If we have a local process, use its method, else send signal SIGTERM to terminate.
+        # If we have a local process, use its method, else send signal SIGTERM to soft kill.
         result = None
         if self.local_proc:
             result = self.local_proc.terminate()
@@ -459,27 +465,6 @@ class DistributedProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
-    
-    def kill(self):
-        """ Kill a kernel. Issues a SIGTERM signal, polls, if still alive, escalates with a SIGKILL
-        :return: None if process is still alive, false otherwise
-        """
-        result = False
-
-        # Kill kernel with a -15 signal
-        result = self.terminate()
-
-        # Wait and poll to check for process
-        i = 1
-        while self.poll() is None and i <= max_poll_attempts:
-            time.sleep(poll_interval)
-            i = i+1
-        if i > max_poll_attempts:  # Send -9 signal if process is still alive
-            result = super(DistributedProcessProxy, self).kill()
-
-        self.log.debug("DistributedProxyProcess.kill, '{}', pid: {}, KernelID: {}"
-                       .format(self.assigned_host, self.pid, self.kernel_id))
-        return result
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
