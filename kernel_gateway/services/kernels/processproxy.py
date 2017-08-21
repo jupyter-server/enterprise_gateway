@@ -308,7 +308,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     data = data + buffer # append what we received until we get no more...
             except Exception as e:
                 if type(e) is timeout:
-                    self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retyring..."
+                    self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
                                    .format(self.kernel_id, self.assigned_host))
                 else:
                     self.log.error(
