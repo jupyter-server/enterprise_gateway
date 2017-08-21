@@ -119,16 +119,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def kill(self):
         # If we have a local process, use its method, else signal soft kill first before hard kill.
         result = None
-        if self.local_proc:
-            result = self.local_proc.kill()
-            self.log.debug("BaseProcessProxy.kill(): {}".format(result))
 
-        else:
-            result = self.terminate()  # Send -15 signal first
-            while self.poll() is None and i <= max_poll_attempts:
-                time.sleep(poll_interval)
-                i = i + 1
-            if i > max_poll_attempts:  # Send -9 signal if process is still alive
+        result = self.terminate()  # Send -15 signal first
+        while self.poll() is None and i <= max_poll_attempts:
+            time.sleep(poll_interval)
+            i = i + 1
+        if i > max_poll_attempts:  # Send -9 signal if process is still alive
+            if self.local_proc:
+                result = self.local_proc.kill()
+                self.log.debug("BaseProcessProxy.kill(): {}".format(result))
+
+            else:
                 if self.ip and self.pid > 0:
                     if self.is_local_ip(self.ip):
                         result = self.local_signal(signal.SIGKILL)
