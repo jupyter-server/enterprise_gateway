@@ -119,6 +119,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def kill(self):
         # If we have a local process, use its method, else signal soft kill first before hard kill.
         result = self.terminate()  # Send -15 signal first
+        i = 1
         while self.poll() is None and i <= max_poll_attempts:
             time.sleep(poll_interval)
             i = i + 1
@@ -126,13 +127,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             if self.local_proc:
                 result = self.local_proc.kill()
                 self.log.debug("BaseProcessProxy.kill(): {}".format(result))
-
             else:
                 if self.ip and self.pid > 0:
                     if self.is_local_ip(self.ip):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
+            self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
         return result
 
     def terminate(self):
@@ -147,6 +148,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     result = self.local_signal(signal.SIGTERM)
                 else:
                     result = self.remote_signal(signal.SIGTERM)
+            self.log.debug("SIGTERM signal sent to pid: {}".format(self.pid))
         return result
 
     def is_local_ip(self, ip):
@@ -212,8 +214,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def local_signal(self, signum):
         # Use a negative signal number to signal process group
         if self.pid > 0:
+            if signum > 0:  # only log if meaningful signal (not for poll)
+                self.log.debug("Sending signal: -{} to pid: {}".format(signum, self.pid))
             cmd = ['kill', '-'+str(signum), str(self.pid)]
-            result = subprocess.call(cmd)
+
+            with open(os.devnull, 'w') as devnull:
+                result = subprocess.call(cmd,stderr=devnull)
+
             if result == 0:
                 return None
         return False
