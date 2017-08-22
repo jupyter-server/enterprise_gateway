@@ -117,17 +117,38 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return result
 
     def kill(self):
-        # If we have a local process, use its method, else send signal SIGKILL to terminate.
+        # If we have a local process, use its method, else signal soft kill first before hard kill.
+        result = self.terminate()  # Send -15 signal first
+        i = 1
+        while self.poll() is None and i <= max_poll_attempts:
+            time.sleep(poll_interval)
+            i = i + 1
+        if i > max_poll_attempts:  # Send -9 signal if process is still alive
+            if self.local_proc:
+                result = self.local_proc.kill()
+                self.log.debug("BaseProcessProxy.kill(): {}".format(result))
+            else:
+                if self.ip and self.pid > 0:
+                    if self.is_local_ip(self.ip):
+                        result = self.local_signal(signal.SIGKILL)
+                    else:
+                        result = self.remote_signal(signal.SIGKILL)
+            self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
+        return result
+
+    def terminate(self):
+        # If we have a local process, use its method, else send signal SIGTERM to soft kill.
         result = None
         if self.local_proc:
-            result = self.local_proc.kill()
-            self.log.debug("BaseProcessProxy.kill(): {}".format(result))
+            result = self.local_proc.terminate()
+            self.log.debug("BaseProcessProxy.terminate(): {}".format(result))
         else:
             if self.ip and self.pid > 0:
                 if self.is_local_ip(self.ip):
-                    result = self.local_signal(signal.SIGKILL)
+                    result = self.local_signal(signal.SIGTERM)
                 else:
-                    result = self.remote_signal(signal.SIGKILL)
+                    result = self.remote_signal(signal.SIGTERM)
+            self.log.debug("SIGTERM signal sent to pid: {}".format(self.pid))
         return result
 
     def is_local_ip(self, ip):
@@ -193,8 +214,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def local_signal(self, signum):
         # Use a negative signal number to signal process group
         if self.pid > 0:
+            if signum > 0:  # only log if meaningful signal (not for poll)
+                self.log.debug("Sending signal: -{} to pid: {}".format(signum, self.pid))
             cmd = ['kill', '-'+str(signum), str(self.pid)]
-            result = subprocess.call(cmd)
+
+            with open(os.devnull, 'w') as devnull:
+                result = subprocess.call(cmd,stderr=devnull)
+
             if result == 0:
                 return None
         return False
@@ -287,7 +313,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     data = data + buffer # append what we received until we get no more...
             except Exception as e:
                 if type(e) is timeout:
-                    self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retyring..."
+                    self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
                                    .format(self.kernel_id, self.assigned_host))
                 else:
                     self.log.error(
@@ -445,7 +471,6 @@ class DistributedProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
-
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
