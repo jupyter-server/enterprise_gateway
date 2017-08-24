@@ -6,6 +6,7 @@ import os
 import re
 from ipython_genutils.importstring import import_item
 from .manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
+from .processproxy import RemoteProcessProxy
 from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 
@@ -119,10 +120,18 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
 
     def restart_kernel(self, now=False, **kw):
+        kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
+        # Check if this is a remote process proxy. If so, check its connection count. If no connections, shutdown
+        # else perform the restart.
+        if isinstance(self.process_proxy,RemoteProcessProxy):
+            if self.parent._kernel_connections.get(kernel_id, 0) == 0:
+                self.log.warning("Remote kernel ({}) will not be automatically restarted since there are no "
+                                 "clients connected at this time.".format(kernel_id))
+                # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
+                self.parent.shutdown_kernel(kernel_id, now=now)
+                return
         super(RemoteKernelManager, self).restart_kernel(now, **kw)
         # Refresh persisted state.
-        kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
-        self.log.debug("RemoteKernelManager.restart_kernel: refreshing session for: {}".format(kernel_id))
         self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
 
     def signal_kernel(self, signum):
