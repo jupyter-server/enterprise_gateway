@@ -5,8 +5,7 @@ r_libs_user <- Sys.getenv("R_LIBS_USER")
 
 sparkConfigList <- list(
 spark.executorEnv.R_LIBS_USER=r_libs_user,
-spark.rdd.compress="true",
-spark.serializer.objectStreamReset="100")
+spark.rdd.compress="true")
 
 # Initializes the Spark session/context and SQL context
 initialize_spark_session <- function() {
