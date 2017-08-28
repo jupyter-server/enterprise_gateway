@@ -1,22 +1,67 @@
 library(SparkR)
 library(argparser)
 
-# Initializas the Spark session/context and SQL context
+r_libs_user <- Sys.getenv("R_LIBS_USER")
+
+sparkConfigList <- list(
+spark.executorEnv.R_LIBS_USER=r_libs_user,
+spark.rdd.compress="true",
+spark.serializer.objectStreamReset="100")
+
+# Initializes the Spark session/context and SQL context
 initialize_spark_session <- function() {
     # Make sure SparkR package is loaded last; this is necessary
     # to avoid the need to fully qualify package namspace (using ::)
     old <- getOption("defaultPackages")
     options(defaultPackages = c(old, "SparkR"))
 
-    # Initialize a new spark Session
-    spark <- SparkR::sparkR.session(enableHiveSupport = FALSE)
-    assign("spark", spark, envir = .GlobalEnv)
+    makeActiveBinding(".sparkRsession", sparkSessionFn, SparkR:::.sparkREnv)
+    makeActiveBinding(".sparkRjsc", sparkContextFn, SparkR:::.sparkREnv)
 
-    # Initialize spark context and sql context
-    sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils", "getJavaSparkContext", spark)
-    sqlContext <<- SparkR::sparkRSQL.init(sc)
-    assign("sc", sc, envir = .GlobalEnv)
+    delayedAssign("spark", {get(".sparkRsession", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
+
+    # backward compatibility for Spark 1.6 and earlier notebooks
+    delayedAssign("sc", {get(".sparkRjsc", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
+    delayedAssign("sqlContext", {spark}, assign.env=.GlobalEnv)
 }
+
+sparkSessionFn <- local({
+     function(v) {
+       if (missing(v)) {
+         # get SparkSession
+
+         # create a new sparkSession
+         rm(".sparkRsession", envir=SparkR:::.sparkREnv) # rm to ensure no infinite recursion
+
+         get("sc", envir=.GlobalEnv)
+
+         sparkSession <- SparkR::sparkR.session(
+                                        sparkHome=Sys.getenv("SPARK_HOME"),
+                                        sparkConfig=sparkConfigList);
+         sparkSession
+       }
+     }
+   })
+
+sparkContextFn <- local({
+    function(v) {
+      if (missing(v)) {
+        # get SparkContext
+
+        # create a new sparkContext
+        rm(".sparkRjsc", envir=SparkR:::.sparkREnv) # rm to ensure no infinite recursion
+
+        message ("Obtaining Spark session...")
+
+        sparkContext <- SparkR:::sparkR.sparkContext(
+                                          sparkHome=Sys.getenv("SPARK_HOME"),
+                                          sparkEnvirMap=SparkR:::convertNamedListToEnv(sparkConfigList))
+
+        message ("Spark session obtained.")
+        sparkContext
+      }
+    }
+  })
 
 # Return connection information
 return_connection_info <- function(connection_file, ip, response_addr){
