@@ -21,6 +21,8 @@ try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
+from calendar import timegm
+from notebook import _tz
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
@@ -38,6 +40,7 @@ poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('ELYRA_SOCKET_TIMEOUT', '5.0'))
 
 local_ip = localinterfaces.public_ips()[0]
+
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -361,9 +364,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.assigned_host = process_info['assigned_host']
 
     @staticmethod
-    def get_current_time():
+    def get_current_time(utc_epoch=False):
         # Return the current time stamp in milliseconds.
-        return str(datetime.now())[:-2]
+        # If it is utc_epoch, return the UTC time in epoch format in milliseconds.
+        return timegm(_tz.utcnow().utctimetuple()) * 1000 if utc_epoch else str(datetime.now())[:-2]
 
     @staticmethod
     def get_time_diff(time_str1, time_str2):
@@ -475,6 +479,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
 
+
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
     yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
@@ -484,6 +489,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self,  kernel_manager):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager)
         self.application_id = None
+        self.start_time_utc_epoch = None
         yarn_master = urlparse(YarnClusterProcessProxy.yarn_endpoint).hostname
         self.resource_mgr = ResourceManager(address=yarn_master)
 
@@ -595,6 +601,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             believe its talking to a valid kernel.
         """
         self.start_time = RemoteProcessProxy.get_current_time()
+        self.start_time_utc_epoch = RemoteProcessProxy.get_current_time(utc_epoch=True)
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
@@ -655,12 +662,12 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.  TODO - may need to treat FAILED state differently.
         if not self.application_id:
-            app = self.query_app_by_name(self.kernel_id)
+            app = self.query_app_by_name(self.kernel_id, self.start_time_utc_epoch)
             state_condition = True
-            if app and ignore_final_states:
+            if type(app) is dict and ignore_final_states:
                 state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
 
-            if app and len(app.get('id', '')) > 0 and state_condition:
+            if type(app) is dict and len(app.get('id', '')) > 0 and state_condition:
                 self.application_id = app['id']
                 time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
                 self.log.info("ApplicationID: '{}' assigned for KernelID: '{}', state: {}, {} seconds after starting."
@@ -678,37 +685,27 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         super(YarnClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
 
-    def query_app_by_name(self, kernel_id):
+    def query_app_by_name(self, kernel_id, started_time_begin=None):
         """Retrieve application by using kernel_id as the unique app name.
+        With possibly started_time_begin as a parameter if provided, default None.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
         Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
         For now, the app/kernel with the top most application ID will be returned as the target app, assuming the app
         ID will be incremented automatically on the YARN side.
 
         :param kernel_id: as the unique app name for query
+        :param started_time_begin: as the starting time to filter out applications started earlier than it
         :return: The JSON object of an application. 
         """
         top_most_app_id = ''
         target_app = None
-        data = self.resource_mgr.cluster_applications().data
-        if data and 'apps' in data and 'app' in data['apps']:
+        data = self.resource_mgr.cluster_applications(started_time_begin=started_time_begin).data
+        if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
                     target_app = app
                     top_most_app_id = app.get('id')
         return target_app
-
-    def query_yarn_nodes(self):
-        """Retrieve all nodes host name in a YARN cluster.
-        
-        :return: A list of "nodeHostName" from JSON object
-        """
-        data = self.resource_mgr.cluster_nodes().data
-        nodes_list = list([])
-        if data and 'nodes' in data and 'node' in data['nodes']:
-            for node in data['nodes']['node']:
-                nodes_list.append(node['nodeHostName'])
-        return nodes_list
 
     def query_app_by_id(self, app_id):
         """Retrieve an application by application ID.
@@ -717,7 +714,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :return: The JSON object of an application.
         """
         data = self.resource_mgr.cluster_application(application_id=app_id).data
-        if data and 'app' in data:
+        if type(data) is dict and 'app' in data:
             return data['app']
         return None
 
