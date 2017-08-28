@@ -5,7 +5,7 @@
 import os
 import re
 from ipython_genutils.importstring import import_item
-from .manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
+from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
 from .processproxy import RemoteProcessProxy
 from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
@@ -18,7 +18,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """
 
     def _kernel_manager_class_default(self):
-        return 'kernel_gateway.services.kernels.remotemanager.RemoteKernelManager'
+        return 'elyra.services.kernels.remotemanager.RemoteKernelManager'
 
     @gen.coroutine
     def start_kernel(self, kernel_id=None, *args, **kwargs):
@@ -114,9 +114,14 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
     def _launch_kernel(self, kernel_cmd, **kw):
         if self.kernel_spec.process_proxy_class:
+            # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
+            env = kw['env']
+            env['KERNEL_GATEWAY'] = '1'
+            if 'KG_AUTH_TOKEN' in env:
+                del env['KG_AUTH_TOKEN']
             self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
             return self.process_proxy.launch_process(kernel_cmd, **kw)
-
+        # This statement shouldn't be reached since LocalProcessProxy is the default if non-existent, but just in case.
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
 
     def restart_kernel(self, now=False, **kw):
@@ -154,12 +159,16 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     def get_connection_info(self, session=False):
         info = super(RemoteKernelManager, self).get_connection_info(session)
         # Convert bytes to string for persistence.  Will reverse operation in load_connection_info
-        info['key'] = bytes_to_str(info['key'])
+        info_key = info.get('key')
+        if info_key:
+            info['key'] = bytes_to_str(info_key)
         return info
 
     def load_connection_info(self, info):
         # get the key back to bytes...
-        info['key'] = str_to_bytes(info['key'])
+        info_key = info.get('key')
+        if info_key:
+            info['key'] = str_to_bytes(info_key)
         return super(RemoteKernelManager, self).load_connection_info(info)
 
     def write_connection_file(self):
