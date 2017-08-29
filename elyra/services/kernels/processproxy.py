@@ -16,7 +16,6 @@ from ipython_genutils.py3compat import with_metaclass
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
-from datetime import datetime
 try:
     from urlparse import urlparse
 except ImportError:
@@ -364,18 +363,16 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.assigned_host = process_info['assigned_host']
 
     @staticmethod
-    def get_current_time(utc_epoch=False):
-        # Return the current time stamp in milliseconds.
-        # If it is utc_epoch, return the UTC time in epoch format in milliseconds.
-        return timegm(_tz.utcnow().utctimetuple()) * 1000 if utc_epoch else str(datetime.now())[:-2]
+    def get_current_time():
+        # Return the current time stamp in UTC time epoch format in milliseconds, e.g.
+        return timegm(_tz.utcnow().utctimetuple()) * 1000
 
     @staticmethod
-    def get_time_diff(time_str1, time_str2):
-        # Return the difference between two timestamps in seconds (with milliseconds).
-        time_format = "%Y-%m-%d %H:%M:%S.%f"
-        time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
-        diff = max(time1, time2) - min(time1, time2)
-        return float("%d.%d" % (diff.seconds, diff.microseconds / 1000))
+    def get_time_diff(time1, time2):
+        # Return the difference between two timestamps in seconds, assuming the timestamp is in milliseconds
+        # e.g. the difference between 1504028203000 and 1504028208300 is 5300 milliseconds or 5.3 seconds
+        diff = abs(time2 - time1)
+        return float("%d.%d" % (diff / 1000, diff % 1000))
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
@@ -489,7 +486,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self,  kernel_manager):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager)
         self.application_id = None
-        self.start_time_utc_epoch = None
         yarn_master = urlparse(YarnClusterProcessProxy.yarn_endpoint).hostname
         self.resource_mgr = ResourceManager(address=yarn_master)
 
@@ -601,7 +597,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             believe its talking to a valid kernel.
         """
         self.start_time = RemoteProcessProxy.get_current_time()
-        self.start_time_utc_epoch = RemoteProcessProxy.get_current_time(utc_epoch=True)
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
@@ -662,7 +657,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.  TODO - may need to treat FAILED state differently.
         if not self.application_id:
-            app = self.query_app_by_name(self.kernel_id, self.start_time_utc_epoch)
+            app = self.query_app_by_name(self.kernel_id)
             state_condition = True
             if type(app) is dict and ignore_final_states:
                 state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
@@ -685,21 +680,20 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         super(YarnClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
 
-    def query_app_by_name(self, kernel_id, started_time_begin=None):
+    def query_app_by_name(self, kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
-        With possibly started_time_begin as a parameter if provided, default None.
+        With the started_time_begin as a parameter to filter applications started earlier than the target one from YARN.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
         Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
         For now, the app/kernel with the top most application ID will be returned as the target app, assuming the app
         ID will be incremented automatically on the YARN side.
 
         :param kernel_id: as the unique app name for query
-        :param started_time_begin: as the starting time to filter out applications started earlier than it
-        :return: The JSON object of an application. 
+        :return: The JSON object of an application.
         """
         top_most_app_id = ''
         target_app = None
-        data = self.resource_mgr.cluster_applications(started_time_begin=started_time_begin).data
+        data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
         if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
