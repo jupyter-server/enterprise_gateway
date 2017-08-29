@@ -16,11 +16,12 @@ from ipython_genutils.py3compat import with_metaclass
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
-from datetime import datetime
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
+from calendar import timegm
+from notebook import _tz
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
@@ -38,6 +39,7 @@ poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('ELYRA_SOCKET_TIMEOUT', '5.0'))
 
 local_ip = localinterfaces.public_ips()[0]
+
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -362,16 +364,15 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     @staticmethod
     def get_current_time():
-        # Return the current time stamp in milliseconds.
-        return str(datetime.now())[:-2]
+        # Return the current time stamp in UTC time epoch format in milliseconds, e.g.
+        return timegm(_tz.utcnow().utctimetuple()) * 1000
 
     @staticmethod
-    def get_time_diff(time_str1, time_str2):
-        # Return the difference between two timestamps in seconds (with milliseconds).
-        time_format = "%Y-%m-%d %H:%M:%S.%f"
-        time1, time2 = datetime.strptime(time_str1, time_format), datetime.strptime(time_str2, time_format)
-        diff = max(time1, time2) - min(time1, time2)
-        return float("%d.%d" % (diff.seconds, diff.microseconds / 1000))
+    def get_time_diff(time1, time2):
+        # Return the difference between two timestamps in seconds, assuming the timestamp is in milliseconds
+        # e.g. the difference between 1504028203000 and 1504028208300 is 5300 milliseconds or 5.3 seconds
+        diff = abs(time2 - time1)
+        return float("%d.%d" % (diff / 1000, diff % 1000))
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
@@ -474,6 +475,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             raise tornado.web.HTTPError(error_http_code, timeout_message)
+
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
 
@@ -657,10 +659,10 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         if not self.application_id:
             app = self.query_app_by_name(self.kernel_id)
             state_condition = True
-            if app and ignore_final_states:
+            if type(app) is dict and ignore_final_states:
                 state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
 
-            if app and len(app.get('id', '')) > 0 and state_condition:
+            if type(app) is dict and len(app.get('id', '')) > 0 and state_condition:
                 self.application_id = app['id']
                 time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
                 self.log.info("ApplicationID: '{}' assigned for KernelID: '{}', state: {}, {} seconds after starting."
@@ -680,35 +682,24 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def query_app_by_name(self, kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
+        With the started_time_begin as a parameter to filter applications started earlier than the target one from YARN.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
         Note: if a kernel restarts with the same kernel id as app name, multiple applications will be returned.
         For now, the app/kernel with the top most application ID will be returned as the target app, assuming the app
         ID will be incremented automatically on the YARN side.
 
         :param kernel_id: as the unique app name for query
-        :return: The JSON object of an application. 
+        :return: The JSON object of an application.
         """
         top_most_app_id = ''
         target_app = None
-        data = self.resource_mgr.cluster_applications().data
-        if data and 'apps' in data and 'app' in data['apps']:
+        data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
+        if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
                     target_app = app
                     top_most_app_id = app.get('id')
         return target_app
-
-    def query_yarn_nodes(self):
-        """Retrieve all nodes host name in a YARN cluster.
-        
-        :return: A list of "nodeHostName" from JSON object
-        """
-        data = self.resource_mgr.cluster_nodes().data
-        nodes_list = list([])
-        if data and 'nodes' in data and 'node' in data['nodes']:
-            for node in data['nodes']['node']:
-                nodes_list.append(node['nodeHostName'])
-        return nodes_list
 
     def query_app_by_id(self, app_id):
         """Retrieve an application by application ID.
@@ -717,7 +708,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :return: The JSON object of an application.
         """
         data = self.resource_mgr.cluster_application(application_id=app_id).data
-        if data and 'app' in data:
+        if type(data) is dict and 'app' in data:
             return data['app']
         return None
 
