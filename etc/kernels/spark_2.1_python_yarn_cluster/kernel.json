@@ -2,7 +2,7 @@
   "language": "python",
   "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.kernels.processproxy.YarnClusterProcessProxy"
+    "class_name": "elyra.services.processproxies.yarn.YarnClusterProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

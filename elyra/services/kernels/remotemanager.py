@@ -6,7 +6,7 @@ import os
 import re
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
-from .processproxy import RemoteProcessProxy
+from ..processproxies.processproxy import RemoteProcessProxy
 from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 

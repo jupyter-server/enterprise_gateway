@@ -80,7 +80,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.kernels.processproxy.DistributedProcessProxy"
+    "class_name": "elyra.services.processproxies.distributed.DistributedProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -120,7 +120,7 @@ Process proxy classes derive from the abstract base class `BaseProcessProxyABC` 
 
 `LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain a `process_proxy` stanza will use `LocalProcessProxy`.  
 
-`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are two built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in [processproxy.py](https://github.com/SparkTC/elyra/blob/elyra/elyra/services/kernels/processproxy.py)
+`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are two built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in [processproxies package](https://github.com/SparkTC/elyra/blob/elyra/elyra/services/processproxies).
 
 The constructor signature looks as follows:
 
@@ -146,7 +146,7 @@ All process proxy subclasses classes should ensure `BaseProcessProxyABC.launch_p
 ```python
 def poll(self):
 ```
-The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the framework's heartbeat mechanism calls `poll()` every 3 seconds.  As a result, if the corresponding process proxy takes time to determine the process's availability, you may want to increase the heartbeat interval (via [`--KernelRestarter.time_to_dead`](http://jupyter-console.readthedocs.io/en/latest/config_options.html)).
+The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the framework's heartbeat mechanism calls `poll()` every 3 seconds.  This value can be adjusted via the configuration setting [`KernelRestarter.time_to_dead`](http://jupyter-console.readthedocs.io/en/latest/config_options.html).
 
 This method returns `None` if the process is still running, `False` otherwise (per the `popen()` contract).
 
@@ -213,7 +213,7 @@ Here's a [kernel.json](https://github.com/SparkTC/elyra/blob/elyra/etc/kernels/s
   "language": "python",
   "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.kernels.processproxy.YarnClusterProcessProxy"
+    "class_name": "elyra.services.processproxies.yarn.YarnClusterProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

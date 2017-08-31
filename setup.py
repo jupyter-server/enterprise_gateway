@@ -29,6 +29,7 @@ Jupyter Elyra is a web server that [TODO].
         'elyra.services',
         'elyra.services.kernels',
         'elyra.services.kernelspecs',
+        'elyra.services.processproxies',
         'elyra.services.sessions',
     ],
     scripts=[

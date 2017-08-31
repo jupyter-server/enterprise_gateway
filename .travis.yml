@@ -15,6 +15,6 @@ install:
     - pip install dist/*.whl coverage
     - pip freeze
 script:
-    - jupyter kernelgateway --help
+    - jupyter elyra --help
     - nosetests -x --process-restartworker --with-coverage --cover-package=kernel_gateway
-    - pip uninstall -y jupyter_kernel_gateway
+    - pip uninstall -y elyra
