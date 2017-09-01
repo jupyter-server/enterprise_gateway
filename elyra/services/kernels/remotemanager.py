@@ -126,9 +126,10 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
     def restart_kernel(self, now=False, **kw):
         kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
-        # Check if this is a remote process proxy. If so, check its connection count. If no connections, shutdown
-        # else perform the restart.
-        if isinstance(self.process_proxy,RemoteProcessProxy):
+        # Check if this is a remote process proxy and if now = True. If so, check its connection count. If no
+        # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
+        # the default value (False).
+        if isinstance(self.process_proxy,RemoteProcessProxy) and now:
             if self.parent._kernel_connections.get(kernel_id, 0) == 0:
                 self.log.warning("Remote kernel ({}) will not be automatically restarted since there are no "
                                  "clients connected at this time.".format(kernel_id))
