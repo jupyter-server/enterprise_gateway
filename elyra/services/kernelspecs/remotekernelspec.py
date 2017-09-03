@@ -18,7 +18,7 @@ class RemoteKernelSpec(KernelSpec):
     def __init__(self, resource_dir, **kernel_dict):
         super(RemoteKernelSpec, self).__init__(resource_dir, **kernel_dict)
         # defaults...
-        self.process_proxy_class = 'elyra.services.kernels.processproxy.LocalProcessProxy'
+        self.process_proxy_class = 'elyra.services.processproxies.processproxy.LocalProcessProxy'
 
         if 'process_proxy' in kernel_dict and kernel_dict['process_proxy']:
             self.process_proxy_class = kernel_dict['process_proxy']['class_name']
