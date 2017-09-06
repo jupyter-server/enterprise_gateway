@@ -91,8 +91,9 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         if signum == 0:
             return self.poll()
         elif signum == signal.SIGINT:
-            self.log.debug("YarnClusterProcessProxy.send_signal, SIGINT requests will be ignored")
-            return self.poll()
+            # Yarn api doesn't support the equivalent to interrupts, so take our chances
+            # via a remote signal.
+            return super(YarnClusterProcessProxy, self).send_signal(signum)
         else:
             return self.kill()
 
