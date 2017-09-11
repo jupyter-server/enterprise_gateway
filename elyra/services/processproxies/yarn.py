@@ -90,12 +90,13 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.log.debug("YarnClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
             return self.poll()
-        elif signum == signal.SIGINT:
-            # Yarn api doesn't support the equivalent to interrupts, so take our chances
-            # via a remote signal.
-            return super(YarnClusterProcessProxy, self).send_signal(signum)
-        else:
+        elif signum == signal.SIGKILL:
             return self.kill()
+        else:
+            # Yarn api doesn't support the equivalent to interrupts, so take our chances
+            # via a remote signal.  Note that this condition cannot check against the
+            # signum value because altternate interrupt signals might be in play.
+            return super(YarnClusterProcessProxy, self).send_signal(signum)
 
     def kill(self):
         """Kill a kernel.

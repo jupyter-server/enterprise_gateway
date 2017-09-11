@@ -3,6 +3,8 @@
 """Kernel managers that operate against a remote process."""
 
 import os
+import sys
+import signal
 import re
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
@@ -86,6 +88,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     """
     process_proxy = None
     response_address = None
+    sigint_value = None
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
@@ -146,7 +149,21 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         """
         self.log.debug("RemoteKernelManager.signal_kernel({})".format(signum))
         if self.has_kernel:
-            self.kernel.send_signal(signum)
+            if signum == signal.SIGINT and self.sigint_value is None:
+                # If we're interrupting the kernel, check if kernelspec's env defines
+                # an alternate interrupt signal.  We'll do this once per interrupted kernel.
+                self.sigint_value = signum # use default
+                alt_sigint = self.kernel_spec.env.get('JEG_ALTERNATE_SIGINT')
+                if alt_sigint:
+                    try:
+                        self.sigint_value = getattr(signal, alt_sigint).value
+                        self.log.debug("Converted JEG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
+                                         format(alt_sigint, self.sigint_value))
+                    except AttributeError:
+                        self.log.warning("Error received when attempting to convert JEG_ALTERNATE_SIGINT of "
+                                         "'{}' to a value. Check kernelspec entry for kernel '{}' - using default 'SIGINT'".
+                                         format(alt_sigint, self.kernel_spec.display_name))
+            self.kernel.send_signal(self.sigint_value)
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
