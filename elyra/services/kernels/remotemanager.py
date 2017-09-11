@@ -156,7 +156,11 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 alt_sigint = self.kernel_spec.env.get('ELYRA_ALTERNATE_SIGINT')
                 if alt_sigint:
                     try:
-                        self.sigint_value = getattr(signal, alt_sigint).value
+                        sig_value = getattr(signal, alt_sigint)
+                        if type(sig_value) is int: # Python 2
+                            self.sigint_value = sig_value
+                        else: # Python 3
+                            self.sigint_value = sig_value.value
                         self.log.debug("Converted ELYRA_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
                                          format(alt_sigint, self.sigint_value))
                     except AttributeError:
