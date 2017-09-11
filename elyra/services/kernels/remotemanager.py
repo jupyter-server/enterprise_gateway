@@ -153,14 +153,14 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 # If we're interrupting the kernel, check if kernelspec's env defines
                 # an alternate interrupt signal.  We'll do this once per interrupted kernel.
                 self.sigint_value = signum # use default
-                alt_sigint = self.kernel_spec.env.get('JEG_ALTERNATE_SIGINT')
+                alt_sigint = self.kernel_spec.env.get('ELYRA_ALTERNATE_SIGINT')
                 if alt_sigint:
                     try:
                         self.sigint_value = getattr(signal, alt_sigint).value
-                        self.log.debug("Converted JEG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
+                        self.log.debug("Converted ELYRA_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
                                          format(alt_sigint, self.sigint_value))
                     except AttributeError:
-                        self.log.warning("Error received when attempting to convert JEG_ALTERNATE_SIGINT of "
+                        self.log.warning("Error received when attempting to convert ELYRA_ALTERNATE_SIGINT of "
                                          "'{}' to a value. Check kernelspec entry for kernel '{}' - using default 'SIGINT'".
                                          format(alt_sigint, self.kernel_spec.display_name))
             self.kernel.send_signal(self.sigint_value)
