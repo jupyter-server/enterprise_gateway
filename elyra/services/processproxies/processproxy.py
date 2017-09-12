@@ -57,6 +57,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.local_proc = None
         self.ip = None
         self.pid = 0
+        self.pgid = 0
 
     @abc.abstractmethod
     def launch_process(self, cmd, **kw):
@@ -105,6 +106,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # the appropriate version to signal the process.
         result = None
         if self.local_proc:
+            if self.pgid > 0 and hasattr(os, "killpg"):
+                try:
+                    os.killpg(self.pgid, signum)
+                    return result
+                except OSError:
+                    pass
             result = self.local_proc.send_signal(signum)
         else:
             if self.ip and self.pid > 0:
@@ -198,10 +205,11 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def remote_signal(self, signum):
         val = None
-        # Use a negative signal number to signal process group
-        cmd = 'kill -{} {}; echo $?'.format(signum, self.pid)
+        # if we have a process group, use that, else use the pid...
+        target = '-'+str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
+        cmd = 'kill -{} {}; echo $?'.format(signum, target)
         if signum > 0:  # only log if meaningful signal (not for poll)
-            self.log.debug("Sending signal: -{} to pid: {} on host: {}".format(signum, self.pid, self.ip))
+            self.log.debug("Sending signal: {} to target: {} on host: {}".format(signum, target, self.ip))
         result = self.rsh(self.ip, cmd)
         for line in result:
             val = line.strip()
@@ -210,17 +218,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return False
 
     def local_signal(self, signum):
-        # Use a negative signal number to signal process group
-        if self.pid > 0:
-            if signum > 0:  # only log if meaningful signal (not for poll)
-                self.log.debug("Sending signal: -{} to pid: {}".format(signum, self.pid))
-            cmd = ['kill', '-'+str(signum), str(self.pid)]
+        # if we have a process group, use that, else use the pid...
+        target = '-' + str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
+        if signum > 0:  # only log if meaningful signal (not for poll)
+            self.log.debug("Sending signal: {} to target: {}".format(signum, target))
+        cmd = ['kill', '-'+str(signum), target]
 
-            with open(os.devnull, 'w') as devnull:
-                result = subprocess.call(cmd,stderr=devnull)
+        with open(os.devnull, 'w') as devnull:
+            result = subprocess.call(cmd,stderr=devnull)
 
-            if result == 0:
-                return None
+        if result == 0:
+            return None
         return False
 
     def get_connection_filename(self):
@@ -234,11 +242,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return self.kernel_manager.connection_file
 
     def get_process_info(self):
-        process_info = {'pid': self.pid, 'ip': self.ip}
+        process_info = {'pid': self.pid, 'pgid': self.gpid, 'ip': self.ip}
         return process_info
 
     def load_process_info(self, process_info):
         self.pid = process_info['pid']
+        self.pgid = process_info['pgid']
         self.ip = process_info['ip']
 
 
@@ -254,7 +263,14 @@ class LocalProcessProxy(BaseProcessProxyABC):
         # launch the local run.sh
         self.local_proc = launch_kernel(kernel_cmd, **kw)
         self.pid = self.local_proc.pid
+        if hasattr(os, "getpgid"):
+            try:
+                self.pgid = os.getpgid(self.pid)
+            except OSError:
+                pass
         self.ip = local_ip
+        self.log.info("Local kernel launched on '{}', pid: {}, pgid: {}, KernelID: {}, cmd: '{}'"
+                      .format(self.ip, self.pid, self.pgid, self.kernel_id, kernel_cmd))
         return self
 
 
@@ -336,6 +352,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if connect_info:
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
             connect_info['ip'] = self.assigned_ip  # overwrite the ip to our remote target
+            # The launcher may also be sending back process info, so check and extract
+            self.extract_process_info(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
             self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
                            .format(self.kernel_id, self.assigned_host, connect_info))
@@ -343,6 +361,19 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             raise RuntimeError("RemoteProcessProxy.update_connection: connection information is null!")
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
+
+    def extract_process_info(self, connect_info):
+        pid = connect_info.get('pid')
+        if pid:
+            self.pid = int(pid)
+            self.log.debug("Updated pid to: {}".format(self.pid))
+        pgid = connect_info.get('pgid')
+        if pgid:
+            self.pgid = int(pgid)
+            self.log.debug("Updated pgid to: {}".format(self.pgid))
+        if pid or pgid:  # if either process ids were updated, update the ip as well and don't use local_proc
+            self.ip = self.assigned_ip
+            self.local_proc = None
 
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()

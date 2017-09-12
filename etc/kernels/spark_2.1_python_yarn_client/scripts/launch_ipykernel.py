@@ -82,6 +82,10 @@ def return_connection_info(connection_file, ip, response_addr):
     with open(connection_file) as fp:
         cf_json = json.load(fp)
         fp.close()
+        # add process and process group ids into connection info.
+        pid = os.getpid()
+        cf_json['pid'] = str(pid)
+        cf_json['pgid'] = str(os.getpgid(pid))
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:

@@ -1,5 +1,6 @@
 library(SparkR)
 library(argparser)
+library(jsonlite)
 
 r_libs_user <- Sys.getenv("R_LIBS_USER")
 
@@ -78,19 +79,21 @@ return_connection_info <- function(connection_file, ip, response_addr){
   # Read in connection file to send back to JKG
   tryCatch(
     {
-      con <- socketConnection(host=response_ip, port=response_port, blocking=FALSE, server=FALSE)
-      sendme <- readLines(con = connection_file, encoding = "UTF-8")
-      write_resp <- writeLines(sendme, con)
+        con <- socketConnection(host=response_ip, port=response_port, blocking=FALSE, server=FALSE)
+        sendme <- read_json(connection_file)
+        # Add launcher process id to returned info...
+        sendme$pid <- Sys.getpid()
+        write_resp <- writeLines(toJSON(sendme, auto_unbox=TRUE), con)
     },
     error=function(cond) {
-            message(paste("Unable to connect to response address", response_addr ))
-            message("Here's the original error message:")
-            message(cond)
-            # Choose a return value in case of error
-            return(NA)
+        message(paste("Unable to connect to response address", response_addr ))
+        message("Here's the original error message:")
+        message(cond)
+        # Choose a return value in case of error
+        return(NA)
     },
     finally={
-      close(con)
+        close(con)
     }
   )
 }
