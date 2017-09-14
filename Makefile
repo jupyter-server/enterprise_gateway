@@ -6,6 +6,7 @@
 SA:=source activate
 ENV:=kernel-gateway-dev
 SHELL:=/bin/bash
+MAKEFILE_DIR:=${CURDIR}
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -38,6 +39,10 @@ dev: ## Make a server in jupyter_websocket mode
 
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
+
+kernelspecs: ## Group kernelspecs into *.tar.gz
+	rm -f dist/elyra-kernel-specs.tar.gz
+	( cd etc/kernels; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernel-specs.tar.gz" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
