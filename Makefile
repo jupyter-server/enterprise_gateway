@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs install bdist sdist test release
+.PHONY: help build clean nuke dev dev-http docs kernelspecs install bdist sdist test release
 
 SA:=source activate
 ENV:=kernel-gateway-dev
@@ -40,9 +40,10 @@ dev: ## Make a server in jupyter_websocket mode
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
-kernelspecs: ## Group kernelspecs into *.tar.gz
+kernelspecs: ## Make a tar.gz file consisting of kernelspec files
+	@mkdir -p dist
 	rm -f dist/elyra-kernel-specs.tar.gz
-	( cd etc/kernels; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernel-specs.tar.gz" * )
+	@( cd etc/kernels; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernel-specs.tar.gz" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
