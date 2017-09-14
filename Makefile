@@ -14,9 +14,9 @@ help:
 
 build:
 env: ## Make a dev environment
-	conda create -y -n $(ENV) -c conda-forge --file requirements.txt \
+	-conda create -y -n $(ENV) -c conda-forge --file requirements.txt \
 		--file requirements-test.txt
-	source activate $(ENV) && \
+	$(SA) $(ENV) && \
 		pip install -r requirements-doc.txt && \
 		pip install -e .
 
