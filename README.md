@@ -141,7 +141,7 @@ where
 
 The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for performing the appropriate actions relative to the target type.  The process must be in a running state prior to returning from this method - otherwise attempts to use the connections will not be successful since the (remote) kernel needs to have created the sockets.
 
-All process proxy subclasses classes should ensure `BaseProcessProxyABC.launch_process()` is called - which will automatically place a variable named `KERNEL_ID` (consisting of the kernel's unique ID) into the corresponding kernel's environment variable list since `KERNEL_ID` is a primary mechanism for associating remote applications to a specific kernel instance.
+All process proxy subclasses should ensure `BaseProcessProxyABC.launch_process()` is called - which will automatically place a variable named `KERNEL_ID` (consisting of the kernel's unique ID) into the corresponding kernel's environment variable list since `KERNEL_ID` is a primary mechanism for associating remote applications to a specific kernel instance.
 
 ```python
 def poll(self):
@@ -435,3 +435,8 @@ docker run -t --rm \
     biginsights/jupyter-nb-nb2kg:dev
 ```
 
+### Integration testing
+
+Integration testing could be a manual procedure, i.e. first open a sample notebook on a web browser and then run all the codes, get all outputs and compare if the outputs are the same compared to the sample notebook ground truth outputs. However, it is also feasible to do integration testing programmatically. 
+
+On a high level, the first step is to parse a notebook as an entity consisted of multiple code messages (inputs and outputs). Then ask a given Elyra service to create/`POST` a new kernel based on the kernel name of the notebook entity, via the JKG REST API e.g. `http://<JKG host address>/api/kernels`. After there is a kernel ID and the new kernel is ready, for each of the code cell in the notebook entity, a code message needs be sent to the Elyra service via JKG socket API connection, e.g. `ws://<JKG host address>/api/kernels/<kernel ID>/channels`. After all the outputs are received for a notebook entity, its outputs should be compared with the "ground truth" outputs on the sample notebook. If there is anything unexpected, the test could be marked as failed.
