@@ -43,7 +43,7 @@ docs: ## Make HTML documentation
 
 kernelspecs: ## Make a tar.gz file consisting of kernelspec files
 	@mkdir -p build/kernelspecs
-	cp -r etc/kernelspecs/ build/kernelspecs
+	cp -r etc/kernelspecs build
 	@echo build/kernelspecs/*_python_* | xargs -t -n 1 cp -r etc/kernel-launchers/python/*
 	@echo build/kernelspecs/*_R_* | xargs -t -n 1 cp -r etc/kernel-launchers/R/*
 	@echo build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r etc/kernel-launchers/scala/*
