@@ -38,7 +38,7 @@ Jupyter Elyra is a web server that [TODO].
     install_requires=[
         'jupyter_core>=4.0',
         'jupyter_client>=4.2.0',
-        'notebook>=5.1.0',
+        'notebook>=5.1.0,<6.0',
         'jupyter_kernel_gateway>=1.1.2',
         'traitlets>=4.2.0',
         'tornado>=4.2.0',
