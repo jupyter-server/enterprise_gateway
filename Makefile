@@ -4,7 +4,7 @@
 .PHONY: help build clean nuke dev dev-http docs kernelspecs install bdist sdist test release
 
 SA:=source activate
-ENV:=kernel-gateway-dev
+ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 MAKEFILE_DIR:=${CURDIR}
 
@@ -14,9 +14,10 @@ help:
 
 build:
 env: ## Make a dev environment
-	-conda create -y -n $(ENV) -c conda-forge --file requirements.txt \
+	-conda create -y -n $(ENV) -c conda-forge --file requirements-conda.txt \
 		--file requirements-test.txt
 	$(SA) $(ENV) && \
+		pip install -r requirements.txt && \
 		pip install -r requirements-doc.txt && \
 		pip install -e .
 
