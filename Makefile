@@ -42,9 +42,14 @@ docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
 kernelspecs: ## Make a tar.gz file consisting of kernelspec files
+	@mkdir -p build/kernelspecs
+	cp -r etc/kernelspecs/ build/kernelspecs
+	@echo build/kernelspecs/*_python_* | xargs -t -n 1 cp -r etc/kernel-launchers/python/*
+	@echo build/kernelspecs/*_R_* | xargs -t -n 1 cp -r etc/kernel-launchers/R/*
+	@echo build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r etc/kernel-launchers/scala/*
 	@mkdir -p dist
-	rm -f dist/elyra-kernel-specs.tar.gz
-	@( cd etc/kernels; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernel-specs.tar.gz" * )
+	rm -f dist/elyra-kernelspecs.tar.gz
+	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernelspecs.tar.gz" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
