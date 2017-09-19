@@ -1,10 +1,16 @@
 ## Configuration options
 
-Jupyter Elyra adheres to the [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html). You can configure an instance of elyra using:
+Jupyter Elyra adheres to the 
+[Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html)
+. You can configure an instance of elyra using:
 
 1. A configuration file
 2. Command line parameters
 3. Environment variables
+
+Note that because Elyra is built on Kernel Gateway, all of the `KernelGatewayApp` options 
+can be specified as `ElyraApp` options.  In addition, the `KG_` prefix of environment 
+variables has also been perserved.
 
 To generate a template configuration file, run the following:
 
@@ -34,36 +40,25 @@ on full configurables, see '--help-all'.
 
 --debug
     set log level to logging.DEBUG (maximize logging output)
---generate-config
-    generate default config file
 -y
     Answer yes to any questions instead of prompting.
+--generate-config
+    generate default config file
 --certfile=<Unicode> (KernelGatewayApp.certfile)
     Default: None
     The full path to an SSL/TLS certificate file. (KG_CERTFILE env var)
---config=<Unicode> (JupyterApp.config_file)
-    Default: ''
-    Full path of a config file.
---port_retries=<Int> (KernelGatewayApp.port_retries)
-    Default: 50
-    Number of ports to try if the specified port is not available
-    (KG_PORT_RETRIES env var)
---ip=<Unicode> (KernelGatewayApp.ip)
-    Default: '127.0.0.1'
-    IP address on which to listen (KG_IP env var)
---keyfile=<Unicode> (KernelGatewayApp.keyfile)
-    Default: None
-    The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
-    var)
 --seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
---client-ca=<Unicode> (KernelGatewayApp.client_ca)
-    Default: None
-    The full path to a certificate authority certificate for SSL/TLS client
-    authentication. (KG_CLIENT_CA env var)
---port=<Int> (KernelGatewayApp.port)
+--ip=<Unicode> (KernelGatewayApp.ip)
+    Default: '127.0.0.1'
+    IP address on which to listen (KG_IP env var)
+--log-level=<Enum> (Application.log_level)
+    Default: 30
+    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
+    Set the log level by value or name.
+--port=<Integer> (KernelGatewayApp.port)
     Default: 8888
     Port on which to listen (KG_PORT env var)
 --api=<Unicode> (KernelGatewayApp.api)
@@ -72,10 +67,21 @@ on full configurables, see '--help-all'.
     notebook's, or one provided by another module, respectively using values
     'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
---log-level=<Enum> (Application.log_level)
-    Default: 30
-    Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
-    Set the log level by value or name.
+--port_retries=<Integer> (KernelGatewayApp.port_retries)
+    Default: 50
+    Number of ports to try if the specified port is not available
+    (KG_PORT_RETRIES env var)
+--client-ca=<Unicode> (KernelGatewayApp.client_ca)
+    Default: None
+    The full path to a certificate authority certificate for SSL/TLS client
+    authentication. (KG_CLIENT_CA env var)
+--config=<Unicode> (JupyterApp.config_file)
+    Default: u''
+    Full path of a config file.
+--keyfile=<Unicode> (KernelGatewayApp.keyfile)
+    Default: None
+    The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
+    var)
 
 Class parameters
 ----------------
@@ -84,101 +90,98 @@ Parameters are set from command-line arguments of the form:
 `--Class.trait=value`. This line is evaluated in Python, so simple expressions
 are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
 
-KernelGatewayApp options
-------------------------
-Most all of the EyraApp options are derived from Jupyter Kernel Gateway.  
-As a result, the following option can be prefixed with 'ElyraApp' or 'KernelGatewayApp'.
-
---KernelGatewayApp.allow_credentials=<Unicode>
-    Default: ''
+ElyraApp options
+----------------
+--ElyraApp.allow_credentials=<Unicode>
+    Default: u''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
     var)
---KernelGatewayApp.allow_headers=<Unicode>
-    Default: ''
+--ElyraApp.allow_headers=<Unicode>
+    Default: u''
     Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)
---KernelGatewayApp.allow_methods=<Unicode>
-    Default: ''
+--ElyraApp.allow_methods=<Unicode>
+    Default: u''
     Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)
---KernelGatewayApp.allow_origin=<Unicode>
-    Default: ''
+--ElyraApp.allow_origin=<Unicode>
+    Default: u''
     Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)
---KernelGatewayApp.answer_yes=<Bool>
+--ElyraApp.answer_yes=<Bool>
     Default: False
     Answer yes to any prompts.
---KernelGatewayApp.api=<Unicode>
+--ElyraApp.api=<Unicode>
     Default: 'kernel_gateway.jupyter_websocket'
     Controls which API to expose, that of a Jupyter notebook server, the seed
     notebook's, or one provided by another module, respectively using values
     'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
---KernelGatewayApp.auth_token=<Unicode>
-    Default: ''
+--ElyraApp.auth_token=<Unicode>
+    Default: u''
     Authorization token required for all requests (KG_AUTH_TOKEN env var)
---KernelGatewayApp.base_url=<Unicode>
+--ElyraApp.base_url=<Unicode>
     Default: '/'
     The base path for mounting all API resources (KG_BASE_URL env var)
---KernelGatewayApp.certfile=<Unicode>
+--ElyraApp.certfile=<Unicode>
     Default: None
     The full path to an SSL/TLS certificate file. (KG_CERTFILE env var)
---KernelGatewayApp.client_ca=<Unicode>
+--ElyraApp.client_ca=<Unicode>
     Default: None
     The full path to a certificate authority certificate for SSL/TLS client
     authentication. (KG_CLIENT_CA env var)
---KernelGatewayApp.config_file=<Unicode>
-    Default: ''
+--ElyraApp.config_file=<Unicode>
+    Default: u''
     Full path of a config file.
---KernelGatewayApp.config_file_name=<Unicode>
-    Default: ''
+--ElyraApp.config_file_name=<Unicode>
+    Default: u''
     Specify a config file to load.
---KernelGatewayApp.default_kernel_name=<Unicode>
-    Default: ''
+--ElyraApp.default_kernel_name=<Unicode>
+    Default: u''
     Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)
---KernelGatewayApp.expose_headers=<Unicode>
-    Default: ''
+--ElyraApp.expose_headers=<Unicode>
+    Default: u''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
---KernelGatewayApp.force_kernel_name=<Unicode>
-    Default: ''
+--ElyraApp.force_kernel_name=<Unicode>
+    Default: u''
     Override any kernel name specified in a notebook or request
     (KG_FORCE_KERNEL_NAME env var)
---KernelGatewayApp.generate_config=<Bool>
+--ElyraApp.generate_config=<Bool>
     Default: False
     Generate default config file.
---KernelGatewayApp.ip=<Unicode>
+--ElyraApp.ip=<Unicode>
     Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
---KernelGatewayApp.keyfile=<Unicode>
+--ElyraApp.keyfile=<Unicode>
     Default: None
     The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
     var)
---KernelGatewayApp.log_datefmt=<Unicode>
+--ElyraApp.log_datefmt=<Unicode>
     Default: '%Y-%m-%d %H:%M:%S'
     The date format used by logging formatters for %(asctime)s
---KernelGatewayApp.log_format=<Unicode>
+--ElyraApp.log_format=<Unicode>
     Default: '[%(name)s]%(highlevel)s %(message)s'
     The Logging format template
---KernelGatewayApp.log_level=<Enum>
+--ElyraApp.log_level=<Enum>
     Default: 30
     Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
     Set the log level by value or name.
---KernelGatewayApp.max_age=<Unicode>
-    Default: ''
+--ElyraApp.max_age=<Unicode>
+    Default: u''
     Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)
---KernelGatewayApp.max_kernels=<Int>
+--ElyraApp.max_kernels=<Integer>
     Default: None
     Limits the number of kernel instances allowed to run by this gateway.
     Unbounded by default. (KG_MAX_KERNELS env var)
---KernelGatewayApp.port=<Int>
+--ElyraApp.port=<Integer>
     Default: 8888
     Port on which to listen (KG_PORT env var)
---KernelGatewayApp.port_retries=<Int>
+--ElyraApp.port_retries=<Integer>
     Default: 50
     Number of ports to try if the specified port is not available
     (KG_PORT_RETRIES env var)
---KernelGatewayApp.prespawn_count=<Int>
+--ElyraApp.prespawn_count=<Integer>
     Default: None
     Number of kernels to prespawn using the default language. No prespawn by
     default. (KG_PRESPAWN_COUNT env var)
---KernelGatewayApp.seed_uri=<Unicode>
+--ElyraApp.seed_uri=<Unicode>
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
@@ -196,7 +199,7 @@ NotebookHTTPPersonality options
     'kernel_gateway.notebook_http.cell.parser' and
     'kernel_gateway.notebook_http.swagger.parser'. (KG_CELL_PARSER env var)
 --NotebookHTTPPersonality.comment_prefix=<Dict>
-    Default: {None: '#', 'scala': '//'}
+    Default: {'scala': '//', None: '#'}
     Maps kernel language to code comment syntax
 --NotebookHTTPPersonality.static_path=<Unicode>
     Default: None
