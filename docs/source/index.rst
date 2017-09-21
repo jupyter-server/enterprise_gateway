@@ -1,7 +1,7 @@
-Jupyter Elyra
+Jupyter Enterprise Gateway
 ======================
 
-Jupyter Elyra is a web server (built directly on `Jupyter Kernel Gateway
+Jupyter Enterprise Gateway is a web server (built directly on `Jupyter Kernel Gateway
 <http://jupyter-kernel-gateway.readthedocs.io/en/latest/>`_) that enables the ability to launch kernels on remote
 servers throughout the enterprise.  This enables better resource management since the web server is no longer the
 single location for kernel activity, which in Big Data environments, can result in large processes.  By distributing
@@ -9,7 +9,7 @@ these resources across the enterprise, some of which can be managed by resource 
 the number of active kernels can be dramatically increased.
 
 .. image:: images/deployment.png
-   :alt: Elyra enterprise deployment
+   :alt: Enterprise Gateway enterprise deployment
    :width: 70%
    :align: center
 
@@ -33,6 +33,7 @@ the number of active kernels can be dramatically increased.
    :maxdepth: 2
    :caption: Contributor Documentation
 
+   contrib
    devinstall
 
 .. toctree::
@@ -41,7 +42,7 @@ the number of active kernels can be dramatically increased.
 
 .. toctree::
    :maxdepth: 2
-   :caption: About Jupyter Elyra
+   :caption: About Jupyter Enterprise Gateway
 
    summary-changes
 
