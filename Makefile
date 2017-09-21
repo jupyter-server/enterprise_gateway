@@ -28,15 +28,15 @@ clean: ## Make a clean source tree
 	-rm -rf dist
 	-rm -rf build
 	-rm -rf *.egg-info
-	-find elyra -name __pycache__ -exec rm -fr {} \;
-	-find elyra -name '*.pyc' -exec rm -fr {} \;
+	-find enterprise_gateway -name __pycache__ -exec rm -fr {} \;
+	-find enterprise_gateway -name '*.pyc' -exec rm -fr {} \;
 	-$(SA) $(ENV) && make -C docs clean
 
 nuke: ## Make clean + remove conda env
 	-conda env remove -n $(ENV) -y
 
 dev: ## Make a server in jupyter_websocket mode
-	$(SA) $(ENV) && python elyra
+	$(SA) $(ENV) && python enterprise_gateway
 
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
@@ -48,23 +48,23 @@ kernelspecs: ## Make a tar.gz file consisting of kernelspec files
 	@echo build/kernelspecs/*_R_* | xargs -t -n 1 cp -r etc/kernel-launchers/R/*
 	@echo build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r etc/kernel-launchers/scala/*
 	@mkdir -p dist
-	rm -f dist/elyra-kernelspecs.tar.gz
-	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/dist/elyra-kernelspecs.tar.gz" * )
+	rm -f dist/enterprise_gateway-kernelspecs.tar.gz
+	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/dist/enterprise_gateway_kernelspecs.tar.gz" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
 		pip install dist/*.whl && \
-			jupyter elyra --help && \
-			pip uninstall -y elyra
+			jupyter enterprisegateway --help && \
+			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
 		pip install dist/*.tar.gz && \
-			jupyter elyra --help && \
-			pip uninstall -y elyra
+			jupyter enterprisegateway --help && \
+			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
 bdist: ## Make a dist/*.whl binary distribution
@@ -81,7 +81,7 @@ ifeq ($(TEST),)
 	$(SA) $(ENV) && nosetests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && nosetests elyra.tests.$(TEST)
+	$(SA) $(ENV) && nosetests enterprise_gateway.tests.$(TEST)
 endif
 
 release: POST_SDIST=register upload
