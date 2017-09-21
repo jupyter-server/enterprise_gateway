@@ -1,19 +1,20 @@
-## Elyra Details
+## Enterprise Gateway Details
 
-Below are sections presenting details of the Elyra internals and other related items.  While we will attempt 
-to maintain its consistency, the ultimate answers are in the code itself.
+Below are sections presenting details of the Enterprise Gateway internals and other related items.  
+While we will attempt to maintain its consistency, the ultimate answers are in the code itself.
 
-### Elyra Process Proxy Extensions
-Elyra is follow-on project to Jupyter Kernel Gateway with additional abilities to support remote kernel 
-sessions on behalf of multiple users within resource managed frameworks such as Yarn.  Elyra introduces 
-these capabilities by extending the existing class hierarchies for `KernelManager`, `MultiKernelManager` 
-and `KernelSpec` classes, along with an additional abstraction known as a *process proxy*.
+### Enterprise Gateway Process Proxy Extensions
+Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support 
+remote kernel sessions on behalf of multiple users within resource managed frameworks such as Yarn.  Enterprise 
+Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager`, 
+`MultiKernelManager` and `KernelSpec` classes, along with an additional abstraction known as a 
+*process proxy*.
 
 #### Overview
-At its basic level, a running kernel consists of two components for its communication - a set of ports and a process.
+At its basic level, a running kernel consists of two components for its communication - a set of 
+ports and a process.
 
-**Kernel Ports**
-
+##### Kernel Ports
 The first component is a set of five zero-MQ ports used to convey the Jupyter protocol between the Notebook 
 and the underlying kernel.  In addition to the 5 ports, is an IP address, a key, and a signature scheme 
 indicator used to interpret the key.  These eight pieces of information are conveyed to the kernel via a 
@@ -27,8 +28,7 @@ This component is the core communication mechanism between the Notebook and the 
 life-cycle management, can occur via this component.  The kernel process (below) comes into play only when 
 port-based communication becomes unreliable or additional information is required.
 
-**Kernel Process**
-
+##### Kernel Process
 When a kernel is launched, one of the fields of the kernel's associated kernel specification is used to 
 identify a command to invoke.  In today's implementation, this command information, along with other 
 environment variables (also described in the kernel specification), is passed to `popen()` which returns 
@@ -42,7 +42,7 @@ As you can see, other forms of process communication can be achieved by abstract
 
 #### Remote Kernel Spec
 The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel 
-specification, otherwise known as the *kernel spec*.  Elyra introduces a new subclass of KernelSpec 
+specification, otherwise known as the *kernel spec*.  Enterprise Gateway introduces a new subclass of KernelSpec 
 named `RemoteKernelSpec`.  
 
 The `RemoteKernelSpec` class provides support for a new (and optional) stanza within the kernelspec file.  This 
@@ -55,7 +55,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.processproxies.distributed.DistributedProcessProxy"
+    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -75,7 +75,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
 ```
 
 The `RemoteKernelSpec` class definition can be found in 
-[remotekernelspec.py](https://github.com/SparkTC/elyra/blob/elyra/elyra/services/kernelspecs/remotekernelspec.py)
+[remotekernelspec.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
 
 See the [Process Proxy](#process-proxy) section for more details.
 
@@ -89,7 +89,7 @@ kernel start logic.
 ### Remote Kernel Manager
 `RemoteKernelManager` is a subclass of JKG's existing `KernelGatewayIOLoopKernelManager` class and provides the 
 primary integration points for remote process proxy invocations.  It implements a number of methods which allow 
-Elyra to circumvent functionality that might otherwise be prevented.  As a result, some of these overrides may 
+Enterprise Gateway to circumvent functionality that might otherwise be prevented.  As a result, some of these overrides may 
 not be necessary if lower layers of the Jupyter framework were modified.  For example, some methods are required 
 because Jupyter makes assumptions that the kernel process is local.
 
@@ -99,7 +99,7 @@ place of the process instance used in today's implementation.  Any interaction w
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
-[remotemanager.py](https://github.com/SparkTC/elyra/blob/elyra/elyra/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernels/remotemanager.py)
 
 ### Process Proxy
 Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
@@ -113,7 +113,7 @@ a `process_proxy` stanza will use `LocalProcessProxy`.
 built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept 
 class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching 
 kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in 
-[processproxies package](https://github.com/SparkTC/elyra/blob/elyra/elyra/services/processproxies).
+[processproxies package](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/processproxies).
 
 ![Process Class Hierarchy](images/process_proxy_hierarchy.png)
 
@@ -207,13 +207,13 @@ should be called from `confirm_remote_startup()`.  If the timeout expires, `hand
 Error 500 (`Internal Server Error`).
 
 Kernel launch timeout expiration is expressed via the environment variable `KERNEL_LAUNCH_TIMEOUT`.  If this 
-value does not exist, it defaults to the Elyra process environment variable `ELYRA_KERNEL_LAUNCH_TIMEOUT` - which 
+value does not exist, it defaults to the Enterprise Gateway process environment variable `EG_KERNEL_LAUNCH_TIMEOUT` - which 
 defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from `NB2KG`, the launch 
 timeout can be specified as a client attribute of the Notebook session.
 
 ### Launchers
 As noted above a kernel is considered started once the launcher has conveyed its connection information 
-back to the Elyra server process. Conveyance of connection information from a remote kernel is the 
+back to the Enterprise Gateway server process. Conveyance of connection information from a remote kernel is the 
 responsibility of the remote kernel _launcher_.
 
 Launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications.  
@@ -223,20 +223,20 @@ collaboration behavior, etc.
 
 There are three primary tasks of a launcher:
 1. Creation of the connection file on the remote (target) system
-2. Conveyance of the connection information back to the Elyra process
+2. Conveyance of the connection information back to the Enterprise Gateway process
 3. Invocation of the target kernel
 
 Launchers are minimally invoked with two parameters (both of which are conveyed by the `argv` stanza of the 
 corresponding kernel.json file) - a path to the **_non-existent_** connection file represented by the 
-placeholder `{connection_file}` and a response address consisting of the Elyra server IP and port on which 
+placeholder `{connection_file}` and a response address consisting of the Enterprise Gateway server IP and port on which 
 to return the connection information similarly represented by the placeholder `{response_address}`.  
 
 Depending on the target kernel, the connection file parameter may or may not be identified by an 
 argument name.  However, the response address is identified by the parameter `--RemoteProcessProxy.response_address`.  Its 
 value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points 
-back to the Elyra server - which is listening for a response on the provided port.
+back to the Enterprise Gateway server - which is listening for a response on the provided port.
 
-Here's a [kernel.json](https://github.com/SparkTC/elyra/blob/elyra/etc/kernelspecs/spark_2.1_python_yarn_cluster/kernel.json) 
+Here's a [kernel.json](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/kernel.json) 
 file illustrating these parameters...
 
 ```json
@@ -244,7 +244,7 @@ file illustrating these parameters...
   "language": "python",
   "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.processproxies.yarn.YarnClusterProcessProxy"
+    "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -261,9 +261,9 @@ file illustrating these parameters...
 ```
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/SparkTC/elyra/blob/elyra/etc/kernelspecs/spark_2.1_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/bin/run.sh) 
 script as the initial arguments to the launcher 
-(see [launch_ipykernel.py](https://github.com/SparkTC/elyra/blob/elyra/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
@@ -273,7 +273,7 @@ eval exec \
      "$@"
 ```
 
-### Extending Elyra
+### Extending Enterprise Gateway
 Theoretically speaking, enabling a kernel for use in other frameworks amounts to the following:
 1. Build a kernel specification file that identifies the process proxy class to be used.
 2. Implement the process proxy class such that it supports the four primitive functions of 

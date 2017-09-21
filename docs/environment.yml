@@ -1,4 +1,4 @@
-name: kernel_gateway_docs
+name: enterprise_gateway_docs
 dependencies:
 - python=3.5
 - sphinx_rtd_theme

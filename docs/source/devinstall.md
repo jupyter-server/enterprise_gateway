@@ -1,17 +1,8 @@
-## Contributing to Jupyter Elyra
-
-Thank you for your interest in Jupyter Elyra!  If you would like to contribute to the project please 
-first take a look at the 
-[Project Jupyter Contributor Documentation](https://jupyter.readthedocs.io/en/latest/contributor/content-contributor.html). 
- 
- Prior to your contribution, we strongly recommend getting acquainted with Elyra by checking 
- out the [Development Workflow](#development-workflow) section and [Detailed Overview](detailed-overview.html) page.
-
 ## Development Workflow
 
-This document includes instructions for setting up a development environment
-for the Jupyter Elyra server. It also includes common steps in the developer
-workflow such as building Elyra, running tests, building docs, packaging kernelspecs, etc.
+Here are instructions for setting up a development environment for the Jupyter Enterprise Gateway 
+server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
+running tests, building docs, packaging kernelspecs, etc.
 
 ### Prerequisites
 
@@ -27,12 +18,12 @@ mkdir -p ~/projects
 cd !$
 
 # clone this repo
-git clone https://github.com/jupyter/elyra.git
+git clone https://github.com/jupyter/enterprise_gateway.git
 ```
 ### Make
 
-Elyra's build environment is centered around `make` and the corresponding `Makefile`.  Entering `make` with no parameters
-yields the following:
+Enterprise Gateway's build environment is centered around `make` and the corresponding `Makefile`.  
+Entering `make` with no parameters yields the following:
 
 ```python
 activate                       eval `make activate`
@@ -54,21 +45,21 @@ Some of the more useful commands are listed below.
 ### Build a conda environment
 
 Build a Python 3 conda environment containing the necessary dependencies for
-running the elyra server, running tests, and building documentation.
+running the enterprise gateway server, running tests, and building documentation.
 
 ```bash
 make env
 ```
 
-By default, the env built will be named `enterprise-gateway-dev`.  To produce a different conda env, you can specify
-the name via the `ENV=` parameter. 
+By default, the env built will be named `enterprise-gateway-dev`.  To produce a different conda env, 
+you can specify the name via the `ENV=` parameter. 
 
 ```bash
 make ENV=my-conda-env env
 ```
 
->**Note:** If using a non-default conda env, all `make` commands should include the `ENV=` parameter, otherwise the command will
-use the default environment.
+>**Note:** If using a non-default conda env, all `make` commands should include the `ENV=` parameter, 
+otherwise the command will use the default environment.
 
 ### Build the wheel file
 
@@ -80,26 +71,18 @@ make bdist
 
 ### Build the kernelspec tar file
 
-Elyra includes two sets of kernelspecs for each of the three primary kernels: `IPython`,`IR`, and `Toree` to demonstrate
-remote kernels and their corresponding launchers.  One set uses the `DistributedProcessProxy` while the other uses 
-the `YarnClusterProcessProxy`. The following makefile target produces a tar file (`elyar-kernelspecs.tar.gz`) in the 
-`dist` directory.
+Enterprise Gateway includes two sets of kernelspecs for each of the three primary kernels: `IPython`,`IR`, 
+and `Toree` to demonstrate remote kernels and their corresponding launchers.  One set uses the 
+`DistributedProcessProxy` while the other uses  the `YarnClusterProcessProxy`. The following makefile 
+target produces a tar file (`enterprise-gateway-kernelspecs.tar.gz`) in the `dist` directory.
 
 ```bash
 make kernelspecs
 ```
 
-### Run the tests
+### Run the Enterprise Gateway server
 
-Run the tests suite.
-
-```bash
-make test
-```
-
-### Run the elyra server
-
-Run an instance of the elyra server.
+Run an instance of the Enterprise Gateway server.
 
 ```bash
 make dev
@@ -114,3 +97,28 @@ Run Sphinx to build the HTML documentation.
 ```bash
 make docs
 ```
+
+### Run the unit tests
+
+Run the unit test suite.
+
+```bash
+make test
+```
+
+### Integration testing
+
+Integration testing could be a manual procedure, i.e. first open a sample notebook on a web browser 
+and then run all the codes, get all outputs and compare if the outputs are the same compared to the 
+sample notebook *ground truth* outputs. However, it is also feasible to do integration testing 
+programmatically. 
+
+On a high level, the first step is to parse a notebook as an entity consisted of multiple code messages 
+(inputs and outputs). Then ask a given Enterprise Gateway service to create (via `POST`) a new kernel 
+based on the kernel name of the notebook entity, via the REST API e.g. 
+`http://<Enterprise Gateway Host IP and Port>/api/kernels`. After there is a kernel ID and the new 
+kernel is ready, for each of the code cell in the notebook entity, a code message needs be sent to 
+the Enterprise Gateway service via socket API connection, e.g. 
+`ws://<Enterprise Gateway Host IP and Port>/api/kernels/<kernel ID>/channels`. After all the outputs 
+are received for a notebook entity, its outputs should be compared with the *ground truth* outputs 
+on the sample notebook. If there is anything unexpected, the test could be marked as failed.
