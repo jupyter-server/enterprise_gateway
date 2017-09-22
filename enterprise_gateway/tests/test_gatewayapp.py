@@ -5,7 +5,7 @@
 import logging
 import unittest
 import os
-from elyra.elyraapp import ElyraApp, ioloop
+from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp, ioloop
 from kernel_gateway.notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
 
@@ -44,7 +44,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_CERTFILE'] = '/test/fake.crt'
         os.environ['KG_CLIENT_CA'] = '/test/fake_ca.crt'
 
-        app = ElyraApp()
+        app = EnterpriseGatewayApp()
 
         self.assertEqual(app.port, 1234)
         self.assertEqual(app.port_retries, 4321)
@@ -91,7 +91,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         """Returns a tornado.web.Application for the Tornado test runner."""
         if hasattr(self, '_app'):
             return self._app
-        self.app = ElyraApp(log_level=logging.CRITICAL)
+        self.app = EnterpriseGatewayApp(log_level=logging.CRITICAL)
         self.setup_app()
         self.app.init_configurables()
         self.setup_configurables()

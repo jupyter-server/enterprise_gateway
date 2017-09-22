@@ -74,7 +74,7 @@ make bdist
 Enterprise Gateway includes two sets of kernelspecs for each of the three primary kernels: `IPython`,`IR`, 
 and `Toree` to demonstrate remote kernels and their corresponding launchers.  One set uses the 
 `DistributedProcessProxy` while the other uses  the `YarnClusterProcessProxy`. The following makefile 
-target produces a tar file (`enterprise-gateway-kernelspecs.tar.gz`) in the `dist` directory.
+target produces a tar file (`enterprise_gateway_kernelspecs.tar.gz`) in the `dist` directory.
 
 ```bash
 make kernelspecs

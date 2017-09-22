@@ -16,5 +16,5 @@ install:
     - pip freeze
 script:
     - jupyter elyra --help
-    - nosetests -x --process-restartworker --with-coverage --cover-package=kernel_gateway
-    - pip uninstall -y elyra
+    - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway
+    - pip uninstall -y jupyter_enterprise_gateway

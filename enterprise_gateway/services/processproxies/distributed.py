@@ -10,8 +10,8 @@ import tornado
 from socket import *
 from .processproxy import RemoteProcessProxy
 
-poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
-proxy_launch_log = os.getenv('ELYRA_PROXY_LAUNCH_LOG', '/tmp/elyra_proxy_launch.log')
+poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
+proxy_launch_log = os.getenv('EG_PROXY_LAUNCH_LOG', '/tmp/jeg_proxy_launch.log')
 
 class DistributedProcessProxy(RemoteProcessProxy):
     host_index = 0
@@ -22,7 +22,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
     def get_hosts(self):
         # Called during construction to set self.hosts
-        return os.getenv('ELYRA_REMOTE_HOSTS', 'localhost').split(',')
+        return os.getenv('EG_REMOTE_HOSTS', 'localhost').split(',')
 
     def launch_process(self, kernel_cmd, **kw):
         super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)

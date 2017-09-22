@@ -20,7 +20,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """
 
     def _kernel_manager_class_default(self):
-        return 'elyra.services.kernels.remotemanager.RemoteKernelManager'
+        return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
     @gen.coroutine
     def start_kernel(self, kernel_id=None, *args, **kwargs):
@@ -153,7 +153,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 # If we're interrupting the kernel, check if kernelspec's env defines
                 # an alternate interrupt signal.  We'll do this once per interrupted kernel.
                 self.sigint_value = signum # use default
-                alt_sigint = self.kernel_spec.env.get('ELYRA_ALTERNATE_SIGINT')
+                alt_sigint = self.kernel_spec.env.get('EG_ALTERNATE_SIGINT')
                 if alt_sigint:
                     try:
                         sig_value = getattr(signal, alt_sigint)
@@ -161,10 +161,10 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                             self.sigint_value = sig_value
                         else: # Python 3
                             self.sigint_value = sig_value.value
-                        self.log.debug("Converted ELYRA_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
+                        self.log.debug("Converted EG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
                                          format(alt_sigint, self.sigint_value))
                     except AttributeError:
-                        self.log.warning("Error received when attempting to convert ELYRA_ALTERNATE_SIGINT of "
+                        self.log.warning("Error received when attempting to convert EG_ALTERNATE_SIGINT of "
                                          "'{}' to a value. Check kernelspec entry for kernel '{}' - using default 'SIGINT'".
                                          format(alt_sigint, self.kernel_spec.display_name))
             self.kernel.send_signal(self.sigint_value)

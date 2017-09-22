@@ -1,6 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel Gateway Jupyter application."""
+"""Enterprise Gateway Jupyter application."""
 
 import signal
 
@@ -27,7 +27,7 @@ from .services.kernels.remotemanager import RemoteMappingKernelManager
 from .services.kernelspecs.remotekernelspec import RemoteKernelSpecManager
 
 
-class ElyraApp(KernelGatewayApp):
+class EnterpriseGatewayApp(KernelGatewayApp):
     """Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
 
@@ -36,12 +36,12 @@ class ElyraApp(KernelGatewayApp):
     - creates a Tornado HTTP server
     - starts the Tornado event loop
     """
-    name = 'jupyter-elyra'
+    name = 'jupyter-enterprise-gateway'
     version = __version__
     description = """
-        Jupyter Elyra
+        Jupyter Enterprise Gateway
 
-        Provisions Jupyter kernels and proxies HTTP/Websocket traffic
+        Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic
         to them.
     """
 
@@ -122,7 +122,7 @@ class ElyraApp(KernelGatewayApp):
         # Note that we *intentionally* reference the KernelGatewayApp so that we bypass
         # its start() logic and just call that of JKG's superclass.
         super(KernelGatewayApp, self).start()
-        self.log.info('Jupyter Elyra at http{}://{}:{}'.format(
+        self.log.info('Jupyter Enterprise Gateway at http{}://{}:{}'.format(
             's' if self.keyfile else '', self.ip, self.port
         ))
         self.io_loop = ioloop.IOLoop.current()
@@ -148,7 +148,7 @@ class ElyraApp(KernelGatewayApp):
         self.io_loop.add_callback(_stop)
 
     def _signal_stop(self, sig, frame):
-        self.log.info("Received signal to terminate Elyra.")
+        self.log.info("Received signal to terminate Enterprise Gateway.")
         self.io_loop.stop()
 
-launch_instance = ElyraApp.launch_instance
+launch_instance = EnterpriseGatewayApp.launch_instance

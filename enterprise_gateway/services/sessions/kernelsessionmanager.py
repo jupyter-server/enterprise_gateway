@@ -11,16 +11,16 @@ import json
 
 import threading
 kernels_lock = threading.Lock()
-kernel_session_location = os.getenv('ELYRA_KERNEL_SESSION_LOCATION', jupyter_data_dir())
+kernel_session_location = os.getenv('EG_KERNEL_SESSION_LOCATION', jupyter_data_dir())
 
 
 class KernelSessionManager(LoggingConfigurable):
     """
         KernelSessionManager is used to manage kernel sessions.  It loads the complete set of persisted kernel
         sessions during construction.  Following construction the parent object calls start_sessions to allow
-        Elyra to validate that all loaded sessions are still valid.  Those that it cannot 'revive' are marked
-        for deletion and the in-memory dictionary is updated - and the entire collection is written to store
-        (file or database).
+        Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive' 
+        are marked for deletion and the in-memory dictionary is updated - and the entire collection is written 
+        to store (file or database).
         
         As kernels are created and destroyed, the KernelSessionManager is called upon to keep kernel session
         state consistent.

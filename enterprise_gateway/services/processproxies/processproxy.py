@@ -18,18 +18,18 @@ from calendar import timegm
 from notebook import _tz
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
-logging.getLogger('paramiko').setLevel(os.getenv('ELYRA_SSH_LOG_LEVEL', logging.WARNING))
+logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
 
 # TODO - properly deal with environment variables - some should be promoted to properties
 
 # Pop certain env variables that don't need to be logged, e.g. password
-env_pop_list = ['ELYRA_REMOTE_PWD', 'LS_COLORS']
-username = os.getenv('ELYRA_REMOTE_USER')
-password = os.getenv('ELYRA_REMOTE_PWD')  # this should use password-less ssh
-elyra_kernel_launch_timeout = float(os.getenv('ELYRA_KERNEL_LAUNCH_TIMEOUT', '30'))
-max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '10'))
-poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
-socket_timeout = float(os.getenv('ELYRA_SOCKET_TIMEOUT', '5.0'))
+env_pop_list = ['EG_REMOTE_PWD', 'LS_COLORS']
+username = os.getenv('EG_REMOTE_USER')
+password = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
+default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
+max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
+poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
+socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 
 local_ip = localinterfaces.public_ips()[0]
 
@@ -67,7 +67,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             kw.update({'env': env_dict})
 
         # see if KERNEL_LAUNCH_TIMEOUT was included from user
-        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', elyra_kernel_launch_timeout))
+        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', default_kernel_launch_timeout))
 
         # add the applicable kernel_id to the env dict
         env_dict['KERNEL_ID'] = self.kernel_id

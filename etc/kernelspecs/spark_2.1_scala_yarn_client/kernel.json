@@ -2,7 +2,7 @@
   "language": "scala",
   "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
   "process_proxy": {
-    "class_name": "elyra.services.processproxies.distributed.DistributedProcessProxy"
+    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

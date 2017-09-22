@@ -19,14 +19,14 @@ except ImportError:
     from urllib.parse import urlparse
 
 # Default logging level of yarn-api produces too much noise - raise to warning only.
-logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('ELYRA_YARN_LOG_LEVEL', logging.WARNING))
+logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('EG_YARN_LOG_LEVEL', logging.WARNING))
 
 local_ip = localinterfaces.public_ips()[0]
-poll_interval = float(os.getenv('ELYRA_POLL_INTERVAL', '0.5'))
-max_poll_attempts = int(os.getenv('ELYRA_MAX_POLL_ATTEMPTS', '10'))
+poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
+max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
-    yarn_endpoint = os.getenv('ELYRA_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
+    yarn_endpoint = os.getenv('EG_YARN_ENDPOINT', 'http://localhost:8088/ws/v1/cluster')
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 

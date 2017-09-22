@@ -1,5 +1,5 @@
 Jupyter Enterprise Gateway
-======================
+==========================
 
 Jupyter Enterprise Gateway is a web server (built directly on `Jupyter Kernel Gateway
 <http://jupyter-kernel-gateway.readthedocs.io/en/latest/>`_) that enables the ability to launch kernels on remote

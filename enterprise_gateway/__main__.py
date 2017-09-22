@@ -4,5 +4,5 @@
 from __future__ import absolute_import
 
 if __name__ == '__main__':
-    import elyra.elyraapp as app
+    import enterprise_gateway.enterprisegatewayapp as app
     app.launch_instance()
