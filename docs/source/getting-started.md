@@ -83,7 +83,7 @@ yum install -y \
 
 python -m pip install --upgrade --force pip
 
-pip install --upgrade http://${EG_DOWNLOAD_SERVER}/dist/elyra/jupyter_enterprise_gateway-0.0.2.dev0-py2.py3-none-any.whl
+pip install --upgrade http://${EG_DOWNLOAD_SERVER}/dist/elyra/jupyter_enterprise_gateway-0.5.0.dev0-py2.py3-none-any.whl
 
 ################################################################################
 

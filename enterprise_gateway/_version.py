@@ -5,8 +5,8 @@
 
 version_info = (
     0,
+    5,
     0,
-    2,
     'dev0',
 )
 
