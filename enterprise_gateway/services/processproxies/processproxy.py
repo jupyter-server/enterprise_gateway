@@ -10,6 +10,7 @@ import paramiko
 import logging
 import time
 import tornado
+from tornado import web
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
@@ -20,11 +21,8 @@ from notebook import _tz
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
 
-# TODO - properly deal with environment variables - some should be promoted to properties
-
 # Pop certain env variables that don't need to be logged, e.g. password
 env_pop_list = ['EG_REMOTE_PWD', 'LS_COLORS']
-username = os.getenv('EG_REMOTE_USER')
 password = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
@@ -48,6 +46,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
+        self.username = kernel_manager.parent.parent.remote_user # from command line or env
+        self.kernel_launch_timeout = default_kernel_launch_timeout
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if the JKG is restarted and the
@@ -66,8 +66,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             env_dict = dict(os.environ.copy())
             kw.update({'env': env_dict})
 
-        # see if KERNEL_LAUNCH_TIMEOUT was included from user
-        self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT', default_kernel_launch_timeout))
+        # see if KERNEL_LAUNCH_TIMEOUT was included from user.  If so, override default
+        if env_dict.get('KERNEL_LAUNCH_TIMEOUT'):
+            self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT'))
 
         # add the applicable kernel_id to the env dict
         env_dict['KERNEL_ID'] = self.kernel_id
@@ -115,7 +116,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             result = self.local_proc.send_signal(signum)
         else:
             if self.ip and self.pid > 0:
-                if self.is_local_ip(self.ip):
+                if BaseProcessProxyABC.ip_is_local(self.ip):
                     result = self.local_signal(signum)
                 else:
                     result = self.remote_signal(signum)
@@ -134,7 +135,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 self.log.debug("BaseProcessProxy.kill(): {}".format(result))
             else:
                 if self.ip and self.pid > 0:
-                    if self.is_local_ip(self.ip):
+                    if BaseProcessProxyABC.ip_is_local(self.ip):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
@@ -149,14 +150,15 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             self.log.debug("BaseProcessProxy.terminate(): {}".format(result))
         else:
             if self.ip and self.pid > 0:
-                if self.is_local_ip(self.ip):
+                if BaseProcessProxyABC.ip_is_local(self.ip):
                     result = self.local_signal(signal.SIGTERM)
                 else:
                     result = self.remote_signal(signal.SIGTERM)
             self.log.debug("SIGTERM signal sent to pid: {}".format(self.pid))
         return result
 
-    def is_local_ip(self, ip):
+    @staticmethod
+    def ip_is_local(ip):
         return localinterfaces.is_public_ip(ip) or localinterfaces.is_local_ip(ip)
 
     def _get_ssh_client(self, host):
@@ -173,14 +175,15 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             host_ip = gethostbyname(host)
             if password:
-                ssh.connect(host_ip, port=22, username=username, password=password)
+                ssh.connect(host_ip, port=22, username=self.username, password=password)
             else:
-                ssh.connect(host_ip, port=22, username=username)
+                ssh.connect(host_ip, port=22, username=self.username)
         except Exception as e:
             self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}' with user '{}', "
-                            "message='{}'.".format(type(e).__name__, host, username, e))
+                        "message='{}'.".format(type(e).__name__, host, self.username, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
-                error_message = "Failed to authenticate SSHClient with password" + " provided" if password else "-less SSH"
+                error_message = "Failed to authenticate SSHClient with password" + \
+                                " provided" if password else "-less SSH"
                 raise tornado.web.HTTPError(403, error_message)
             else:
                 raise e
@@ -225,7 +228,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         cmd = ['kill', '-'+str(signum), target]
 
         with open(os.devnull, 'w') as devnull:
-            result = subprocess.call(cmd,stderr=devnull)
+            result = subprocess.call(cmd, stderr=devnull)
 
         if result == 0:
             return None
@@ -242,7 +245,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         return self.kernel_manager.connection_file
 
     def get_process_info(self):
-        process_info = {'pid': self.pid, 'pgid': self.gpid, 'ip': self.ip}
+        process_info = {'pid': self.pid, 'pgid': self.pgid, 'ip': self.ip}
         return process_info
 
     def load_process_info(self, process_info):
@@ -319,12 +322,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 conn, addr = self.response_socket.accept()
                 while 1:
                     buffer = conn.recv(1024)
-                    if not buffer: # send is complete
+                    if not buffer:  # send is complete
                         connect_info = json.loads(data)
                         ready_to_connect = True
                         self.update_connection(connect_info)
                         break
-                    data = data + buffer # append what we received until we get no more...
+                    data = data + buffer  # append what we received until we get no more...
             except Exception as e:
                 if type(e) is timeout:
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
