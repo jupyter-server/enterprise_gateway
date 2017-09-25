@@ -4,25 +4,22 @@
 
 import os
 import json
-
 import time
 import tornado
+from tornado import web
 from socket import *
 from .processproxy import RemoteProcessProxy
 
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 proxy_launch_log = os.getenv('EG_PROXY_LAUNCH_LOG', '/tmp/jeg_proxy_launch.log')
 
+
 class DistributedProcessProxy(RemoteProcessProxy):
     host_index = 0
 
     def __init__(self, kernel_manager):
         super(DistributedProcessProxy, self).__init__(kernel_manager)
-        self.hosts = self.get_hosts()
-
-    def get_hosts(self):
-        # Called during construction to set self.hosts
-        return os.getenv('EG_REMOTE_HOSTS', 'localhost').split(',')
+        self.hosts = kernel_manager.parent.parent.remote_hosts # from command line or env
 
     def launch_process(self, kernel_cmd, **kw):
         super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)
@@ -70,7 +67,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             cmd += 'export KERNEL_ID="{}";'.format(kid)
 
         for key, value in self.kernel_manager.kernel_spec.env.items():
-            cmd += "export {}={};".format(key, json.dumps(value).replace("'","''"))
+            cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
 
         cmd += 'nohup'
         for arg in argv_cmd:
