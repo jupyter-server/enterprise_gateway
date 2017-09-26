@@ -181,10 +181,23 @@ EnterpriseGatewayApp options
     Default: None
     Number of kernels to prespawn using the default language. No prespawn by
     default. (KG_PRESPAWN_COUNT env var)
+--EnterpriseGatewayApp.remote_hosts=<List>
+    Default: ['localhost']
+    Bracketed comma-separated list of hosts on which DistributedProcessProxy
+    kernels will be launched e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var -
+    non-bracketed, just comma-separated)
+--EnterpriseGatewayApp.remote_user=<Unicode>
+    Default: ''
+    The username used for remote operations (ssh).  Password-less ssh is
+    required.  (EG_REMOTE_USER env var)
 --EnterpriseGatewayApp.seed_uri=<Unicode>
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
+--EnterpriseGatewayApp.yarn_endpoint=<Unicode>
+    Default: 'http://localhost:8088/ws/v1/cluster'
+    The http url for accessing the Yarn Resource Manager. (EG_YARN_ENDPOINT env
+    var)
 
 NotebookHTTPPersonality options
 -------------------------------

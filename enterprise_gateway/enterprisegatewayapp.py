@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Enterprise Gateway Jupyter application."""
 
+import os
 import signal
 
 try:
@@ -9,7 +10,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import default
+from traitlets import default, List, Unicode
 
 from kernel_gateway.gatewayapp import KernelGatewayApp
 
@@ -44,6 +45,37 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic
         to them.
     """
+
+    # Remote hosts
+    remote_hosts_env = 'EG_REMOTE_HOSTS'
+    remote_hosts_default_value = ['localhost']
+    remote_hosts = List(remote_hosts_default_value, config=True,
+        help="""Bracketed comma-separated list of hosts on which DistributedProcessProxy kernels will be launched
+          e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var - non-bracketed, just comma-separated)""")
+
+    @default('remote_hosts')
+    def remote_hosts_default(self):
+        return os.getenv(self.remote_hosts_env, 'localhost').split(',')
+
+    # Remote User
+    remote_user_env = 'EG_REMOTE_USER'
+    remote_user = Unicode(config=True,
+        help="""The username used for remote operations (ssh).  Password-less ssh is required. 
+        (EG_REMOTE_USER env var)""")
+
+    @default('remote_user')
+    def remote_user_default(self):
+        return os.getenv(self.remote_user_env, '')
+
+    # Yarn endpoint
+    yarn_endpoint_env = 'EG_YARN_ENDPOINT'
+    yarn_endpoint_default_value = 'http://localhost:8088/ws/v1/cluster'
+    yarn_endpoint = Unicode(yarn_endpoint_default_value, config=True,
+        help="""The http url for accessing the Yarn Resource Manager. (EG_YARN_ENDPOINT env var)""")
+
+    @default('yarn_endpoint')
+    def yarn_endpoint_default(self):
+        return os.getenv(self.yarn_endpoint_env, self.yarn_endpoint_default_value)
 
     _log_formatter_cls = LogFormatter
 
