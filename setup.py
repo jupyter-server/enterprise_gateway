@@ -11,17 +11,22 @@ version_ns = {}
 with open(os.path.join(here, 'enterprise_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
+
+version = version_ns['__version__']
+github_url = 'http://github.com/SparkTC/enterprise_gateway'
+
 setup_args = dict(
     name='jupyter_enterprise_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
-    url='http://github.com/SparkTC/enterprise_gateway',
+    url=github_url,
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
 Jupyter Enterprise Gateway is a lightweight, multi-tenant, scalable and secure gateway that enables 
 Jupyter Notebooks to share resources across an Apache Spark cluster.
 ''',
-    version=version_ns['__version__'],
+    version=version,
+    download_url='%s/archive/%s.tar.gz' % (github_url, version),
     license='BSD',
     platforms="Linux, Mac OS X, Windows",
     keywords=['Interactive', 'Interpreter', 'Kernel', 'Web', 'Cloud'],
