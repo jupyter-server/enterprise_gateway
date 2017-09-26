@@ -8,9 +8,8 @@ their kernels can be launched as managed resources within Yarn, distributing the
 driver processes across the Yarn cluster.
 
 * A company recently plan to deploy their Spark notebook services with Jupyter Enterprise Gateway in a cluster 
-where Mesos is the resource manager instead of YARN that currently on the open source side. After reading the 
-documentation on how to add new a ProcessProxy class required as an interface by the resource manager components 
-in gateway, they implement, deploy and configure MesosProcessProxy that referenced by their kernelspecs and now
-they can launch kernels within their Mesos cluster. 
+where Mesos is the resource manager instead of YARN. After reading the documentation on how to add a new 
+ProcessProxy class, they implement, deploy and configure a MesosProcessProxy class that is referenced by 
+their kernelspecs and now they can launch kernels within their Mesos cluster.
 
 * ...
