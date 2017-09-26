@@ -65,7 +65,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
     @default('remote_user')
     def remote_user_default(self):
-        return os.getenv(self.remote_user_env)
+        return os.getenv(self.remote_user_env, '')
 
     # Yarn endpoint
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
