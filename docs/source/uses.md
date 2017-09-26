@@ -7,10 +7,10 @@ to be a bottleneck  due to the size of each kernel (spark driver) process.  By d
 their kernels can be launched as managed resources within Yarn, distributing the resource-intensive 
 driver processes across the Yarn cluster.
 
-* A company recently planed to deploy their Spark notebook services with Enterprise Gateway in a cluster where Mesos was 
-the resource manager, besides the existing cluster managed by YARN they were already using from the open source side, 
-so as to take advantages of some features that YARN didn't have. Since they were using Enterprise Gateway, 
-they would need to implement the interface required by the resource manager components in Enterprise Gateway, 
-so they could integrate Mesos plug-in with Enterprise Gateway similar to the way of YARN.
+* A company recently plan to deploy their Spark notebook services with Jupyter Enterprise Gateway in a cluster 
+where Mesos is the resource manager instead of YARN that currently on the open source side. After reading the 
+documentation on how to add new a ProcessProxy class required as an interface by the resource manager components 
+in gateway, they implement, deploy and configure MesosProcessProxy that referenced by their kernelspecs and now
+they can launch kernels within their Mesos cluster. 
 
 * ...
