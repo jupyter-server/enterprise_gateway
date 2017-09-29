@@ -14,9 +14,13 @@ from tornado import web
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import launch_kernel, localinterfaces, write_connection_file
 from calendar import timegm
 from notebook import _tz
+from ipython_genutils.py3compat import (
+     cast_bytes_py2, string_types,
+)
+from getpass import getpass
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -28,8 +32,10 @@ default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
+secure_ssh = True  # Set to true for testing, promote to env var later
 
 local_ip = localinterfaces.public_ips()[0]
+tunnel_ip = localinterfaces.local_ips()[0]
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -312,6 +318,62 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.response_address = local_ip + ':' + str(port)
         self.response_socket = s
 
+    def tunnel_to_kernel(self, connection_info, sshserver, sshkey=None):
+        """tunnel connections to a kernel via ssh
+        This will open four SSH tunnels from localhost on this machine to the
+        ports associated with the kernel.  They can be either direct
+        localhost-localhost tunnels, or if an intermediate server is necessary,
+        the kernel must be listening on a public IP.
+        Parameters
+        ----------
+        connection_info : dict or str (path)
+            Either a connection dict, or the path to a JSON connection file
+        sshserver : str
+            The ssh sever to use to tunnel to the kernel. Can be a full
+            `user@server:port` string. ssh config aliases are respected.
+        sshkey : str [optional]
+            Path to file containing ssh key to use for authentication.
+            Only necessary if your ssh config does not already associate
+            a keyfile with the host.
+        Returns
+        -------
+        (shell, iopub, stdin, hb, control) : ints
+            The five ports on localhost that have been forwarded to the kernel.
+        """
+        from zmq.ssh import tunnel
+        if isinstance(connection_info, string_types):
+            # it's a path, unpack it
+            with open(connection_info) as f:
+                connection_info = json.loads(f.read())
+
+        cf = connection_info
+
+        lports = tunnel.select_random_ports(5)
+
+        rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
+
+        port_names = "SHELL", "IOPUB", "STDIN", "HB", "CONTROL"
+
+        remote_ip = cf['ip']
+
+        if tunnel.try_passwordless_ssh(sshserver, sshkey):
+            password = False
+            self.log.debug("Passwordless SSH test succeeded using OpenSSH client")
+        else:
+            self.log.debug("Trying to get Password for SSH")
+            password = getpass("SSH Password for %s: " % cast_bytes_py2(sshserver))
+
+        for lp, rp, pn in zip(lports, rports, port_names):
+            self.log.debug("Starting SSH tunnel; '{}' mapping is 127.0.0.1:'{}' to '{}':'{}'"
+                           .format(pn, lp, remote_ip, rp))
+            try:
+                tunnel.ssh_tunnel(lp, rp, sshserver, remote_ip, sshkey, timeout=300)
+            except:
+                self.log.error("Could not open OpenSSH tunnel. Exiting.", exc_info=True)
+                exit(1)
+
+        return tuple(lports)
+
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
         ready_to_connect = False
@@ -324,6 +386,37 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     buffer = conn.recv(1024)
                     if not buffer:  # send is complete
                         connect_info = json.loads(data)
+                        self.log.debug("Connect Info received from the launcher is as follows '{}'".format(connect_info))
+                        self.log.debug("Host assgined to the Kernel is: '{}' '{}'".format(self.assigned_host, self.assigned_ip))
+
+                        # Set connection info to IP address of system where the kernel was launched
+                        connect_info['ip'] = self.assigned_ip
+
+                        if secure_ssh:
+                            ### TODO: This needs to be fleshed out.
+                            key_path = '/home/elyra/.ssh/id_rsa'
+
+                            # SSH server will be located on the same machine as where the kernel will start
+                            sshserver = self.assigned_ip
+
+                            # Open some tunnels
+                            try:
+                                # tunnel_ports = self.tunnel_to_kernel(connect_info, sshserver, key_path)
+                                tunnel_ports = self.tunnel_to_kernel(connect_info, sshserver)
+                                self.log.debug("SSH tunnel local ports: '{}'".format(tunnel_ports))
+                            except:
+                                # even catch KeyboardInterrupt
+                                self.log.error("Could not setup tunnels", exc_info=True)
+                                exit(1)
+
+                            # Replace the remote connection ports with the local ports that were used to create SSH tunnels.
+                            connect_info['ip'] = tunnel_ip
+                            connect_info['shell_port'] = tunnel_ports[0]
+                            connect_info['iopub_port'] = tunnel_ports[1]
+                            connect_info['stdin_port'] = tunnel_ports[2]
+                            connect_info['hb_port'] = tunnel_ports[3]
+                            connect_info['control_port'] = tunnel_ports[4]
+
                         ready_to_connect = True
                         self.update_connection(connect_info)
                         break
@@ -347,6 +440,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                         "No response socket exists".format(self.kernel_id))
         return ready_to_connect
 
+    # Do NOT update connect_info with IP and other such artifacts in this method/function.
     def update_connection(self, connect_info):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
         self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
@@ -354,7 +448,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         if connect_info:
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
-            connect_info['ip'] = self.assigned_ip  # overwrite the ip to our remote target
             # The launcher may also be sending back process info, so check and extract
             self.extract_process_info(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
