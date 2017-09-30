@@ -28,8 +28,10 @@ default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
+secure_ssh = bool(os.getenv('EG_USE_SSH_TUNNELING', True))
 
 local_ip = localinterfaces.public_ips()[0]
+tunnel_ip = localinterfaces.local_ips()[0]
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -312,6 +314,39 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.response_address = local_ip + ':' + str(port)
         self.response_socket = s
 
+    def tunnel_to_kernel(self, connection_info, sshserver, sshkey=None):
+        """Tunnel connections to a kernel over SSH
+        This will open five SSH tunnels from localhost on this machine to the
+        ports associated with the kernel.
+        See jupyter_client/connect.py for original implementation.
+        """
+        from zmq.ssh import tunnel
+
+        cf = connection_info
+
+        lports = tunnel.select_random_ports(5)
+
+        rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
+
+        port_names = "SHELL", "IOPUB", "STDIN", "HB", "CONTROL"
+
+        remote_ip = cf['ip']
+
+        if not tunnel.try_passwordless_ssh(sshserver, sshkey):
+            raise RuntimeError("Must use passwordless scheme by setting up the SSH public key on the cluster nodes")
+
+        password = False
+        self.log.debug("Passwordless SSH test succeeded")
+        for lp, rp, pn in zip(lports, rports, port_names):
+            self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
+                           .format(pn, lp, remote_ip, rp))
+            try:
+                tunnel.ssh_tunnel(lp, rp, sshserver, remote_ip, sshkey, timeout=300)
+            except Exception as e:
+                raise RuntimeError("Could not open SSH tunnel - '{}'".format(str(e)))
+
+        return tuple(lports)
+
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
         ready_to_connect = False
@@ -324,6 +359,29 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     buffer = conn.recv(1024)
                     if not buffer:  # send is complete
                         connect_info = json.loads(data)
+                        self.log.debug("Connect Info received from the launcher is as follows '{}'".format(connect_info))
+                        self.log.debug("Host assgined to the Kernel is: '{}' '{}'".format(self.assigned_host, self.assigned_ip))
+
+                        # Set connection info to IP address of system where the kernel was launched
+                        connect_info['ip'] = self.assigned_ip
+
+                        self.log.debug("secure_ssh: {}".format(secure_ssh))
+                        if secure_ssh:
+                            # SSH server will be located on the same machine as where the kernel will start
+                            sshserver = self.assigned_ip
+
+                            # Open some tunnels
+                            tunnel_ports = self.tunnel_to_kernel(connect_info, sshserver)
+                            self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
+
+                            # Replace the remote connection ports with the local ports that were used to create SSH tunnels.
+                            connect_info['ip'] = tunnel_ip
+                            connect_info['shell_port'] = tunnel_ports[0]
+                            connect_info['iopub_port'] = tunnel_ports[1]
+                            connect_info['stdin_port'] = tunnel_ports[2]
+                            connect_info['hb_port'] = tunnel_ports[3]
+                            connect_info['control_port'] = tunnel_ports[4]
+
                         ready_to_connect = True
                         self.update_connection(connect_info)
                         break
@@ -347,6 +405,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                         "No response socket exists".format(self.kernel_id))
         return ready_to_connect
 
+    # Do NOT update connect_info with IP and other such artifacts in this method/function.
     def update_connection(self, connect_info):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
         self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
@@ -354,7 +413,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         if connect_info:
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
-            connect_info['ip'] = self.assigned_ip  # overwrite the ip to our remote target
             # The launcher may also be sending back process info, so check and extract
             self.extract_process_info(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
