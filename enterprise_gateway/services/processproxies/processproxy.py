@@ -3,6 +3,7 @@
 """Kernel managers that operate against a remote process."""
 
 import os
+import sys
 import signal
 import abc
 import json
@@ -17,6 +18,11 @@ from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from calendar import timegm
 from notebook import _tz
+from zmq.ssh import tunnel
+try:
+    from sys import maxint as maxint
+except ImportError:
+    from sys import maxsize as maxint
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -28,7 +34,7 @@ default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
-secure_ssh = bool(os.getenv('EG_USE_SSH_TUNNELING', True))
+tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'True').lower() == 'True'.lower())
 
 local_ip = localinterfaces.public_ips()[0]
 tunnel_ip = localinterfaces.local_ips()[0]
@@ -227,6 +233,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         target = '-' + str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
         if signum > 0:  # only log if meaningful signal (not for poll)
             self.log.debug("Sending signal: {} to target: {}".format(signum, target))
+
         cmd = ['kill', '-'+str(signum), target]
 
         with open(os.devnull, 'w') as devnull:
@@ -287,6 +294,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.start_time = None
         self.assigned_ip = None
         self.assigned_host = ''
+        self.comm_port = 0
+        self.dest_comm_port = 0
         self.prepare_socket()
 
     def launch_process(self, kernel_cmd, **kw):
@@ -314,14 +323,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.response_address = local_ip + ':' + str(port)
         self.response_socket = s
 
-    def tunnel_to_kernel(self, connection_info, sshserver, sshkey=None):
+    def _tunnel_to_kernel(self, connection_info, sshserver, sshkey=None):
         """Tunnel connections to a kernel over SSH
         This will open five SSH tunnels from localhost on this machine to the
         ports associated with the kernel.
         See jupyter_client/connect.py for original implementation.
         """
-        from zmq.ssh import tunnel
-
         cf = connection_info
 
         lports = tunnel.select_random_ports(5)
@@ -335,17 +342,27 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if not tunnel.try_passwordless_ssh(sshserver, sshkey):
             raise RuntimeError("Must use passwordless scheme by setting up the SSH public key on the cluster nodes")
 
-        password = False
-        self.log.debug("Passwordless SSH test succeeded")
         for lp, rp, pn in zip(lports, rports, port_names):
-            self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
-                           .format(pn, lp, remote_ip, rp))
-            try:
-                tunnel.ssh_tunnel(lp, rp, sshserver, remote_ip, sshkey, timeout=300)
-            except Exception as e:
-                raise RuntimeError("Could not open SSH tunnel - '{}'".format(str(e)))
+            self._create_ssh_tunnel(pn, lp, rp, remote_ip, sshserver, sshkey)
 
         return tuple(lports)
+
+    def _tunnel_to_port(self, port_name, remote_ip, remote_port, sshserver, sshkey=None):
+        """Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically called for
+        any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
+        in use and has been previously validated.
+        """
+        local_port = tunnel.select_random_ports(1)[0]
+        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, sshserver, sshkey)
+        return local_port
+
+    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, sshserver, sshkey=None):
+        self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
+                       .format(port_name, local_port, remote_ip, remote_port))
+        try:
+            tunnel.ssh_tunnel(local_port, remote_port, sshserver, remote_ip, sshkey, timeout=maxint)
+        except Exception as e:
+            raise RuntimeError("Could not open SSH tunnel for port {} - '{}'".format(port_name, str(e)))
 
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
@@ -365,13 +382,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         # Set connection info to IP address of system where the kernel was launched
                         connect_info['ip'] = self.assigned_ip
 
-                        self.log.debug("secure_ssh: {}".format(secure_ssh))
-                        if secure_ssh:
+                        if tunneling_enabled is True:
                             # SSH server will be located on the same machine as where the kernel will start
                             sshserver = self.assigned_ip
 
                             # Open some tunnels
-                            tunnel_ports = self.tunnel_to_kernel(connect_info, sshserver)
+                            tunnel_ports = self._tunnel_to_kernel(connect_info, sshserver)
                             self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
 
                             # Replace the remote connection ports with the local ports that were used to create SSH tunnels.
@@ -414,7 +430,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if connect_info:
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
             # The launcher may also be sending back process info, so check and extract
-            self.extract_process_info(connect_info)
+            self.extract_pid_info(connect_info)
+            # Also check to see if the launcher wants to use socket-based signals
+            self.extract_comm_port(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
             self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
                            .format(self.kernel_id, self.assigned_host, connect_info))
@@ -423,12 +441,35 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
-    def extract_process_info(self, connect_info):
-        pid = connect_info.get('pid')
+    def extract_comm_port(self, connect_info):
+        comm_port = connect_info.pop('comm_port', None)
+        if comm_port:
+            self.dest_comm_port = int(comm_port)
+
+            # tunnel it, if desired ...
+            if tunneling_enabled is True:
+                self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
+                                                     self.dest_comm_port, self.assigned_ip)
+                self.comm_ip = '127.0.0.1'
+                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
+                               "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
+                                                     self.kernel_id, self.comm_port))
+            else: # use what we got...
+                self.comm_port = self.dest_comm_port
+                self.comm_ip = self.assigned_ip
+                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
+                            format(self.assigned_ip, self.comm_port, self.kernel_id))
+        else:
+            self.log.debug("Gateway communication port has NOT been established for KernelID '{}' (optional).".
+                           format(self.kernel_id))
+
+
+    def extract_pid_info(self, connect_info):
+        pid = connect_info.pop('pid', None)
         if pid:
             self.pid = int(pid)
             self.log.debug("Updated pid to: {}".format(self.pid))
-        pgid = connect_info.get('pgid')
+        pgid = connect_info.pop('pgid', None)
         if pgid:
             self.pgid = int(pgid)
             self.log.debug("Updated pgid to: {}".format(self.pgid))
@@ -436,16 +477,48 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.ip = self.assigned_ip
             self.local_proc = None
 
+    def send_signal(self, signum):
+        # If the launcher returned a signal_addr value, then use that to send the signal,
+        # else, defer to the superclass - which will use a remote shell to issue kill.
+        # Note that if the target process is running as a different user than the REMOTE_USER,
+        # using anything other than the socket-based signal (via signal_addr) will not work.
+
+        if self.comm_port > 0:
+            signal_request = dict()
+            signal_request['signum'] = signum
+
+            sock = socket(AF_INET, SOCK_STREAM)
+            try:
+                sock.connect((self.comm_ip, self.comm_port))
+                sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
+                if signum > 0:  # since polling uses signum 0, don't log each 3-second poll
+                    self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
+            except Exception as e:
+                self.log.warning("Exception occurred sending signal({}) to {}:{} for KernelID '{}' "
+                                 "(using remote kill): {}".format(signum, self.comm_ip, self.comm_port,
+                                                                  self.kernel_id, str(e)))
+                super(RemoteProcessProxy, self).send_signal(signum)
+            finally:
+                sock.close()
+        else:
+            super(RemoteProcessProxy, self).send_signal(signum)
+
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()
         process_info.update({'assigned_ip': self.assigned_ip,
-                             'assigned_host': self.assigned_host})
+                             'assigned_host': self.assigned_host,
+                             'comm_ip': self.comm_ip,
+                             'comm_port': self.comm_port,
+                             'dest_comm_port': self.dest_comm_port})
         return process_info
 
     def load_process_info(self, process_info):
         super(RemoteProcessProxy, self).load_process_info(process_info)
         self.assigned_ip = process_info['assigned_ip']
         self.assigned_host = process_info['assigned_host']
+        self.comm_ip = process_info['comm_ip']
+        self.comm_port = process_info['comm_port']
+        self.dest_comm_port = process_info['dest_comm_port']
 
     @staticmethod
     def get_current_time():
