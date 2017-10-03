@@ -9,5 +9,5 @@ across the enterprise
 * Persistent kernel sessions (see [Roadmap](devinstall.html#roadmap))
 * Configuration profiles (see [Roadmap](devinstall.html#roadmap))
 * Feature parity with [Jupyter Kernel Gateway](http://jupyter-kernel-gateway.readthedocs.io/en/latest/)
-* A CLI for launching the elyra server: `jupyter enterprisegateway OPTIONS`
+* A CLI for launching the enterprise gateway server: `jupyter enterprisegateway OPTIONS`
 * A Python 2.7 and 3.3+ compatible implementation
