@@ -112,7 +112,16 @@ jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.2" --i
 
 * Update the Apache Toree Kernelspecs
 
-We have provided some customized kernel specs as part of the Jupyter Enterprise Gateway releases
+We have provided some customized kernelspecs as part of the Jupyter Enterprise Gateway releases. These kernelspecs come pre-configured with Yarn local and cluster mode.
+
+* Download the kernelspec distribution 
+``` Bash
+wget https://github.com/SparkTC/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
+SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_2.2_scala" | awk '{print $2}')"
+KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
+tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_2.1_scala_yarn_cluster/ spark_2.1_scala_yarn_cluster/
+```
+
 
 
 ### Installing support for Python (IPython kernel)
