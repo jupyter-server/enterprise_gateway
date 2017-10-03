@@ -1,11 +1,33 @@
 ## Getting started
 
-This document describes some of the basics of installing and running Jupyter Enterprise Gateway.
+Jupyter Enterprise Gateway requires Python (Python 3.3 or greater, or Python 2.7) and is intended to be installed on a Spark 2.x cluster.
 
-### Using pip
+The following Resource Managers are supported with the Jupyter Enterprise Gateway:
 
-We upload stable releases of Jupyter Enterprise Gateway to PyPI. You can use `pip` to install the 
-latest version along with its dependencies.
+* Yarn resource manager (local and cluster mode)
+
+The following kernels have been tested with the Jupyter Enterprise Gateway:
+
+* Python/Spark 2.x with IPython kernel
+* Scala 2.11/Spark 2.x with Apache Toree kernel
+* R/Spark 2.x with IRkernel
+
+To support Scala kernels, Apache Toree must be installed. To support IPython kernels and R kernels to run on the Yarn containers, various packages have
+to be installed on each Yarn data nodes. The simplest way to enable all the data nodes with required dependencies is to install Anaconda on all cluster nodes.
+
+To take full advantage of security and user impersonation capabilities, a Kerberized cluster is recommended.
+
+### Installing Enterprise Gateway
+
+For new users, we **highly recommend** [installing Anaconda](https://www.continuum.io/downloads). Anaconda conveniently installs Python, the Jupyter Notebook, the IPython kernel and other commonly used packages for scientific computing and data science.
+
+Use the following installation steps:
+
+* Download Anaconda. We recommend downloading Anaconda’s latest Python 3 version (currently Python 3.5).
+
+* Install the version of Anaconda which you downloaded, following the instructions on the download page.
+
+* Install the Jupyter Enterprise Gateway from PyPI. You can use `pip` to install the latest version along with its dependencies.
 
 ```bash
 # install from pypi
@@ -19,29 +41,31 @@ Once installed, you can use the `jupyter` CLI to run the server.
 jupyter enterprisegateway
 ```
 
-### Using conda
+At this point, the Jupyter Enterprise Gateway deployment provides local kernel support which is fully compatible with Jupyter Kernel Gateway.
 
-You can install Jupyter Enterprise Gateway using conda as well.
 
-```bash
-conda install -c conda-forge jupyter_enterprise_gateway
-```
+[//]: # (### Using conda)
+[//]: # ( )
+[//]: # (You can install Jupyter Enterprise Gateway using conda as well.)
+[//]: # ( )
+[//]: # (```bash)
+[//]: # (conda install -c conda-forge jupyter_enterprise_gateway)
+[//]: # (```)
+[//]: # ( )
+[//]: # (Once installed, you can use the `jupyter` CLI to run the server as shown above.)
 
-Once installed, you can use the `jupyter` CLI to run the server as shown above.
+#### Using a docker-stacks image
 
-### Using a docker-stacks image
-
-You can add the enterprise gateway to any [docker-stacks](https://github.com/jupyter/docker-stacks) 
-image by writing a Dockerfile patterned after the following example:
+You can add the enterprise gateway to any [docker-stacks](https://github.com/jupyter/docker-stacks) image by writing a Dockerfile patterned after the following example:
 
 ```bash
 # start from the jupyter image with R, Python, and Scala (Apache Toree) kernels pre-installed
 FROM jupyter/all-spark-notebook
 
-# install elyra
+# install Jupyter Enterprise Gateway
 RUN pip install jupyter_enterprise_gateway
 
-# run jupyter elyra on container start, not notebook server
+# run Jupyter Enterprise Gateway on container start
 EXPOSE 8888
 CMD ["jupyter", "enterprisegateway", "--ip=0.0.0.0", "--port=8888"]
 ```
@@ -49,49 +73,58 @@ CMD ["jupyter", "enterprisegateway", "--ip=0.0.0.0", "--port=8888"]
 You can then build and run it.
 
 ```bash
-docker build -t my/enterprise-gateway .
-docker run -it --rm -p 8888:8888 my/enterprise-gateway
+docker build -t /srv/enterprise-gateway .
+docker run -it --rm -p 8888:8888 /srv/enterprise-gateway
 ```
 
-### Enterprise Installation
-Jupyter Enterprise Gateway is intended to be installed on a Kerberized HDP cluster with Spark2 and 
-Yarn services installed and running. To support Scala kernels, Apache Toree must be installed. 
-To support IPython kernels and R kernels to run on Yarn worker nodes, various packages have 
-to be installed on each Yarn worker node. The commands below may have to be customized to specific 
-cluster environments.
+### Enabling Distributed Kernel support
 
-#### Installing Enterprise Gateway
-Enterprise Gateway is typically installed on a cluster node with a public IP address. The following 
-commands have been verified to work on a cluster with HDP 2.6.1 installed on RHEL 7.3.
+To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide a few additional configuration options in a cluster deployment.
+
+The dsitributed capabilities are currently based on a Apache Spark cluster utilizing Yarn as the Resource Manager and thus require some environment variables to be set to facilitate the integration with Spark and Yarn components:
+
+* The SPARK_HOME environment variable pointing to Spark Master
+```
+SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP distribution
+```
+
+* The EG_YARN_ENDPOINT environment variable (or command line configuration option )pointing to the Yarn Resource Manager endpoint
+```
+EG_YARN_ENDPOINT=http://${YARN_NODE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to Yarn deployment
+``` 
+
+
+### Installing support for Scala (Apache Toree kernel)
+
+We have tested the latest version of Apache Toree for Scala 2.11 support, and to enable that support, please do the following steps:
+
+
+* Install Apache Toree
+
+``` Bash
+# pip-install the Apache Toree installer
+pip install https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc1/toree-pip/toree-0.2.0.tar.gz
+
+# install a new Toree Scala kernel which will be updated with Enterprise Gateway's custom kernel scripts
+jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.2" --interpreters="Scala"
+
+```
+
+* Update the Apache Toree Kernelspecs
+
+We have provided some customized kernel specs as part of the Jupyter Enterprise Gateway releases
+
+
+### Installing support for Python (IPython kernel)
+
+
+### Installing support for R (IRkernel)
+
+
 
 Run the following commands on the "public" node of the cluster:
 ```Bash
-EG_DOWNLOAD_SERVER="9.30.252.137"
 
-SPARK_HOME="${SPARK_HOME:-/usr/hdp/current/spark2-client}"    # HDP
-
-TOREE_PIP_INSTALL_PACKAGE="http://${EG_DOWNLOAD_SERVER}/dist/toree/toree-0.2.0.dev1.tar.gz"
-
-yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
-yum install -y \
-    git \
-    libcurl-devel.x86_64 \
-    openssl-devel.x86_64 \
-    python2-cryptography.x86_64 \
-    python2-pip.noarch \
-    R
-
-python -m pip install --upgrade --force pip
-
-pip install --upgrade http://${EG_DOWNLOAD_SERVER}/dist/elyra/jupyter_enterprise_gateway-0.5.0.dev0-py2.py3-none-any.whl
-
-################################################################################
-
-# pip-install the Apache Toree installer
-pip install "${TOREE_PIP_INSTALL_PACKAGE}"
-
-# install a new Toree Scala kernel which will be updated with Enterprise Gateway's custom kernel scripts
-jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --interpreters="Scala"
 
 # set a few helper variables
 EG_DEV_FOLDER="$(pip list 2> /dev/null | grep -o '/.*/enterprise-gateway')"
@@ -114,6 +147,8 @@ fi
 find "${KERNELS_FOLDER}" -name kernel.json -type f -print -exec \
     sed -i 's/ --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}//g' {} \;
 ```
+
+
 
 #### Installing Required Packages on Yarn Worker Nodes
 To support IPython and R kernels, run the following commands on all Yarn worker nodes.

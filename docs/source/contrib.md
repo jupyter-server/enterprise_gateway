@@ -7,7 +7,7 @@ project please first take a look at the
  Prior to your contribution, we strongly recommend getting acquainted with Enterprise Gateway by checking 
  out the [Development Workflow](devinstall.html) and [Detailed Overview](detailed-overview.html) pages.
 
-### Roadmap
+## Roadmap
 We have plenty to do, now and in the future.  Here's where we're headed:
 
 * Kernel Configuration Profile

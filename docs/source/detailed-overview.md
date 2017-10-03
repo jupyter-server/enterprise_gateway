@@ -1,4 +1,4 @@
-## Enterprise Gateway Details
+## System Architecture
 
 Below are sections presenting details of the Enterprise Gateway internals and other related items.  
 While we will attempt to maintain its consistency, the ultimate answers are in the code itself.

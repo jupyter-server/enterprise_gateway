@@ -23,6 +23,8 @@ Gateway's extensible framework.
 * Ability to associate profiles consisting of configuration settings to a kernel for a given user
 * Persistent kernel sessions
 
+![Deployment Diagram](https://github.com/SparkTC/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
+
 ## Features
 
 See the [Features page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/features.html) in the 
