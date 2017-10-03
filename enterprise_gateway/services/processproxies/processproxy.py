@@ -34,7 +34,7 @@ default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
-tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'True').lower() == 'True'.lower())
+tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'True'.lower())
 
 local_ip = localinterfaces.public_ips()[0]
 tunnel_ip = localinterfaces.local_ips()[0]
@@ -493,15 +493,16 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
                 if signum > 0:  # since polling uses signum 0, don't log each 3-second poll
                     self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
+                return None
             except Exception as e:
                 self.log.warning("Exception occurred sending signal({}) to {}:{} for KernelID '{}' "
                                  "(using remote kill): {}".format(signum, self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
-                super(RemoteProcessProxy, self).send_signal(signum)
+                return super(RemoteProcessProxy, self).send_signal(signum)
             finally:
                 sock.close()
         else:
-            super(RemoteProcessProxy, self).send_signal(signum)
+            return super(RemoteProcessProxy, self).send_signal(signum)
 
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()
