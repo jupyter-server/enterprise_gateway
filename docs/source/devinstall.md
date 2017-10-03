@@ -106,19 +106,19 @@ Run the unit test suite.
 make test
 ```
 
-### Integration testing
+[//]: # ### Integration Testing
 
-Integration testing could be a manual procedure, i.e. first open a sample notebook on a web browser 
-and then run all the codes, get all outputs and compare if the outputs are the same compared to the 
-sample notebook *ground truth* outputs. However, it is also feasible to do integration testing 
-programmatically. 
+[//]: #Integration testing could be a manual procedure, i.e. first open a sample notebook on a web browser
+[//]: #and then run all the codes, get all outputs and compare if the outputs are the same compared to the
+[//]: #sample notebook *ground truth* outputs. However, it is also feasible to do integration testing
+[//]: #programmatically.
 
-On a high level, the first step is to parse a notebook as an entity consisted of multiple code messages 
-(inputs and outputs). Then ask a given Enterprise Gateway service to create (via `POST`) a new kernel 
-based on the kernel name of the notebook entity, via the REST API e.g. 
-`http://<Enterprise Gateway Host IP and Port>/api/kernels`. After there is a kernel ID and the new 
-kernel is ready, for each of the code cell in the notebook entity, a code message needs be sent to 
-the Enterprise Gateway service via socket API connection, e.g. 
-`ws://<Enterprise Gateway Host IP and Port>/api/kernels/<kernel ID>/channels`. After all the outputs 
-are received for a notebook entity, its outputs should be compared with the *ground truth* outputs 
-on the sample notebook. If there is anything unexpected, the test could be marked as failed.
+[//]: #On a high level, the first step is to parse a notebook as an entity consisted of multiple code messages
+[//]: #(inputs and outputs). Then ask a given Enterprise Gateway service to create (via `POST`) a new kernel
+[//]: #based on the kernel name of the notebook entity, via the REST API e.g.
+[//]: #`http://<Enterprise Gateway Host IP and Port>/api/kernels`. After there is a kernel ID and the new
+[//]: #kernel is ready, for each of the code cell in the notebook entity, a code message needs be sent to
+[//]: #the Enterprise Gateway service via socket API connection, e.g.
+[//]: #`ws://<Enterprise Gateway Host IP and Port>/api/kernels/<kernel ID>/channels`. After all the outputs
+[//]: #are received for a notebook entity, its outputs should be compared with the *ground truth* outputs
+[//]: #on the sample notebook. If there is anything unexpected, the test could be marked as failed.
