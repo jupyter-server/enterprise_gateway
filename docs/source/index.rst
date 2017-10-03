@@ -20,7 +20,7 @@ the number of active kernels can be dramatically increased.
    getting-started
    uses
    features
-   detailed-overview
+   system-architecture
 
 .. toctree::
    :maxdepth: 2
@@ -35,6 +35,7 @@ the number of active kernels can be dramatically increased.
 
    contrib
    devinstall
+   roadmap
 
 .. toctree::
    :maxdepth: 2
