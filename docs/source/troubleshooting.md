@@ -26,7 +26,7 @@
        from ipython_genutils.py3compat import str_to_bytes
      ImportError: No module named ipython_genutils.py3compat
     ```
-    Simply running "pip install ipython_genutils" should fix the problem.  If Anaconda is installed, make sure the environment variable for Python, i.e. `PYSPARK_PYTHON`, is properly configured in the kernel spec and matches the actual Anaconda installation directory.   
+    Simply running "pip install ipython_genutils" should fix the problem.  If Anaconda is installed, make sure the environment variable for Python, i.e. `PYSPARK_PYTHON`, is properly configured in the kernelspec and matches the actual Anaconda installation directory.   
 
 
 
@@ -41,7 +41,7 @@ message='Authentication failed.'.
 
 This error indicates that the password-less ssh may not be properly configured.  Password-less ssh needs to be configured on the node that the Enterprise Gateway is running on to all other worker nodes.
 
-In general, you can look for more information in the proxy launch log for Yarn Client kernels.  The default location is /tmp/proxy_launch.log or it can be configured using the environment variable `EG_PROXY_LAUNCH_LOG` during Enterprise Gateway start up.  For more information, see [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway)   
+In general, you can look for more information in the proxy launch log for Yarn Client kernels.  The default location is /tmp/jeg_proxy_launch.log and it can be configured using the environment variable `EG_PROXY_LAUNCH_LOG` during Enterprise Gateway start up.  See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an example of starting the Enterprise Gateway from a script and [Supported Environment Variables](config-options.html#supported-environment-variables-with-default-values) for a list of configurable environment variables.   
 
 
 

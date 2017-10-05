@@ -230,3 +230,25 @@ JupyterWebsocketPersonality options
     /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook allows this
     by default but kernel gateway does not.
 ```
+
+
+## Supported Environment Variables (with default values):
+
+```
+EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster
+EG_REMOTE_USER=<process owner>
+EG_REMOTE_PWD
+EG_REMOTE_HOSTS=<localhost>
+EG_ENABLE_TUNNELING=False        
+EG_PROXY_LAUNCH_LOG=/tmp/jeg_proxy_launch.log                
+EG_KERNEL_LAUNCH_TIMEOUT=30
+
+# The following Env varaibles may be useful for troubleshooting
+EG_SSH_LOG_LEVEL='WARNING'
+EG_YARN_LOG_LEVEL='WARNING'
+EG_MAX_POLL_ATTEMPTS=Default=10
+EG_POLL_INTERVAL=0.5
+EG_SOCKET_TIMEOUT=5.0     
+```
+
+

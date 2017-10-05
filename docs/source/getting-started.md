@@ -5,7 +5,7 @@ to be installed on a [Apache Spark 2.x](http://spark.apache.org/docs/latest/inde
 
 The following Resource Managers are supported with the Jupyter Enterprise Gateway:
 
-* YARN Resource Manager - Local Mode
+* YARN Resource Manager - Client Mode
 * YARN Resource Manager - Cluster Mode
 
 The following kernels have been tested with the Jupyter Enterprise Gateway:
@@ -15,7 +15,7 @@ The following kernels have been tested with the Jupyter Enterprise Gateway:
 * R/Apache Spark 2.x with IRkernel
 
 To support Scala kernels, [Apache Toree](https://toree.apache.org/) must be installed. To support
-IPython kernels and R kernels to run on the YARN containers, various packages have to be installed
+IPython kernels and R kernels to run in YARN containers, various packages have to be installed
 on each of the YARN data nodes. The simplest way to enable all the data nodes with required
 dependencies is to install [Anaconda](https://anaconda.com/) on all cluster nodes.
 
@@ -25,9 +25,7 @@ is recommended.
 ### Installing Enterprise Gateway
 
 For new users, we **highly recommend** [installing Anaconda](http://www.anaconda.com/download).
-Anaconda conveniently installs Python, the [Jupyter Notebook]
-(http://jupyter.readthedocs.io/en/latest/install.html), the [IPython kernel]
-(http://ipython.readthedocs.io/en/stable/install/kernel_install.html) and other commonly used
+Anaconda conveniently installs Python, the [Jupyter Notebook](http://jupyter.readthedocs.io/en/latest/install.html), the [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) and other commonly used
 packages for scientific computing and data science.
 
 Use the following installation steps:
@@ -96,18 +94,18 @@ The distributed capabilities are currently based on a Apache Spark cluster utili
 Resource Manager and thus require the following environment variables to be set to facilitate the
 integration between Apache Spark and YARN components:
 
-* SPARK_HOME: Must point to the Apache Spark Master
+* SPARK_HOME: Must point to the Apache Spark installation path
 ```
 SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP distribution
 ```
 
 * EG_YARN_ENDPOINT: Must point to the YARN Resource Manager endpoint
 ```
-EG_YARN_ENDPOINT=http://${YARN_NODE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
+EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
 ``` 
 This value can also be specified on the command-line when starting Enterprise Gateway
 ```
---EnterpriseGatewayApp.yarn_endpoint=http://${YARN_NODE_MANAGER_FQDN}:8088/ws/v1/cluster
+--EnterpriseGatewayApp.yarn_endpoint=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster
 ```
 
 ### Installing support for Scala (Apache Toree kernel)
@@ -129,20 +127,24 @@ jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --i
 * Update the Apache Toree Kernelspecs
 
 We have provided some customized kernelspecs as part of the Jupyter Enterprise Gateway releases.
-These kernelspecs come pre-configured with Yarn local and/or cluster mode. Please use the steps below
-as an example on how to update/customize your kernelspecs.
+These kernelspecs come pre-configured with Yarn client and/or cluster mode. Please use the steps below
+as an example on how to update/customize your kernelspecs:
 
 ``` Bash
 wget https://github.com/SparkTC/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
+
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_2.1_scala" | awk '{print $2}')"
+
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
+
 tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_2.1_scala_yarn_cluster/ spark_2.1_scala_yarn_cluster/
+
 cp $KERNELS_FOLDER/spark_2.1_scala/lib/*.jar  $KERNELS_FOLDER/spark_2.1_scala_yarn_cluster/lib
 ```
 
 ### Installing support for Python (IPython kernel)
 
-The IPython kernel comes pre-configured
+The IPython kernel comes pre-configured.
 
 ### Installing support for R (IRkernel)
 
