@@ -294,9 +294,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.start_time = None
         self.assigned_ip = None
         self.assigned_host = ''
+        self.comm_ip = None
         self.comm_port = 0
         self.dest_comm_port = 0
-        self.prepare_socket()
+        self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
         super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kw)
@@ -313,7 +314,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
-    def prepare_socket(self):
+    def _prepare_response_socket(self):
         s = socket(AF_INET, SOCK_STREAM)
         s.bind((local_ip, 0))
         port = s.getsockname()[1]
@@ -399,7 +400,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             connect_info['control_port'] = tunnel_ports[4]
 
                         ready_to_connect = True
-                        self.update_connection(connect_info)
+                        self._update_connection(connect_info)
                         break
                     data = data + buffer  # append what we received until we get no more...
             except Exception as e:
@@ -422,7 +423,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         return ready_to_connect
 
     # Do NOT update connect_info with IP and other such artifacts in this method/function.
-    def update_connection(self, connect_info):
+    def _update_connection(self, connect_info):
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
         self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
             self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
@@ -430,9 +431,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if connect_info:
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
             # The launcher may also be sending back process info, so check and extract
-            self.extract_pid_info(connect_info)
+            self._extract_pid_info(connect_info)
             # Also check to see if the launcher wants to use socket-based signals
-            self.extract_comm_port(connect_info)
+            self._extract_comm_port(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
             self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
                            .format(self.kernel_id, self.assigned_host, connect_info))
@@ -441,7 +442,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
-    def extract_comm_port(self, connect_info):
+    def _extract_comm_port(self, connect_info):
         comm_port = connect_info.pop('comm_port', None)
         if comm_port:
             self.dest_comm_port = int(comm_port)
@@ -463,8 +464,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.log.debug("Gateway communication port has NOT been established for KernelID '{}' (optional).".
                            format(self.kernel_id))
 
-
-    def extract_pid_info(self, connect_info):
+    def _extract_pid_info(self, connect_info):
         pid = connect_info.pop('pid', None)
         if pid:
             self.pid = int(pid)
@@ -477,13 +477,18 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.ip = self.assigned_ip
             self.local_proc = None
 
+    def cleanup(self):
+        self.assigned_ip = None
+        super(RemoteProcessProxy, self).cleanup()
+
     def send_signal(self, signum):
-        # If the launcher returned a signal_addr value, then use that to send the signal,
+        # If the launcher returned a comm_port value, then use that to send the signal,
         # else, defer to the superclass - which will use a remote shell to issue kill.
         # Note that if the target process is running as a different user than the REMOTE_USER,
-        # using anything other than the socket-based signal (via signal_addr) will not work.
+        # using anything other than the socket-based signal (via signal_addr) will not work
+        # except for signal 0 - which essentially checks if the process is alive.
 
-        if self.comm_port > 0:
+        if signum > 0 and self.comm_port > 0:
             signal_request = dict()
             signal_request['signum'] = signum
 
@@ -491,8 +496,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             try:
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
-                if signum > 0:  # since polling uses signum 0, don't log each 3-second poll
-                    self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
+                self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
                 self.log.warning("Exception occurred sending signal({}) to {}:{} for KernelID '{}' "
@@ -503,6 +507,28 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 sock.close()
         else:
             return super(RemoteProcessProxy, self).send_signal(signum)
+
+    def shutdown_listener(self):
+        # If a comm port has been established, instruct the listener to shutdown so that proper
+        # kernel termination can occur.  If not done, the listener keeps the launcher process
+        # active, even after the kernel has terminated, leading to less than graceful terminations.
+
+        if self.comm_port > 0:
+            shutdown_request = dict()
+            shutdown_request['shutdown'] = 1
+
+            sock = socket(AF_INET, SOCK_STREAM)
+            try:
+                sock.connect((self.comm_ip, self.comm_port))
+                sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
+                self.log.debug("Shutdown request sent to listener via gateway communication port.")
+                return None
+            except Exception as e:
+                self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
+                                 "(using remote kill): {}".format(self.comm_ip, self.comm_port,
+                                                                  self.kernel_id, str(e)))
+            finally:
+                sock.close()
 
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()

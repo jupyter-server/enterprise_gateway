@@ -127,6 +127,14 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         # This statement shouldn't be reached since LocalProcessProxy is the default if non-existent, but just in case.
         return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
 
+    def request_shutdown(self, restart=False):
+        super(RemoteKernelManager, self).request_shutdown(restart)
+
+        # If we're using a remote proxy, we need to send the launcher indication that we're
+        # shutting down so if can exit its listener thread, if its using one.
+        if isinstance(self.process_proxy, RemoteProcessProxy):
+            self.process_proxy.shutdown_listener()
+
     def restart_kernel(self, now=False, **kw):
         kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
         # Check if this is a remote process proxy and if now = True. If so, check its connection count. If no

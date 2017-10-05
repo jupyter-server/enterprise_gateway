@@ -127,8 +127,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def cleanup(self):
-        super(YarnClusterProcessProxy, self).cleanup()
-
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
         if self.local_proc:
@@ -141,7 +139,9 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         # reset application id to force new query - handles kernel restarts/interrupts
         self.application_id = None
-        self.assigned_ip = None
+
+        # for cleanup, we should call the superclass last
+        super(YarnClusterProcessProxy, self).cleanup()
 
     def confirm_remote_startup(self, kernel_cmd, **kw):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
