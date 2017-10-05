@@ -105,6 +105,10 @@ SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP di
 ```
 EG_YARN_ENDPOINT=http://${YARN_NODE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
 ``` 
+This value can also be specified on the command-line when starting Enterprise Gateway
+```
+--EnterpriseGatewayApp.yarn_endpoint=http://${YARN_NODE_MANAGER_FQDN}:8088/ws/v1/cluster
+```
 
 ### Installing support for Scala (Apache Toree kernel)
 
@@ -142,12 +146,8 @@ The IPython kernel comes pre-configured
 
 ### Installing support for R (IRkernel)
 
-
-
 Run the following commands on the "public" node of the cluster:
 ```Bash
-
-
 # set a few helper variables
 EG_DEV_FOLDER="$(pip list 2> /dev/null | grep -o '/.*/enterprise-gateway')"
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_2.1_scala" | awk '{print $2}')"
@@ -240,12 +240,62 @@ Gateway log can then be monitored via `tail -F enterprise_gateway.log` and it ca
 ```bash
 #!/bin/bash
 
-START_CMD="jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=DEBUG --MappingKernelManager.cull_idle_timeout=43200 --MappingKernelManager.cull_interval=60 --MappingKernelManager.cull_connected=True"
+START_CMD="jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=DEBUG"
+CULLING_PARAMS="--MappingKernelManager.cull_idle_timeout=43200 --MappingKernelManager.cull_interval=60 --MappingKernelManager.cull_connected=True"
 
 LOG=~/enterprise_gateway.log
 PIDFILE=~/enterprise_gateway.pid
 
-eval "$START_CMD > $LOG 2>&1 &"
+$START_CMD $CULLING_PARAMS > $LOG 2>&1 &
+if [ "$?" -eq 0 ]; then
+  echo $! > $PIDFILE
+else
+  exit 1
+fi
+```
+##### Adding modes of distribution
+By default, without kernelspec modifications, all kernels run local to Enterprise Gateway.  This is
+what is referred to as *LocalProcessProxy* mode.  Enterprise Gateway provides two additional modes
+out of the box, which are reflected in modified kernelspec files.  These modes are *YarnClusterProcessProxy*
+and *DistributedProcessProxy*.  The [system architecture](system-architecture.html) page provides more
+details regarding process proxies.
+
+###### YarnClusterProcessProxy
+YarnClusterProcessProxy mode launches the kernel as a *managed resource* within Yarn as noted above.
+This launch mode requires that the command-line option `--EnterpriseGatewayApp.yarn_endpoint` be provided
+or the environment variable `EG_YARN_ENDPOINT` be defined.  If neither value exists, the default
+value of `http://localhost:8088/ws/v1/cluster` will be used.
+
+###### DistributedProcessProxy
+DistributedProcessProxy provides for a simple, round-robin remoting mechanism where each successive
+kernel is launched on a different host.  It requires that **each of the kernelspec files reside in
+the same path on each node and that password-less ssh has been established between nodes**.
+
+When launched, the kernel runs as a Yarn *client* - meaning that the kernel process itself is
+not managed by the Yarn resource manager.  This mode allows for the distribution of kernel
+(spark driver) processes across the cluster.
+
+To use this form of distribution, the command-line option `--EnterpriseGatewayApp.remote_hosts=`
+should be set.  It should be noted that this command-line option is a **list**, so values are
+indicated via bracketed strings: `['host1','host2','host3']`.  These values can also be set via
+the environment variable `EG_REMOTE_HOSTS`, in which case a simple comma-separated value is
+sufficient.  If neither value is provided and DistributedProcessProxy kernels are invoked,
+Enterprise Gateway defaults this option to `localhost`.
+
+Amending the start script with a more complete example that includes distribution modes,
+one might use the following:
+```bash
+#!/bin/bash
+
+START_CMD="jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=DEBUG"
+CULLING_PARAMS="--MappingKernelManager.cull_idle_timeout=43200 --MappingKernelManager.cull_interval=60 --MappingKernelManager.cull_connected=True"
+YARN_ENDPOINT=--EnterpriseGatewayApp.yarn_endpoint="http://yarn-resource-manager-host:8088/ws/v1/cluster"
+REMOTE_HOSTS=--EnterpriseGatewayApp.remote_hosts="['host1','host2','host3']"
+
+LOG=~/enterprise_gateway.log
+PIDFILE=~/enterprise_gateway.pid
+
+$START_CMD $CULLING_PARAMS $YARN_ENDPOINT $REMOTE_HOSTS > $LOG 2>&1 &
 if [ "$?" -eq 0 ]; then
   echo $! > $PIDFILE
 else
@@ -253,12 +303,11 @@ else
 fi
 ```
 
-
 #### Connecting a Notebook Client to Enterprise Gateway
-[NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) is used to connect from a 
-local desktop or laptop to the Enterprise Gateway instance on the Yarn cluster. The most convenient 
-way to use a pre-configured installation of NB2KG would be using the Docker image 
-[biginsights/jupyter-nb-nb2kg:dev](https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/). Replace 
+[NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) is used to connect from a
+local desktop or laptop to the Enterprise Gateway instance on the Yarn cluster. The most convenient
+way to use a pre-configured installation of NB2KG would be using the Docker image
+[biginsights/jupyter-nb-nb2kg:dev](https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/). Replace
 the `<ENTERPRISE_GATEWAY_HOST_IP>` in the command below:
 ```Bash
 docker run -t --rm \
