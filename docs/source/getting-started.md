@@ -146,28 +146,35 @@ The IPython kernel comes pre-configured
 
 ### Installing support for R (IRkernel)
 
-Run the following commands on the "public" node of the cluster:
+### Installing support for R (IRkernel)
+
 ```Bash
-# set a few helper variables
-EG_DEV_FOLDER="$(pip list 2> /dev/null | grep -o '/.*/enterprise-gateway')"
-SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_2.1_scala" | awk '{print $2}')"
-KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
+# Perform the following steps on Jupyter Enterprise Gateway hosting system as well as all YARN workers
 
-# rename the Toree Scala kernel we just installed
-mv "${SCALA_KERNEL_DIR}" "${KERNELS_FOLDER}/spark_2.1_scala_yarn_cluster"
+yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+yum install -y git openssl-devel.x86_64 libcurl-devel.x86_64
 
-# overwrite Toree's kernel files and create remaining kernels from Enterprise Gateway (including Toree Scala, IPython, R)
-yes | cp -r "${EG_DEV_FOLDER}/etc/kernels"/* "${KERNELS_FOLDER}/"
+# Create an R-script to run and install packages
+cat <<'EOF' > install_packages.R
+install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
+                   'devtools', 'uuid', 'digest', 'RCurl', 'argparser'),
+                   repos='http://cran.rstudio.com/')
+devtools::install_github('IRkernel/IRkernel')
+IRkernel::installspec(user = FALSE)
+EOF
 
-# replace SPARK_HOME in kernel.json files
-if [[ -n "${SPARK_HOME}" && -e "${SPARK_HOME}" ]]; then
-    find "${KERNELS_FOLDER}" -name "kernel.json" -type f -print -exec \
-        sed -i "s|\"SPARK_HOME\": \"/usr/.*/current/spark2-client\"|\"SPARK_HOME\": \"${SPARK_HOME}\"|g" {} \;
-fi
+# run the package install script
+$ANACONDA_HOME/bin/Rscript install_packages.R
 
-# OPTIONAL: for developers, remove --proxy-user from kernel.json files if we are not in a Kerberos secured cluster
-find "${KERNELS_FOLDER}" -name kernel.json -type f -print -exec \
-    sed -i 's/ --proxy-user ${KERNEL_USERNAME:-ERROR__NO__KERNEL_USERNAME}//g' {} \;
+# OPTIONAL: check the installed R packages
+ls $ANACONDA_HOME/lib/R/library
+
+Next copy the R kernelspecs to all YARN workers
+[ ENTERPRISE_GATEWAY ] is the root directory of the JEG github repository
+cp -r [ ENTERPRISE_GATEWAY ]/etc/kernelspecs/spark_2.1_R* /usr/local/share/jupyter/kernels/
+cp -r [ ENTERPRISE_GATEWAY ]/etc/kernel-launchers/R/scripts /usr/local/share/jupyter/kernels/spark_2.1_R_yarn_client/
+cp -r [ ENTERPRISE_GATEWAY ]/etc/kernel-launchers/R/scripts /usr/local/share/jupyter/kernels/spark_2.1_R_yarn_cluster/
+
 ```
 
 
