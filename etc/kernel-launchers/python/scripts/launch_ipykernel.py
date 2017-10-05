@@ -148,14 +148,15 @@ def get_gateway_request(sock):
 
 
 def gateway_listener(sock):
-    while True:
+    shutdown = False
+    while not shutdown:
         request = get_gateway_request(sock)
         if request:
             if request.get('signum'):
                 signum = int(request.get('signum'))
                 os.kill(os.getpid(), signum)
-            # else: unexpected request, just ignore
-            #    print("Unexpected request from gateway: {}".format(request))
+            elif request.get('shutdown'):
+                shutdown = bool(request.get('shutdown'))
 
 if __name__ == "__main__":
     """
