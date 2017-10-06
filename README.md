@@ -27,13 +27,13 @@ Gateway's extensible framework.
 
 ## Features
 
-See the [Features page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/features.html) in the 
+See the [Features page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/features.html) in the 
 documentation for a list of Jupyter Enterprise Gateway features.
 
 ## Installation
 
 Detailed installation instructions are located in the 
-[Getting Started page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/getting-started.html)
+[Getting Started page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/getting-started.html)
 of the project docs. Here's a quick start using `pip`:
 
 ```bash
@@ -46,17 +46,17 @@ jupyter enterprisegateway --help-all
 # run it with default options
 jupyter enterprisegateway
 ```
-Please check the [Configuration Options page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/config-options.html) 
+Please check the [Configuration Options page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/config-options.html) 
 for information about the supported options.
 
-## Detailed Overview
+## System Architecture
 
-The [Detailed Overview page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/detailed-overview.html) 
-includes information about Enterprise Gateway's process proxy and launcher frameworks.
+The [System Architecture page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/system-architecture.html) 
+includes information about Enterprise Gateway's remote kernel, process proxy, and launcher frameworks.
 
 ## Contributing
 
-The [Contribution page](https://jupyter-entprise-gateway.readthedocs.io/en/latest/contrib.html) includes 
+The [Contribution page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contrib.html) includes 
 information about how to contribute to Enterprise Gateway along with our roadmap.  While there, you'll want to
-[set up a development environment](https://jupyter-entprise-gateway.readthedocs.io/en/latest/devinstall.html) and check out typical developer tasks.
+[set up a development environment](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/devinstall.html) and check out typical developer tasks.
 
