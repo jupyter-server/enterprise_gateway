@@ -9,8 +9,9 @@ Jupyter Enterprise Gateway adheres to the
 3. Environment variables
 
 Note that because Enterprise Gateway is built on Kernel Gateway, all of the `KernelGatewayApp` options 
-can be specified as `EnterpriseGatewayApp` options.  In addition, the `KG_` prefix of environment 
-variables has also been perserved.
+can be specified as `EnterpriseGatewayApp` options.  In addition, the `KG_` prefix of inherited environment 
+variables has also been preserved, while those variables introduced by Enterprise Gateway will be
+prefixed with `EG_`.
 
 To generate a template configuration file, run the following:
 
@@ -231,24 +232,69 @@ JupyterWebsocketPersonality options
     by default but kernel gateway does not.
 ```
 
+### Supported environment variables:
+```
+  EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster 
+      YARN resource manager endpoint.  This value can also be specified on the 
+      command line via option '--EnterpriseGatewayApp.yarn_endpoint'.  
 
-## Supported Environment Variables (with default values):
+  EG_REMOTE_USER=<enterprise gateway process owner> 
+      The user name with which ssh operations are carried out under.  It is assumed
+      that password-less ssh has been configured across all targetted nodes within 
+      the cluster.  This value can also be specified on the command line via option 
+      '--EnterpriseGatewayApp.remote_user'.  
+
+  EG_REMOTE_PWD=None 
+      The password of the user specified via `EG_REMOTE_USER`.  This should only be 
+      set in situations where password-less ssh cannot be configured.   
+
+  EG_REMOTE_HOSTS=localhost 
+      A comma-separated list of hosts on which DistributedProcessProxy kernels will
+      be launched e.g., host1,host2.  Not bracketing or quoting of hostnames is 
+      required when setting the env variable.  This value can also be specified on 
+      the command line via option '--EnterpriseGatewayApp.remote_hosts', although 
+      bracketing and quoting is required in that case.  
+ 
+  EG_ENABLE_TUNNELING=False 
+      Indicates whether tunneling (via ssh) of the kernel and communication ports
+      is enabled (True) or not (False).  This feature is currently in experimental 
+      stages but we intend to flip the default value to True at some point.  
+        
+  EG_PROXY_LAUNCH_LOG=/tmp/jeg_proxy_launch.log 
+      The log file used during remote kernel launches of `DistributedProcessProxy`
+      based kernels.  This file should be consulted when kernel operations are not 
+      working as expected.  Note that it will contain output from multiple kernels.  
+              
+  EG_KERNEL_LAUNCH_TIMEOUT=30 
+      The time (in seconds) Enterprise Gateway will wait for a kernel's startup 
+      completion status before deeming the startup a failure, at which time a second 
+      startup attempt will take place.  If a second timeout occurs, Enterprise 
+      Gateway will report a failure to the client.  
+```
+The following environment variables may be useful for troubleshooting:
+```
+  EG_SSH_LOG_LEVEL=WARNING 
+      By default, the `paramiko` ssh library is too verbose for its logging.  This
+      value can be adjusted in situations where ssh troubleshooting may be warranted.  
+
+  EG_YARN_LOG_LEVEL=WARNING 
+      By default, the `yarn-api-client` library is too verbose for its logging.  This
+      value can be adjusted in situations where YARN troubleshooting may be warranted.  
+
+  EG_MAX_POLL_ATTEMPTS=10 
+      Polling is used in various places during life-cycle management operations - like 
+      determining if a kernel process is still alive, stopping the process, waiting 
+      for the process to terminate, etc.  As a result, it may be useful to adjust 
+      this value during those kinds of troubleshooting scenarios, although that 
+      should rarely be necessary.  
+
+  EG_POLL_INTERVAL=0.5
+    The interval (in seconds) to wait before checking poll results again.  
+
+  EG_SOCKET_TIMEOUT=5.0 
+    The time (in seconds) the enterprise gateway will wait on its connection
+    file socket waiting on return from a remote kernel launcher.  Upon timeout, the 
+    operation will be retried immediately, until the overall time limit has been exceeded.   
 
 ```
-EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster
-EG_REMOTE_USER=<process owner>
-EG_REMOTE_PWD
-EG_REMOTE_HOSTS=<localhost>
-EG_ENABLE_TUNNELING=False        
-EG_PROXY_LAUNCH_LOG=/tmp/jeg_proxy_launch.log                
-EG_KERNEL_LAUNCH_TIMEOUT=30
-
-# The following Env varaibles may be useful for troubleshooting
-EG_SSH_LOG_LEVEL='WARNING'
-EG_YARN_LOG_LEVEL='WARNING'
-EG_MAX_POLL_ATTEMPTS=Default=10
-EG_POLL_INTERVAL=0.5
-EG_SOCKET_TIMEOUT=5.0     
-```
-
 

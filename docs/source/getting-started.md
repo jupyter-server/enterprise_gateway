@@ -331,3 +331,5 @@ docker run -t --rm \
     -w /tmp/notebooks \
     biginsights/jupyter-nb-nb2kg:dev
 ```
+Note that the KG_HTTP_USER and KG_HTTP_PASS variables are necessary when Enterprise Gateway
+is behind an Apache Knox gateway.
