@@ -149,10 +149,7 @@ variable list since `KERNEL_ID` is a primary mechanism for associating remote ap
 def poll(self):
 ```
 The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the 
-framework's heartbeat mechanism calls `poll()` every 3 seconds.  This value can be adjusted via the configuration 
-setting [`KernelRestarter.time_to_dead`](http://jupyter-console.readthedocs.io/en/latest/config_options.html).
-
-This method returns `None` if the process is still running, `False` otherwise (per the `popen()` contract).
+framework's heartbeat mechanism calls `poll()` every 3 seconds.  This method returns `None` if the process is still running, `False` otherwise (per the `popen()` contract).
 
 ```python
 def wait(self):
