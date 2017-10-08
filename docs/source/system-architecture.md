@@ -5,7 +5,7 @@ While we will attempt to maintain its consistency, the ultimate answers are in t
 
 ### Enterprise Gateway Process Proxy Extensions
 Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support 
-remote kernel sessions on behalf of multiple users within resource managed frameworks such as Yarn.  Enterprise 
+remote kernel sessions on behalf of multiple users within resource managed frameworks such as YARN.  Enterprise 
 Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager`, 
 `MultiKernelManager` and `KernelSpec` classes, along with an additional abstraction known as a 
 *process proxy*.
@@ -207,6 +207,35 @@ Kernel launch timeout expiration is expressed via the environment variable `KERN
 value does not exist, it defaults to the Enterprise Gateway process environment variable `EG_KERNEL_LAUNCH_TIMEOUT` - which 
 defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from `NB2KG`, the launch 
 timeout can be specified as a client attribute of the Notebook session.
+
+###### YarnClusterProcessProxy
+As part of its base offering, Enterprise Gateway provides an implementation of a process proxy 
+that communicates with the YARN resource manager that has been instructed to launcher a kernel
+on one of its worker nodes.  The node on which the kernel is launched is up to the resource
+manager - which enables an optimized distribution of kernel resources.
+
+Derived from `RemoteProcessProxy`, `YarnClusterProcessProxy` uses the `yarn-api-client` library
+to locate the kernel and monitor its life-cycle.  However, once the kernel has returned its
+connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
+
+This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line 
+option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.
+
+In addition, in some cases, it requires use of the `--EnterpriseGatewayApp.remote_user` option (or 
+`EG_REMOTE_USER` envrionment variable) for performing kernel interrupt functionality.
+
+###### DistributedProcessProxy
+Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
+round-robin remoting mechanism that is part of the `DistributedProcessProxy` class.  This class
+uses the `--EnterpriseGatewayApp.remote_hosts` command line option (or `EG_REMOTE_HOSTS` 
+environment variable) to determine on which hosts a given kernel should be launched.  It uses
+a basic round-robin algorithm to index into the list of remote hosts for selecting the target
+host.  It then uses ssh (and the remote user noted previously) to launch the kernel on the 
+target host.  As a result, all kernelspec files must reside on the remote hosts in the same
+directory structure as on the Enterprise Gateway server.
+
+It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their resources (within
+the kernel process itself) are not managed by the YARN resource manager. 
 
 ### Launchers
 As noted above a kernel is considered started once the launcher has conveyed its connection information 
