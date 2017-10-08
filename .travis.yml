@@ -15,6 +15,6 @@ install:
     - pip install dist/*.whl coverage
     - pip freeze
 script:
-    - jupyter elyra --help
+    - jupyter enterprisegateway --help
     - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway
     - pip uninstall -y jupyter_enterprise_gateway
