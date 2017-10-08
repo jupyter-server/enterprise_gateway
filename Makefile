@@ -7,6 +7,7 @@ SA:=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 MAKEFILE_DIR:=${CURDIR}
+VERSION:=0.5.0.dev0
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -49,7 +50,7 @@ kernelspecs: ## Make a tar.gz file consisting of kernelspec files
 	@echo build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r etc/kernel-launchers/scala/*
 	@mkdir -p dist
 	rm -f dist/enterprise_gateway-kernelspecs.tar.gz
-	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/dist/enterprise_gateway_kernelspecs.tar.gz" * )
+	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
