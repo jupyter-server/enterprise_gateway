@@ -7,7 +7,7 @@ SA:=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 MAKEFILE_DIR:=${CURDIR}
-VERSION:=0.6.0
+VERSION:=0.7.0.dev0
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
