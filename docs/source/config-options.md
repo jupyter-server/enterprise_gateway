@@ -197,7 +197,7 @@ EnterpriseGatewayApp options
     seed by default. (KG_SEED_URI env var)
 --EnterpriseGatewayApp.yarn_endpoint=<Unicode>
     Default: 'http://localhost:8088/ws/v1/cluster'
-    The http url for accessing the Yarn Resource Manager. (EG_YARN_ENDPOINT env
+    The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env
     var)
 
 NotebookHTTPPersonality options
@@ -232,7 +232,7 @@ JupyterWebsocketPersonality options
     by default but kernel gateway does not.
 ```
 
-### Supported environment variables:
+### Supported environment variables
 ```
   EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster 
       YARN resource manager endpoint.  This value can also be specified on the 

@@ -44,13 +44,13 @@ using `pip`(part of Anaconda) along with its dependencies.
 pip install jupyter_enterprise_gateway
 ```
 
-Similarly, you can use `pip uninstall jupyter_enterprise_gateway` to uninstall
-Jupyter Enterprise Gateway.
-
 At this point, the Jupyter Enterprise Gateway deployment provides local kernel support which is
 fully compatible with Jupyter Kernel Gateway.
 
-
+To uninstall Jupyter Enterprise Gateway...
+```bash
+pip uninstall jupyter_enterprise_gateway
+```
 [//]: # (### Using conda)
 [//]: # ( )
 [//]: # (You can install Jupyter Enterprise Gateway using conda as well.)
@@ -60,6 +60,7 @@ fully compatible with Jupyter Kernel Gateway.
 [//]: # (```)
 [//]: # ( )
 [//]: # (Once installed, you can use the `jupyter` CLI to run the server as shown above.)
+
 
 #### Using a docker-stacks image
 
@@ -127,7 +128,7 @@ jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --i
 * Update the Apache Toree Kernelspecs
 
 We have provided some customized kernelspecs as part of the Jupyter Enterprise Gateway releases.
-These kernelspecs come pre-configured with Yarn client and/or cluster mode. Please use the steps below
+These kernelspecs come pre-configured with YARN client and/or cluster mode. Please use the steps below
 as an example on how to update/customize your kernelspecs:
 
 ``` Bash
@@ -145,8 +146,6 @@ cp $KERNELS_FOLDER/spark_2.1_scala/lib/*.jar  $KERNELS_FOLDER/spark_2.1_scala_ya
 ### Installing support for Python (IPython kernel)
 
 The IPython kernel comes pre-configured.
-
-### Installing support for R (IRkernel)
 
 ### Installing support for R (IRkernel)
 
@@ -179,12 +178,10 @@ cp -r [ ENTERPRISE_GATEWAY ]/etc/kernel-launchers/R/scripts /usr/local/share/jup
 
 ```
 
+### Installing Required Packages on YARN Worker Nodes
+To support IPython and R kernels, run the following commands on all YARN worker nodes.
 
-
-#### Installing Required Packages on Yarn Worker Nodes
-To support IPython and R kernels, run the following commands on all Yarn worker nodes.
-
-##### Installing Required Packaged for IPython Kernels on Yarn Worker Nodes
+###### IPython Kernels
 ```Bash
 yum -y install "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
 yum install -y python2-pip.noarch
@@ -199,7 +196,7 @@ pip install ipykernel 'ipython<6.0'
 pip list | grep -E "ipython|ipykernel"
 ```
 
-##### Installing Required Packaged for R Kernels on Yarn Worker Nodes
+###### R Kernels
 ```Bash
 yum install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
 yum install -y R git openssl-devel.x86_64 libcurl-devel.x86_64
@@ -225,7 +222,7 @@ tail -F install_packages.Rout
 ls /usr/lib64/R/library/
 ```
 
-#### Starting Enterprise Gateway
+### Starting Enterprise Gateway
 Very few arguments are necessary to minimally start Enterprise Gateway.  The following command 
 could be considered a minimal command:
 
@@ -262,26 +259,26 @@ else
   exit 1
 fi
 ```
-##### Adding modes of distribution
+### Adding modes of distribution
 By default, without kernelspec modifications, all kernels run local to Enterprise Gateway.  This is
 what is referred to as *LocalProcessProxy* mode.  Enterprise Gateway provides two additional modes
 out of the box, which are reflected in modified kernelspec files.  These modes are *YarnClusterProcessProxy*
 and *DistributedProcessProxy*.  The [system architecture](system-architecture.html) page provides more
 details regarding process proxies.
 
-###### YarnClusterProcessProxy
-YarnClusterProcessProxy mode launches the kernel as a *managed resource* within Yarn as noted above.
+##### YarnClusterProcessProxy
+YarnClusterProcessProxy mode launches the kernel as a *managed resource* within YARN as noted above.
 This launch mode requires that the command-line option `--EnterpriseGatewayApp.yarn_endpoint` be provided
 or the environment variable `EG_YARN_ENDPOINT` be defined.  If neither value exists, the default
 value of `http://localhost:8088/ws/v1/cluster` will be used.
 
-###### DistributedProcessProxy
+##### DistributedProcessProxy
 DistributedProcessProxy provides for a simple, round-robin remoting mechanism where each successive
 kernel is launched on a different host.  It requires that **each of the kernelspec files reside in
 the same path on each node and that password-less ssh has been established between nodes**.
 
-When launched, the kernel runs as a Yarn *client* - meaning that the kernel process itself is
-not managed by the Yarn resource manager.  This mode allows for the distribution of kernel
+When launched, the kernel runs as a YARN *client* - meaning that the kernel process itself is
+not managed by the YARN resource manager.  This mode allows for the distribution of kernel
 (spark driver) processes across the cluster.
 
 To use this form of distribution, the command-line option `--EnterpriseGatewayApp.remote_hosts=`
@@ -312,9 +309,9 @@ else
 fi
 ```
 
-#### Connecting a Notebook Client to Enterprise Gateway
+### Connecting a Notebook Client to Enterprise Gateway
 [NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) is used to connect from a
-local desktop or laptop to the Enterprise Gateway instance on the Yarn cluster. The most convenient
+local desktop or laptop to the Enterprise Gateway instance on the YARN cluster. The most convenient
 way to use a pre-configured installation of NB2KG would be using the Docker image
 [biginsights/jupyter-nb-nb2kg:dev](https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/). Replace
 the `<ENTERPRISE_GATEWAY_HOST_IP>` in the command below:
