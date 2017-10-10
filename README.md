@@ -8,7 +8,7 @@
 
 ## Overview
 
-Jupyter Enterprise Gateway is is a web server that provides headless access to Jupyter kernels within 
+Jupyter Enterprise Gateway is a web server that provides headless access to Jupyter kernels within 
 an enterprise.  Built directly upon Jupyter Kernel Gateway, Jupyter Enterprise Gateway leverages all 
 of the Kernel Gateway functionality in addition to the following:
 * Adds support for remote kernels hosted throughout the enterprise where kernels can be launched in 
