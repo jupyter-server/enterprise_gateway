@@ -445,34 +445,47 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def _extract_comm_port(self, connect_info):
         comm_port = connect_info.pop('comm_port', None)
         if comm_port:
-            self.dest_comm_port = int(comm_port)
+            try:
+                self.dest_comm_port = int(comm_port)
 
-            # tunnel it, if desired ...
-            if tunneling_enabled is True:
-                self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
-                                                     self.dest_comm_port, self.assigned_ip)
-                self.comm_ip = '127.0.0.1'
-                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
-                               "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
-                                                     self.kernel_id, self.comm_port))
-            else: # use what we got...
-                self.comm_port = self.dest_comm_port
-                self.comm_ip = self.assigned_ip
-                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
-                            format(self.assigned_ip, self.comm_port, self.kernel_id))
-        else:
+                # tunnel it, if desired ...
+                if tunneling_enabled is True:
+                    self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
+                                                         self.dest_comm_port, self.assigned_ip)
+                    self.comm_ip = '127.0.0.1'
+                    self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
+                                   "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
+                                                         self.kernel_id, self.comm_port))
+                else: # use what we got...
+                    self.comm_port = self.dest_comm_port
+                    self.comm_ip = self.assigned_ip
+                    self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
+                                format(self.assigned_ip, self.comm_port, self.kernel_id))
+            except ValueError:
+                self.log.warning("comm_port returned from kernel launcher is not an integer: {} - ignoring.".
+                                 format(comm_port))
+                comm_port = None
+        if comm_port is None:
             self.log.debug("Gateway communication port has NOT been established for KernelID '{}' (optional).".
                            format(self.kernel_id))
 
     def _extract_pid_info(self, connect_info):
         pid = connect_info.pop('pid', None)
         if pid:
-            self.pid = int(pid)
-            self.log.debug("Updated pid to: {}".format(self.pid))
+            try:
+                self.pid = int(pid)
+                self.log.debug("Updated pid to: {}".format(self.pid))
+            except ValueError:
+                self.log.warning("pid returned from kernel launcher is not an integer: {} - ignoring.".format(pid))
+                pid = None
         pgid = connect_info.pop('pgid', None)
         if pgid:
-            self.pgid = int(pgid)
-            self.log.debug("Updated pgid to: {}".format(self.pgid))
+            try:
+                self.pgid = int(pgid)
+                self.log.debug("Updated pgid to: {}".format(self.pgid))
+            except ValueError:
+                self.log.warning("pgid returned from kernel launcher is not an integer: {} - ignoring.".format(pgid))
+                pgid = None
         if pid or pgid:  # if either process ids were updated, update the ip as well and don't use local_proc
             self.ip = self.assigned_ip
             self.local_proc = None
