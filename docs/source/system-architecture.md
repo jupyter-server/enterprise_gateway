@@ -75,7 +75,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
 ```
 
 The `RemoteKernelSpec` class definition can be found in 
-[remotekernelspec.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
+[remotekernelspec.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
 
 See the [Process Proxy](#process-proxy) section for more details.
 
@@ -99,7 +99,7 @@ place of the process instance used in today's implementation.  Any interaction w
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
-[remotemanager.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernels/remotemanager.py)
 
 ### Process Proxy
 Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
@@ -113,7 +113,7 @@ a `process_proxy` stanza will use `LocalProcessProxy`.
 built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept 
 class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching 
 kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in 
-[processproxies package](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/processproxies).
+[processproxies package](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/processproxies).
 
 ![Process Class Hierarchy](images/process_proxy_hierarchy.png)
 
@@ -262,7 +262,7 @@ argument name.  However, the response address is identified by the parameter `--
 value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points 
 back to the Enterprise Gateway server - which is listening for a response on the provided port.
 
-Here's a [kernel.json](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/kernel.json) 
+Here's a [kernel.json](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/kernel.json) 
 file illustrating these parameters...
 
 ```json
@@ -287,9 +287,9 @@ file illustrating these parameters...
 ```
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/bin/run.sh) 
 script as the initial arguments to the launcher 
-(see [launch_ipykernel.py](https://github.com/SparkTC/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

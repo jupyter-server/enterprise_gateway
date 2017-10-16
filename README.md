@@ -2,8 +2,7 @@
 
 [![Google Group](https://img.shields.io/badge/-Google%20Group-lightgrey.svg)](https://groups.google.com/forum/#!forum/jupyter) 
 [![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway) 
-[![Build Status](https://travis-ci.org/jupyter-incubator/dashboards.svg?branch=master)](https://travis-ci.org/jupyter/enterprise_gateway)
-[![Code Health](https://landscape.io/github/jupyter/enterprise_gateway/master/landscape.svg?style=flat)](https://landscape.io/github/jupyter/enterprise_gateway/master)
+[![Build Status](https://travis-ci.org/jupyter-incubator/enterprise_gateway.svg?branch=master)](https://travis-ci.org/jupyter-incubator/enterprise_gateway)
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
 
 ## Overview
@@ -23,7 +22,7 @@ Gateway's extensible framework.
 * Ability to associate profiles consisting of configuration settings to a kernel for a given user
 * Persistent kernel sessions
 
-![Deployment Diagram](https://github.com/SparkTC/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
+![Deployment Diagram](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
 
 ## Features
 
