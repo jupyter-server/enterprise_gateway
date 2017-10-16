@@ -8,13 +8,14 @@ python:
     - 3.6
 
 env:
-    - ASYNC_TEST_TIMEOUT=10
+    - ASYNC_TEST_TIMEOUT=30
 install:
     - pip install --upgrade setuptools pip
     - python setup.py bdist_wheel sdist
     - pip install dist/*.whl coverage
+    - pip list
     - pip freeze
 script:
     - jupyter enterprisegateway --help
-    - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway
+    - nosetests -x --nocapture --process-restartworker --with-coverage --cover-package=enterprise_gateway
     - pip uninstall -y jupyter_enterprise_gateway

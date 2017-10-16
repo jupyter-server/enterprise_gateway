@@ -91,7 +91,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
         """Returns a tornado.web.Application for the Tornado test runner."""
         if hasattr(self, '_app'):
             return self._app
-        self.app = EnterpriseGatewayApp(log_level=logging.CRITICAL)
+        self.app = EnterpriseGatewayApp(log_level=logging.DEBUG)
         self.setup_app()
         self.app.init_configurables()
         self.setup_configurables()

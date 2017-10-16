@@ -556,6 +556,7 @@ class TestCustomDefaultKernel(TestJupyterWebsocket):
             raise_error=False
         )
         self.assertEqual(response.code, 500)
+        print("response.body: {}".format(response.body))
         self.assertTrue('raise NoSuchKernel' in str(response.body))
 
 
