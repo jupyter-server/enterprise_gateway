@@ -132,7 +132,7 @@ These kernelspecs come pre-configured with YARN client and/or cluster mode. Plea
 as an example on how to update/customize your kernelspecs:
 
 ``` Bash
-wget https://github.com/SparkTC/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_2.1_scala" | awk '{print $2}')"
 
