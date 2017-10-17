@@ -8,7 +8,7 @@ python:
     - 3.6
 
 env:
-    - ASYNC_TEST_TIMEOUT=10
+    - ASYNC_TEST_TIMEOUT=30
 install:
     - pip install --upgrade setuptools pip
     - python setup.py bdist_wheel sdist
