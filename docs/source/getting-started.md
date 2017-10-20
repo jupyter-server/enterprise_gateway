@@ -288,8 +288,25 @@ the environment variable `EG_REMOTE_HOSTS`, in which case a simple comma-separat
 sufficient.  If neither value is provided and DistributedProcessProxy kernels are invoked,
 Enterprise Gateway defaults this option to `localhost`.
 
+##### Service and Remote Users
+As noted above, we recommend running Enterprise Gateway as a background task.  Normally,
+such a task is invoked from a _service user_ account identified by a non-root user (which
+we strongly recommend be the case).  A service user typically cannot be used to login 
+with and often times has other privileges not typically granted to normal non-root users. 
+For Enterprise Gateway, we recommend this user be a member of the `hdfs` group (assuming 
+you're installing into a YARN cluster).
+
+To perform some of its distributed operations, Enterprise Gateway also uses a user account
+known as the _remote user_.  By default, the remote user is the user id under which 
+Enterprise Gateway is running.  As a result, we recommend that the _service user_ be the same 
+account as the _remote user_ although that is not necessary.  The requirement for the 
+remote user is that it be able to use password-less ssh across the configured _remote 
+hosts_ of the cluster.  The remote user can be specified on the command line via 
+`--EnterpriseGatewayApp.remote_user` or via the `EG_REMOTE_USER` environment variable.
+
+
 Amending the start script with a more complete example that includes distribution modes,
-one might use the following:
+as well as warning message if invoked as the `root` user, one might use the following:
 ```bash
 #!/bin/bash
 
@@ -301,7 +318,11 @@ REMOTE_HOSTS=--EnterpriseGatewayApp.remote_hosts="['host1','host2','host3']"
 LOG=~/enterprise_gateway.log
 PIDFILE=~/enterprise_gateway.pid
 
-$START_CMD $CULLING_PARAMS $YARN_ENDPOINT $REMOTE_HOSTS > $LOG 2>&1 &
+if [ "$USER" = "root" ]; then
+    echo "WARNING! Running Jupyter Enterprise Gateway as the 'root' user is not recommended!" >> $LOG
+fi
+
+$START_CMD $CULLING_PARAMS $YARN_ENDPOINT $REMOTE_HOSTS >> $LOG 2>&1 &
 if [ "$?" -eq 0 ]; then
   echo $! > $PIDFILE
 else
@@ -311,22 +332,45 @@ fi
 
 ### Connecting a Notebook Client to Enterprise Gateway
 [NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) is used to connect from a
-local desktop or laptop to the Enterprise Gateway instance on the YARN cluster. The most convenient
-way to use a pre-configured installation of NB2KG would be using the Docker image
-[biginsights/jupyter-nb-nb2kg:dev](https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/). Replace
-the `<ENTERPRISE_GATEWAY_HOST_IP>` in the command below:
-```Bash
-docker run -t --rm \
-    -e KG_URL='http://<ENTERPRISE_GATEWAY_HOST_IP>:8888' \
-    -p 8888:8888 \
-    -e KG_HTTP_USER=guest \
-    -e KG_HTTP_PASS=guest-password \
-    -e VALIDATE_KG_CERT='no' \
-    -e LOG_LEVEL=INFO \
-    -e KG_REQUEST_TIMEOUT=40 \
-    -v ${HOME}/notebooks/:/tmp/notebooks \
-    -w /tmp/notebooks \
-    biginsights/jupyter-nb-nb2kg:dev
+local desktop or laptop to the Enterprise Gateway instance on the YARN cluster. We strongly recommend
+that the latest version of NB2KG be used as support was recently added for [conveying the notebook 
+user](https://github.com/jupyter/kernel_gateway_demos/pull/48) (for configurations when Enterprise Gateway is
+running behind a secured gateway) and allowing for [increased request 
+timeouts](https://github.com/jupyter/kernel_gateway_demos/pull/55) (due to the longer kernel startup times 
+when interacting with the resource manager or distribution operations). Please follow the [developer 
+instructions](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg#develop) to build the
+latest version until a new release is available (at which time we'll update this information and likely
+include instructions for building a docker image).
+
+Extending the notebook launch command listed on the [NB2KG 
+repo](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg#run-notebook-server), 
+one might use the following...
+
+```bash
+export KG_URL=http://<ENTERPRISE_GATEWAY_HOST_IP>:8888
+export KG_HTTP_USER=guest
+export KG_HTTP_PASS=guest-password
+export KG_REQUEST_TIMEOUT=30
+jupyter notebook \
+  --NotebookApp.session_manager_class=nb2kg.managers.SessionManager \
+  --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager \
+  --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
-Note that the KG_HTTP_USER and KG_HTTP_PASS variables are necessary when Enterprise Gateway
-is behind an Apache Knox gateway.
+
+[//]: # (The most convenient)
+[//]: # (way to use a pre-configured installation of NB2KG would be using the Docker image)
+[//]: # ([biginsights/jupyter-nb-nb2kg:dev]https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/. Replace)
+[//]: # (the `<ENTERPRISE_GATEWAY_HOST_IP>` in the command below:)
+[//]: # (```Bash)
+[//]: # (docker run -t --rm )
+[//]: # (    -e KG_URL='http://<ENTERPRISE_GATEWAY_HOST_IP>:8888' )
+[//]: # (    -p 8888:8888 )
+[//]: # (    -e KG_HTTP_USER=guest )
+[//]: # (    -e KG_HTTP_PASS=guest-password )
+[//]: # (    -e VALIDATE_KG_CERT='no' )
+[//]: # (    -e LOG_LEVEL=INFO )
+[//]: # (    -e KG_REQUEST_TIMEOUT=40 )
+[//]: # (    -v ${HOME}/notebooks/:/tmp/notebooks )
+[//]: # (    -w /tmp/notebooks )
+[//]: # (    biginsights/jupyter-nb-nb2kg:dev)
+[//]: # (```)
