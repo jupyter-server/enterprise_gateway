@@ -85,5 +85,5 @@ else
 	$(SA) $(ENV) && nosetests enterprise_gateway.tests.$(TEST)
 endif
 
-release: POST_SDIST=register upload
+release: POST_SDIST=upload
 release: bdist sdist ## Make a wheel + source release on PyPI
