@@ -9,7 +9,8 @@ import time
 import tornado
 import logging
 import subprocess
-from socket import *
+import errno
+import socket
 from tornado import web
 from jupyter_client import launch_kernel, localinterfaces
 from .processproxy import RemoteProcessProxy
@@ -34,7 +35,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager)
         self.application_id = None
-        self.yarn_endpoint = kernel_manager.parent.parent.yarn_endpoint # from command line or env
+        self.yarn_endpoint = kernel_manager.parent.parent.yarn_endpoint  # from command line or env
         yarn_master = urlparse(self.yarn_endpoint).hostname
         self.resource_mgr = ResourceManager(address=yarn_master)
 
@@ -111,7 +112,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 "YarnClusterProcessProxy.kill: kill_app_by_id({}) response: {}, confirming app state is not RUNNING"
                     .format(self.application_id, resp))
 
-            i, state = 1, self.query_app_state_by_id(self.application_id)
+            i = 1
+            state = self.query_app_state_by_id(self.application_id)
             while state not in YarnClusterProcessProxy.final_states and i <= max_poll_attempts:
                 time.sleep(poll_interval)
                 state = self.query_app_state_by_id(self.application_id)
@@ -183,7 +185,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             if self.assigned_host == '' and app.get('amHostHttpAddress'):
                 self.assigned_host = app.get('amHostHttpAddress').split(':')[0]
                 # Set the kernel manager ip to the actual host where the application landed.
-                self.assigned_ip = gethostbyname(self.assigned_host)
+                self.assigned_ip = socket.gethostbyname(self.assigned_host)
         return app_state
 
     def handle_timeout(self):
@@ -247,7 +249,20 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """
         top_most_app_id = ''
         target_app = None
-        data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
+        data = None
+        try:
+            data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
+        except socket.error as sock_err:
+            if sock_err.errno == errno.ECONNREFUSED:
+                self.log.warning("YARN end-point: '{}' refused the connection.  Is the resource manager running?".
+                               format(self.yarn_endpoint))
+            else:
+                self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
+                                 format(kernel_id, type(sock_err), sock_err))
+        except Exception as e:
+            self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
+                             format(kernel_id, type(e), e))
+
         if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
                 if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
@@ -261,7 +276,12 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param app_id
         :return: The JSON object of an application.
         """
-        data = self.resource_mgr.cluster_application(application_id=app_id).data
+        data = None
+        try:
+            data = self.resource_mgr.cluster_application(application_id=app_id).data
+        except Exception as e:
+            self.log.warning("Query for application ID '{}' failed with exception: '{}'.  Continuing...".
+                           format(app_id, e))
         if type(data) is dict and 'app' in data:
             return data['app']
         return None
@@ -272,11 +292,17 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param app_id: 
         :return: 
         """
+        response = None
         url = '%s/apps/%s/state' % (self.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'GET', url]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        output, stderr = process.communicate()
-        return json.loads(output).get('state') if output else None
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            output, stderr = process.communicate()
+            response = json.loads(output).get('state') if output else None
+        except Exception as e:
+            self.log.warning("Query for application state with cmd '{}' failed with exception: '{}'.  Continuing...".
+                           format(cmd, e))
+        return response
 
     def kill_app_by_id(self, app_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
@@ -286,10 +312,16 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param app_id 
         :return: The JSON response of killing the application.
         """
+        response = None
         header = "Content-Type: application/json"
         data = '{"state": "KILLED"}'
         url = '%s/apps/%s/state' % (self.yarn_endpoint, app_id)
         cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        output, stderr = process.communicate()
-        return json.loads(output) if output else None
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            output, stderr = process.communicate()
+            response = json.loads(output) if output else None
+        except Exception as e:
+            self.log.warning("Termination of application with cmd '{}' failed with exception: '{}'.  Continuing...".
+                           format(cmd, e))
+        return response

@@ -19,7 +19,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
     def __init__(self, kernel_manager):
         super(DistributedProcessProxy, self).__init__(kernel_manager)
-        self.hosts = kernel_manager.parent.parent.remote_hosts # from command line or env
+        self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
 
     def launch_process(self, kernel_cmd, **kw):
         super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)
@@ -32,7 +32,12 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.assigned_host))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
 
-        result = self.rsh(self.ip, cmd)
+        try:
+            result = self.rsh(self.ip, cmd)
+        except Exception as e:
+            self.log.error("Failure occurred starting remote kernel on '{}'. Exception: '{}'.".format(self.ip, e))
+            raise e
+
         for line in result:
             result_pid = line.strip()
 
@@ -106,7 +111,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if time_interval > self.kernel_launch_timeout:
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
-            self.kill()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
+            self.kill()
             raise tornado.web.HTTPError(error_http_code, timeout_message)
