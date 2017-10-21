@@ -69,12 +69,12 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	conda env remove -y -n $(ENV)-install
 
 bdist: ## Make a dist/*.whl binary distribution
-	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
-		&& rm -rf *.egg-info
+	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) -r pypi \
+	        && rm -rf *.egg-info
 
 sdist: ## Make a dist/*.tar.gz source distribution
-	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
-		&& rm -rf *.egg-info
+	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) -r pypi \
+	        && rm -rf *.egg-info
 
 test: TEST?=
 test: ## Make a python3 test run
@@ -85,5 +85,5 @@ else
 	$(SA) $(ENV) && nosetests enterprise_gateway.tests.$(TEST)
 endif
 
-release: POST_SDIST=register upload
+release: POST_SDIST=upload
 release: bdist sdist ## Make a wheel + source release on PyPI

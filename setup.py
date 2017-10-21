@@ -11,6 +11,7 @@ version_ns = {}
 with open(os.path.join(here, 'enterprise_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
+
 setup_args = dict(
     name='jupyter_enterprise_gateway',
     author='Jupyter Development Team',
