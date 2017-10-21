@@ -54,7 +54,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
-        self.username = kernel_manager.parent.parent.remote_user # from command line or env
+        self.username = kernel_manager.parent.parent.remote_user  # from command line or env
         self.kernel_launch_timeout = default_kernel_launch_timeout
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
@@ -190,8 +190,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}' with user '{}', "
                         "message='{}'.".format(type(e).__name__, host, self.username, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
-                error_message = "Failed to authenticate SSHClient with password" + \
-                                " provided" if password else "-less SSH"
+                error_message_prefix = "Failed to authenticate SSHClient with password"
+                error_message = error_message_prefix + (" provided" if password else "-less SSH")
                 raise tornado.web.HTTPError(403, error_message)
             else:
                 raise e
@@ -221,11 +221,19 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         cmd = 'kill -{} {}; echo $?'.format(signum, target)
         if signum > 0:  # only log if meaningful signal (not for poll)
             self.log.debug("Sending signal: {} to target: {} on host: {}".format(signum, target, self.ip))
-        result = self.rsh(self.ip, cmd)
+
+        try:
+            result = self.rsh(self.ip, cmd)
+        except Exception as e:
+            self.log.warning("Remote signal({}) to '{}' on host '{}' failed with exception '{}'.".
+                             format(signum, target, self.ip, e))
+            return False
+
         for line in result:
             val = line.strip()
         if val == '0':
             return None
+
         return False
 
     def local_signal(self, signum):
@@ -324,7 +332,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.response_address = local_ip + ':' + str(port)
         self.response_socket = s
 
-    def _tunnel_to_kernel(self, connection_info, sshserver, sshkey=None):
+    def _tunnel_to_kernel(self, connection_info, ssh_server, ssh_key=None):
         """Tunnel connections to a kernel over SSH
         This will open five SSH tunnels from localhost on this machine to the
         ports associated with the kernel.
@@ -340,30 +348,30 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         remote_ip = cf['ip']
 
-        if not tunnel.try_passwordless_ssh(sshserver, sshkey):
-            raise RuntimeError("Must use passwordless scheme by setting up the SSH public key on the cluster nodes")
+        if not tunnel.try_passwordless_ssh(ssh_server, ssh_key):
+            raise RuntimeError("Must use password-less scheme by setting up the SSH public key on the cluster nodes")
 
         for lp, rp, pn in zip(lports, rports, port_names):
-            self._create_ssh_tunnel(pn, lp, rp, remote_ip, sshserver, sshkey)
+            self._create_ssh_tunnel(pn, lp, rp, remote_ip, ssh_server, ssh_key)
 
         return tuple(lports)
 
-    def _tunnel_to_port(self, port_name, remote_ip, remote_port, sshserver, sshkey=None):
+    def _tunnel_to_port(self, port_name, remote_ip, remote_port, ssh_server, ssh_key=None):
         """Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically called for
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
         in use and has been previously validated.
         """
         local_port = tunnel.select_random_ports(1)[0]
-        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, sshserver, sshkey)
+        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key)
         return local_port
 
-    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, sshserver, sshkey=None):
+    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
         self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
                        .format(port_name, local_port, remote_ip, remote_port))
         try:
-            tunnel.ssh_tunnel(local_port, remote_port, sshserver, remote_ip, sshkey, timeout=maxint)
+            tunnel.ssh_tunnel(local_port, remote_port, ssh_server, remote_ip, ssh_key, timeout=maxint)
         except Exception as e:
-            raise RuntimeError("Could not open SSH tunnel for port {} - '{}'".format(port_name, str(e)))
+            raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(port_name, e))
 
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
@@ -372,26 +380,28 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             conn = None
             data = ''
             try:
-                conn, addr = self.response_socket.accept()
+                conn, address = self.response_socket.accept()
                 while 1:
                     buffer = conn.recv(1024)
                     if not buffer:  # send is complete
                         connect_info = json.loads(data)
-                        self.log.debug("Connect Info received from the launcher is as follows '{}'".format(connect_info))
-                        self.log.debug("Host assgined to the Kernel is: '{}' '{}'".format(self.assigned_host, self.assigned_ip))
+                        self.log.debug("Connect Info received from the launcher is as follows '{}'".
+                                       format(connect_info))
+                        self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
+                                       format(self.assigned_host, self.assigned_ip))
 
                         # Set connection info to IP address of system where the kernel was launched
                         connect_info['ip'] = self.assigned_ip
 
                         if tunneling_enabled is True:
                             # SSH server will be located on the same machine as where the kernel will start
-                            sshserver = self.assigned_ip
+                            ssh_server = self.assigned_ip
 
                             # Open some tunnels
-                            tunnel_ports = self._tunnel_to_kernel(connect_info, sshserver)
+                            tunnel_ports = self._tunnel_to_kernel(connect_info, ssh_server)
                             self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
 
-                            # Replace the remote connection ports with the local ports that were used to create SSH tunnels.
+                            # Replace the remote connection ports with the local ports used to create SSH tunnels.
                             connect_info['ip'] = tunnel_ip
                             connect_info['shell_port'] = tunnel_ports[0]
                             connect_info['iopub_port'] = tunnel_ports[1]
@@ -456,7 +466,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
                                    "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
                                                          self.kernel_id, self.comm_port))
-                else: # use what we got...
+                else:  # use what we got...
                     self.comm_port = self.dest_comm_port
                     self.comm_ip = self.assigned_ip
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
