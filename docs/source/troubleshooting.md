@@ -37,10 +37,10 @@ a "Kernel error" and State: 'FAILED'.**
 
 
 - **I'm trying to launch a (Python/Scala/R) kernel in YARN Client Mode but it failed with 
-a "Kernel error" and an AuthenticationException.**
+a "Kernel error" and an `AuthenticationException`.**
     ```
     [E 2017-09-29 11:13:23.277 EnterpriseGatewayApp] Exception 'AuthenticationException' occurred 
-    when creating a SSHClient connecting to '172.xx.xxx.xxx' with user 'elyra', 
+    when creating a SSHClient connecting to 'xxx.xxx.xxx.xxx' with user 'elyra', 
     message='Authentication failed.'.
     ```
     
@@ -48,13 +48,22 @@ a "Kernel error" and an AuthenticationException.**
     ssh needs to be configured on the node that the Enterprise Gateway is running on to all other 
     worker nodes.
     
-    In general, you can look for more information in the proxy launch log for YARN Client 
-    kernels.  The default location is /tmp/jeg_proxy_launch.log and it can be configured 
-    using the environment variable `EG_PROXY_LAUNCH_LOG` during Enterprise Gateway start up. 
-    See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an 
-    example of starting the Enterprise Gateway from a script and 
-    [Supported Environment Variables](config-options.html#supported-environment-variables) 
-    for a list of configurable environment variables.   
+    You might also see an `SSHException` indicating a similar issue.
+    ```
+    [E 2017-09-29 11:13:23.277 EnterpriseGatewayApp] Exception 'SSHException' occurred 
+    when creating a SSHClient connecting to 'xxx.xxx.xxx.xxx' with user 'elyra', 
+    message='No authentication methods available.'.
+    ```
+
+
+ In general, you can look for more information in the proxy launch log for YARN Client 
+ kernels.  The default location is /tmp/jeg_proxy_launch.log and it can be configured 
+ using the environment variable `EG_PROXY_LAUNCH_LOG` during Enterprise Gateway start up. 
+ 
+ See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an 
+ example of starting the Enterprise Gateway from a script and 
+ [Supported Environment Variables](config-options.html#supported-environment-variables) 
+ for a list of configurable environment variables.   
 
 
 
