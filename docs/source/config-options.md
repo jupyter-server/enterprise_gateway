@@ -187,10 +187,6 @@ EnterpriseGatewayApp options
     Bracketed comma-separated list of hosts on which DistributedProcessProxy
     kernels will be launched e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var -
     non-bracketed, just comma-separated)
---EnterpriseGatewayApp.remote_user=<Unicode>
-    Default: ''
-    The username used for remote operations (ssh).  Password-less ssh is
-    required.  (EG_REMOTE_USER env var)
 --EnterpriseGatewayApp.seed_uri=<Unicode>
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
@@ -237,16 +233,6 @@ JupyterWebsocketPersonality options
   EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster 
       YARN resource manager endpoint.  This value can also be specified on the 
       command line via option '--EnterpriseGatewayApp.yarn_endpoint'.  
-
-  EG_REMOTE_USER=<enterprise gateway process owner> 
-      The user name with which ssh operations are carried out under.  It is assumed
-      that password-less ssh has been configured across all targetted nodes within 
-      the cluster.  This value can also be specified on the command line via option 
-      '--EnterpriseGatewayApp.remote_user'.  
-
-  EG_REMOTE_PWD=None 
-      The password of the user specified via `EG_REMOTE_USER`.  This should only be 
-      set in situations where password-less ssh cannot be configured.   
 
   EG_REMOTE_HOSTS=localhost 
       A comma-separated list of hosts on which DistributedProcessProxy kernels will

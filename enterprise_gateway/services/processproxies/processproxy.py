@@ -27,14 +27,21 @@ except ImportError:
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
 
-# Pop certain env variables that don't need to be logged, e.g. password
+# Pop certain env variables that don't need to be logged, e.g. remote_pwd
 env_pop_list = ['EG_REMOTE_PWD', 'LS_COLORS']
-password = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
+
 default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'True'.lower())
+
+# These envs are not documented and should default to $USER and None, respectively.  These
+# exist just in case we find them necessary in some configurations (where the service user
+# must be different).  However, tests show that that configuration doesn't work - so there
+# might be more to do.  At any rate, we'll use these variables for now.
+remote_user = os.getenv('EG_REMOTE_USER', os.getenv('USER'))
+remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use remote_pwd-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
 tunnel_ip = localinterfaces.local_ips()[0]
@@ -54,7 +61,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
-        self.username = kernel_manager.parent.parent.remote_user  # from command line or env
         self.kernel_launch_timeout = default_kernel_launch_timeout
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
@@ -171,7 +177,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def _get_ssh_client(self, host):
         """
-        Create a SSH Client based on host, username and password if provided.
+        Create a SSH Client based on host, username and remote_pwd if provided.
         If there is any AuthenticationException/SSHException, raise HTTP Error 403 as permission denied.
 
         :param host:
@@ -182,16 +188,16 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             host_ip = gethostbyname(host)
-            if password:
-                ssh.connect(host_ip, port=22, username=self.username, password=password)
+            if remote_pwd:
+                ssh.connect(host_ip, port=22, username=remote_user, password=remote_pwd)
             else:
-                ssh.connect(host_ip, port=22, username=self.username)
+                ssh.connect(host_ip, port=22, username=remote_user)
         except Exception as e:
             self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}' with user '{}', "
-                        "message='{}'.".format(type(e).__name__, host, self.username, e))
+                        "message='{}'.".format(type(e).__name__, host, remote_user, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 error_message_prefix = "Failed to authenticate SSHClient with password"
-                error_message = error_message_prefix + (" provided" if password else "-less SSH")
+                error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
                 raise tornado.web.HTTPError(403, error_message)
             else:
                 raise e
