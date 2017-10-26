@@ -221,18 +221,15 @@ connection information, the primary kernel operations naturally take place over 
 This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line 
 option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.
 
-In addition, in some cases, it requires use of the `--EnterpriseGatewayApp.remote_user` option (or 
-`EG_REMOTE_USER` envrionment variable) for performing kernel interrupt functionality.
-
 ###### DistributedProcessProxy
 Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
 round-robin remoting mechanism that is part of the `DistributedProcessProxy` class.  This class
 uses the `--EnterpriseGatewayApp.remote_hosts` command line option (or `EG_REMOTE_HOSTS` 
 environment variable) to determine on which hosts a given kernel should be launched.  It uses
 a basic round-robin algorithm to index into the list of remote hosts for selecting the target
-host.  It then uses ssh (and the remote user noted previously) to launch the kernel on the 
-target host.  As a result, all kernelspec files must reside on the remote hosts in the same
-directory structure as on the Enterprise Gateway server.
+host.  It then uses ssh to launch the kernel on the target host.  As a result, all kernelspec 
+files must reside on the remote hosts in the same directory structure as on the Enterprise 
+Gateway server.
 
 It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their resources (within
 the kernel process itself) are not managed by the YARN resource manager. 

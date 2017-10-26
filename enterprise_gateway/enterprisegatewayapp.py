@@ -57,17 +57,6 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def remote_hosts_default(self):
         return os.getenv(self.remote_hosts_env, 'localhost').split(',')
 
-    # Remote User
-    remote_user_env = 'EG_REMOTE_USER'
-    remote_user = Unicode(config=True,
-        help="""The username used for remote operations (ssh).  Password-less ssh is required. 
-        (EG_REMOTE_USER env var)""")
-
-    # if EG_REMOTE_USER is not defined, default to the current USER, else the empty string.
-    @default('remote_user')
-    def remote_user_default(self):
-        return os.getenv(self.remote_user_env, os.getenv('USER', ''))
-
     # Yarn endpoint
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
     yarn_endpoint_default_value = 'http://localhost:8088/ws/v1/cluster'

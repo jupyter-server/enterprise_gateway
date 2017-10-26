@@ -288,21 +288,17 @@ the environment variable `EG_REMOTE_HOSTS`, in which case a simple comma-separat
 sufficient.  If neither value is provided and DistributedProcessProxy kernels are invoked,
 Enterprise Gateway defaults this option to `localhost`.
 
-##### Service and Remote Users
+##### Enterprise Gateway Service User
 As noted above, we recommend running Enterprise Gateway as a background task.  Normally,
-such a task is invoked from a _service user_ account identified by a non-root user (which
+such a task is invoked from a _service user_ account identified by a **non-root user** (which
 we strongly recommend be the case).  A service user typically cannot be used to login 
-with and often times has other privileges not typically granted to normal non-root users. 
+to the system, and, often times, has other privileges not typically granted to normal non-root users. 
 For Enterprise Gateway, we recommend this user be a member of the `hdfs` group (assuming 
 you're installing into a YARN cluster).
 
-To perform some of its distributed operations, Enterprise Gateway also uses a user account
-known as the _remote user_.  By default, the remote user is the user id under which 
-Enterprise Gateway is running.  As a result, we recommend that the _service user_ be the same 
-account as the _remote user_ although that is not necessary.  The requirement for the 
-remote user is that it be able to use password-less ssh across the configured _remote 
-hosts_ of the cluster.  The remote user can be specified on the command line via 
-`--EnterpriseGatewayApp.remote_user` or via the `EG_REMOTE_USER` environment variable.
+Enterprise Gateway also uses this service user account to perform some of its distributed 
+operations.  As a result, the service user must be configured to use password-less ssh 
+across the configured _remote hosts_ of the cluster.
 
 
 Amending the start script with a more complete example that includes distribution modes,
