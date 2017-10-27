@@ -11,6 +11,7 @@ import paramiko
 import logging
 import time
 import tornado
+import pexpect
 from tornado import web
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
@@ -44,7 +45,6 @@ remote_user = os.getenv('EG_REMOTE_USER', os.getenv('USER'))
 remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use remote_pwd-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
-tunnel_ip = localinterfaces.local_ips()[0]
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -311,6 +311,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_ip = None
         self.comm_port = 0
         self.dest_comm_port = 0
+        self.tunnel_processes = []
         self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
@@ -375,9 +376,33 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
                        .format(port_name, local_port, remote_ip, remote_port))
         try:
-            tunnel.ssh_tunnel(local_port, remote_port, ssh_server, remote_ip, ssh_key, timeout=maxint)
+            process = self._spawn_ssh_tunnel(port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None)
+            self.tunnel_processes.append(process)
         except Exception as e:
             raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(port_name, e))
+
+    def _spawn_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
+        """ This method spawns a child process to create a SSH tunnel and returns the spawned process.
+            ZMQ's implementation returns a pid on UNIX based platforms and a process handle/reference on
+            Win32. By consistently returning a process handle/reference on both UNIX and Win32 platforms,
+            this method enables the caller to deal with the same currency regardless of the platform. For
+            example, on both UNIX and Win32 platforms, the developer will have the option to stash the
+            child process reference and manage it's lifecycle consistently.
+
+            On UNIX based platforms, ZMQ's implementation is more generic to be able to handle various
+            use-cases. ZMQ's implementation also requests the spawned process to go to background using
+            '-f' command-line option. As a result, the spawned process becomes an orphan and any references
+            to the process obtained using it's pid become stale. On the other hand, this implementation is
+            specifically for password-less SSH login WITHOUT the '-f' command-line option thereby allowing
+            the spawned process to be owned by the parent process. This allows the parent process to control
+            the lifecycle of it's child processes and do appropriate cleanup during termination.
+        """
+        if sys.platform == 'win32':
+            return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, ssh_key, timeout=maxint)
+        else:
+            cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s sleep %i" % (
+                "ssh", local_port, remote_ip, remote_port, ssh_server, maxint)
+            return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
 
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
@@ -408,7 +433,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
 
                             # Replace the remote connection ports with the local ports used to create SSH tunnels.
-                            connect_info['ip'] = tunnel_ip
+                            connect_info['ip'] = '127.0.0.1'
                             connect_info['shell_port'] = tunnel_ports[0]
                             connect_info['iopub_port'] = tunnel_ports[1]
                             connect_info['stdin_port'] = tunnel_ports[2]
@@ -508,6 +533,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def cleanup(self):
         self.assigned_ip = None
+
+        for process in self.tunnel_processes:
+            process.terminate()
+
+        del self.tunnel_processes[:]
         super(RemoteProcessProxy, self).cleanup()
 
     def send_signal(self, signum):
