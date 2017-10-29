@@ -247,7 +247,7 @@ JupyterWebsocketPersonality options
       stages but we intend to flip the default value to True at some point.  
         
   EG_PROXY_LAUNCH_LOG=/tmp/jeg_proxy_launch.log 
-      The log file used during remote kernel launches of `DistributedProcessProxy`
+      The log file used during remote kernel launches of DistributedProcessProxy
       based kernels.  This file should be consulted when kernel operations are not 
       working as expected.  Note that it will contain output from multiple kernels.  
               
@@ -256,15 +256,19 @@ JupyterWebsocketPersonality options
       completion status before deeming the startup a failure, at which time a second 
       startup attempt will take place.  If a second timeout occurs, Enterprise 
       Gateway will report a failure to the client.  
+      
+  EG_SSH_PORT=22
+      The port number used for ssh operations for installations choosing to 
+      configure the ssh server on a port other than the default 22.
 ```
 The following environment variables may be useful for troubleshooting:
 ```
   EG_SSH_LOG_LEVEL=WARNING 
-      By default, the `paramiko` ssh library is too verbose for its logging.  This
+      By default, the paramiko ssh library is too verbose for its logging.  This
       value can be adjusted in situations where ssh troubleshooting may be warranted.  
 
   EG_YARN_LOG_LEVEL=WARNING 
-      By default, the `yarn-api-client` library is too verbose for its logging.  This
+      By default, the yarn-api-client library is too verbose for its logging.  This
       value can be adjusted in situations where YARN troubleshooting may be warranted.  
 
   EG_MAX_POLL_ATTEMPTS=10 

@@ -36,13 +36,14 @@ max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'True'.lower())
+ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 
 # These envs are not documented and should default to $USER and None, respectively.  These
 # exist just in case we find them necessary in some configurations (where the service user
 # must be different).  However, tests show that that configuration doesn't work - so there
 # might be more to do.  At any rate, we'll use these variables for now.
 remote_user = os.getenv('EG_REMOTE_USER', os.getenv('USER'))
-remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use remote_pwd-less ssh
+remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
 
@@ -177,7 +178,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def _get_ssh_client(self, host):
         """
-        Create a SSH Client based on host, username and remote_pwd if provided.
+        Create a SSH Client based on host, username and password if provided.
         If there is any AuthenticationException/SSHException, raise HTTP Error 403 as permission denied.
 
         :param host:
@@ -189,12 +190,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             host_ip = gethostbyname(host)
             if remote_pwd:
-                ssh.connect(host_ip, port=22, username=remote_user, password=remote_pwd)
+                ssh.connect(host_ip, port=ssh_port, username=remote_user, password=remote_pwd)
             else:
-                ssh.connect(host_ip, port=22, username=remote_user)
+                ssh.connect(host_ip, port=ssh_port, username=remote_user)
         except Exception as e:
-            self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}' with user '{}', "
-                        "message='{}'.".format(type(e).__name__, host, remote_user, e))
+            self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}:{}' with user '{}', "
+                        "message='{}'.".format(type(e).__name__, host, ssh_port, remote_user, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
@@ -376,12 +377,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
                        .format(port_name, local_port, remote_ip, remote_port))
         try:
-            process = self._spawn_ssh_tunnel(port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None)
+            process = self._spawn_ssh_tunnel(local_port, remote_port, remote_ip, ssh_server, ssh_key=None)
             self.tunnel_processes.append(process)
         except Exception as e:
             raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(port_name, e))
 
-    def _spawn_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
+    def _spawn_ssh_tunnel(self, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
         """ This method spawns a child process to create a SSH tunnel and returns the spawned process.
             ZMQ's implementation returns a pid on UNIX based platforms and a process handle/reference on
             Win32. By consistently returning a process handle/reference on both UNIX and Win32 platforms,
@@ -400,8 +401,13 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if sys.platform == 'win32':
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, ssh_key, timeout=maxint)
         else:
+            ssh = "ssh"
+            server = ssh_server
+            if ':' in ssh_server:
+                server, port = ssh_server.split(':')
+                ssh += " -p %s" % port
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s sleep %i" % (
-                "ssh", local_port, remote_ip, remote_port, ssh_server, maxint)
+                ssh, local_port, remote_ip, remote_port, server, maxint)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
 
     def receive_connection_info(self):
@@ -426,7 +432,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
                         if tunneling_enabled is True:
                             # SSH server will be located on the same machine as where the kernel will start
-                            ssh_server = self.assigned_ip
+                            ssh_server = self.assigned_ip + ":" + str(ssh_port)
 
                             # Open some tunnels
                             tunnel_ports = self._tunnel_to_kernel(connect_info, ssh_server)
@@ -491,8 +497,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
                 # tunnel it, if desired ...
                 if tunneling_enabled is True:
+                    ssh_server = self.assigned_ip + ":" + str(ssh_port)
                     self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
-                                                         self.dest_comm_port, self.assigned_ip)
+                                                         self.dest_comm_port, ssh_server)
                     self.comm_ip = '127.0.0.1'
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
                                    "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
