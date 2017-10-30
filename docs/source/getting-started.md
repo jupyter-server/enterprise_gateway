@@ -353,6 +353,23 @@ jupyter notebook \
   --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
 
+### Installing Python modules from within Notebook Cell
+To be able to honor user isolation in a multi-tenant world, installing Python modules using `pip` from
+within a Notebook Cell should be done using the `--user` command-line option as shown below:
+
+```
+!pip install --user <module-name>
+```
+
+This results in the Python module to be installed in `$USER/.local/lib/python<version>/site-packages`
+folder. `PYTHONPATH` environment variable defined in `kernel.json` must include
+`$USER/.local/lib/python<version>/site-packages` folder so that the newly installed module can be
+successfully imported in a subsequent Notebook Cell as shown below:
+
+```
+import <module-name>
+```
+
 [//]: # (The most convenient)
 [//]: # (way to use a pre-configured installation of NB2KG would be using the Docker image)
 [//]: # ([biginsights/jupyter-nb-nb2kg:dev]https://hub.docker.com/r/biginsights/jupyter-nb-nb2kg/. Replace)
