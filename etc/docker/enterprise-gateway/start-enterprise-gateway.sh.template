@@ -1,0 +1,40 @@
+#!/bin/bash
+
+export ANACONDA_HOME=/opt/anaconda2
+
+
+export JAVA_HOME=/usr/java/default
+
+export HADOOP_PREFIX=/usr/local/hadoop
+export HADOOP_HDFS_HOME=${HADOOP_PREFIX}
+export HADOOP_COMMON_HOME=${HADOOP_PREFIX}
+export HADOOP_YARN_HOME=${HADOOP_PREFIX}
+export HADOOP_MAPRED_HOME={HADOOP_PREFIX}
+export HADOOP_CONF_DIR=${HADOOP_PREFIX}/etc/hadoop
+export YARN_CONF_DIR={HADOOP_PREFIX}/etc/hadoop
+export SPARK_HOME=/usr/local/spark
+
+export PYSPARK_PYTHON=${ANACONDA_HOME}/bin/python
+export PATH=${ANACONDA_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${JAVA_HOME}/bin:${SPARK_HOME}/bin:${HADOOP_PREFIX}/bin
+
+# Enterprise Gateway variables
+export EG_REMOTE_HOSTS=${EG_REMOTE_HOSTS:-HOSTNAME}
+export EG_YARN_ENDPOINT=${EG_YARN_ENDPOINT:-http://HOSTNAME:8088/ws/v1/cluster}
+export EG_SSH_PORT=${EG_SSH_PORT:-2122}
+export KG_IP=${KG_IP:-0.0.0.0}
+export KG_PORT=${KG_PORT:-8888}
+export KG_PORT_RETRIES=${KG_PORT_RETRIES:-0}
+
+# TODO: figure out why tunneling doesn't work from non-root user.
+# To use tunneling set this variable to 'True' and run as root.
+export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}
+
+echo "Starting Jupyter Enterprise Gateway..."
+
+jupyter enterprisegateway \
+	--log-level=DEBUG \
+	--MappingKernelManager.cull_idle_timeout=600 \
+	--MappingKernelManager.cull_interval=30 \
+	--MappingKernelManager.cull_connected=True 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
+
+
