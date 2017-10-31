@@ -340,7 +340,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.response_address = local_ip + ':' + str(port)
         self.response_socket = s
 
-    def _tunnel_to_kernel(self, connection_info, ssh_server, ssh_key=None):
+    def _tunnel_to_kernel(self, connection_info, server, port=ssh_port, key=None):
         """Tunnel connections to a kernel over SSH
         This will open five SSH tunnels from localhost on this machine to the
         ports associated with the kernel.
@@ -356,33 +356,34 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         remote_ip = cf['ip']
 
-        if not tunnel.try_passwordless_ssh(ssh_server, ssh_key):
+        if not tunnel.try_passwordless_ssh(server + ":" + str(port), key):
             raise RuntimeError("Must use password-less scheme by setting up the SSH public key on the cluster nodes")
 
         for lp, rp, pn in zip(lports, rports, port_names):
-            self._create_ssh_tunnel(pn, lp, rp, remote_ip, ssh_server, ssh_key)
+            self._create_ssh_tunnel(pn, lp, rp, remote_ip, server, port, key)
 
         return tuple(lports)
 
-    def _tunnel_to_port(self, port_name, remote_ip, remote_port, ssh_server, ssh_key=None):
+    def _tunnel_to_port(self, port_name, remote_ip, remote_port, server, port=ssh_port, key=None):
         """Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically called for
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
         in use and has been previously validated.
         """
         local_port = tunnel.select_random_ports(1)[0]
-        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key)
+        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, server, port, key)
         return local_port
 
-    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
+    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, server, port, key):
         self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
                        .format(port_name, local_port, remote_ip, remote_port))
         try:
-            process = self._spawn_ssh_tunnel(local_port, remote_port, remote_ip, ssh_server, ssh_key=None)
+            process = RemoteProcessProxy._spawn_ssh_tunnel(local_port, remote_port, remote_ip, server, port, key)
             self.tunnel_processes.append(process)
         except Exception as e:
             raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(port_name, e))
 
-    def _spawn_ssh_tunnel(self, local_port, remote_port, remote_ip, ssh_server, ssh_key=None):
+    @staticmethod
+    def _spawn_ssh_tunnel(local_port, remote_port, remote_ip, server, port=ssh_port, key=None):
         """ This method spawns a child process to create a SSH tunnel and returns the spawned process.
             ZMQ's implementation returns a pid on UNIX based platforms and a process handle/reference on
             Win32. By consistently returning a process handle/reference on both UNIX and Win32 platforms,
@@ -399,13 +400,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             the lifecycle of it's child processes and do appropriate cleanup during termination.
         """
         if sys.platform == 'win32':
-            return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, ssh_key, timeout=maxint)
+            ssh_server = server + ":" + str(port)
+            return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key, timeout=maxint)
         else:
-            ssh = "ssh"
-            server = ssh_server
-            if ':' in ssh_server:
-                server, port = ssh_server.split(':')
-                ssh += " -p %s" % port
+            ssh = "ssh -p %s" % port
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s sleep %i" % (
                 ssh, local_port, remote_ip, remote_port, server, maxint)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
@@ -431,11 +429,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         connect_info['ip'] = self.assigned_ip
 
                         if tunneling_enabled is True:
-                            # SSH server will be located on the same machine as where the kernel will start
-                            ssh_server = self.assigned_ip + ":" + str(ssh_port)
-
                             # Open some tunnels
-                            tunnel_ports = self._tunnel_to_kernel(connect_info, ssh_server)
+                            tunnel_ports = self._tunnel_to_kernel(connect_info, self.assigned_ip)
                             self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
 
                             # Replace the remote connection ports with the local ports used to create SSH tunnels.
@@ -497,9 +492,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
                 # tunnel it, if desired ...
                 if tunneling_enabled is True:
-                    ssh_server = self.assigned_ip + ":" + str(ssh_port)
                     self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
-                                                         self.dest_comm_port, ssh_server)
+                                                         self.dest_comm_port, self.assigned_ip)
                     self.comm_ip = '127.0.0.1'
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
                                    "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
