@@ -401,11 +401,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         """
         if sys.platform == 'win32':
             ssh_server = server + ":" + str(port)
-            return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key, timeout=maxint)
+            return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
             ssh = "ssh -p %s" % port
-            cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s sleep %i" % (
-                ssh, local_port, remote_ip, remote_port, server, maxint)
+            cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
+                ssh, local_port, remote_ip, remote_port, server)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
 
     def receive_connection_info(self):
