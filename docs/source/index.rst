@@ -35,6 +35,7 @@ the number of active kernels can be dramatically increased.
 
    contrib
    devinstall
+   docker
    roadmap
 
 .. toctree::
