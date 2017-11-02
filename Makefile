@@ -10,7 +10,7 @@ MAKEFILE_DIR:=${CURDIR}
 VERSION:=0.7.0.dev0
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image_enterprise-gateway" ! -path "./.image_nb2kg" ! -path "./.image_hadoop-spark" )
-KERNELSPECS_FILE:=dist/jupyter_enterprise_gateway-kernelspecs-$(VERSION).tar.gz
+KERNELSPECS_FILE:=dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
 KERNELSPECS_FILES:=$(shell find etc/kernel* -type f -name '*')
 ENTERPRISE_GATEWAY_TAG:=dev
 NB2KG_TAG:=dev
@@ -58,7 +58,7 @@ $(KERNELSPECS_FILE): $(KERNELSPECS_FILES)
 	@echo build/kernelspecs/*_R_* | xargs -t -n 1 cp -r etc/kernel-launchers/R/*
 	@echo build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r etc/kernel-launchers/scala/*
 	@mkdir -p dist
-	rm -f dist/enterprise_gateway-kernelspecs*.tar.gz
+	rm -f dist/enterprise_gateway_kernelspecs*.tar.gz
 	@( cd build/kernelspecs; tar -pvczf "$(MAKEFILE_DIR)/$(KERNELSPECS_FILE)" * )
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
