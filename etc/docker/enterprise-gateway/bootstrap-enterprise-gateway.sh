@@ -42,7 +42,7 @@ cp $SPARK_HOME/conf/metrics.properties.template $SPARK_HOME/conf/metrics.propert
 
 service rsyslog start
 service rsyslog status
-service sshd start
+service sshd restart
 service sshd status
 $HADOOP_PREFIX/sbin/start-dfs.sh
 $HADOOP_PREFIX/sbin/start-yarn.sh
