@@ -20,10 +20,7 @@ from jupyter_client import launch_kernel, localinterfaces
 from calendar import timegm
 from notebook import _tz
 from zmq.ssh import tunnel
-try:
-    from sys import maxint as maxint
-except ImportError:
-    from sys import maxsize as maxint
+from enum import Enum
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -38,6 +35,9 @@ socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'True'.lower())
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 
+# Number of seconds in 100 years as the max keep-alive interval value.
+max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
+
 # These envs are not documented and should default to $USER and None, respectively.  These
 # exist just in case we find them necessary in some configurations (where the service user
 # must be different).  However, tests show that that configuration doesn't work - so there
@@ -47,6 +47,13 @@ remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
 
+class KernelChannel(Enum):
+    SHELL = "SHELL"
+    IOPUB = "IOPUB"
+    STDIN = "STDIN"
+    HEARTBEAT = "HB"
+    CONTROL = "CONTROL"
+    COMMUNICATION = "EG_COMM" # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -352,38 +359,38 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
-        port_names = "SHELL", "IOPUB", "STDIN", "HB", "CONTROL"
+        channels = KernelChannel.SHELL, KernelChannel.IOPUB, KernelChannel.STDIN, KernelChannel.HEARTBEAT, KernelChannel.CONTROL
 
         remote_ip = cf['ip']
 
         if not tunnel.try_passwordless_ssh(server + ":" + str(port), key):
             raise RuntimeError("Must use password-less scheme by setting up the SSH public key on the cluster nodes")
 
-        for lp, rp, pn in zip(lports, rports, port_names):
-            self._create_ssh_tunnel(pn, lp, rp, remote_ip, server, port, key)
+        for lp, rp, kc in zip(lports, rports, channels):
+            self._create_ssh_tunnel(kc, lp, rp, remote_ip, server, port, key)
 
         return tuple(lports)
 
-    def _tunnel_to_port(self, port_name, remote_ip, remote_port, server, port=ssh_port, key=None):
+    def _tunnel_to_port(self, kernel_channel, remote_ip, remote_port, server, port=ssh_port, key=None):
         """Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically called for
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
         in use and has been previously validated.
         """
         local_port = tunnel.select_random_ports(1)[0]
-        self._create_ssh_tunnel(port_name, local_port, remote_port, remote_ip, server, port, key)
+        self._create_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
         return local_port
 
-    def _create_ssh_tunnel(self, port_name, local_port, remote_port, remote_ip, server, port, key):
+    def _create_ssh_tunnel(self, kernel_channel, local_port, remote_port, remote_ip, server, port, key):
+        channel_name = kernel_channel.value
         self.log.debug("Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'"
-                       .format(port_name, local_port, remote_ip, remote_port))
+                       .format(channel_name, local_port, remote_ip, remote_port))
         try:
-            process = RemoteProcessProxy._spawn_ssh_tunnel(local_port, remote_port, remote_ip, server, port, key)
+            process = self._spawn_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
             self.tunnel_processes.append(process)
         except Exception as e:
-            raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(port_name, e))
+            raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(channel_name, e))
 
-    @staticmethod
-    def _spawn_ssh_tunnel(local_port, remote_port, remote_ip, server, port=ssh_port, key=None):
+    def _spawn_ssh_tunnel(self, kernel_channel, local_port, remote_port, remote_ip, server, port=ssh_port, key=None):
         """ This method spawns a child process to create a SSH tunnel and returns the spawned process.
             ZMQ's implementation returns a pid on UNIX based platforms and a process handle/reference on
             Win32. By consistently returning a process handle/reference on both UNIX and Win32 platforms,
@@ -403,10 +410,29 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             ssh_server = server + ":" + str(port)
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
-            ssh = "ssh -p %s" % port
+            ssh = "ssh -p %s -o ServerAliveInterval=%i" % (port, self._get_keep_alive_interval(kernel_channel))
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
                 ssh, local_port, remote_ip, remote_port, server)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
+
+    def _get_keep_alive_interval(self, kernel_channel):
+        cull_idle_timeout = self.kernel_manager.parent.cull_idle_timeout
+
+        if kernel_channel == KernelChannel.COMMUNICATION or \
+            kernel_channel == KernelChannel.CONTROL or \
+            cull_idle_timeout <= 0 or \
+            cull_idle_timeout > max_keep_alive_interval:
+            # For COMMUNICATION and CONTROL channels, keep-alive interval will be set to
+            # max_keep_alive_interval to make sure that the SSH session does not timeout
+            # or expire for a very long time. Also, if cull_idle_timeout is unspecified,
+            # negative, or a very large value, then max_keep_alive_interval will be
+            # used as keep-alive value.
+            return max_keep_alive_interval
+
+        # Ideally, keep-alive interval should be greater than cull_idle_timeout. So, we
+        # will add 60seconds to cull_idle_timeout to come up with the value for keep-alive
+        # interval for the rest of the kernel channels.
+        return cull_idle_timeout + 60
 
     def receive_connection_info(self):
         # Polls the socket using accept.  When data is found, returns ready indicator and json data
@@ -492,7 +518,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
                 # tunnel it, if desired ...
                 if tunneling_enabled is True:
-                    self.comm_port = self._tunnel_to_port("EG_COMM", self.assigned_ip,
+                    self.comm_port = self._tunnel_to_port(KernelChannel.COMMUNICATION, self.assigned_ip,
                                                          self.dest_comm_port, self.assigned_ip)
                     self.comm_ip = '127.0.0.1'
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
