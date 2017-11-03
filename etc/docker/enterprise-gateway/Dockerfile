@@ -43,6 +43,10 @@ RUN ssh-keygen -q -N "" -t rsa -f /home/elyra/.ssh/id_rsa && \
 
 USER root
 
+ADD ssh_config /home/elyra/.ssh/config
+RUN chmod 600 /home/elyra/.ssh/config && \
+    chown elyra:elyra /home/elyra/.ssh/config
+
 # install boot script 
 COPY bootstrap-enterprise-gateway.sh /etc/bootstrap-enterprise-gateway.sh
 RUN chown root.root /etc/bootstrap-enterprise-gateway.sh && \
