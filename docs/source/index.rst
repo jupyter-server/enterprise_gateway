@@ -10,7 +10,7 @@ the number of active kernels can be dramatically increased.
 
 .. image:: images/deployment.png
    :alt: Enterprise Gateway enterprise deployment
-   :width: 70%
+   :width: 90%
    :align: center
 
 .. toctree::
@@ -18,8 +18,16 @@ the number of active kernels can be dramatically increased.
    :caption: User Documentation
 
    getting-started
-   uses
-   features
+   getting-started-cluster-mode
+   getting-started-client-mode
+   getting-started-advanced-features
+   getting-started-kernels
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Architecture and Design
+
+   use-cases
    system-architecture
 
 .. toctree::
@@ -42,26 +50,8 @@ the number of active kernels can be dramatically increased.
    :maxdepth: 2
    :caption: Community Documentation
 
-.. toctree::
-   :maxdepth: 2
-   :caption: About Jupyter Enterprise Gateway
-
-   summary-changes
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Questions? Suggestions?
-
    Jupyter mailing list <https://groups.google.com/forum/#!forum/jupyter>
    Jupyter website <https://jupyter.org>
    Stack Overflow - Jupyter <https://stackoverflow.com/questions/tagged/jupyter>
    Stack Overflow - Jupyter-notebook <https://stackoverflow.com/questions/tagged/jupyter-notebook>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
