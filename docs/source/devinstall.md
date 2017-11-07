@@ -41,11 +41,12 @@ docker_images                  Build docker images
 docs                           Make HTML documentation
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
+itest                          Run integration tests against docker container
 kernelspecs                    Make a tar.gz file consisting of kernelspec files
 nuke                           Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
 sdist                          Make a dist/*.tar.gz source distribution
-test                           Make a python3 test run
+test                           Run unit tests
 ```
 Some of the more useful commands are listed below.
 

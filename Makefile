@@ -77,7 +77,7 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
-bdist: $(WHEEL_FILE) ## Make a dist/*.whl binary distribution
+bdist: ## Make a dist/*.whl binary distribution
 
 $(WHEEL_FILE): $(WHEEL_FILES)
 	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
@@ -88,7 +88,7 @@ sdist: ## Make a dist/*.tar.gz source distribution
 		&& rm -rf *.egg-info
 
 test: TEST?=
-test: ## Make a python3 test run
+test: ## Run unit tests
 ifeq ($(TEST),)
 	$(SA) $(ENV) && nosetests
 else
@@ -104,7 +104,7 @@ docker_images: docker_image_enterprise-gateway docker_image_nb2kg docker_image_h
 
 docker_image_enterprise-gateway: docker_image_hadoop-spark .image_enterprise-gateway ## Build elyra/enterprise-gateway:dev docker image
 .image_enterprise-gateway: etc/docker/enterprise-gateway/* $(WHEEL_FILE) $(KERNELSPECS_FILE)
-	@make bdist kernelspecs
+	@make docker_clean_enterprise-gateway bdist kernelspecs
 	@mkdir -p build/docker/enterprise-gateway
 	cp etc/docker/enterprise-gateway/* build/docker/enterprise-gateway
 	cp dist/jupyter_enterprise_gateway* build/docker/enterprise-gateway
@@ -114,6 +114,7 @@ docker_image_enterprise-gateway: docker_image_hadoop-spark .image_enterprise-gat
 
 docker_image_nb2kg: .image_nb2kg ## Build elyra/nb2kg:dev docker image 
 .image_nb2kg: etc/docker/nb2kg/* 
+	@make docker_clean_nb2kg
 	@mkdir -p build/docker/nb2kg
 	cp etc/docker/nb2kg/* build/docker/nb2kg
 	@(cd build/docker/nb2kg; docker build -t elyra/nb2kg:$(NB2KG_TAG) . )
@@ -122,6 +123,7 @@ docker_image_nb2kg: .image_nb2kg ## Build elyra/nb2kg:dev docker image
 
 docker_image_hadoop-spark: .image_hadoop-spark ## Build elyra/hadoop-spark:2.7.1-2.1.0 docker image
 .image_hadoop-spark: etc/docker/hadoop-spark/* 
+	@make docker_clean_hadoop-spark
 	@mkdir -p build/docker/hadoop-spark
 	cp etc/docker/hadoop-spark/* build/docker/hadoop-spark
 	@(cd build/docker/hadoop-spark; docker build -t elyra/hadoop-spark:$(HADOOP_SPARK_TAG) . )
@@ -132,13 +134,43 @@ docker_clean: docker_clean_enterprise-gateway docker_clean_nb2kg docker_clean_ha
 
 docker_clean_enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
 	@rm -f .image_enterprise-gateway
-	@-docker rmi elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
+	@-docker rmi -f elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
 docker_clean_nb2kg: ## Remove elyra/nb2kg:dev docker image
 	@rm -f .image_nb2kg
-	@-docker rmi elyra/nb2kg:$(NB2KG_TAG)
+	@-docker rmi -f elyra/nb2kg:$(NB2KG_TAG)
 
 docker_clean_hadoop-spark: ## Remove elyra/hadoop-spark:2.7.0-2.1.0 docker image
 	@rm -f .image_hadoop-spark
-	@-docker rmi elyra/hadoop-spark:$(HADOOP_SPARK_TAG)
+	@-docker rmi -f elyra/hadoop-spark:$(HADOOP_SPARK_TAG)
 
+# itest should have these targets up to date: bdist kernelspecs docker_image_enterprise-gateway 
+
+# itest configurable settings
+# indicates which host (gateway or notebook) to connect to...
+ITEST_HOST:=localhost:8888
+# indicates the user to emulate.  This equates to 'KERNEL_USERNAME'...
+ITEST_USER:=bob
+# indicates the other set of options to use.  At this time, only the python notebooks succeed, so we're skipping R and Scala.
+ITEST_OPTIONS=--notebook_files=../notebooks/Python_Client1.ipynb,../notebooks/Python_Cluster1.ipynb
+
+# here's a complete example of the options (besides host and user) with their expected values ...
+# ITEST_OPTIONS=--notebook_dir=<path-to-notebook-dir, default=../notebooks>  --notebook_files=<comma-separated-list-of-notebook-paths> \
+# --target_kernels=<comma-separated-list-of-kernels> --continue_when_error=<boolean, default=True>
+
+PREP_DOCKER:=1
+itest: ## Run integration tests (optionally) against docker container
+ifeq (1, $(PREP_DOCKER))
+	make docker_prep
+endif
+	@rm -rf build/itests
+	@mkdir -p build/itests
+	@cp -r enterprise_gateway/itests build
+	(cd build/itests/src/; $(SA) $(ENV); python main.py --host=$(ITEST_HOST) --username=$(ITEST_USER) $(ITEST_OPTIONS))
+	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
+
+docker_prep: ## Prepare enterprise-gateway docker container for integration tests
+	@-docker rm -f itest >> /dev/null
+	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
+	@-docker run -itd -p 8888:8888 -h itest --name itest elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) --elyra
+	@(r="1"; while [ "$$r" == "1" ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; docker logs itest |grep 'Jupyter Enterprise Gateway at http'; r=$$?; done)
