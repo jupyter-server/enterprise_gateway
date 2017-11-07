@@ -78,6 +78,7 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	conda env remove -y -n $(ENV)-install
 
 bdist: ## Make a dist/*.whl binary distribution
+	make $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)
 	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
