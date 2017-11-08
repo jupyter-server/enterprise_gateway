@@ -1,7 +1,10 @@
-Built on [elyra/hadoop-spark](https://hub.docker.com/r/elyra/hadoop-spark/), this image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.  It can also demonstrate invoking remote kernels via ssh (although in loopback) in YARN-client mode.
+Built on [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/), this image adds support 
+for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate 
+running Python, R and Scala kernels in YARN-cluster mode.  It can also demonstrate invoking remote kernels 
+via ssh (although in loopback) in YARN-client mode.
 
 # What it Gives You
-* [elyra/hadoop-spark](https://hub.docker.com/r/elyra/hadoop-spark/) base
+* [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) base
 * [Jupyter Enterprise Gateway](https://github.com/jupyter-incubator/enterprise_gateway)
 * Python/R/Toree kernels that target both remote YARN-cluster and YARN-client modes (loopback)
 * `elyra` service user, with system users `jovyan`, `bob`, and `alice`.  The jovyan uid is `1000` to match other jupyter images.
