@@ -1,23 +1,15 @@
-Jupyter Elyra
-======================
+Jupyter Enterprise Gateway
+==========================
 
-Jupyter Elyra is a web server that supports different mechanisms for
-spawning and communicating with Jupyter kernels, such as:
+Jupyter Enterprise Gateway is a web server (built directly on `Jupyter Kernel Gateway
+<http://jupyter-kernel-gateway.readthedocs.io/en/latest/>`_) that enables the ability to launch kernels on remote
+servers throughout the enterprise.  This enables better resource management since the web server is no longer the
+single location for kernel activity, which in Big Data environments, can result in large processes.  By distributing
+these resources across the enterprise, some of which can be managed by resource management applications (e.g., Yarn),
+the number of active kernels can be dramatically increased.
 
-* A Jupyter Notebook server-compatible HTTP API used for requesting kernels
-  and talking the `Jupyter kernel protocol <https://jupyter-client.readthedocs.io/en/latest/messaging.html>`_
-  with the kernels over Websockets
-* A HTTP API defined by annotated notebook cells that maps HTTP verbs and
-  resources to code to execute on a kernel
-
-The server launches kernels in its local process/filesystem space. It can be
-containerized and scaled out using common technologies like
-`tmpnb <https://github.com/jupyter/tmpnb>`_,
-`Cloud Foundry <https://github.com/cloudfoundry>`_, and
-`Kubernetes <http://kubernetes.io/>`_.
-
-.. image:: images/kg_basic.png
-   :alt: Elyra basic deployment
+.. image:: images/deployment.png
+   :alt: Enterprise Gateway enterprise deployment
    :width: 70%
    :align: center
 
@@ -28,6 +20,7 @@ containerized and scaled out using common technologies like
    getting-started
    uses
    features
+   system-architecture
 
 .. toctree::
    :maxdepth: 2
@@ -40,7 +33,10 @@ containerized and scaled out using common technologies like
    :maxdepth: 2
    :caption: Contributor Documentation
 
+   contrib
    devinstall
+   docker
+   roadmap
 
 .. toctree::
    :maxdepth: 2
@@ -48,7 +44,7 @@ containerized and scaled out using common technologies like
 
 .. toctree::
    :maxdepth: 2
-   :caption: About Jupyter Elyra
+   :caption: About Jupyter Enterprise Gateway
 
    summary-changes
 

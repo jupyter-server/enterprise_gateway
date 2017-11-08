@@ -62,3 +62,6 @@ target/
 # PyCharm
 .idea/
 *.iml
+
+# Build-related
+.image_*
