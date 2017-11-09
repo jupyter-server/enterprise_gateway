@@ -1,4 +1,4 @@
-FROM elyra/hadoop-spark:2.7.1-2.1.0
+FROM elyra/yarn-spark:2.1.0
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp

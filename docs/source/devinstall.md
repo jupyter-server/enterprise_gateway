@@ -1,6 +1,6 @@
 ## Development Workflow
 
-Here are instructions for setting up a development environment for the Jupyter Enterprise Gateway 
+Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter-incubator/enterprise_gateway) 
 server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
 running tests, building docs, packaging kernelspecs, etc.
 
@@ -18,7 +18,7 @@ mkdir -p ~/projects
 cd !$
 
 # clone this repo
-git clone https://github.com/jupyter/enterprise_gateway.git
+git clone https://github.com/jupyter-incubator/enterprise_gateway.git
 ```
 ### Make
 
@@ -30,18 +30,19 @@ activate                       eval `make activate`
 bdist                          Make a dist/*.whl binary distribution
 clean                          Make a clean source tree
 dev                            Make a server in jupyter_websocket mode
-docker_clean                   Remove docker images
-docker_clean_enterprise-gateway Remove elyra/enterprise-gateway:dev docker image
-docker_clean_hadoop-spark      Remove elyra/hadoop-spark:2.7.0-2.1.0 docker image
-docker_clean_nb2kg             Remove elyra/nb2kg:dev docker image
-docker_image_enterprise-gateway Build elyra/enterprise-gateway:dev docker image
-docker_image_hadoop-spark      Build elyra/hadoop-spark:2.7.1-2.1.0 docker image
-docker_image_nb2kg             Build elyra/nb2kg:dev docker image 
-docker_images                  Build docker images
+docker-clean-enterprise-gateway Remove elyra/enterprise-gateway:dev docker image
+docker-clean-nb2kg             Remove elyra/nb2kg:dev docker image
+docker-clean-yarn-spark        Remove elyra/yarn-spark:2.1.0 docker image
+docker-clean                   Remove docker images
+docker-image-enterprise-gateway Build elyra/enterprise-gateway:dev docker image
+docker-image-nb2kg             Build elyra/nb2kg:dev docker image 
+docker-image-yarn-spark        Build elyra/yarn-spark:2.1.0 docker image
+docker-images                  Build docker images
+docker-prep                    Prepare enterprise-gateway docker container for integration tests
 docs                           Make HTML documentation
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
-itest                          Run integration tests against docker container
+itest                          Run integration tests (optionally) against docker container
 kernelspecs                    Make a tar.gz file consisting of kernelspec files
 nuke                           Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
@@ -120,5 +121,5 @@ The following can be used to build all three docker images used within the proje
 [docker images](docker.html) for specific details.
 
 ```
-make docker_images
+make docker-images
 ```
