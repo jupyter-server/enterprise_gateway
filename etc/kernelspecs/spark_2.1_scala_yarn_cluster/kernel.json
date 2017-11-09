@@ -1,0 +1,24 @@
+{
+  "language": "scala",
+  "display_name": "Spark 2.1 - Scala (YARN Cluster Mode)",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
+  },
+  "env": {
+    "SPARK_HOME": "/usr/hdp/current/spark2-client",
+    "SPARK_YARN_USER_ENV": "TOREE_ALTERNATE_SIGINT=USR2",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.am.waitTime=1d",
+    "__TOREE_OPTS__": "",
+    "TOREE_ALTERNATE_SIGINT": "USR2",
+    "EG_ALTERNATE_SIGINT": "SIGUSR2",
+    "LAUNCH_OPTS": "",
+    "DEFAULT_INTERPRETER": "Scala"
+  },
+  "argv": [
+    "/usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_cluster/bin/run.sh",
+    "--profile",
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}"
+  ]
+}

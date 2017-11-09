@@ -8,37 +8,38 @@ from setuptools import setup
 here = os.path.abspath(os.path.dirname(__file__))
 
 version_ns = {}
-with open(os.path.join(here, 'elyra', '_version.py')) as f:
+with open(os.path.join(here, 'enterprise_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 setup_args = dict(
-    name='elyra',
+    name='jupyter_enterprise_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
-    url='http://github.com/SparkTC/elyra',
+    url='http://github.com/jupyter-incubator/enterprise_gateway',
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
-Jupyter Elyra is a web server that [TODO].
+Jupyter Enterprise Gateway is a lightweight, multi-tenant, scalable and secure gateway that enables 
+Jupyter Notebooks to share resources across an Apache Spark cluster.
 ''',
     version=version_ns['__version__'],
     license='BSD',
     platforms="Linux, Mac OS X, Windows",
     keywords=['Interactive', 'Interpreter', 'Kernel', 'Web', 'Cloud'],
     packages=[
-        'elyra',
-        'elyra.services',
-        'elyra.services.kernels',
-        'elyra.services.kernelspecs',
-        'elyra.services.processproxies',
-        'elyra.services.sessions',
+        'enterprise_gateway',
+        'enterprise_gateway.services',
+        'enterprise_gateway.services.kernels',
+        'enterprise_gateway.services.kernelspecs',
+        'enterprise_gateway.services.processproxies',
+        'enterprise_gateway.services.sessions',
     ],
     scripts=[
-        'scripts/jupyter-elyra'
+        'scripts/jupyter-enterprisegateway'
     ],
     install_requires=[
         'jupyter_core>=4.0',
         'jupyter_client>=4.2.0',
-        'notebook>=5.0.0,<6.0',
+        'notebook>=5.1.0,<6.0',
         'jupyter_kernel_gateway>=1.1.2',
         'traitlets>=4.2.0',
         'tornado>=4.2.0',
@@ -62,7 +63,7 @@ if 'setuptools' in sys.modules:
     # setupstools turns entrypoint scripts into executables on windows
     setup_args['entry_points'] = {
         'console_scripts': [
-            'jupyter-elyra = elyra:launch_instance'
+            'jupyter-enterprisegateway = enterprise_gateway:launch_instance'
         ]
     }
     # Don't bother installing the .py scripts if if we're using entrypoints
