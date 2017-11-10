@@ -11,7 +11,7 @@ from socket import *
 from .processproxy import RemoteProcessProxy
 
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
-proxy_launch_log = os.getenv('EG_PROXY_LAUNCH_LOG', '/tmp/jeg_proxy_launch.log')
+kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log, but its only writable by root
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
@@ -78,7 +78,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
         for arg in argv_cmd:
             cmd += ' {}'.format(arg)
 
-        cmd += ' >> {} 2>&1 & echo $!'.format(proxy_launch_log)
+        kernel_log = os.path.join(kernel_log_dir, "kernel-{}.log".format(kid))
+        cmd += ' >> {} 2>&1 & echo $!'.format(kernel_log)
 
         return cmd
 

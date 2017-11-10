@@ -246,10 +246,9 @@ JupyterWebsocketPersonality options
       is enabled (True) or not (False).  This feature is currently in experimental 
       stages but we intend to flip the default value to True at some point.  
         
-  EG_PROXY_LAUNCH_LOG=/tmp/jeg_proxy_launch.log 
-      The log file used during remote kernel launches of DistributedProcessProxy
-      based kernels.  This file should be consulted when kernel operations are not 
-      working as expected.  Note that it will contain output from multiple kernels.  
+  EG_KERNEL_LOG_DIR=/tmp 
+      The directory used during remote kernel launches of DistributedProcessProxy
+      kernels.  Files in this directory will be of the form kernel-<kernel_id>.log.  
               
   EG_KERNEL_LAUNCH_TIMEOUT=30 
       The time (in seconds) Enterprise Gateway will wait for a kernel's startup 

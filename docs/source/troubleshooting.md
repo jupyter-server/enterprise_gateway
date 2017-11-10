@@ -56,9 +56,9 @@ a "Kernel error" and an `AuthenticationException`.**
     ```
 
 
- In general, you can look for more information in the proxy launch log for YARN Client 
- kernels.  The default location is /tmp/jeg_proxy_launch.log and it can be configured 
- using the environment variable `EG_PROXY_LAUNCH_LOG` during Enterprise Gateway start up. 
+ In general, you can look for more information in the kernel log for YARN Client 
+ kernels.  The default location is /tmp with a filename of `kernel-<kernel_id>.log`.  The location 
+ can be configured using the environment variable `EG_KERNEL_LOG_DIR` during Enterprise Gateway start up. 
  
  See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an 
  example of starting the Enterprise Gateway from a script and 
