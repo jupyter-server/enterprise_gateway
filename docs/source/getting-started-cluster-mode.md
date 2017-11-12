@@ -19,7 +19,7 @@ EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common
 
 **Configuring Kernels for YARN Cluster mode**
 
-For each supported Jupyter Kernel, we have provided sample kernel configuration and launcher available as part of the release
+For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
 [e.g. jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6.0/jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz).
 
 Considering we would like to enable the iPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
