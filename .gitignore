@@ -64,4 +64,4 @@ target/
 *.iml
 
 # Build-related
-.image_*
+.image-*
