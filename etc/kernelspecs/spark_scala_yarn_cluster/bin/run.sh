@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo
-echo "Starting Scala kernel for Spark 2.1 in Yarn Client mode as user ${KERNEL_USERNAME:-UNSPECIFIED}"
+echo "Starting Scala kernel for Spark in Yarn Cluster mode as user ${KERNEL_USERNAME:-UNSPECIFIED}"
 echo
 
 if [ -z "${SPARK_HOME}" ]; then
