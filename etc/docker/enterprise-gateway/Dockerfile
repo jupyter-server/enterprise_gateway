@@ -14,11 +14,11 @@ ADD start-enterprise-gateway.sh.template /usr/local/share/jupyter
 # Add YARN_CONF_DIR to each env stanza, Add PATH to R-yarn-client env stanza
 RUN mkdir -p /usr/hdp/current && \
 	ln -s /usr/local/spark-2.1.0-bin-hadoop2.7 /usr/hdp/current/spark2-client && \
-	cp /usr/local/share/jupyter/kernels/spark_2.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_cluster/lib && \
-	cp /usr/local/share/jupyter/kernels/spark_2.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_client/lib && \
+	cp /usr/local/share/jupyter/kernels/spark_2.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_cluster/lib && \
+	cp /usr/local/share/jupyter/kernels/spark_2.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_client/lib && \
 	cd /usr/local/share/jupyter/kernels && \
-	for dir in spark_2.1_*; do cat $dir/kernel.json | sed s/'"env": {'/'"env": {|    "YARN_CONF_DIR": "\/usr\/local\/hadoop\/etc\/hadoop",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json $dir/kernel.json; done && \
-	cat spark_2.1_R_yarn_client/kernel.json | sed s/'"env": {'/'"env": {|    "PATH": "\/opt\/anaconda2\/bin:$PATH",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json spark_2.1_R_yarn_client/kernel.json && \
+	for dir in spark_*; do cat $dir/kernel.json | sed s/'"env": {'/'"env": {|    "YARN_CONF_DIR": "\/usr\/local\/hadoop\/etc\/hadoop",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json $dir/kernel.json; done && \
+	cat spark_R_yarn_client/kernel.json | sed s/'"env": {'/'"env": {|    "PATH": "\/opt\/anaconda2\/bin:$PATH",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json spark_R_yarn_client/kernel.json && \
 	touch /usr/local/share/jupyter/enterprise-gateway.log && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log
 
