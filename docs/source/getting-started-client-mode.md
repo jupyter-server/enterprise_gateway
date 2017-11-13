@@ -1,6 +1,10 @@
 ## Enabling Client Mode/Standalone Support
 
-Even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway,
+Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by
+installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will
+have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
+
+Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway,
 client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode,
 where kernels are started in different nodes of the cluster utilizing a round-robin algorithm.
 In this case, you can still experience bottlenecks on a given node that receives requests to start
@@ -85,33 +89,6 @@ Please see below how a kernel.json would look like for integrating with Spark St
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
   },
-  "env": {
-    "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "PYSPARK_PYTHON": "/opt/anaconda3/bin/python",
-    "PYTHONPATH": "${HOME}/.local/lib/python3.6/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip",
-    "SPARK_YARN_USER_ENV": "PYTHONUSERBASE=/home/yarn/.local,PYTHONPATH=${HOME}/.local/lib/python3.6/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip,PATH=/opt/anaconda2/bin:$PATH",
-    "SPARK_OPTS": "--master spark://127.0.0.1:7077  --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
-    "LAUNCH_OPTS": ""
-  },
-  "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_client/bin/run.sh",
-    "{connection_file}",
-    "--RemoteProcessProxy.response-address",
-    "{response_address}"
-  ]
-}
-```
-
-***Backward compatibility with Jupyter Kernel Gateway***
-
-Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which enables kernels
-to continue to be run in local client mode by removing the "process_proxy" configuration from the specific kernelspec.
-
-
-```json
-{
-  "language": "python",
-  "display_name": "Spark 2.1 - Python (YARN Client Mode)",
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "PYSPARK_PYTHON": "/opt/anaconda3/bin/python",
