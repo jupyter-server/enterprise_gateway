@@ -551,10 +551,6 @@ class TestDefaults(TestJupyterWebsocket):
             ws.close()
 
 
-# This test is currently skipped until https://github.com/jupyter/notebook/issues/2942 is
-# resolved or addressed.  At this moment, the response.body only contains the following:
-# '{"reason": "Internal Server Error", "message": ""}'
-@unittest.skip
 class TestCustomDefaultKernel(TestJupyterWebsocket):
     """Tests gateway behavior when setting a custom default kernelspec."""
     def setup_app(self):
