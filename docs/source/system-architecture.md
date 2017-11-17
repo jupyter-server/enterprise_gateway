@@ -53,7 +53,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
 ```json
 {
   "language": "scala",
-  "display_name": "Spark 2.1 - Scala (YARN Client Mode)",
+  "display_name": "Spark - Scala (YARN Client Mode)",
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
   },
@@ -65,7 +65,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
     "DEFAULT_INTERPRETER": "Scala"
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_scala_yarn_client/bin/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_scala_yarn_client/bin/run.sh",
     "--profile",
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
@@ -259,13 +259,13 @@ argument name.  However, the response address is identified by the parameter `--
 value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points 
 back to the Enterprise Gateway server - which is listening for a response on the provided port.
 
-Here's a [kernel.json](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/kernel.json) 
+Here's a [kernel.json](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) 
 file illustrating these parameters...
 
 ```json
 {
   "language": "python",
-  "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
+  "display_name": "Spark - Python (YARN Cluster Mode)",
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
   },
@@ -275,7 +275,7 @@ file illustrating these parameters...
     "LAUNCH_OPTS": ""
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_python_yarn_cluster/bin/run.sh",
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
@@ -284,7 +284,7 @@ file illustrating these parameters...
 ```
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_2.1_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
 script as the initial arguments to the launcher 
 (see [launch_ipykernel.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash

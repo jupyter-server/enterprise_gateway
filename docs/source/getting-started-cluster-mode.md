@@ -23,7 +23,7 @@ For each supported Jupyter Kernel, we have provided sample kernel configurations
 [e.g. jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6.0/jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz).
 
 Considering we would like to enable the iPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
-would have to copy the sample configuration folder **spark_2.1_python_yarn_cluster** to where the Jupyter kernels are installed 
+would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed 
 (e.g. jupyter kernelspec list)
 
 ``` Bash
@@ -33,7 +33,7 @@ SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2
 
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
-tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_2.1_python_yarn_cluster/ spark_2.1_python_yarn_cluster/
+tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 
 ```
 
@@ -42,7 +42,7 @@ After that, you should have a kernel.json that looks similar to the one below:
 ```json
 {
   "language": "python",
-  "display_name": "Spark 2.1 - Python (YARN Cluster Mode)",
+  "display_name": "Spark - Python (YARN Cluster Mode)",
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
   },
@@ -55,7 +55,7 @@ After that, you should have a kernel.json that looks similar to the one below:
     "LAUNCH_OPTS": ""
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_2.1_python_yarn_cluster/bin/run.sh",
+    "/usr/local/share/jupyter/kernels/spark_python_yarn_cluster/bin/run.sh",
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
