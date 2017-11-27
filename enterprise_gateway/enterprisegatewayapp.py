@@ -10,7 +10,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import default, List, Unicode
+from traitlets import default, List, Unicode, Type, Instance
 
 from kernel_gateway.gatewayapp import KernelGatewayApp
 
@@ -22,6 +22,8 @@ ioloop.install()
 from tornado.log import LogFormatter
 
 from ._version import __version__
+from jupyter_client.kernelspec import KernelSpecManager
+from notebook.services.kernels.kernelmanager import MappingKernelManager
 from kernel_gateway.services.sessions.sessionmanager import SessionManager
 from .services.sessions.kernelsessionmanager import KernelSessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
@@ -74,6 +76,28 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         """override default log format to include milliseconds"""
         return u"%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]%(end_color)s %(message)s"
 
+    kernel_spec_manager = Instance(RemoteKernelSpecManager, allow_none=True)
+
+    kernel_spec_manager_class = Type(
+        klass=KernelSpecManager,
+        default_value=RemoteKernelSpecManager,
+        config=True,
+        help="""
+        The kernel spec manager class to use. Should be a subclass
+        of `jupyter_client.kernelspec.KernelSpecManager`.
+        """
+    )
+
+    kernel_manager_class = Type(
+        klass=MappingKernelManager,
+        default_value=RemoteMappingKernelManager,
+        config=True,
+        help="""
+        The kernel manager class to use. Should be a subclass
+        of `notebook.services.kernels.MappingKernelManager`.
+        """
+    )
+
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and personality.
@@ -97,7 +121,11 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         if self.default_kernel_name:
             kwargs['default_kernel_name'] = self.default_kernel_name
 
-        self.kernel_manager = RemoteMappingKernelManager(
+        self.kernel_spec_manager = self.kernel_spec_manager_class(
+            parent = self,
+        )
+
+        self.kernel_manager = self.kernel_manager_class(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
@@ -108,7 +136,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # Detect older version of notebook
         func = getattr(self.kernel_manager, 'initialize_culler', None)
         if not func:
-            self.log.warning("Older version of Notebook detected - idle kernels will not be culled.  Culling requires Notebook >= 5.1.0.")
+            self.log.warning("Older version of Notebook detected - idle kernels will not be culled.  "
+                             "Culling requires Notebook >= 5.1.0.")
 
         self.session_manager = SessionManager(
             log=self.log,
