@@ -81,7 +81,10 @@ conda uninstall jupyter_enterprise_gateway
 
 ### Installing Kernels
 
+Please follow the link below to learn more specific details about how to install/configure specific
+kernels with Jupyter Enterprise Gateway:
 
+* [Installing and Configuring kernels](getting-started-kernels.md)
 
 ### Configuring Spark Resource Managers
 
