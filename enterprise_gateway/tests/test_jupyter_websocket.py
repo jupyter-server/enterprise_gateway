@@ -104,7 +104,7 @@ class TestJupyterWebsocket(TestGatewayAppBase):
             msg = yield ws.read_message()
             msg = json_decode(msg)
             msg_type = msg['msg_type']
-            parent_msg_id = msg['parent_header'].get('msg_id')
+            parent_msg_id = msg['parent_header']['msg_id']
             if msg_type == 'stream' and parent_msg_id == 'fake-msg-id':
                 raise Return(msg['content'])
 
