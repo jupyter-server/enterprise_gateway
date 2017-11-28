@@ -56,8 +56,13 @@ page.
 using `pip`(part of Anaconda) along with its dependencies.
 
 ```bash
-# install from pypi
+# install using pip from pypi
 pip install --upgrade jupyter_enterprise_gateway
+```
+
+```bash
+# install using conda from conda forge
+conda install -c conda-forge jupyter_enterprise_gateway
 ```
 
 At this point, the Jupyter Enterprise Gateway deployment provides local kernel support which is
@@ -65,7 +70,13 @@ fully compatible with Jupyter Kernel Gateway.
 
 To uninstall Jupyter Enterprise Gateway...
 ```bash
+#uninstall using pip
 pip uninstall jupyter_enterprise_gateway
+```
+
+```bash
+#uninstall using conda
+conda uninstall jupyter_enterprise_gateway
 ```
 
 ### Installing Kernels
