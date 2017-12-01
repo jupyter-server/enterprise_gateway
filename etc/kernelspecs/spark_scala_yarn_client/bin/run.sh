@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 
+if [ "${EG_IMPERSONATION_ENABLED}" = "True" ]; then
+        IMPERSONATION_OPTS="sudo PATH=${PATH} -H -E -u ${KERNEL_USERNAME:-UNSPECIFIED}"
+        USER_CLAUSE="as user ${KERNEL_USERNAME:-UNSPECIFIED}"
+else
+        IMPERSONATION_OPTS=""
+        USER_CLAUSE="on behalf of user ${KERNEL_USERNAME:-UNSPECIFIED}"
+fi
+
 echo
-echo "Starting Scala kernel for Spark in Yarn Client mode as user ${KERNEL_USERNAME:-UNSPECIFIED}"
+echo "Starting Scala kernel for Spark in Yarn Client mode ${USER_CLAUSE}"
 echo
 
 if [ -z "${SPARK_HOME}" ]; then
@@ -30,7 +38,7 @@ LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
 LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
 
 set -x
-eval exec \
+eval exec "${IMPERSONATION_OPTS}" \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
      --jars "${JARS}" \

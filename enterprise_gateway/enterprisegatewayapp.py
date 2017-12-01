@@ -4,13 +4,14 @@
 
 import os
 import signal
+import getpass
 
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import default, List, Unicode, Type, Instance
+from traitlets import default, List, Set, Unicode, Type, Instance, Bool
 
 from kernel_gateway.gatewayapp import KernelGatewayApp
 
@@ -50,14 +51,14 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
     # Remote hosts
     remote_hosts_env = 'EG_REMOTE_HOSTS'
-    remote_hosts_default_value = ['localhost']
-    remote_hosts = List(remote_hosts_default_value, config=True,
+    remote_hosts_default_value = 'localhost'
+    remote_hosts = List(default_value=[remote_hosts_default_value], config=True,
         help="""Bracketed comma-separated list of hosts on which DistributedProcessProxy kernels will be launched
           e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var - non-bracketed, just comma-separated)""")
 
     @default('remote_hosts')
     def remote_hosts_default(self):
-        return os.getenv(self.remote_hosts_env, 'localhost').split(',')
+        return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(',')
 
     # Yarn endpoint
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
@@ -75,6 +76,43 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def _default_log_format(self):
         """override default log format to include milliseconds"""
         return u"%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]%(end_color)s %(message)s"
+
+    # Impersonation enabled
+    impersonation_enabled_env = 'EG_IMPERSONATION_ENABLED'
+    impersonation_enabled = Bool(False, config=True,
+        help="""Indicates whether impersonation will be performed during kernel launch. 
+        (EG_IMPERSONATION_ENABLED env var)""")
+
+    @default('impersonation_enabled')
+    def impersonation_enabled_default(self):
+        return bool(os.getenv(self.impersonation_enabled_env, 'false').lower() == 'true')
+
+    # Unauthorized users
+    unauthorized_users_env = 'EG_UNAUTHORIZED_USERS'
+    unauthorized_users_default_value = 'root'
+    unauthorized_users = Set(default_value={unauthorized_users_default_value}, config=True,
+        help="""Comma-separated list of user names (e.g., ['root','admin']) against which KERNEL_USERNAME
+        will be compared.  Any match (case-sensitive) will prevent the kernel's launch
+        and result in an HTTP 403 (Forbidden) error. (EG_UNAUTHORIZED_USERS env var - non-bracketed, just
+        comma-separated)""")
+
+    @default('unauthorized_users')
+    def unauthorized_users_default(self):
+        return os.getenv(self.unauthorized_users_env, self.unauthorized_users_default_value).split(',')
+
+    # Authorized users
+    authorized_users_env = 'EG_AUTHORIZED_USERS'
+    authorized_users = Set(config=True,
+        help="""Comma-separated list of user names (e.g., ['bob','alice']) against which KERNEL_USERNAME
+        will be compared.  Any match (case-sensitive) will allow the kernel's launch, otherwise an HTTP 403
+        (Forbidden) error will be raised.  The set of unauthorized users takes precedence. This option should
+        be used carefully as it can dramatically limit who can launch kernels.  (EG_AUTHORIZED_USERS
+        env var - non-bracketed, just comma-separated)""")
+
+    @default('authorized_users')
+    def authorized_users_default(self):
+        au_env = os.getenv(self.authorized_users_env)
+        return au_env.split(',') if au_env is not None else []
 
     kernel_spec_manager = Instance(RemoteKernelSpecManager, allow_none=True)
 
@@ -176,6 +214,14 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         self.log.info('Jupyter Enterprise Gateway at http{}://{}:{}'.format(
             's' if self.keyfile else '', self.ip, self.port
         ))
+        # If impersonation is enabled, issue a warning message if the gateway user is not in unauthorized_users.
+        if self.impersonation_enabled:
+            gateway_user = getpass.getuser()
+            if gateway_user.lower() not in self.unauthorized_users:
+                self.log.warning("Impersonation is enabled and gateway user '{}' is NOT specified in the set of"
+                                 "unauthorized users!  Kernels may execute as that user with elevated privileges.".
+                                 format(gateway_user))
+
         self.io_loop = ioloop.IOLoop.current()
 
         signal.signal(signal.SIGTERM, self._signal_stop)

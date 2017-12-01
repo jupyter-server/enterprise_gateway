@@ -118,6 +118,14 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.auth_token=<Unicode>
     Default: u''
     Authorization token required for all requests (KG_AUTH_TOKEN env var)
+--EnterpriseGatewayApp.authorized_users=<Set>
+    Default: set([])
+    Comma-separated list of user names (e.g., ['bob','alice']) against which
+    KERNEL_USERNAME will be compared.  Any match (case-sensitive) will allow the
+    kernel's launch, otherwise an HTTP 403 (Forbidden) error will be raised.
+    The set of unauthorized users takes precedence. This option should be used
+    carefully as it can dramatically limit who can launch kernels.
+    (EG_AUTHORIZED_USERS env var - non-bracketed, just comma-separated)
 --EnterpriseGatewayApp.base_url=<Unicode>
     Default: '/'
     The base path for mounting all API resources (KG_BASE_URL env var)
@@ -147,6 +155,10 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.generate_config=<Bool>
     Default: False
     Generate default config file.
+--EnterpriseGatewayApp.impersonation_enabled=<Bool>
+    Default: False
+    Indicates whether impersonation will be performed during kernel launch.
+    (EG_IMPERSONATION_ENABLED env var)
 --EnterpriseGatewayApp.ip=<Unicode>
     Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
@@ -191,6 +203,12 @@ EnterpriseGatewayApp options
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
+--EnterpriseGatewayApp.unauthorized_users=<Set>
+    Default: set(['root'])
+    Comma-separated list of user names (e.g., ['root','admin']) against which
+    KERNEL_USERNAME will be compared.  Any match (case-sensitive) will prevent
+    the kernel's launch and result in an HTTP 403 (Forbidden) error.
+    (EG_UNAUTHORIZED_USERS env var - non-bracketed, just comma-separated)
 --EnterpriseGatewayApp.yarn_endpoint=<Unicode>
     Default: 'http://localhost:8088/ws/v1/cluster'
     The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env
@@ -228,23 +246,11 @@ JupyterWebsocketPersonality options
     by default but kernel gateway does not.
 ```
 
-### Supported environment variables
+### Addtional supported environment variables
 ```
-  EG_YARN_ENDPOINT=http://localhost:8088/ws/v1/cluster 
-      YARN resource manager endpoint.  This value can also be specified on the 
-      command line via option '--EnterpriseGatewayApp.yarn_endpoint'.  
-
-  EG_REMOTE_HOSTS=localhost 
-      A comma-separated list of hosts on which DistributedProcessProxy kernels will
-      be launched e.g., host1,host2.  Not bracketing or quoting of hostnames is 
-      required when setting the env variable.  This value can also be specified on 
-      the command line via option '--EnterpriseGatewayApp.remote_hosts', although 
-      bracketing and quoting is required in that case.  
- 
   EG_ENABLE_TUNNELING=False 
       Indicates whether tunneling (via ssh) of the kernel and communication ports
-      is enabled (True) or not (False).  This feature is currently in experimental 
-      stages but we intend to flip the default value to True at some point.  
+      is enabled (True) or not (False).   
         
   EG_KERNEL_LOG_DIR=/tmp 
       The directory used during remote kernel launches of DistributedProcessProxy
