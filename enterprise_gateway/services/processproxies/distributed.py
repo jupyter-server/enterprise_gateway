@@ -70,6 +70,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         kid = env_dict.get('KERNEL_ID')
         if kid:
             cmd += 'export KERNEL_ID="{}";'.format(kid)
+        impersonation = env_dict.get('EG_IMPERSONATION_ENABLED')
+        if impersonation:
+            cmd += 'export EG_IMPERSONATION_ENABLED="{}";'.format(impersonation)
 
         for key, value in self.kernel_manager.kernel_spec.env.items():
             cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))

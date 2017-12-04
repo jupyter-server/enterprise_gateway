@@ -22,6 +22,7 @@ the number of active kernels can be dramatically increased.
    getting-started-client-mode
    getting-started-advanced-features
    getting-started-kernels
+   getting-started-security
 
 .. toctree::
    :maxdepth: 2

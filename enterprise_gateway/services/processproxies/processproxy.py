@@ -12,6 +12,7 @@ import logging
 import time
 import tornado
 import pexpect
+import getpass
 from tornado import web
 import subprocess
 from ipython_genutils.py3compat import with_metaclass
@@ -21,6 +22,7 @@ from calendar import timegm
 from notebook import _tz
 from zmq.ssh import tunnel
 from enum import Enum
+
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -38,14 +40,15 @@ ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 # Number of seconds in 100 years as the max keep-alive interval value.
 max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 
-# These envs are not documented and should default to $USER and None, respectively.  These
+# These envs are not documented and should default to current user and None, respectively.  These
 # exist just in case we find them necessary in some configurations (where the service user
 # must be different).  However, tests show that that configuration doesn't work - so there
 # might be more to do.  At any rate, we'll use these variables for now.
-remote_user = os.getenv('EG_REMOTE_USER', os.getenv('USER'))
+remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
 remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
+
 
 class KernelChannel(Enum):
     SHELL = "SHELL"
@@ -54,6 +57,7 @@ class KernelChannel(Enum):
     HEARTBEAT = "HB"
     CONTROL = "CONTROL"
     COMMUNICATION = "EG_COMM" # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
+
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     """Process Proxy ABC.
@@ -96,6 +100,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         env_dict['KERNEL_ID'] = self.kernel_id
         for k in env_pop_list:
             env_dict.pop(k, None)
+
+        self._enforce_authorization(cmd, **kw)
+
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kw.get('env')))
 
     def cleanup(self):
@@ -274,6 +281,52 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             also be done from this method.
         """
         return self.kernel_manager.connection_file
+
+    def _enforce_authorization(self, cmd, **kw):
+        """
+            Regardless of impersonation enablement, this method first adds the appropriate value for 
+            EG_IMPERSONATION_ENABLED into environment (for use by kernelspecs), then ensures that KERNEL_USERNAME
+            has a value and is present in the environment (again, for use by kernelspecs).  If unset, KERNEL_USERNAME
+            will be defaulted to the current user.
+            
+            Authorization is performed by comparing the value of KERNEL_USERNAME with each value in the set of 
+            unauthorized users.  If any (case-sensitive) matches are found, HTTP error 403 (Forbidden) will be raised 
+            - preventing the launch of the kernel.  If the authorized_users set is non-empty, it is then checked to
+            ensure the value of KERNEL_USERNAME is present in that list.  If not found, HTTP error 403 will be raised.
+            
+            It is assumed that the kernelspec logic will take the appropriate steps to impersonate the user identified 
+            by KERNEL_USERNAME when impersonation_enabled is True.
+        """
+        # Get the env
+        env_dict = kw.get('env')
+
+        # Although it may already be set in the env, just override in case it was only set via command line or config
+        # Convert to string since execve() (called by Popen in base classes) wants string values.
+        env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.parent.parent.impersonation_enabled)
+
+        # Ensure KERNEL_USERNAME is set
+        kernel_username = env_dict.get('KERNEL_USERNAME')
+        if kernel_username is None:
+            kernel_username = getpass.getuser()
+            env_dict['KERNEL_USERNAME'] = kernel_username
+
+        # Now perform constraint check based on enablement
+        if kernel_username in self.kernel_manager.parent.parent.unauthorized_users:
+            self._raise_authorization_error(kernel_username, "not authorized")
+
+        # If authorized users are non-empty, ensure user is in that set.
+        if self.kernel_manager.parent.parent.authorized_users.__len__() > 0:
+            if kernel_username not in self.kernel_manager.parent.parent.authorized_users:
+                self._raise_authorization_error(kernel_username, "not in the set of users authorized")
+
+    def _raise_authorization_error(self, kernel_username, differentiator_clause):
+        kernel_name = self.kernel_manager.kernel_spec.display_name
+        kernel_clause = " '{}'.".format(kernel_name) if kernel_name is not None else "s."
+        error_message = "User '{}' is {} to start kernel{} " \
+                        "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request.". \
+            format(kernel_username, differentiator_clause, kernel_clause)
+        self.log.error(error_message)
+        raise tornado.web.HTTPError(403, error_message)
 
     def get_process_info(self):
         process_info = {'pid': self.pid, 'pgid': self.pgid, 'ip': self.ip}
@@ -571,10 +624,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # If the launcher returned a comm_port value, then use that to send the signal,
         # else, defer to the superclass - which will use a remote shell to issue kill.
         # Note that if the target process is running as a different user than the REMOTE_USER,
-        # using anything other than the socket-based signal (via signal_addr) will not work
-        # except for signal 0 - which essentially checks if the process is alive.
+        # using anything other than the socket-based signal (via signal_addr) will not work.
 
-        if signum > 0 and self.comm_port > 0:
+        if self.comm_port > 0:
             signal_request = dict()
             signal_request['signum'] = signum
 
@@ -582,7 +634,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             try:
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
-                self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
+                if signum > 0:  # Polling (signum == 0) is too frequent
+                    self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
                 self.log.warning("Exception occurred sending signal({}) to {}:{} for KernelID '{}' "
