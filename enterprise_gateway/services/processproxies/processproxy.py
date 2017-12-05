@@ -523,7 +523,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         ready_to_connect = True
                         self._update_connection(connect_info)
                         break
-                    data = data + buffer  # append what we received until we get no more...
+                    data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
             except Exception as e:
                 if type(e) is timeout:
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
