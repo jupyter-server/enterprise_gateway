@@ -120,12 +120,15 @@ kernels hosted as yarn applications via yarn/cluster mode.  These class definiti
 The process proxy constructor looks as follows:
 
 ```python
-def __init__(self, kernel_manager):
+def __init__(self, kernel_manager, proxy_config):
 ```
 
 where 
 * `kernel_manager` is an instance of a `RemoteKernelManager` class that is associated with the 
 corresponding `RemoteKernelSpec` instance.
+* `proxy_config` is a dictionary of configuration values present in the kernel spec's json file.  These
+values can be used to override or amend various global configuration values on a per-kernel basis. See
+[Process Proxy Configuration](#process-proxy-configuration) for more information.
 
 ```python
 @abstractmethod
@@ -233,6 +236,41 @@ Gateway server.
 
 It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their resources (within
 the kernel process itself) are not managed by the YARN resource manager. 
+
+#### Process Proxy Configuration
+Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 
+into a dictionary of name/value pairs and passed as an argument to the each process-proxy constructor
+relative to the class identified by the `class_name` entry.
+
+How each dictionary entry is interpreted is completely a function of the constructor relative to that process-proxy
+class or its super-class.  For example, an alternate list of remote hosts has meaning to the `DistributedProcessProxy` but
+not to its super-classes.  As a result, the super-class constructors will not attempt to interpret that value.
+
+In addition, certain dictionary entries can override or amend system-level configuration values set on the command-line, thereby
+allowing administrators to tune behaviors down to the kernel level.  For example, an administrator might want to
+constrain python kernels configured to use specific resources to an entirely different set of hosts that other 
+remote kernels might be targeting in order to isolate valuable resources. Similarly, an administrator might want to only authorize specific users to a given kernel.
+
+In such situations, one might find the following `process-proxy` stanza:
+
+```json
+{
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy",
+    "config": {
+      "remote_hosts": "priv_host1,priv_host2",
+      "authorized_users": "bob,alice"
+    }
+  }
+}
+```
+
+In this example, the kernel associated with this kernel.json file is relagated to hosts `priv_host1` and `priv_host2` 
+and only users `bob` and `alice` can launch such kernels (provided neither appear in the global set of 
+`unauthorized_users` since denial takes precedence).
+
+For a current enumeration of which system-level configuration values can be overridden or amended on a per-kernel basis
+see [Per-kernel Configuration Overrides](config-options.html#per-kernel-configuration-overrides).
 
 ### Launchers
 As noted above a kernel is considered started once the launcher has conveyed its connection information 

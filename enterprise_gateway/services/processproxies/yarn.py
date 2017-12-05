@@ -32,10 +32,10 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
 
-    def __init__(self, kernel_manager):
-        super(YarnClusterProcessProxy, self).__init__(kernel_manager)
+    def __init__(self, kernel_manager, proxy_config):
+        super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.application_id = None
-        self.yarn_endpoint = kernel_manager.parent.parent.yarn_endpoint  # from command line or env
+        self.yarn_endpoint = proxy_config.get('yarn_endpoint', kernel_manager.parent.parent.yarn_endpoint)
         yarn_master = urlparse(self.yarn_endpoint).hostname
         self.resource_mgr = ResourceManager(address=yarn_master)
 

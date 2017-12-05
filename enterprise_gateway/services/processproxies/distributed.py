@@ -17,9 +17,12 @@ kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log
 class DistributedProcessProxy(RemoteProcessProxy):
     host_index = 0
 
-    def __init__(self, kernel_manager):
-        super(DistributedProcessProxy, self).__init__(kernel_manager)
-        self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
+    def __init__(self, kernel_manager, proxy_config):
+        super(DistributedProcessProxy, self).__init__(kernel_manager, proxy_config)
+        if proxy_config.get('remote_hosts'):
+            self.hosts = proxy_config.get('remote_hosts').split(',')
+        else:
+            self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
 
     def launch_process(self, kernel_cmd, **kw):
         super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)
