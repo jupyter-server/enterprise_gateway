@@ -65,7 +65,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     Defines the required methods for process proxy classes
     """
 
-    def __init__(self, kernel_manager):
+    def __init__(self, kernel_manager, proxy_config):
         self.kernel_manager = kernel_manager
         # use the zero-ip from the start, can prevent having to write out connection file again
         self.kernel_manager.ip = '0.0.0.0'
@@ -74,6 +74,18 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
         self.kernel_launch_timeout = default_kernel_launch_timeout
+
+        # Handle authorization sets...
+        # Take union of unauthorized users...
+        self.unauthorized_users = self.kernel_manager.parent.parent.unauthorized_users
+        if proxy_config.get('unauthorized_users'):
+            self.unauthorized_users.union(set(proxy_config.get('unauthorized_users').split(',')))
+
+        # Let authorized users override global value - if set on kernelspec...
+        if proxy_config.get('authorized_users'):
+            self.authorized_users = set(proxy_config.get('authorized_users').split(','))
+        else:
+            self.authorized_users = self.kernel_manager.parent.parent.authorized_users
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if the JKG is restarted and the
@@ -310,13 +322,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             kernel_username = getpass.getuser()
             env_dict['KERNEL_USERNAME'] = kernel_username
 
-        # Now perform constraint check based on enablement
-        if kernel_username in self.kernel_manager.parent.parent.unauthorized_users:
+        # Now perform authorization checks
+        if kernel_username in self.unauthorized_users:
             self._raise_authorization_error(kernel_username, "not authorized")
 
         # If authorized users are non-empty, ensure user is in that set.
-        if self.kernel_manager.parent.parent.authorized_users.__len__() > 0:
-            if kernel_username not in self.kernel_manager.parent.parent.authorized_users:
+        if self.authorized_users.__len__() > 0:
+            if kernel_username not in self.authorized_users:
                 self._raise_authorization_error(kernel_username, "not in the set of users authorized")
 
     def _raise_authorization_error(self, kernel_username, differentiator_clause):
@@ -340,8 +352,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
 class LocalProcessProxy(BaseProcessProxyABC):
 
-    def __init__(self, kernel_manager):
-        super(LocalProcessProxy, self).__init__(kernel_manager)
+    def __init__(self, kernel_manager, proxy_config):
+        super(LocalProcessProxy, self).__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
     def launch_process(self, kernel_cmd, **kw):
@@ -363,8 +375,8 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
 class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
-    def __init__(self, kernel_manager):
-        super(RemoteProcessProxy, self).__init__(kernel_manager)
+    def __init__(self, kernel_manager, proxy_config):
+        super(RemoteProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.response_socket = None
         self.start_time = None
         self.assigned_ip = None

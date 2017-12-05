@@ -19,11 +19,14 @@ class RemoteKernelSpec(KernelSpec):
         super(RemoteKernelSpec, self).__init__(resource_dir, **kernel_dict)
         # defaults...
         self.process_proxy_class = 'enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy'
+        self.process_proxy_config = {}
 
         if 'process_proxy' in kernel_dict and kernel_dict['process_proxy']:
-            self.process_proxy_class = kernel_dict['process_proxy']['class_name']
+            self.process_proxy_class = kernel_dict['process_proxy'].get('class_name', self.process_proxy_class)
+            self.process_proxy_config = kernel_dict['process_proxy'].get('config', self.process_proxy_config)
 
     def to_dict(self):
         d = super(RemoteKernelSpec, self).to_dict()
-        d.update({'process_proxy': {'class_name': self.process_proxy_class}})
+        d.update({'process_proxy': {'class_name': self.process_proxy_class,
+                                    'config': self.process_proxy_config}})
         return d
