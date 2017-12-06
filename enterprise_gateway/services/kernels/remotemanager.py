@@ -95,7 +95,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             self.log.debug("Instantiating kernel '{}' with process proxy: {}".
                            format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
             process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
-            self.process_proxy = process_proxy_class(kernel_manager=self)
+            self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=self.kernel_spec.process_proxy_config)
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
