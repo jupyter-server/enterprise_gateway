@@ -56,7 +56,7 @@ class KernelChannel(Enum):
     STDIN = "STDIN"
     HEARTBEAT = "HB"
     CONTROL = "CONTROL"
-    COMMUNICATION = "EG_COMM" # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
+    COMMUNICATION = "EG_COMM"  # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -113,7 +113,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         for k in env_pop_list:
             env_dict.pop(k, None)
 
-        self._enforce_authorization(cmd, **kw)
+        self._enforce_authorization(**kw)
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kw.get('env')))
 
@@ -294,7 +294,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         """
         return self.kernel_manager.connection_file
 
-    def _enforce_authorization(self, cmd, **kw):
+    def _enforce_authorization(self, **kw):
         """
             Regardless of impersonation enablement, this method first adds the appropriate value for 
             EG_IMPERSONATION_ENABLED into environment (for use by kernelspecs), then ensures that KERNEL_USERNAME
@@ -384,7 +384,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_ip = None
         self.comm_port = 0
         self.dest_comm_port = 0
-        self.tunnel_processes = []
+        self.tunnel_processes = {}
         self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
@@ -424,7 +424,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
-        channels = KernelChannel.SHELL, KernelChannel.IOPUB, KernelChannel.STDIN, KernelChannel.HEARTBEAT, KernelChannel.CONTROL
+        channels = KernelChannel.SHELL, KernelChannel.IOPUB, KernelChannel.STDIN, \
+            KernelChannel.HEARTBEAT, KernelChannel.CONTROL
 
         remote_ip = cf['ip']
 
@@ -451,7 +452,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                        .format(channel_name, local_port, remote_ip, remote_port))
         try:
             process = self._spawn_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
-            self.tunnel_processes.append(process)
+            self.tunnel_processes[channel_name] = process
         except Exception as e:
             raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(channel_name, e))
 
@@ -483,10 +484,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def _get_keep_alive_interval(self, kernel_channel):
         cull_idle_timeout = self.kernel_manager.parent.cull_idle_timeout
 
-        if kernel_channel == KernelChannel.COMMUNICATION or \
-            kernel_channel == KernelChannel.CONTROL or \
-            cull_idle_timeout <= 0 or \
-            cull_idle_timeout > max_keep_alive_interval:
+        if (kernel_channel == KernelChannel.COMMUNICATION or
+                kernel_channel == KernelChannel.CONTROL or
+                cull_idle_timeout <= 0 or
+                cull_idle_timeout > max_keep_alive_interval):
             # For COMMUNICATION and CONTROL channels, keep-alive interval will be set to
             # max_keep_alive_interval to make sure that the SSH session does not timeout
             # or expire for a very long time. Also, if cull_idle_timeout is unspecified,
@@ -626,10 +627,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def cleanup(self):
         self.assigned_ip = None
 
-        for process in self.tunnel_processes:
+        for kernel_channel, process in self.tunnel_processes.items():
+            self.log.debug("cleanup: terminating {} tunnel process.".format(kernel_channel))
             process.terminate()
 
-        del self.tunnel_processes[:]
+        self.tunnel_processes.clear()
         super(RemoteProcessProxy, self).cleanup()
 
     def send_signal(self, signum):
@@ -650,9 +652,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
-                self.log.warning("Exception occurred sending signal({}) to {}:{} for KernelID '{}' "
-                                 "(using remote kill): {}".format(signum, self.comm_ip, self.comm_port,
-                                                                  self.kernel_id, str(e)))
+                if isinstance(e, OSError):
+                    if e.errno == errno.ECONNREFUSED and signum == 0:  # Return False since there's no process.
+                        return False
                 return super(RemoteProcessProxy, self).send_signal(signum)
             finally:
                 sock.close()
@@ -673,13 +675,23 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
-                return None
             except Exception as e:
                 self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
                                  "(using remote kill): {}".format(self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
             finally:
                 sock.close()
+
+            # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
+            # this process results in the kernel (launcher) appearing to remain alive following the shutdown
+            # request, which triggers the "forced kill" termination logic.
+
+            comm_port_name = KernelChannel.COMMUNICATION.value
+            comm_port_tunnel = self.tunnel_processes.get(comm_port_name, None)
+            if comm_port_tunnel:
+                self.log.debug("shutdown_listener: terminating {} tunnel process.".format(comm_port_name))
+                comm_port_tunnel.terminate()
+                del self.tunnel_processes[comm_port_name]
 
     def get_process_info(self):
         process_info = super(RemoteProcessProxy, self).get_process_info()
