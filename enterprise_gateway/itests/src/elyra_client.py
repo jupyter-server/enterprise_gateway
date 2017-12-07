@@ -3,7 +3,6 @@ from uuid import uuid4
 from nb_entity import NBCodeCell
 import websocket
 from collections import deque
-
 import requests
 
 
@@ -83,8 +82,7 @@ class ElyraClient(object):
             code_cell_count = 1
             for code_cell in nb_code_entity.get_all_code_cell():
                 if code_cell.is_executed():
-                    print("---{}) {}".format(code_cell_count, code_cell))
-                    print("{}".format(code_cell.get_source_for_execution()))
+                    print("---{})\n {}".format(code_cell_count, code_cell.get_source_for_execution()))
                     code_cell_count += 1
                     code_source = code_cell.get_source_for_execution()
                     ws.send(ElyraClient.new_code_message(code_source))
