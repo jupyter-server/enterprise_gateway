@@ -55,10 +55,10 @@ class NotebookTestCase(TestCase):
                 test_output = test_code_cell_list[index]
                 self.assertIsNotNone(test_output)
                 assert_code = NotebookTestCase.get_assert_code(real_code_cell.get_first_line_code())
+                test_output = test_output.seralize_output()
+                real_output = real_code_cell.seralize_output()
                 try:
                     if assert_code != 2:
-                        test_output = test_output.seralize_output()
-                        real_output = real_code_cell.seralize_output()
                         if assert_code == 0:
                             self.assertEqual(test_output, real_output)
                         elif assert_code == 1:

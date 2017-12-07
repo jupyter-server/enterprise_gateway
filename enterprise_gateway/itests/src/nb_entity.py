@@ -108,7 +108,7 @@ class NBCodeCell(object):
         return self.execute_count is not None
 
     def get_source_for_execution(self):
-        # The cell's source can have multiple lines of codes, but here return the source as a single string,
+        # A cell's source can have multiple lines of code, but here returns the source as a single string,
         # since executing a multi-line code v.s. line by line may generate different results.
         return "".join(self.code_source_list)
 
@@ -132,8 +132,7 @@ class NBCodeCell(object):
         return target_output_type_queue
 
     def __repr__(self):
-        return "Execution_count {}, {} lines of codes, {} outputs".format(
-            self.execute_count, len(self.code_source_list), len(self.code_output_list))
+        return "{} line(s) of code, {} output(s)".format(len(self.code_source_list), len(self.code_output_list))
 
     @staticmethod
     def parse_output_from_notebook(nb_cell_json):
