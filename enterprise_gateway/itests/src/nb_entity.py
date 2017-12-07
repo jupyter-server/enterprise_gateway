@@ -2,11 +2,7 @@
 
 import os
 import json
-import sys
 from collections import deque
-
-# reload(sys)
-# sys.setdefaultencoding('utf8')
 
 
 class CodeCellOutput(object):
@@ -33,15 +29,25 @@ class CodeCellOutput(object):
         return None
 
     def seralize(self):
+        output_list = list()
         if type(self.output) is dict:
-            for k, v in self.output.items():
+            # in the case of dict type data, the keys might be in arbitrary order
+            # so here sort the key and serialize values in order so as to compare the values by the order of keys
+            sorted_key_list = self.output.keys()
+            sorted_key_list.sort()
+            for k in sorted_key_list:
+                output_list.append(str(k))
+                v = self.output[k]
                 if type(v) is list:
-                    v = "".join(v)
-                    self.output[k] = v
+                    output_list.append("".join(v))
+                else:
+                    output_list.append(str(v))
         elif type(self.output) is list:
-            self.output = "".join(self.output)
+            output_list = self.output
+        else:
+            output_list.append(self.output)
 
-        output = "".join(self.output) if type(self.output) is list else self.output
+        output = "".join(output_list)
         return "{}:\n{}".format(self.__class__.__name__, output)
 
 
