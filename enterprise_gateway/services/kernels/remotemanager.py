@@ -54,8 +54,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         # Construct a process-proxy
         if km.kernel_spec.process_proxy_class:
             process_proxy_class = import_item(km.kernel_spec.process_proxy_class)
-            kw = {'env': {}}
-            km.process_proxy = process_proxy_class(km)
+            km.process_proxy = process_proxy_class(km, proxy_config=km.kernel_spec.process_proxy_config)
             km.process_proxy.load_process_info(process_info)
 
             # Confirm we can even poll the process.  If not, remove the persisted session.
@@ -181,9 +180,13 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
-        if self.kernel_spec.process_proxy_class:
-            if self.has_kernel:
-                self.kernel.cleanup()
+
+        # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
+        # The reason is because if the kernel shutdown sequence has triggered its "forced kill" logic
+        # then that method (jupyter_client/manager.py/_kill_kernel()) will set `self.kernel` to None,
+        # which then prevents process proxy cleanup.
+        if self.process_proxy:
+            self.process_proxy.cleanup()
         return super(RemoteKernelManager, self).cleanup(connection_file)
 
     def get_connection_info(self, session=False):
