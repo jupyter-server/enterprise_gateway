@@ -29,6 +29,8 @@ class NotebookTestCase(TestCase):
 
     def execute_codes(self, nb_code_entity):
         nb_code_entity.kernel_id = self.elyra_client.create_new_kernel(nb_code_entity)
+        self.test_count += 1
+        print("\n{}. {}".format(self.test_count, nb_code_entity))
         test_code_cell_output_list = None
         if nb_code_entity.kernel_id:
             try:
@@ -43,8 +45,8 @@ class NotebookTestCase(TestCase):
             return test_code_cell_output_list
 
     def execute_and_assert(self, nb_code_entity):
-        print("Begin testing...({})".format(nb_code_entity))
         test_code_cell_list = self.execute_codes(nb_code_entity)
+        print("\nFinish execution of codes, now compare/assert")
         self.assertIsNotNone(test_code_cell_list)
         self.assertEqual(len(test_code_cell_list), len(nb_code_entity.code_cell_list))
         index = 0
@@ -52,14 +54,15 @@ class NotebookTestCase(TestCase):
             if real_code_cell.is_executed() and not real_code_cell.is_output_empty():
                 test_output = test_code_cell_list[index]
                 self.assertIsNotNone(test_output)
+                assert_code = NotebookTestCase.get_assert_code(real_code_cell.get_first_line_code())
                 test_output = test_output.seralize_output()
                 real_output = real_code_cell.seralize_output()
-                assert_code = NotebookTestCase.get_assert_code(real_code_cell.get_first_line_code())
                 try:
-                    if assert_code == 0:
-                        self.assertEqual(test_output, real_output)
-                    elif assert_code == 1:
-                        self.assertNotEqual(test_output, real_output)
+                    if assert_code != 2:
+                        if assert_code == 0:
+                            self.assertEqual(test_output, real_output)
+                        elif assert_code == 1:
+                            self.assertNotEqual(test_output, real_output)
                 except Exception as e:
                     print("===================================")
                     print(e.message)
@@ -70,11 +73,11 @@ class NotebookTestCase(TestCase):
                     if not self.continue_when_error:
                         sys.exit(-1)
             index += 1
-        print("Testing completed: ({})".format(nb_code_entity))
-
+        print("Testing completed: {}".format(nb_code_entity))
 
     def test_kernels_batch(self):
-        print("Begin testing batch of {} notebooks...".format(len(self.nb_entities_list)))
+        self.test_count = 0
+        print("Begin testing batch of {} notebook(s)...\n".format(len(self.nb_entities_list)))
         for nb_code_entity in self.nb_entities_list:
             self.execute_and_assert(nb_code_entity)
-        print("Batch completed.")
+        print("\nBatch completed.")

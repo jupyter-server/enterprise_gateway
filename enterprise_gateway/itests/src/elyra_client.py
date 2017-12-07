@@ -1,9 +1,8 @@
 from tornado.escape import json_encode, json_decode, url_escape
 from uuid import uuid4
-from nb_entity import NBCodeCell, NBCodeEntity
+from nb_entity import NBCodeCell
 import websocket
 from collections import deque
-
 import requests
 
 
@@ -29,7 +28,6 @@ class ElyraClient(object):
         # Ask Elyra to create a new kernel based on kernel spec name, and return the kernel id if successfully created.
         kernel_id = None
         kernel_spec_name = nb_code_entity.kernel_spec_name
-        file_name = nb_code_entity.file_name
         response = requests.post(self.http_api_endpoint, data=json_encode({'name': kernel_spec_name, 'env' : {'KERNEL_USERNAME': self.username}}))
         if response.status_code == 201:
             json_data = response.json()
@@ -76,11 +74,17 @@ class ElyraClient(object):
     def execute_nb_code_entity(self, nb_code_entity):
         # Execute all code cells in a notebook code entity, get the response message in JSON format,
         # and return all code cells parsed by messages in a list.
-        ws = websocket.create_connection(self.get_ws_kernel_endpoint(nb_code_entity.kernel_id))
+        ws_url = self.get_ws_kernel_endpoint(nb_code_entity.kernel_id)
+        ws = websocket.create_connection(url=ws_url)
+        print("Connection created for web socket {}".format(ws_url))
         message_code_cell_list = list([])
         try:
+            code_cell_count = 1
             for code_cell in nb_code_entity.get_all_code_cell():
                 if code_cell.is_executed():
+                    print("---{}) {}\n{}".format(code_cell_count, code_cell,
+                                                 code_cell.get_source_for_execution()))
+                    code_cell_count += 1
                     code_source = code_cell.get_source_for_execution()
                     ws.send(ElyraClient.new_code_message(code_source))
                     target_queue = code_cell.get_target_output_type_queue()
