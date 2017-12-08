@@ -72,6 +72,7 @@ class NotebookTestCase(TestCase):
                             # and self.impersonation_username is not None
                             test_username = test_output.code_output_list[0].raw_output.get('text')
                             self.assertIsNotNone(test_username)
+                            # the raw output is a dict e.g. {'text': 'elyra\r\n', ...}, so here replace the \r\n
                             test_username = str(test_username).replace("\r\n", "")
                             self.assertEqual(test_username, self.impersonation_username)
                 except Exception as e:
