@@ -14,6 +14,7 @@ def parse_arg():
     parser.add_argument('--continue_when_error', default=True)
     parser.add_argument('--host', default='localhost:8888')
     parser.add_argument('--username', default='root')
+    parser.add_argument('--impersonation_username', default=None)
 
     return parser.parse_args()
 
@@ -39,7 +40,8 @@ def init_nb_test_case(args):
                 if not target_kernels or nb_entity.kernel_spec_name in target_kernels:
                     nb_entities_list.append(nb_entity)
 
-    return NotebookTestCase(method, nb_entities_list, args.continue_when_error, args.host, args.username)
+    return NotebookTestCase(method, nb_entities_list, args.continue_when_error,
+                            args.host, args.username, args.impersonation_username)
 
 
 if __name__ == '__main__':

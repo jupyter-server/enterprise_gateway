@@ -6,11 +6,12 @@ import sys
 
 class NotebookTestCase(TestCase):
 
-    def __init__(self, test_method, nb_entities_list, continue_when_error, host, username):
+    def __init__(self, test_method, nb_entities_list, continue_when_error, host, username, impersonation_username):
         TestCase.__init__(self, methodName=test_method)
         self.nb_entities_list = nb_entities_list
         self.continue_when_error = continue_when_error
         self.elyra_client = ElyraClient(host=host, username=username)
+        self.impersonation_username = impersonation_username
 
     @staticmethod
     def get_assert_code(first_line_code):
@@ -19,12 +20,15 @@ class NotebookTestCase(TestCase):
         0 : must be exactly the same, i.e. using assertEqual (default)
         1 : OK if test output not the same as input, i.e. ignore assert as long as no error
         2 : must not be the same as each time the execution will definitely be different, then use assertNotEqual
+        3 : Impersonation test, i.e. compare the output with the self.impersonation_username if it is not None
         """
         if first_line_code:
             if first_line_code.find("DIFFERENT") > 0:
                 return 1
             elif first_line_code.find("DEPENDS") > 0:
                 return 2
+            elif first_line_code.find("IMPERSONATION")> 0:
+                return 3
         return 0
 
     def execute_codes(self, nb_code_entity):
@@ -55,21 +59,28 @@ class NotebookTestCase(TestCase):
                 test_output = test_code_cell_list[index]
                 self.assertIsNotNone(test_output)
                 assert_code = NotebookTestCase.get_assert_code(real_code_cell.get_first_line_code())
-                test_output = test_output.seralize_output()
-                real_output = real_code_cell.seralize_output()
+                test_output_str = test_output.seralize_output()
+                real_output_str = real_code_cell.seralize_output()
                 try:
                     if assert_code != 2:
                         if assert_code == 0:
-                            self.assertEqual(test_output, real_output)
+                            self.assertEqual(test_output_str, real_output_str)
                         elif assert_code == 1:
-                            self.assertNotEqual(test_output, real_output)
+                            self.assertNotEqual(test_output_str, real_output_str)
+                        elif assert_code == 3 and self.impersonation_username is not None:
+                            # Do impersonation test if and only if the first line is IMPERSONATION (assert code = 3)
+                            # and self.impersonation_username is not None
+                            test_username = test_output.code_output_list[0].raw_output.get('text')
+                            self.assertIsNotNone(test_username)
+                            test_username = str(test_username).replace("\r\n", "")
+                            self.assertEqual(test_username, self.impersonation_username)
                 except Exception as e:
                     print("===================================")
                     print(e.message)
                     print(traceback.format_exc())
                     print("{}\nExecute count {}".format(nb_code_entity, real_code_cell.execute_count))
-                    print("[Test output]\n", test_output)
-                    print("[Real output]\n", real_output)
+                    print("[Test output]\n", test_output_str)
+                    print("[Real output]\n", real_output_str)
                     if not self.continue_when_error:
                         sys.exit(-1)
             index += 1
