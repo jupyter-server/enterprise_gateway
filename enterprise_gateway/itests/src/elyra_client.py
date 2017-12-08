@@ -52,6 +52,7 @@ class ElyraClient(object):
         Here only find those target message type and return its content in a list.
         """
         message_json_list = list([])
+        ws.settimeout(60)
         while target_msg_type_queue:
             try:
                 message = ws.recv()

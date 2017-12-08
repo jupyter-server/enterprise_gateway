@@ -6,12 +6,13 @@ import sys
 
 class NotebookTestCase(TestCase):
 
-    def __init__(self, test_method, nb_entities_list, continue_when_error, host, username, impersonation_username):
+    def __init__(self, test_method, nb_entities_list, **kwargs):
         TestCase.__init__(self, methodName=test_method)
         self.nb_entities_list = nb_entities_list
-        self.continue_when_error = continue_when_error
-        self.elyra_client = ElyraClient(host=host, username=username)
-        self.impersonation_username = impersonation_username
+        self.continue_when_error = kwargs.get("continue_when_error")
+        self.username = kwargs.get("username")
+        self.elyra_client = ElyraClient(host=kwargs.get("host"), username=self.username)
+        self.enforce_impersonation = kwargs.get("enforce_impersonation")
 
     @staticmethod
     def get_assert_code(first_line_code):
@@ -20,7 +21,7 @@ class NotebookTestCase(TestCase):
         0 : must be exactly the same, i.e. using assertEqual (default)
         1 : OK if test output not the same as input, i.e. ignore assert as long as no error
         2 : must not be the same as each time the execution will definitely be different, then use assertNotEqual
-        3 : Impersonation test, i.e. compare the output with the self.impersonation_username if it is not None
+        3 : Impersonation test, i.e. compare the output username if the self.enforce_impersonation is set as True
         """
         if first_line_code:
             if first_line_code.find("DIFFERENT") > 0:
@@ -67,14 +68,16 @@ class NotebookTestCase(TestCase):
                             self.assertEqual(test_output_str, real_output_str)
                         elif assert_code == 1:
                             self.assertNotEqual(test_output_str, real_output_str)
-                        elif assert_code == 3 and self.impersonation_username is not None:
+                        elif assert_code == 3 and self.enforce_impersonation:
                             # Do impersonation test if and only if the first line is IMPERSONATION (assert code = 3)
-                            # and self.impersonation_username is not None
+                            # and self.enforce_impersonation is True
                             test_username = test_output.code_output_list[0].raw_output.get('text')
+                            print("Now doing impersonation test, target username={}, test username={}".format(
+                                self.username, test_username))
                             self.assertIsNotNone(test_username)
                             # the raw output is a dict e.g. {'text': 'elyra\r\n', ...}, so here replace the \r\n
                             test_username = str(test_username).replace("\r\n", "")
-                            self.assertEqual(test_username, self.impersonation_username)
+                            self.assertEqual(test_username, self.username)
                 except Exception as e:
                     print("===================================")
                     print(e.message)
