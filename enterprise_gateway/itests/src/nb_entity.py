@@ -33,8 +33,7 @@ class CodeCellOutput(object):
         if type(self.output) is dict:
             # in the case of dict type data, the keys might be in arbitrary order
             # so here sort the key and serialize values in order so as to compare the values by the order of keys
-            sorted_key_list = self.output.keys()
-            sorted_key_list.sort()
+            sorted_key_list = sorted(self.output.keys())
             for k in sorted_key_list:
                 output_list.append(str(k))
                 v = self.output[k]

@@ -28,7 +28,10 @@ class ElyraClient(object):
         # Ask Elyra to create a new kernel based on kernel spec name, and return the kernel id if successfully created.
         kernel_id = None
         kernel_spec_name = nb_code_entity.kernel_spec_name
-        response = requests.post(self.http_api_endpoint, data=json_encode({'name': kernel_spec_name, 'env' : {'KERNEL_USERNAME': self.username}}))
+        json_data = {'name': kernel_spec_name}
+        if self.username is not None:
+            json_data['env'] = {'KERNEL_USERNAME': self.username}
+        response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
             json_data = response.json()
             kernel_id = json_data.get("id")
@@ -52,6 +55,7 @@ class ElyraClient(object):
         Here only find those target message type and return its content in a list.
         """
         message_json_list = list([])
+        ws.settimeout(60)
         while target_msg_type_queue:
             try:
                 message = ws.recv()
