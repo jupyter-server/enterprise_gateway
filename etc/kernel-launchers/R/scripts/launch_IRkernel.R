@@ -37,6 +37,7 @@ sparkSessionFn <- local({
 
          sparkSession <- SparkR::sparkR.session(
                                         sparkHome=Sys.getenv("SPARK_HOME"),
+                                        appName=Sys.getenv("KERNEL_ID"),
                                         sparkConfig=sparkConfigList);
          sparkSession
        }
@@ -55,6 +56,7 @@ sparkContextFn <- local({
 
         sparkContext <- SparkR:::sparkR.sparkContext(
                                           sparkHome=Sys.getenv("SPARK_HOME"),
+                                          appName=Sys.getenv("KERNEL_ID"),
                                           sparkEnvirMap=SparkR:::convertNamedListToEnv(sparkConfigList))
 
         message ("Spark session obtained.")
