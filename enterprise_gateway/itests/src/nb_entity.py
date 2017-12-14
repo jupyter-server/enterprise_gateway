@@ -2,7 +2,11 @@
 
 import os
 import json
+import websocket
 from collections import deque
+from elyra_client import ElyraClient
+
+itest_cell_timeout = int(os.getenv('ITEST_CELL_TIMEOUT', 30))
 
 
 class CodeCellOutput(object):
@@ -28,26 +32,31 @@ class CodeCellOutput(object):
             return Error(json_output=output)
         return None
 
-    def seralize(self):
+    def serialize(self):
         output_list = list()
         if type(self.output) is dict:
             # in the case of dict type data, the keys might be in arbitrary order
             # so here sort the key and serialize values in order so as to compare the values by the order of keys
             sorted_key_list = sorted(self.output.keys())
+            first = True
             for k in sorted_key_list:
-                output_list.append(str(k))
-                v = self.output[k]
-                if type(v) is list:
-                    output_list.append("".join(v))
+                if first:
+                    first = False
                 else:
-                    output_list.append(str(v))
+                    output_list.append(",")
+
+                val = self.output[k]
+                if type(val) is list:
+                    output_list.append("".join(val))
+                else:
+                    output_list.append(str(val))
         elif type(self.output) is list:
             output_list = self.output
         else:
             output_list.append(self.output)
 
-        output = "".join(output_list)
-        return "{}:\n{}".format(self.__class__.__name__, output)
+        output = "".join(output_list).replace("\n", "")
+        return output
 
 
 class StreamOutput(CodeCellOutput):
@@ -156,14 +165,12 @@ class NBCodeCell(object):
                 cell_output_list.append(cell_output)
         return cell_output_list
 
-    def seralize_output(self):
-        if self is not None:
-            str_list = []
-            for code_cell_output in self.code_output_list:
-                if code_cell_output:
-                    str_list.append(code_cell_output.seralize())
-            return "".join(str_list)
-        return "No output"
+    def serialize_output(self):
+        str_list = []
+        for code_cell_output in self.code_output_list:
+            if code_cell_output:
+                str_list.append(code_cell_output.serialize())
+        return "".join(str_list)
 
 
 class NBCodeEntity(object):
@@ -187,15 +194,114 @@ class NBCodeEntity(object):
         else:
             raise IOError("No such file provided: {}".format(nb_file_path))
 
-    def get_all_code_cell(self):
-        return self.code_cell_list
-
     def get_all_code_cell_output(self):
         res_list = list([])
         for code_cell in self.code_cell_list:
             for output in code_cell.code_output_list:
                 res_list.append(output)
         return res_list
+
+    def test_notebook(self, count, nb_test_case):
+        #  Creates a kernel, tests the cells, then deletes the kernel.
+        errors = 0
+        self.kernel_id = nb_test_case.elyra_client.create_kernel(self.kernel_spec_name)
+        print("\n{}. {}".format(count, self))
+        if self.kernel_id:
+            try:
+                errors = self.test_cells(nb_test_case)
+            finally:
+                nb_test_case.elyra_client.delete_kernel(self.kernel_id)
+        return errors
+
+    def test_cells(self, nb_test_case):
+        # Execute all code cells in a notebook code entity, get the response message in JSON format,
+        # and return all code cells parsed by messages in a list.
+        errors = 0
+        ws_url = nb_test_case.elyra_client.get_ws_kernel_endpoint(self.kernel_id)
+        ws = websocket.create_connection(url=ws_url, timeout=itest_cell_timeout)
+        print("Connection created for web socket {}".format(ws_url))
+        try:
+            code_cell_count = 1
+            for code_cell in self.code_cell_list:
+                if code_cell.is_executed():
+                    errors = errors + NBCodeEntity.test_cell(nb_test_case, ws, code_cell, code_cell_count)
+                code_cell_count = code_cell_count+1
+        finally:
+            ws.close()
+        return errors
+
+    @staticmethod
+    def test_cell(nb_test_case, ws, code_cell, code_cell_count):
+        print("\n--- {}) {}\n{}".format(code_cell_count, code_cell,
+                                      code_cell.get_source_for_execution()))
+        code_source = code_cell.get_source_for_execution()
+        ws.send(ElyraClient.new_code_message(code_source))
+        target_queue = code_cell.get_target_output_type_queue()
+        if code_cell.is_output_empty():
+            # If output empty, waiting for "execute_input" type message
+            target_queue = deque(["execute_input"])
+        try:
+            json_output_message = ElyraClient.receive_target_messages(ws, target_queue)
+        except websocket.WebSocketTimeoutException as wste:
+            print("Fail ===================================\nRequest timed out.")
+            return 1
+        except Exception as e:
+            print("FATAL ===================================\n{}.".format(e))
+            raise e
+
+        result_cell = NBCodeCell(message_json_list=json_output_message)
+        return NBCodeEntity.compare_results(nb_test_case, code_cell, result_cell)
+
+    @staticmethod
+    def compare_results(nb_test_case, orig_cell, result_cell):
+        nb_test_case.assertIsNotNone(result_cell)
+        assert_code = NBCodeEntity.get_assert_code(orig_cell.get_first_line_code())
+        result_output_str = result_cell.serialize_output()
+        print(">>> {}".format(result_output_str))
+        orig_output_str = orig_cell.serialize_output()
+        try:
+            if assert_code != 2:
+                if assert_code == 0:
+                    nb_test_case.assertEqual(result_output_str, orig_output_str)
+                elif assert_code == 1:
+                    nb_test_case.assertNotEqual(result_output_str, orig_output_str)
+                elif assert_code == 3 and nb_test_case.enforce_impersonation:
+                    # Do impersonation test if and only if the first line is IMPERSONATION (assert code = 3)
+                    # and self.enforce_impersonation is True
+                    test_username = result_cell.code_output_list[0].raw_output.get('text')
+                    print("Now doing impersonation test, target username={}, test username={}".format(
+                        nb_test_case.username, test_username))
+                    nb_test_case.assertIsNotNone(test_username)
+                    # the raw output is a dict e.g. {'text': 'elyra\r\n', ...}, so here replace the \r\n
+                    test_username = str(test_username).replace("\r\n", "")
+                    nb_test_case.assertEqual(test_username, nb_test_case.username)
+            print("Pass")
+        except Exception as e:
+            print("Fail ===================================")
+            print("Expected output: '{}'".format(orig_output_str))
+            print("Actual output:   '{}'".format(result_output_str))
+            if not nb_test_case.continue_when_error:
+                raise e
+            return 1
+        return 0
+
+    @staticmethod
+    def get_assert_code(first_line_code):
+        """
+        Given the first line of the source code, return the code for testing purposes:
+        0 : must be exactly the same, i.e. using assertEqual (default)
+        1 : must not be the same as each time the execution will definitely be different, then use assertNotEqual
+        2 : OK if test output not the same as input, i.e. ignore assert as long as no error
+        3 : Impersonation test, i.e. compare the output username if the self.enforce_impersonation is set as True
+        """
+        if first_line_code:
+            if first_line_code.find("DIFFERENT") > 0:
+                return 1
+            elif first_line_code.find("DEPENDS") > 0:
+                return 2
+            elif first_line_code.find("IMPERSONATION") > 0:
+                return 3
+        return 0
 
     def __repr__(self):
         return "Kernel ID: {}, Notebook: {}, Kernel spec: {}, Number of code cells: {}".\

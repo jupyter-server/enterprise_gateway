@@ -1,8 +1,7 @@
+import os
 from tornado.escape import json_encode, json_decode, url_escape
 from uuid import uuid4
-from nb_entity import NBCodeCell
 import websocket
-from collections import deque
 import requests
 
 
@@ -24,10 +23,9 @@ class ElyraClient(object):
         response = requests.delete(url)
         return response.status_code == 204
 
-    def create_new_kernel(self, nb_code_entity):
+    def create_kernel(self, kernel_spec_name):
         # Ask Elyra to create a new kernel based on kernel spec name, and return the kernel id if successfully created.
         kernel_id = None
-        kernel_spec_name = nb_code_entity.kernel_spec_name
         json_data = {'name': kernel_spec_name}
         if self.username is not None:
             json_data['env'] = {'KERNEL_USERNAME': self.username}
@@ -55,49 +53,31 @@ class ElyraClient(object):
         Here only find those target message type and return its content in a list.
         """
         message_json_list = list([])
-        ws.settimeout(60)
         while target_msg_type_queue:
             try:
                 message = ws.recv()
                 message_json = json_decode(message)
+                # DEBUG: Enable for easier debugging
+                # print("message: {}".format(message_json))
                 msg_type = message_json.get('msg_type')
                 if msg_type == target_msg_type_queue[0]:
                     target_msg_type_queue.popleft()  # find one target, remove from queue
                     message_json_list.append(message_json)
                 if msg_type == "error":
                     raise Exception("Error found when receiving message:\n{}".format(message_json))
+                if msg_type == "status":  # detect kernel restart, treat as failure
+                    msg_content = message_json.get('content')
+                    if msg_content:
+                        msg_state = msg_content.get('execution_state')
+                        if msg_state:
+                            if msg_state == 'restarting':
+                                raise Exception("Request failed: kernel restarting\n{}".format(message_json))
             except ValueError as e:
                 # Ignore No JSON object could be decoded error, continue to the next message.
-                if e.message == "No JSON object could be decoded":
-                    print(e.message)
+                if str(e).find("No JSON object could be decoded") > 0:
+                    print(e)
                     continue
                 else:
                     raise e
-        return message_json_list
 
-    def execute_nb_code_entity(self, nb_code_entity):
-        # Execute all code cells in a notebook code entity, get the response message in JSON format,
-        # and return all code cells parsed by messages in a list.
-        ws_url = self.get_ws_kernel_endpoint(nb_code_entity.kernel_id)
-        ws = websocket.create_connection(url=ws_url)
-        print("Connection created for web socket {}".format(ws_url))
-        message_code_cell_list = list([])
-        try:
-            code_cell_count = 1
-            for code_cell in nb_code_entity.get_all_code_cell():
-                if code_cell.is_executed():
-                    print("---{}) {}\n{}".format(code_cell_count, code_cell,
-                                                 code_cell.get_source_for_execution()))
-                    code_cell_count += 1
-                    code_source = code_cell.get_source_for_execution()
-                    ws.send(ElyraClient.new_code_message(code_source))
-                    target_queue = code_cell.get_target_output_type_queue()
-                    if code_cell.is_output_empty():
-                        # If output empty, waiting for "execute_input" type message
-                        target_queue = deque(["execute_input"])
-                    json_output_message = ElyraClient.receive_target_messages(ws, target_queue)
-                    msg_code_cell = NBCodeCell(message_json_list=json_output_message)
-                    message_code_cell_list.append(msg_code_cell)
-        finally:
-            ws.close()
-        return message_code_cell_list
+        return message_json_list

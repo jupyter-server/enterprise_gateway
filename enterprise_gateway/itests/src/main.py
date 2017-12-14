@@ -6,15 +6,24 @@ from nb_entity import NBCodeEntity
 from itest_notebook import NotebookTestCase
 
 
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def parse_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument('--target_kernels', default=None)
     parser.add_argument('--notebook_files', default=None)
     parser.add_argument('--notebook_dir', default='../notebooks')
-    parser.add_argument('--continue_when_error', default=True)
+    parser.add_argument('--continue_when_error', type=str2bool, default=True)
     parser.add_argument('--host', default='localhost:8888')
     parser.add_argument('--username', default=None)
-    parser.add_argument('--enforce_impersonation', default=False)
+    parser.add_argument('--enforce_impersonation', type=str2bool, default=False)
 
     return parser.parse_args()
 
@@ -47,11 +56,11 @@ def init_nb_test_case(args):
 
 
 if __name__ == '__main__':
-    args = parse_arg()
+    arguments = parse_arg()
     suite = unittest.TestSuite()
     for method in dir(NotebookTestCase):
         if method.startswith("test"):
-            suite.addTest(init_nb_test_case(args))
+            suite.addTest(init_nb_test_case(arguments))
 
     result = unittest.TextTestRunner().run(suite)
     sys.exit(not result.wasSuccessful())
