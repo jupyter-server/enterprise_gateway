@@ -46,13 +46,17 @@ slightly different.  This allows the administrator to discern from which authori
 
 Failures stemming from _inclusion_ in the `unauthorized_users` list will include text similar to the following:
 
-`User 'bob' is not authorized to start kernel 'Spark - Python (YARN Client Mode)'. Ensure 
-KERNEL_USERNAME is set to an appropriate value and retry the request.`
+```
+User 'bob' is not authorized to start kernel 'Spark - Python (YARN Client Mode)'. Ensure
+KERNEL_USERNAME is set to an appropriate value and retry the request.
+```
 
 Failures stemming from _exclusion_ from a non-empty `authorized_users` list will include text similar to the following:
 
-`User 'bob' is not in the set of users authorized to start kernel 'Spark - Python (YARN Client Mode)'. Ensure 
-KERNEL_USERNAME is set to an appropriate value and retry the request.`
+```
+User 'bob' is not in the set of users authorized to start kernel 'Spark - Python (YARN Client Mode)'. Ensure
+KERNEL_USERNAME is set to an appropriate value and retry the request.
+```
 
 ### User Impersonation
 
@@ -64,7 +68,8 @@ information: `EG_IMPERSONATION_ENABLED` and `KERNEL_USERNAME`.
 `EG_IMPERSONATION_ENABLED` indicates the intention that user impersonation should be performed and is conveyed via
 the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled` (default = False).  This value is then
 set into the environment used to launch the kernel, where `run.sh` then acts on it - performing the appropriate logic
-to trigger user impersonation when True.  As a result, it is important that the contents of kernelspecs also be secure and trusted.
+to trigger user impersonation when True.  As a result, it is important that the contents of kernelspecs also be secure
+and trusted.
 
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
@@ -72,15 +77,17 @@ its value is used to indicate the user that should be impersonated.
 ##### Impersonation in YARN Cluster Mode
 The recommended approach for performing user impersonation when the kernel is launched using the YARN resource manager
 is to configure the `spark-submit` command within 
-[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) to use the `--proxy-user ${KERNEL_USERNAME}` option.  This YARN option 
-requires that kerberos be configured within the cluster.  Please refer to the 
+[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
+to use the `--proxy-user ${KERNEL_USERNAME}` option.  This YARN option  requires that kerberos be configured within the
+cluster.  Please refer to the
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration of `--proxy-user`.
 
 ##### Impersonation in Standalone or YARN Client Mode
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
 kernel launch as the target user.  This can also be configured within the 
-[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh) script and requires the following:
+[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh)
+script and requires the following:
 
 1. The gateway user (i.e., the user in which Enterprise Gateway is running) must be enabled to perform sudo operations
 on each potential host.  This enablement must also be done to prevent password prompts since Enterprise Gateway runs
@@ -99,6 +106,7 @@ will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 Jupyter Enterprise Gateway is now configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
 communication socket created within the launcher and used to perform remote and cross-user signalling functionality.
 
-Should issues arise with respect to SSH tunneling, tunneling can be disabled via the environment variable 
-`EG_ENABLE_TUNNELING=False`.  Note, there is no command-line or configuration file support for this variable.
+Note that SSH tunneling is enabled by default. In order to troubleshoot related issues, tunneling can be disabled via
+the environment variable `EG_ENABLE_TUNNELING=False`.  Note, there is no command-line or configuration file support
+for this variable.
 
