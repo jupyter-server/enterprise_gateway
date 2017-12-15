@@ -248,7 +248,7 @@ JupyterWebsocketPersonality options
 
 ### Addtional supported environment variables
 ```
-  EG_ENABLE_TUNNELING=False 
+  EG_ENABLE_TUNNELING=True
       Indicates whether tunneling (via ssh) of the kernel and communication ports
       is enabled (True) or not (False).   
         
@@ -295,24 +295,23 @@ The following environment variables may be useful for troubleshooting:
 
 ### Per-kernel Configuration Overrides
 As mentioned in the overview of [Process Proxy Configuration](system-architecture.html#process-proxy-configuration)
-capabilities, it's possible to override or amend specific system-level configuration values on a per-kernel basis. 
+capabilities, it's possible to override or amend specific system-level configuration values on a per-kernel basis.
 The following enumerates the set of per-kernel configuration overrides:
 
-* `remote_hosts`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.remote_hosts`. 
-Any values specified in the config dictionary override the globally defined values.  These apply to all 
+* `remote_hosts`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.remote_hosts`.
+Any values specified in the config dictionary override the globally defined values.  These apply to all
 `DistributedProcessProxy` kernels.
-* `yarn_endpoint`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.yarn_endpoint`. 
-Any values specified in the config dictionary override the globally defined values.  These apply to all 
-`YarnClusterProcessProxy` kernels.  Note that you'll likely be required to specify a different `HADOOP_CONF_DIR` 
+* `yarn_endpoint`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.yarn_endpoint`.
+Any values specified in the config dictionary override the globally defined values.  These apply to all
+`YarnClusterProcessProxy` kernels.  Note that you'll likely be required to specify a different `HADOOP_CONF_DIR`
 setting in the kernel.json's `env` stanza in order of the `spark-submit` command to target the appropriate YARN cluster.
-* `authorized_users`: This process proxy configuration entry can be used to override 
-`--EnterpriseGatewayApp.authorized_users`.  Any values specified in the config dictionary override the globally 
-defined values.  These values apply to **all** process-proxy kernels, including the default `LocalProcessProxy`.  Note 
-that the typical use-case for this value is to not set `--EnterpriseGatewayApp.authorized_users` at the global level, 
+* `authorized_users`: This process proxy configuration entry can be used to override
+`--EnterpriseGatewayApp.authorized_users`.  Any values specified in the config dictionary override the globally
+defined values.  These values apply to **all** process-proxy kernels, including the default `LocalProcessProxy`.  Note
+that the typical use-case for this value is to not set `--EnterpriseGatewayApp.authorized_users` at the global level,
 but then restrict access at the kernel level.
-* `unauthorized_users`: This process proxy configuration entry can be used to **_amend_** 
-`--EnterpriseGatewayApp.unauthorized_users`.  Any values specified in the config dictionary are **added** to the 
-globally defined values.  As a result, once a user is denied access at the global level, they will _always be denied 
-access at the kernel level_.  These values apply to **all** process-proxy kernels, including the default 
-`LocalProcessProxy`.  
-
+* `unauthorized_users`: This process proxy configuration entry can be used to **_amend_**
+`--EnterpriseGatewayApp.unauthorized_users`.  Any values specified in the config dictionary are **added** to the
+globally defined values.  As a result, once a user is denied access at the global level, they will _always be denied
+access at the kernel level_.  These values apply to **all** process-proxy kernels, including the default
+`LocalProcessProxy`.
