@@ -26,7 +26,7 @@ Gateway's extensible framework.
 
 ## Features
 
-See the [Features page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/features.html) in the 
+See [Enterprise Gateway Features](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/getting-started.html#enterprise-gateway-features) in the 
 documentation for a list of Jupyter Enterprise Gateway features.
 
 ## Installation
