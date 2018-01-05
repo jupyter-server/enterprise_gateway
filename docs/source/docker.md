@@ -45,11 +45,8 @@ the tag for this image will be `:dev`.
 ### elyra/nb2kg
 
 Image [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) is a simple image built 
-on [jupyter/minimal-notebook](https://hub.docker.com/r/jupyter/minimal-notebook/).  Because 
-enterprise gateway relies on recent NB2KG changes, it's 
-[dockerfile](https://github.com/jupyter-incubator/enterprise_gateway/tree/master/etc/docker/nb2kg/Dockerfile)
-pulls directly from the master branch in git and includes the 
-[latest NB2KG code](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg).  The image 
+on [jupyter/minimal-notebook](https://hub.docker.com/r/jupyter/minimal-notebook/) along with the latest
+release of [NB2KG](https://github.com/jupyter-incubator/nb2kg).  The image 
 also sets some of the new variables that pertain to enterprise gateway (e.g., `KG_REQUEST_TIMEOUT`, 
 `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
 

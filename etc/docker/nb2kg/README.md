@@ -1,4 +1,4 @@
-This image installs the Jupyter server extensions [NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) 
+This image installs the Jupyter server extensions [NB2KG](https://github.com/jupyter-incubator/nb2kg) 
 and [Jupyter Lab](https://github.com/jupyterlab/jupyterlab) 
  on top of image [jupyter/minimal-notebook](https://github.com/jupyter/docker-stacks/tree/master/minimal-notebook).
 
@@ -8,9 +8,7 @@ instances, although running against Jupyter Kernel Gateway instances should be f
 either form of gateway using either `Jupyter Notebook` or `Jupyter Lab`.
 
 It is built using the latest `minimal-notebook` image and includes the `Jupyter Lab` extension that can be optionally 
-invoked.  The hashed-valued tag of the image corresponds to the `NB2KG` commit hash within the 
-[juptyer/kernel_gateway_demos/nb2kg](https://github.com/jupyter/kernel_gateway_demos/nb2kg) repo that is included 
-in the image.
+invoked.  The tag of the image corresponds to the `NB2KG` release that is included in the image.
 
 
 # Basic Use
