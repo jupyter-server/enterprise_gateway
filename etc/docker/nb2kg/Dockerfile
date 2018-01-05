@@ -11,7 +11,7 @@ RUN pip install setuptools --ignore-installed --upgrade
 USER jovyan
 
 # Install Lab and NB2KG. Enable NB2KG extension.  Lab extension is optionally enabled at runtime.
-RUN pip install jupyterlab "git+https://github.com/jupyter/kernel_gateway_demos.git#egg=nb2kg&subdirectory=nb2kg" && \
+RUN pip install jupyterlab nb2kg && \
     jupyter serverextension enable --py nb2kg --sys-prefix
 
 ADD start-nb2kg.sh /usr/local/share/jupyter/
