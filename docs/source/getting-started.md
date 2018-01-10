@@ -113,8 +113,7 @@ We recommend starting Enterprise Gateway as a background task.  As a result, you
 to create a start script to maintain options, file redirection, etc.
 
 The following script starts Enterprise Gateway with `DEBUG` tracing enabled (default is `INFO`) and idle
-kernel culling for any kernels idle for 12 hours where idle check intervals occur every minute.  
-The Enterprise Gateway log can then be monitored via `tail -F enterprise_gateway.log` and it can be 
+kernel culling for any kernels idle for 12 hours where idle check intervals occur every minute.  The Enterprise Gateway log can then be monitored via `tail -F enterprise_gateway.log` and it can be 
 stopped via `kill $(cat enterprise_gateway.pid)`
 
 ```bash
@@ -133,19 +132,14 @@ fi
 
 ### Connecting a Notebook to Enterprise Gateway
 
-[NB2KG](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg) is used to connect from a
+[NB2KG](https://github.com/jupyter-incubator/nb2kg) is used to connect a Notebook from a
 local desktop or laptop to the Enterprise Gateway instance on the Spark/YARN cluster. We strongly recommend
-that the latest version of NB2KG be used as our team has provided some security enhancements to enable for [conveying the notebook 
-user](https://github.com/jupyter/kernel_gateway_demos/pull/48) (for configurations when Enterprise Gateway is
-running behind a secured gateway) and allowing for [increased request 
-timeouts](https://github.com/jupyter/kernel_gateway_demos/pull/55) (due to the longer kernel startup times 
-when interacting with the resource manager or distribution operations). Please follow the [developer 
-instructions](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg#develop) to build the
-latest version until a new release is available (at which time we'll update this information and likely
-include instructions for building a docker image).
+that NB2KG [v0.1.0](https://github.com/jupyter-incubator/nb2kg/releases/tag/v0.1.0) be used as our team has 
+provided some security enhancements to enable for conveying the notebook  user (for configurations when 
+Enterprise Gateway is running behind a secured gateway) and allowing for increased request  timeouts (due 
+to the longer kernel startup times when interacting with the resource manager or distribution operations). 
 
-Extending the notebook launch command listed on the [NB2KG 
-repo](https://github.com/jupyter/kernel_gateway_demos/tree/master/nb2kg#run-notebook-server), 
+Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter-incubator/nb2kg#run-notebook-server), 
 one might use the following...
 
 ```bash
@@ -160,8 +154,8 @@ jupyter notebook \
   --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
 
-For your convenience, we have also build a docker image with latest Jupyter Notebook and latest NB2KG which can be launched
-by the command below:
+For your convenience, we have also build a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with 
+latest Jupyter Notebook and NB2KG which can be launched by the command below:
 
 ```bash
 docker run -t --rm \
