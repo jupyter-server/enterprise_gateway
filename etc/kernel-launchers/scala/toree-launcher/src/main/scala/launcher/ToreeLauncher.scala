@@ -173,7 +173,36 @@ object ToreeLauncher {
     Json.parse(data).as[JsObject]
   }
 
-  private def gatewayListener(gatewaySocket : ServerSocket): Unit = {
+  private def getAlternateSignalName(list: List[String]): String = list match {
+    case Nil => null
+    case "--alternate-sigint" :: (signalName: String) :: tail => signalName
+    case head :: tail => getAlternateSignalName(tail)
+  }
+
+  private def getReconciledSignalName(sigNum: Int, signalName: String): String = {
+    // To raise the signal, we must map the signal number back to the appropriate
+    // name as follows:  Take the common case and assume interrupt and check if an
+    // alternate interrupt signal has been given. If sigNum = 9, use "KILL", else
+    // if no alternate has been provided use "INT".  Note that use of SIGINT won't
+    // get received because the JVM won't propagate to background threads, buy it's
+    // the best we can do.  We'll still issue a warning in the log.
+
+    require(sigNum > 0, "sigNum must be greater than zero")
+
+    if (sigNum == 9) "KILL"
+    else {
+      if (signalName == null) {
+        println("WARNING: --alternate-sigint is not defined and signum %d has been " +
+                 "requested.  Using SIGINT, which probably won't get received due to JVM " +
+                 "preventing interrupts on background processes.  Define --alternate-sigint using __TOREE_OPTS__.".
+                 format(sigNum))
+        "INT"
+      }
+      else signalName
+    }
+  }
+
+  private def gatewayListener(gatewaySocket : ServerSocket, signalName: String): Unit = {
     var stop = false
     while (!stop) {
       val requestJson = getGatewayRequest(gatewaySocket)
@@ -186,25 +215,11 @@ object ToreeLauncher {
       if ( requestJson.keys.contains("signum")) {
         val sigNum = (requestJson \ "signum").as[Int]
         if ( sigNum > 0 ) {
-          // If sigNum anything but 0 (for poll), use Signal.raise(signal) to signal the
-          // kernel.  To do that, we must map the signal number back to the appropriate
-          // name as follows:  Take the common case and assume interrupt and check if an
-          // alternate interrupt signal has been given. If sigNum = 9, use "KILL", else
-          // if no alternate has been provided use "INT".  Note that use of SIGINT won't
-          // get received because the JVM won't propagate to background threads, buy it's
-          // the best we can do.  We'll still issue a warning in the log.
-          var sigName = System.getenv("TOREE_ALTERNATE_SIGINT")
-          if (sigNum == 9) sigName = "KILL"
-          if (sigName == null) {
-            sigName = "INT"
-            println("WARNING: TOREE_ALTERNATE_SIGINT is not defined and signum %d has been" +
-              "requested.  Using SIGINT, which probably won't get received due to JVM " +
-              "preventing interrupts on background processes.  Define TOREE_ALTERNATE_SIGINT.".
-                format(sigNum))
-          }
+          // If sigNum anything but 0 (for poll), use Signal.raise(signal) to signal the kernel.
+          val sigName = getReconciledSignalName(sigNum, signalName)
           val sigToRaise = new Signal(sigName)
           println("Gateway listener raising signal: '%s' %d".
-            format(sigToRaise.getName, sigToRaise.getNumber))
+                   format(sigToRaise.getName, sigToRaise.getNumber))
           Signal.raise(sigToRaise)
         }
       }
@@ -227,7 +242,9 @@ object ToreeLauncher {
     if ( gatewaySocket != null ){
       val gatewayListenerThread = new Thread {
         override def run() {
-          gatewayListener(gatewaySocket)
+          val argsList = args.toList
+          val signalName = getAlternateSignalName(argsList)
+          gatewayListener(gatewaySocket, signalName)
         }
       }
       println("Starting gateway listener...")

@@ -14,9 +14,9 @@ from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 
 
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
-    """Extends the SeedingMappingKernelManager. 
+    """Extends the SeedingMappingKernelManager.
 
-    This class is responsible for managing remote kernels. 
+    This class is responsible for managing remote kernels.
     """
 
     def _kernel_manager_class_default(self):
@@ -81,7 +81,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
 class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     """Extends the KernelGatewayIOLoopKernelManager used by the RemoteMappingKernelManager.
 
-    This class is responsible for detecting that a remote kernel is desired, then launching the 
+    This class is responsible for detecting that a remote kernel is desired, then launching the
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
@@ -156,28 +156,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         """
         self.log.debug("RemoteKernelManager.signal_kernel({})".format(signum))
         if self.has_kernel:
-            if signum == signal.SIGINT:
-                if self.sigint_value is None:
-                    # If we're interrupting the kernel, check if kernelspec's env defines
-                    # an alternate interrupt signal.  We'll do this once per interrupted kernel.
-                    self.sigint_value = signum # use default
-                    alt_sigint = self.kernel_spec.env.get('EG_ALTERNATE_SIGINT')
-                    if alt_sigint:
-                        try:
-                            sig_value = getattr(signal, alt_sigint)
-                            if type(sig_value) is int: # Python 2
-                                self.sigint_value = sig_value
-                            else: # Python 3
-                                self.sigint_value = sig_value.value
-                            self.log.debug("Converted EG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
-                                             format(alt_sigint, self.sigint_value))
-                        except AttributeError:
-                            self.log.warning("Error received when attempting to convert EG_ALTERNATE_SIGINT of "
-                                             "'{}' to a value. Check kernelspec entry for kernel '{}' - using default 'SIGINT'".
-                                             format(alt_sigint, self.kernel_spec.display_name))
-                self.kernel.send_signal(self.sigint_value)
-            else:
-                self.kernel.send_signal(signum)
+            self.kernel.send_signal(signum)
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
