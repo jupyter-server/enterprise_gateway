@@ -476,7 +476,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             ssh_server = server + ":" + str(port)
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
-            ssh = "ssh -p %s -o ServerAliveInterval=%i" % (port, self._get_keep_alive_interval(kernel_channel))
+            ssh = "ssh -p %s -o StrictHostKeyChecking=no -o ServerAliveInterval=%i" % \
+                (port, self._get_keep_alive_interval(kernel_channel))
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
                 ssh, local_port, remote_ip, remote_port, server)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
