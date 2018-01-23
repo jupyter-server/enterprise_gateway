@@ -3,12 +3,14 @@ import tempfile
 import json
 import uuid
 import argparse
+import base64
 from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from IPython import embed_kernel
 from pyspark.sql import SparkSession
 from threading import Thread
+from Crypto.Cipher import AES
 
 
 class WaitingForSparkSessionToBeInitialized(object):
@@ -74,6 +76,36 @@ def prepare_gateway_socket():
     sock.settimeout(5)
     return sock
 
+def _encrypt(connection_info, conn_file):
+    # Block size for cipher obj can be 16, 24, or 32. 16 matches 128 bit.
+    BLOCK_SIZE = 16
+
+    # Ensure that the length of the data that will be encrypted is a
+    # multiple of BLOCK_SIZE by padding with '%' on the right.
+    PADDING = '%'
+    pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
+
+    # Encrypt connection_info whose length is a multiple of BLOCK_SIZE using
+    # AES cipher and then encode the resulting byte array using Base64.
+    encryptAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+
+    # Create a key using first 16 chars of the kernel-id that is burnt in
+    # the name of the connection file.
+    bn = os.path.basename(conn_file)
+    if (bn.find("kernel-") == -1):
+        print("Invalid connection file name '{}'".format(conn_file))
+        raise RuntimeError("Invalid connection file name '{}'".format(conn_file))
+
+    tokens = bn.split("kernel-")
+    kernel_id = tokens[1]
+    key = kernel_id[0:16]
+    # print("AES Encryption Key '{}'".format(key))
+
+    # Creates the cipher obj using the key.
+    cipher = AES.new(key)
+
+    payload = encryptAES(cipher, connection_info)
+    return payload
 
 def return_connection_info(connection_file, ip, response_addr, disable_gateway_socket):
     gateway_sock = None
@@ -106,7 +138,11 @@ def return_connection_info(connection_file, ip, response_addr, disable_gateway_s
     s = socket(AF_INET, SOCK_STREAM)
     try:
         s.connect((response_ip, response_port))
-        s.send(json.dumps(cf_json).encode(encoding='utf-8'))
+        json_content = json.dumps(cf_json).encode(encoding='utf-8')
+        print("JSON Payload '{}".format(json_content))
+        payload = _encrypt(json_content, connection_file)
+        print("Encrypted Payload '{}".format(payload))
+        s.send(payload)
     finally:
         s.close()
 
