@@ -17,6 +17,12 @@ import scala.io.BufferedSource
 
 import sun.misc.Signal
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import java.security.Key;
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
+
 // scalastyle:off println
 
 object ToreeLauncher {
@@ -115,6 +121,48 @@ object ToreeLauncher {
     ManagementFactory.getRuntimeMXBean.getName.split('@')(0)
   }
 
+  private def getClearText(value: String): String = {
+    val len = value.length()
+
+    if (len % 16 == 0) {
+      // If the length of the string is already a multiple of 16, then
+      // just return it.
+      value
+    }
+    else {
+      // Ensure that the length of the data that will be encrypted is a
+      // multiple of 16 by padding with '%' on the right.
+      //
+      // Note that the padding is not needed in Scala but Python and R
+      // need padding. In order to keep things consistent across all the
+      // languages(so that EG on the receiving end can behave the same
+      // way regardless of the language), we are also padding for Scala.
+      val targetLength = (len / 16 + 1) * 16
+      val clearText = value.padTo(targetLength, "%").mkString
+      clearText
+    }
+  }
+
+  private def encrypt(profilePath: String, value: String): String = {
+    if (profilePath.indexOf("kernel-") == -1) {
+      println("Invalid connection file name '%s', now exit.".format(profilePath))
+      sys.exit(-1)
+    }
+
+    val clearText = getClearText(value)
+    val cipher: Cipher = Cipher.getInstance("AES")
+    val file = new java.io.File(profilePath)
+    val fileName = file.getName()
+    val tokens = fileName.split("kernel-")
+    val key = tokens(1).substring(0, 16)
+    val aesKey: Key = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES")
+
+    println("Raw Payload: '%s'".format(clearText))
+    // println("AES Key: '%s'".format(key))
+    cipher.init(Cipher.ENCRYPT_MODE, aesKey)
+    Base64.getEncoder.encodeToString(cipher.doFinal(clearText.getBytes(StandardCharsets.UTF_8)))
+  }
+
   private def initProfile(args : Array[String]): ServerSocket = {
 
     var gatewaySocket : ServerSocket = null
@@ -153,14 +201,17 @@ object ToreeLauncher {
         // convey port number back to gateway.
         gatewaySocket = new ServerSocket(0)
         val gsJson = pidJson ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
-        jsonContent = Json.prettyPrint(Json.toJson(gsJson))
+        jsonContent = Json.toJson(gsJson).toString()
       }
       else {
-        jsonContent = Json.prettyPrint(Json.toJson(pidJson))
+        jsonContent = Json.toJson(pidJson).toString()
       }
 
       if (responseAddress != null){
-        writeToSocket(responseAddress, jsonContent)
+        println("JSON Payload: '%s'".format(jsonContent))
+        val payload = encrypt(profilePath, jsonContent)
+        println("Encrypted Payload: '%s'".format(payload))
+        writeToSocket(responseAddress, payload)
       }
     }
     gatewaySocket
