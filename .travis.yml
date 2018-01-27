@@ -10,7 +10,7 @@ python:
 env:
     - ASYNC_TEST_TIMEOUT=30
 install:
-    - pip install --upgrade setuptools pip
+    - pip install --upgrade setuptools pip pycrypto
     - python setup.py bdist_wheel sdist
     - pip install dist/*.whl coverage
     - pip freeze
