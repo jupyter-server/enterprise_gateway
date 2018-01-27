@@ -2,6 +2,10 @@ library(SparkR)
 library(argparser)
 library(jsonlite)
 
+require("base64enc")
+require("digest")
+require("stringr")
+
 r_libs_user <- Sys.getenv("R_LIBS_USER")
 
 sparkConfigList <- list(
@@ -65,6 +69,23 @@ sparkContextFn <- local({
     }
   })
 
+encrypt <- function(json, connection_file) {
+  # Ensure that the length of the data that will be encrypted is a
+  # multiple of 16 by padding with '%' on the right.
+  raw_payload <- str_pad(json, (str_length(json) %/% 16 + 1) * 16, side="right", pad="%")
+  message(paste("Raw Payload: ", raw_payload))
+
+  fn <- basename(connection_file)
+  tokens <- unlist(strsplit(fn, "kernel-"))
+  key <- charToRaw(substr(tokens[2], 1, 16))
+  # message(paste("AES Encryption Key: ", rawToChar(key)))
+
+  cipher <- AES(key, mode="ECB")
+  encrypted_payload <- cipher$encrypt(raw_payload)
+  encoded_payload = base64encode(encrypted_payload)
+  return(encoded_payload)
+}
+
 # Return connection information
 return_connection_info <- function(connection_file, ip, response_addr){
 
@@ -85,7 +106,17 @@ return_connection_info <- function(connection_file, ip, response_addr){
         sendme <- read_json(connection_file)
         # Add launcher process id to returned info...
         sendme$pid <- Sys.getpid()
-        write_resp <- writeLines(toJSON(sendme, auto_unbox=TRUE), con)
+        json <- toJSON(sendme, auto_unbox=TRUE)
+        message(paste("JSON Payload: ", json))
+
+        fn <- basename(connection_file)
+        if (!grepl("kernel-", fn)) {
+          message(paste("Invalid connection file name: ", connection_file))
+          return(NA)
+        }
+        payload <- encrypt(json, connection_file)
+        message(paste("Encrypted Payload: ", payload))
+        write_resp <- writeLines(payload, con)
     },
     error=function(cond) {
         message(paste("Unable to connect to response address", response_addr ))
@@ -109,7 +140,7 @@ determine_connection_file <- function(connection_file){
     # Else, create a temporary filename and return that.
     base_file = tools::file_path_sans_ext(basename(connection_file))
     temp_file = tempfile(pattern=paste(base_file,"_",sep=""), fileext=".json")
-    cat(paste("Using connection file ",temp_file," instead of ",connection_file,"",sep="'"))
+    cat(paste("Using connection file ",temp_file," instead of ",connection_file," \n",sep="'"))
     return(temp_file)
 }
 
