@@ -15,6 +15,7 @@ import pexpect
 import getpass
 from tornado import web
 import subprocess
+import base64
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
@@ -22,6 +23,8 @@ from calendar import timegm
 from notebook import _tz
 from zmq.ssh import tunnel
 from enum import Enum
+from Crypto.Cipher import AES
+
 
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
@@ -501,8 +504,17 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # interval for the rest of the kernel channels.
         return cull_idle_timeout + 60
 
+    def _decrypt(self, data):
+        decryptAES = lambda c, e: c.decrypt(base64.b64decode(e))
+        key = self.kernel_id[0:16]
+        # self.log.debug("AES Decryption Key '{}'".format(key))
+        cipher = AES.new(key)
+        payload = decryptAES(cipher, data)
+        payload = "".join([payload.rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
+        return payload
+
     def receive_connection_info(self):
-        # Polls the socket using accept.  When data is found, returns ready indicator and json data
+        # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
         ready_to_connect = False
         if self.response_socket:
             conn = None
@@ -512,7 +524,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 while 1:
                     buffer = conn.recv(1024)
                     if not buffer:  # send is complete
-                        connect_info = json.loads(data)
+                        self.log.debug("Received Payload '{}'".format(data))
+                        payload = self._decrypt(data)
+                        self.log.debug("Decrypted Payload '{}'".format(payload))
+                        connect_info = json.loads(payload)
                         self.log.debug("Connect Info received from the launcher is as follows '{}'".
                                        format(connect_info))
                         self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
