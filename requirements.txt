@@ -9,5 +9,5 @@ paramiko>=2.1.2
 yarn-api-client>=0.2.3
 pexpect>=4.2.0
 pycrypto>=2.6.1
-pytest>=3.3.2
-websocket-client>=0.46.0
+
+
