@@ -1,7 +1,5 @@
-import os
 from tornado.escape import json_encode, json_decode, url_escape
 from uuid import uuid4
-import websocket
 import requests
 
 
@@ -11,33 +9,37 @@ class ElyraClient(object):
         'parent_header': {}, 'channel': 'shell', 'metadata': {}, 'buffers': {},
         'content': {'silent': False, 'store_history': False, 'user_expressions': {}, 'allow_stdin': False}}
 
-    def __init__(self, host, username):
-        self.http_api_endpoint = "http://{}/api/kernels".format(host)
-        self.ws_endpoint = "ws://{}/api/kernels".format(host)
-        self.username = username
-
-    def delete_kernel(self, kernel_id):
+    @staticmethod
+    def delete_kernel(kernel_id, http_api_endpoint):
+        print("Cleaning up kernel : {}".format(kernel_id))
         if not kernel_id:
             return False
-        url = "{}/{}".format(self.http_api_endpoint, kernel_id)
+        url = "{}/{}".format(http_api_endpoint, kernel_id)
         response = requests.delete(url)
         return response.status_code == 204
 
-    def create_kernel(self, kernel_spec_name):
+    @staticmethod
+    def create_kernel(kernel_spec_name, username, http_api_endpoint):
         # Ask Elyra to create a new kernel based on kernel spec name, and return the kernel id if successfully created.
+        print("Starting up the a {} kernel on the Gateway....".format(kernel_spec_name))
         kernel_id = None
         json_data = {'name': kernel_spec_name}
-        if self.username is not None:
-            json_data['env'] = {'KERNEL_USERNAME': self.username}
-        response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
+        if username is not None:
+            json_data['env'] = {'KERNEL_USERNAME': username}
+        response = requests.post(http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
             json_data = response.json()
             kernel_id = json_data.get("id")
         return kernel_id
 
-    def get_ws_kernel_endpoint(self, kernel_id):
+    @staticmethod
+    def get_ws_kernel_endpoint(kernel_id, host):
         # Given a kernel id, return the corresponding web socket endpoint for this kernel to send/receive messages.
-        return "{}/{}/channels".format(self.ws_endpoint, url_escape(kernel_id))
+        return "ws://{}/api/kernels/{}/channels".format(host, url_escape(kernel_id))
+
+    @staticmethod
+    def get_api_endpoint(host):
+        return "http://{}/api/kernels".format(host)
 
     @staticmethod
     def new_code_message(code):
