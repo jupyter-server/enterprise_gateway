@@ -87,7 +87,7 @@ encrypt <- function(json, connection_file) {
 }
 
 # Return connection information
-return_connection_info <- function(connection_file, ip, response_addr){
+return_connection_info <- function(connection_file, response_addr){
 
   response_parts <- strsplit(response_addr, ":")
 
@@ -144,8 +144,6 @@ determine_connection_file <- function(connection_file){
     return(temp_file)
 }
 
-local_ip <- "0.0.0.0"
-
 # Check arguments
 parser <- arg_parser('R-kernel-launcher')
 parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
@@ -159,17 +157,36 @@ argv <- parse_args(parser)
 #  If there is a response address, use pull socket mode
 connection_file <- argv$connection_file
 if (!file.exists(connection_file)){
-    key <- uuid::UUIDgenerate()
     connection_file <- determine_connection_file(connection_file)
 
-    python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
-               "python -c \"from jupyter_client.connect import write_connection_file;
-                write_connection_file(fname='${connection_file}', ip='${local_ip}', key='${key}')\""))
+    # Get the pid of the launcher so the listener thread (process) can detect its
+    # presence to know when to shutdown.
+    pid <- Sys.getpid()
 
-    system(python_cmd)
+    # Hoop to jump through to get the directory this script resides in so that we can
+    # load the co-located python gateway_listener.py file.  This code will not work if
+    # called directly from within RStudio.
+    # https://stackoverflow.com/questions/1815606/rscript-determine-path-of-the-executing-script
+    launch_args <- commandArgs(trailingOnly = FALSE)
+    file_option <- "--file="
+    script_path <- sub(file_option, "", launch_args[grep(file_option, launch_args)])
+    listener_file <- paste(sep="/", dirname(script_path), "gateway_listener.py")
+
+    # Launch the gateway listener logic in an async manner and poll for the existence of
+    # the connection file before continuing.  Should there be an issue, Enterprise Gateway
+    # will terminate the launcher, so there's no need for a timeout.
+    python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
+               "python -c \"import os, sys, imp;
+                gl = imp.load_source('setup_gateway_listener', '${listener_file}');
+                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}')\""))
+    system(python_cmd, wait=FALSE)
+
+    while (!file.exists(connection_file)) {
+        Sys.sleep(0.5)
+    }
 
     if (length(argv$RemoteProcessProxy.response_address)){
-      return_connection_info(connection_file, local_ip, argv$RemoteProcessProxy.response_address)
+      return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
     }
 }
 
