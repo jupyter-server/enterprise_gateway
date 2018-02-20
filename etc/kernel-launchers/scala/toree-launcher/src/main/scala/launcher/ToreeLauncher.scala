@@ -14,14 +14,9 @@ import play.api.libs.json._
 import java.lang.management.ManagementFactory
 
 import scala.io.BufferedSource
-
 import sun.misc.Signal
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import java.security.Key;
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
+import launcher.utils.{SecurityUtils, SocketUtils}
 
 // scalastyle:off println
 
@@ -29,6 +24,9 @@ object ToreeLauncher {
 
   val kernelTempDir : String = "eg-kernel"
   var profilePath : String = _
+  var hasPortRange : Boolean = false
+  var portLowerBound : Int = -1
+  var portUpperBound : Int = -1
   var responseAddress : String = _
   var disableGatewaySocket : Boolean = false
 
@@ -47,23 +45,12 @@ object ToreeLauncher {
     }
   }
 
-  private def writeToSocket(socketAddress : String, content : String): Unit = {
-    val ipPort = socketAddress.split(":")
-    if (ipPort.length == 2) {
-      println("Sending connection info to gateway at %s\n%s".format(socketAddress, content))
-      val ip = ipPort(0)
-      val port = ipPort(1).toInt
-      val s = new Socket(InetAddress.getByName(ip), port)
-      val out = new PrintStream(s.getOutputStream)
-      try{
-        out.append(content)
-        out.flush()
-      } finally {
-        s.close()
-      }
-    } else {
-      println("Invalid format for response address '%s'!".format(socketAddress))
-    }
+  private def initPortRange(portRange: String): Unit = {
+      val ports = portRange.split("\\.\\.")
+      ports.foreach(println)
+      this.hasPortRange = true
+      this.portLowerBound = ports(0).toInt
+      this.portUpperBound = ports(1).toInt
   }
 
   private def initArguments(args: Array[String]): Unit = {
@@ -74,6 +61,7 @@ object ToreeLauncher {
 
     args.sliding(2, 1).toList.collect {
       case Array("--profile", arg: String) => profilePath = arg.trim
+      case Array("--kernel-port-range", arg: String) => initPortRange(arg.trim)
       case Array("--RemoteProcessProxy.response-address", arg: String) => responseAddress = arg.trim
       case Array("--RemoteProcessProxy.disable-gateway-socket", arg: String) =>
             disableGatewaySocket = arg.trim.toBoolean
@@ -121,47 +109,8 @@ object ToreeLauncher {
     ManagementFactory.getRuntimeMXBean.getName.split('@')(0)
   }
 
-  private def getClearText(value: String): String = {
-    val len = value.length()
 
-    if (len % 16 == 0) {
-      // If the length of the string is already a multiple of 16, then
-      // just return it.
-      value
-    }
-    else {
-      // Ensure that the length of the data that will be encrypted is a
-      // multiple of 16 by padding with '%' on the right.
-      //
-      // Note that the padding is not needed in Scala but Python and R
-      // need padding. In order to keep things consistent across all the
-      // languages(so that EG on the receiving end can behave the same
-      // way regardless of the language), we are also padding for Scala.
-      val targetLength = (len / 16 + 1) * 16
-      val clearText = value.padTo(targetLength, "%").mkString
-      clearText
-    }
-  }
 
-  private def encrypt(profilePath: String, value: String): String = {
-    if (profilePath.indexOf("kernel-") == -1) {
-      println("Invalid connection file name '%s', now exit.".format(profilePath))
-      sys.exit(-1)
-    }
-
-    val clearText = getClearText(value)
-    val cipher: Cipher = Cipher.getInstance("AES")
-    val file = new java.io.File(profilePath)
-    val fileName = file.getName()
-    val tokens = fileName.split("kernel-")
-    val key = tokens(1).substring(0, 16)
-    val aesKey: Key = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES")
-
-    println("Raw Payload: '%s'".format(clearText))
-    // println("AES Key: '%s'".format(key))
-    cipher.init(Cipher.ENCRYPT_MODE, aesKey)
-    Base64.getEncoder.encodeToString(cipher.doFinal(clearText.getBytes(StandardCharsets.UTF_8)))
-  }
 
   private def initProfile(args : Array[String]): ServerSocket = {
 
@@ -170,8 +119,15 @@ object ToreeLauncher {
     initArguments(args)
 
     if(profilePath == null){
-      println("Not valid --profile argument, now exit")
+      println("Invalid --profile argument, now exit")
       sys.exit(-1)
+    }
+
+    if(hasPortRange) {
+      if (portLowerBound < 0 || portUpperBound < 0) {
+        println("Invalid port range, use --kernel-port-range LowerBound..UpperBound")
+        sys.exit(-1)
+      }
     }
 
     if (!isPathExist(profilePath)) {
@@ -179,7 +135,7 @@ object ToreeLauncher {
 
       println("The profile %s doesn't exist, now creating it...".format(profilePath))
 
-      val content = KernelProfile.createJsonProfile()
+      val content = KernelProfile.createJsonProfile(hasPortRange, portLowerBound, portUpperBound)
       writeToFile(profilePath, content)
 
       if (isPathExist(profilePath)) {
@@ -209,9 +165,9 @@ object ToreeLauncher {
 
       if (responseAddress != null){
         println("JSON Payload: '%s'".format(jsonContent))
-        val payload = encrypt(profilePath, jsonContent)
+        val payload = SecurityUtils.encrypt(profilePath, jsonContent)
         println("Encrypted Payload: '%s'".format(payload))
-        writeToSocket(responseAddress, payload)
+        SocketUtils.writeToSocket(responseAddress, payload)
       }
     }
     gatewaySocket
@@ -245,8 +201,9 @@ object ToreeLauncher {
       if (signalName == null) {
         println("WARNING: --alternate-sigint is not defined and signum %d has been " +
                  "requested.  Using SIGINT, which probably won't get received due to JVM " +
-                 "preventing interrupts on background processes.  Define --alternate-sigint using __TOREE_OPTS__.".
-                 format(sigNum))
+                 "preventing interrupts on background processes.  " +
+                 "Define --alternate-sigint using __TOREE_OPTS__."
+                   .format(sigNum))
         "INT"
       }
       else signalName
