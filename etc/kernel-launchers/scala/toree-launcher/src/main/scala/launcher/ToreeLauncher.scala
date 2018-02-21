@@ -22,9 +22,9 @@ import launcher.utils.{SecurityUtils, SocketUtils}
 
 object ToreeLauncher {
 
+  val minPortRangeSize = sys.env.getOrElse("EG_MIN_PORT_RANGE_SIZE", "1000").toInt
   val kernelTempDir : String = "eg-kernel"
   var profilePath : String = _
-  var hasPortRange : Boolean = false
   var portLowerBound : Int = -1
   var portUpperBound : Int = -1
   var responseAddress : String = _
@@ -48,9 +48,18 @@ object ToreeLauncher {
   private def initPortRange(portRange: String): Unit = {
       val ports = portRange.split("\\.\\.")
       ports.foreach(println)
-      this.hasPortRange = true
       this.portLowerBound = ports(0).toInt
       this.portUpperBound = ports(1).toInt
+
+      if (this.portLowerBound != this.portUpperBound) {  // Range of zero disables port restrictions
+         if (this.portLowerBound < 0 || this.portUpperBound < 0 ||
+            (this.portUpperBound - this.portLowerBound < minPortRangeSize)) {
+            println("Invalid port range, use --port-range <LowerBound>..<UpperBound>, range must be >= " +
+                    "EG_MIN_PORT_RANGE_SIZE ($minPortRangeSize)")
+            sys.exit(-1)
+         }
+      }
+
   }
 
   private def initArguments(args: Array[String]): Unit = {
@@ -61,7 +70,7 @@ object ToreeLauncher {
 
     args.sliding(2, 1).toList.collect {
       case Array("--profile", arg: String) => profilePath = arg.trim
-      case Array("--kernel-port-range", arg: String) => initPortRange(arg.trim)
+      case Array("--port-range", arg: String) => initPortRange(arg.trim)
       case Array("--RemoteProcessProxy.response-address", arg: String) => responseAddress = arg.trim
       case Array("--RemoteProcessProxy.disable-gateway-socket", arg: String) =>
             disableGatewaySocket = arg.trim.toBoolean
@@ -109,9 +118,6 @@ object ToreeLauncher {
     ManagementFactory.getRuntimeMXBean.getName.split('@')(0)
   }
 
-
-
-
   private def initProfile(args : Array[String]): ServerSocket = {
 
     var gatewaySocket : ServerSocket = null
@@ -123,19 +129,13 @@ object ToreeLauncher {
       sys.exit(-1)
     }
 
-    if(hasPortRange) {
-      if (portLowerBound < 0 || portUpperBound < 0) {
-        println("Invalid port range, use --kernel-port-range LowerBound..UpperBound")
-        sys.exit(-1)
-      }
-    }
 
     if (!isPathExist(profilePath)) {
       profilePath = determineConnectionFile(profilePath, args)
 
       println("The profile %s doesn't exist, now creating it...".format(profilePath))
 
-      val content = KernelProfile.createJsonProfile(hasPortRange, portLowerBound, portUpperBound)
+      val content = KernelProfile.createJsonProfile(this.portLowerBound, this.portUpperBound)
       writeToFile(profilePath, content)
 
       if (isPathExist(profilePath)) {
@@ -155,7 +155,7 @@ object ToreeLauncher {
       if (!disableGatewaySocket) {
         // Enterprise Gateway wants to establish socket communication. Create socket and
         // convey port number back to gateway.
-        gatewaySocket = new ServerSocket(0)
+        gatewaySocket = SocketUtils.findSocket(this.portLowerBound, this.portUpperBound)
         val gsJson = pidJson ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
         jsonContent = Json.toJson(gsJson).toString()
       }

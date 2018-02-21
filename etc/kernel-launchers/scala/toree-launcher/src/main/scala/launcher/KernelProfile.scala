@@ -25,32 +25,19 @@ case class KernelProfile(hb_port : Int,
 
 object KernelProfile {
 
-  def getUnusedPort(hasPortRange: Boolean = false,
-                  portLowerBound: Int = -1,
-                  portUpperBound: Int = -1) : Int = {
-
-    if (hasPortRange) {
-      return SocketUtils.findPortInRange(portLowerBound, portUpperBound)
-    } else {
-      return SocketUtils.findRandomPort
-    }
-  }
-
-
   def newKey() : String = randomUUID.toString
 
-  def createJsonProfile(hasPortRange: Boolean = false,
-                        portLowerBound: Int = -1,
+  def createJsonProfile(portLowerBound: Int = -1,
                         portUpperBound: Int = -1) : String = {
 
     implicit val writes = Json.writes[KernelProfile]
 
     val newKernelProfile = new KernelProfile(
-      hb_port = getUnusedPort(hasPortRange, portLowerBound, portUpperBound),
-      control_port = getUnusedPort(hasPortRange, portLowerBound, portUpperBound),
-      iopub_port = getUnusedPort(hasPortRange, portLowerBound, portUpperBound),
-      stdin_port = getUnusedPort(hasPortRange, portLowerBound, portUpperBound),
-      shell_port = getUnusedPort(hasPortRange, portLowerBound, portUpperBound),
+      hb_port = SocketUtils.findPort(portLowerBound, portUpperBound),
+      control_port = SocketUtils.findPort(portLowerBound, portUpperBound),
+      iopub_port = SocketUtils.findPort(portLowerBound, portUpperBound),
+      stdin_port = SocketUtils.findPort(portLowerBound, portUpperBound),
+      shell_port = SocketUtils.findPort(portLowerBound, portUpperBound),
       key = newKey(),
       kernel_name = "Apache Toree Scala", transport = "tcp", ip = "0.0.0.0",
       signature_scheme = "hmac-sha256"

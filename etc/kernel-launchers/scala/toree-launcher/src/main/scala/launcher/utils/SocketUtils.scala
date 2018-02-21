@@ -12,8 +12,7 @@ import scala.util.Random
 
 
 object SocketUtils {
-  val PORT_DEFAULT_LOWER_BOUND: Int = 1024
-  val PORT_DEFAULT_UPPER_BOUND: Int = 65535
+
   val random: Random = new Random (System.currentTimeMillis)
 
   def writeToSocket(socketAddress : String, content : String): Unit = {
@@ -35,57 +34,53 @@ object SocketUtils {
     }
   }
 
-  def findRandomPort(): Int = {
-    val socket = new ServerSocket(0)
-    val port = socket.getLocalPort
+  def findPort(portLowerBound: Int, portUpperBound: Int): Int = {
 
-    // now Close the port
+    val socket = findSocket(portLowerBound, portUpperBound)
+    val port = socket.getLocalPort
+    println("port %s is available".format(port)) // scalastyle:off
+
+    // now Close the socket/port
     socket.close()
     println("Port %s closed...".format(port)) // scalastyle:off
 
-    return port
+    port
   }
 
-  def findPortInRange(portLowerBound: Int = PORT_DEFAULT_LOWER_BOUND,
-                      portUpperBound: Int = PORT_DEFAULT_UPPER_BOUND): Int = {
+  def findSocket(portLowerBound: Int, portUpperBound: Int): ServerSocket = {
 
     var foundAvailable: Boolean = false
-    var port = -1
+    var socket: ServerSocket = null
 
     while (foundAvailable == false) {
 
-      val randomPort = getRandomPortInRange(portLowerBound, portUpperBound)
+      val candidatePort = getCandidatePort(portLowerBound, portUpperBound)
+
+      // try candidatePort - only display 'Trying...' if in range
+      if ( candidatePort > 0 )
+        println("Trying port %s ...".format(candidatePort)) // scalastyle:off
 
       try {
-
-        // try a randomPort
-        println("Trying port %s ...".format(randomPort)) // scalastyle:off
-        val socket = new ServerSocket(randomPort)
-        println("port %s is available".format(randomPort)) // scalastyle:off
-
-        // now Close the port
-        socket.close()
-        println("Port %s closed...".format(randomPort)) // scalastyle:off
-
-        // return the port to be used
-        port = randomPort
+        socket = new ServerSocket(candidatePort)
+        // return the socket to be used
         foundAvailable = true
-
       } catch {
-        case _ : Throwable => println("port %s is in use".format(randomPort)) // scalastyle:off
+        case _ : Throwable => println("port %s is in use".format(candidatePort)) // scalastyle:off
+        socket = null
       }
     }
 
-    return port
+    socket
   }
 
-  private def getRandomPortInRange(portLowerBound: Int = PORT_DEFAULT_LOWER_BOUND,
-                                   portUpperBound: Int = PORT_DEFAULT_UPPER_BOUND): Int = {
+  private def getCandidatePort(portLowerBound: Int, portUpperBound: Int): Int = {
 
     val portRange = portUpperBound - portLowerBound
-    val randomPort = random.nextInt(portRange)
-    val port = portLowerBound + randomPort
+    if ( portRange <= 0 )
+        return 0
 
-    return port
+    val port = portLowerBound + random.nextInt(portRange)
+
+    port
   }
 }
