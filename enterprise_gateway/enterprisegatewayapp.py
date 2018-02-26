@@ -11,7 +11,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from traitlets import default, List, Set, Unicode, Type, Instance, Bool
+from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
 
 from kernel_gateway.gatewayapp import KernelGatewayApp
 
@@ -123,6 +123,18 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def authorized_users_default(self):
         au_env = os.getenv(self.authorized_users_env)
         return au_env.split(',') if au_env is not None else []
+
+    # Port range
+    port_range_env = 'EG_PORT_RANGE'
+    port_range_default_value = "0..0"
+    port_range = Unicode(port_range_default_value, config=True,
+        help="""Specifies the lower and upper port numbers from which ports are created.  The bounded values
+        are separated by '..' (e.g., 33245..34245 specifies a range of 1000 ports to be randomly selected).
+        A range of zero (e.g., 33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env var)""")
+
+    @default('port_range')
+    def port_range_default(self):
+        return os.getenv(self.port_range_env, self.port_range_default_value)
 
     kernel_spec_manager = Instance(RemoteKernelSpecManager, allow_none=True)
 
