@@ -16,6 +16,7 @@ import getpass
 from tornado import web
 import subprocess
 import base64
+import random
 from ipython_genutils.py3compat import with_metaclass
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
@@ -24,8 +25,6 @@ from notebook import _tz
 from zmq.ssh import tunnel
 from enum import Enum
 from Crypto.Cipher import AES
-
-
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -40,6 +39,10 @@ socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'True').lower() == 'True'.lower())
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 
+# Minimum port range size and max retries
+min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
+max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
+
 # Number of seconds in 100 years as the max keep-alive interval value.
 max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 
@@ -52,6 +55,7 @@ remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 
 local_ip = localinterfaces.public_ips()[0]
 
+random.seed()
 
 class KernelChannel(Enum):
     SHELL = "SHELL"
@@ -387,7 +391,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_ip = None
         self.comm_port = 0
         self.dest_comm_port = 0
+        self.lower_port = 0
+        self.upper_port = 0
         self.tunnel_processes = {}
+        self._validate_port_range(proxy_config)
         self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
@@ -405,9 +412,32 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
+    def _validate_port_range(self, proxy_config):
+        # Let port_range override global value - if set on kernelspec...
+        port_range = self.kernel_manager.parent.parent.port_range
+        if proxy_config.get('port_range'):
+            port_range = proxy_config.get('port_range')
+
+        try:
+            port_ranges = port_range.split("..")
+            self.lower_port = int(port_ranges[0])
+            self.upper_port = int(port_ranges[1])
+
+            port_range_size = self.upper_port - self.lower_port
+            if port_range_size != 0:
+                if port_range_size < min_port_range_size:
+                    raise RuntimeError(
+                        "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
+                        " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+        except ValueError as ve:
+            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
+        except IndexError as ie:
+            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
+
+        self.kernel_manager.port_range = port_range
+
     def _prepare_response_socket(self):
-        s = socket(AF_INET, SOCK_STREAM)
-        s.bind((local_ip, 0))
+        s = self._select_socket(local_ip)
         port = s.getsockname()[1]
         self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
         s.listen(1)
@@ -423,7 +453,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         """
         cf = connection_info
 
-        lports = tunnel.select_random_ports(5)
+        lports = self._select_ports(5)
 
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
@@ -445,7 +475,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
         in use and has been previously validated.
         """
-        local_port = tunnel.select_random_ports(1)[0]
+        local_port = self._select_ports(1)[0]
         self._create_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
         return local_port
 
@@ -503,6 +533,40 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # will add 60seconds to cull_idle_timeout to come up with the value for keep-alive
         # interval for the rest of the kernel channels.
         return cull_idle_timeout + 60
+
+    def _select_ports(self, count):
+        """Select and return n random ports that are available and adhere to the given port range, if applicable."""
+        ports = []
+        sockets = []
+        for i in range(count):
+            sock = self._select_socket()
+            ports.append(sock.getsockname()[1])
+            sockets.append(sock)
+        for sock in sockets:
+            sock.close()
+        return ports
+
+    def _select_socket(self, ip=''):
+        """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
+        sock = socket(AF_INET, SOCK_STREAM)
+        found_port = False
+        while not found_port:
+            try:
+                sock.bind((ip, self._get_candidate_port()))
+                found_port = True
+            except Exception as e:
+                retries = retries + 1
+                if retries > max_port_range_retries:
+                    raise RuntimeError(
+                        "Failed to locate port within range {} after {} retries!".
+                        format(self.kernel_manager.port_range, max_port_range_retries))
+        return sock
+
+    def _get_candidate_port(self):
+        range_size = self.upper_port - self.lower_port
+        if range_size == 0:
+            return 0
+        return random.randint(self.lower_port, self.upper_port)
 
     def _decrypt(self, data):
         decryptAES = lambda c, e: c.decrypt(base64.b64decode(e))
