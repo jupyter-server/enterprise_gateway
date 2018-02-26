@@ -398,6 +398,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
+        # Pass along port-range info to kernels...
+        kw['env']['EG_MIN_PORT_RANGE_SIZE'] = min_port_range_size
+        kw['env']['EG_MAX_PORT_RANGE_RETRIES'] = max_port_range_retries
+
         super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kw)
         # remove connection file because a) its not necessary any longer since launchers will return
         # the connection information which will (sufficiently) remain in memory and b) launchers

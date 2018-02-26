@@ -4,6 +4,7 @@ import json
 import uuid
 import argparse
 import base64
+import random
 from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
@@ -11,6 +12,10 @@ from IPython import embed_kernel
 from pyspark.sql import SparkSession
 from threading import Thread
 from Crypto.Cipher import AES
+
+# Minimum port range size and max retries
+min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
+max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
 
 
 class WaitingForSparkSessionToBeInitialized(object):
@@ -68,9 +73,8 @@ sqlCtx = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlCtx')
 thread_to_initialize_spark_session = Thread(target=initialize_spark_session)
 
 
-def prepare_gateway_socket():
-    sock = socket(AF_INET, SOCK_STREAM)
-    sock.bind(('0.0.0.0', 0))
+def prepare_gateway_socket(lower_port, upper_port):
+    sock = _select_socket(lower_port, upper_port)
     print("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
     sock.listen(1)
     sock.settimeout(5)
@@ -107,7 +111,7 @@ def _encrypt(connection_info, conn_file):
     payload = encryptAES(cipher, connection_info)
     return payload
 
-def return_connection_info(connection_file, ip, response_addr, disable_gateway_socket):
+def return_connection_info(connection_file, response_addr, disable_gateway_socket, lower_port, upper_port):
     gateway_sock = None
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
@@ -132,7 +136,7 @@ def return_connection_info(connection_file, ip, response_addr, disable_gateway_s
 
     # prepare socket address for handling signals
     if not disable_gateway_socket:
-        gateway_sock = prepare_gateway_socket()
+        gateway_sock = prepare_gateway_socket(lower_port, upper_port)
         cf_json['comm_port'] = gateway_sock.getsockname()[1]
 
     s = socket(AF_INET, SOCK_STREAM)
@@ -159,6 +163,63 @@ def determine_connection_file(conn_file):
         print("Using connection file '{}' instead of '{}'".format(conn_file, prev_connection_file))
 
     return conn_file
+
+
+def _select_ports(count, lower_port, upper_port):
+    """Select and return n random ports that are available and adhere to the given port range, if applicable."""
+    ports = []
+    sockets = []
+    for i in range(count):
+        sock = _select_socket(lower_port, upper_port)
+        ports.append(sock.getsockname()[1])
+        sockets.append(sock)
+    for sock in sockets:
+        sock.close()
+    return ports
+
+
+def _select_socket(lower_port, upper_port):
+    """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
+    sock = socket(AF_INET, SOCK_STREAM)
+    found_port = False
+    while not found_port:
+        try:
+            sock.bind(('0.0.0.0', _get_candidate_port(lower_port, upper_port)))
+            found_port = True
+        except Exception as e:
+            retries = retries + 1
+            if retries > max_port_range_retries:
+                raise RuntimeError(
+                    "Failed to locate port within range {}..{} after {} retries!".
+                    format(lower_port, upper_port, max_port_range_retries))
+    return sock
+
+
+def _get_candidate_port(lower_port, upper_port):
+    range_size = upper_port - lower_port
+    if range_size == 0:
+        return 0
+    return random.randint(lower_port, upper_port)
+
+
+def _validate_port_range(port_range):
+    try:
+        port_ranges = port_range.split("..")
+        lower_port = int(port_ranges[0])
+        upper_port = int(port_ranges[1])
+
+        port_range_size = upper_port - lower_port
+        if port_range_size != 0:
+            if port_range_size < min_port_range_size:
+                raise RuntimeError(
+                    "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
+                    " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+    except ValueError as ve:
+        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
+    except IndexError as ie:
+        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
+
+    return lower_port, upper_port
 
 
 def get_gateway_request(sock):
@@ -206,21 +267,28 @@ if __name__ == "__main__":
     parser.add_argument('--RemoteProcessProxy.disable-gateway-socket', dest='disable_gateway_socket',
                         action='store_true', help='Disable use of gateway socket for extended communications',
                         default=False)
+    parser.add_argument('--port-range', dest='port_range',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
     disable_gateway_socket = arguments['disable_gateway_socket']
+    lower_port, upper_port = _validate_port_range(arguments['port_range'])
     ip = "0.0.0.0"
 
     # If the connection file doesn't exist, then create it.
     if not os.path.isfile(connection_file):
         key = str_to_bytes(str(uuid.uuid4()))
         connection_file = determine_connection_file(connection_file)
-        write_connection_file(fname=connection_file, ip=ip, key=key)
 
+        ports = _select_ports(5, lower_port, upper_port)
+
+        write_connection_file(fname=connection_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
+                              stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
-            gateway_socket = return_connection_info(connection_file, ip, response_addr, disable_gateway_socket)
+            gateway_socket = return_connection_info(connection_file, response_addr, disable_gateway_socket,
+                                                    lower_port, upper_port)
             if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket,))
                 gateway_listener_thread.start()
