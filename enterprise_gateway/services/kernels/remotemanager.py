@@ -88,6 +88,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     process_proxy = None
     response_address = None
     sigint_value = None
+    port_range = None
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
