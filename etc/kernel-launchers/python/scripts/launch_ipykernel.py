@@ -83,7 +83,7 @@ def _encrypt(connection_info, conn_file):
     # Ensure that the length of the data that will be encrypted is a
     # multiple of BLOCK_SIZE by padding with '%' on the right.
     PADDING = '%'
-    pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
+    pad = lambda s: s.decode("utf-8") + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
 
     # Encrypt connection_info whose length is a multiple of BLOCK_SIZE using
     # AES cipher and then encode the resulting byte array using Base64.
