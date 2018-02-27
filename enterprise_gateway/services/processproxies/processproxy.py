@@ -510,7 +510,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # self.log.debug("AES Decryption Key '{}'".format(key))
         cipher = AES.new(key)
         payload = decryptAES(cipher, data)
-        payload = "".join([payload.rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
+        payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
         return payload
 
     def receive_connection_info(self):
