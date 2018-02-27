@@ -19,10 +19,14 @@ fi
 
 PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 
+# Add gateway_listener.py to files for spark-opts
+ADDITIONAL_OPTS="--files ${PROG_HOME}/scripts/gateway_listener.py"
+
 set -x
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
+     "${ADDITIONAL_OPTS}" \
      "${IMPERSONATION_OPTS}" \
      "${PROG_HOME}/scripts/launch_IRkernel.R" \
      "${LAUNCH_OPTS}" \
