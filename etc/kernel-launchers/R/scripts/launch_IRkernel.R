@@ -12,6 +12,10 @@ sparkConfigList <- list(
 spark.executorEnv.R_LIBS_USER=r_libs_user,
 spark.rdd.compress="true")
 
+min_port_range_size = Sys.getenv("EG_MIN_PORT_RANGE_SIZE")
+if ( is.null(min_port_range_size) )
+    min_port_range_size = 1000
+
 # Initializes the Spark session/context and SQL context
 initialize_spark_session <- function() {
     # Make sure SparkR package is loaded last; this is necessary
@@ -144,8 +148,26 @@ determine_connection_file <- function(connection_file){
     return(temp_file)
 }
 
+validate_port_range <- function(port_range){
+    port_ranges = strsplit(port_range, "..", fixed=TRUE)
+    lower_port = as.integer(port_ranges[[1]][1])
+    upper_port = as.integer(port_ranges[[1]][2])
+
+    port_range_size = upper_port - lower_port
+    if (port_range_size != 0) {
+        if (port_range_size < min_port_range_size){
+            message(paste("Port range validation failed for range:", port_range, ". Range size must be at least",
+                min_port_range_size, "as specified by env EG_MIN_PORT_RANGE_SIZE"))
+            return(NA)
+        }
+    }
+    return(list("lower_port"=lower_port, "upper_port"=upper_port))
+}
+
 # Check arguments
 parser <- arg_parser('R-kernel-launcher')
+parser <- add_argument(parser, "--port-range",
+       help="the range of ports impose for kernel ports")
 parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting JKG and expecting response")
 parser <- add_argument(parser, "connection_file",
@@ -158,6 +180,17 @@ argv <- parse_args(parser)
 connection_file <- argv$connection_file
 if (!file.exists(connection_file)){
     connection_file <- determine_connection_file(connection_file)
+
+    # if port-range was provided, validate the range and determine bounds
+    lower_port = 0
+    upper_port = 0
+    if (!is.na(argv$port_range)){
+        range <- validate_port_range(argv$port_range)
+        if (!is.na(range)){
+            lower_port = range$lower_port
+            upper_port = range$upper_port
+        }
+    }
 
     # Get the pid of the launcher so the listener thread (process) can detect its
     # presence to know when to shutdown.
@@ -178,14 +211,14 @@ if (!file.exists(connection_file)){
     python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
                "python -c \"import os, sys, imp;
                 gl = imp.load_source('setup_gateway_listener', '${listener_file}');
-                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}')\""))
+                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port}, upper_port=${upper_port})\""))
     system(python_cmd, wait=FALSE)
 
     while (!file.exists(connection_file)) {
         Sys.sleep(0.5)
     }
 
-    if (length(argv$RemoteProcessProxy.response_address)){
+    if (!is.na(argv$RemoteProcessProxy.response_address)){
       return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
     }
 }
