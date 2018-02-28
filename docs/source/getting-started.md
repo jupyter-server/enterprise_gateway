@@ -154,8 +154,8 @@ jupyter notebook \
   --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
 
-For your convenience, we have also build a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with 
-latest Jupyter Notebook and NB2KG which can be launched by the command below:
+For your convenience, we have also built a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with 
+Jupyter Notebook, Jupyter Lab and NB2KG which can be launched by the command below:
 
 ```bash
 docker run -t --rm \
@@ -171,3 +171,4 @@ docker run -t --rm \
   -w /tmp/notebooks \
   elyra/nb2kg
 ```
+To invoke Jupyter Lab, simply add `lab` as the last option following the image name (e.g., `elyra/nb2kg lab`).

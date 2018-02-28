@@ -37,6 +37,7 @@ the number of active kernels can be dramatically increased.
 
    config-options
    troubleshooting
+   debug
 
 .. toctree::
    :maxdepth: 2
