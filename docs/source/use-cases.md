@@ -14,6 +14,8 @@ other and user can preserve and leverage their own environment, i.e. libraries a
 on my own laptop and leverage my company's large YARN cluster to run my compute-intensive jobs.
 
 - **As a solution architect**, I want to explore supporting a different resource manager with Enterprise Gateway,
-e.g. Kubernetes, by extending and implementing a new ProcessProxy class, e.g. K8ProcessProxy, such that I can easily
+e.g. Kubernetes, by extending and implementing a new ProcessProxy class such that I can easily
 take advantage of specific functionality provided by the resource manager.
 
+- **As an administrator**, I want to constrain applications to specific port ranges so I can more easily identify
+issues and manage network configurations that adhere to my corporate policy.

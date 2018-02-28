@@ -70,7 +70,7 @@ object ToreeLauncher {
 
     args.sliding(2, 1).toList.collect {
       case Array("--profile", arg: String) => profilePath = arg.trim
-      case Array("--port-range", arg: String) => initPortRange(arg.trim)
+      case Array("--RemoteProcessProxy.port-range", arg: String) => initPortRange(arg.trim)
       case Array("--RemoteProcessProxy.response-address", arg: String) => responseAddress = arg.trim
       case Array("--RemoteProcessProxy.disable-gateway-socket", arg: String) =>
             disableGatewaySocket = arg.trim.toBoolean

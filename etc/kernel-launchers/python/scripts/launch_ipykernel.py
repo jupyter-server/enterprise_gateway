@@ -268,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('--RemoteProcessProxy.disable-gateway-socket', dest='disable_gateway_socket',
                         action='store_true', help='Disable use of gateway socket for extended communications',
                         default=False)
-    parser.add_argument('--port-range', dest='port_range',
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
 
     arguments = vars(parser.parse_args())

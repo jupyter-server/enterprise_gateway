@@ -112,7 +112,7 @@ a `process_proxy` stanza will use `LocalProcessProxy`.
 `RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are two 
 built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept 
 class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching 
-kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in 
+kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in the
 [processproxies package](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/processproxies).
 
 ![Process Class Hierarchy](images/process_proxy_hierarchy.png)
@@ -137,7 +137,8 @@ def launch_process(self, kernel_cmd, *kw):
 where
 * `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is 
 an artifact of the kernel manager `_launch_kernel()` method.  
-* `**kw` is a set key-word arguments. 
+* `**kw` is a set key-word arguments which includes an `env` dictionary element consisting of the names 
+and values of which environment variables to set at launch time. 
 
 The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for 
 performing the appropriate actions relative to the target type.  The process must be in a running state prior 
@@ -248,8 +249,9 @@ not to its super-classes.  As a result, the super-class constructors will not at
 
 In addition, certain dictionary entries can override or amend system-level configuration values set on the command-line, thereby
 allowing administrators to tune behaviors down to the kernel level.  For example, an administrator might want to
-constrain python kernels configured to use specific resources to an entirely different set of hosts that other 
-remote kernels might be targeting in order to isolate valuable resources. Similarly, an administrator might want to only authorize specific users to a given kernel.
+constrain python kernels configured to use specific resources to an entirely different set of hosts (and ports) that other 
+remote kernels might be targeting in order to isolate valuable resources. Similarly, an administrator might want to 
+only authorize specific users to a given kernel.
 
 In such situations, one might find the following `process-proxy` stanza:
 
@@ -259,28 +261,29 @@ In such situations, one might find the following `process-proxy` stanza:
     "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy",
     "config": {
       "remote_hosts": "priv_host1,priv_host2",
+      "port_range": "40000..41000",
       "authorized_users": "bob,alice"
     }
   }
 }
 ```
 
-In this example, the kernel associated with this kernel.json file is relagated to hosts `priv_host1` and `priv_host2` 
-and only users `bob` and `alice` can launch such kernels (provided neither appear in the global set of 
-`unauthorized_users` since denial takes precedence).
+In this example, the kernel associated with this kernel.json file is relegated to hosts `priv_host1` and `priv_host2` 
+where kernel ports will be restricted to a range between `40000` and `41000` and only users `bob` and `alice` can 
+launch such kernels (provided neither appear in the global set of `unauthorized_users` since denial takes precedence).
 
 For a current enumeration of which system-level configuration values can be overridden or amended on a per-kernel basis
 see [Per-kernel Configuration Overrides](config-options.html#per-kernel-configuration-overrides).
 
 ### Launchers
-As noted above a kernel is considered started once the launcher has conveyed its connection information 
+As noted above a kernel is considered started once the `launch_process()` method has conveyed its connection information 
 back to the Enterprise Gateway server process. Conveyance of connection information from a remote kernel is the 
 responsibility of the remote kernel _launcher_.
 
 Launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications.  
 Besides providing a location where connection file creation can occur, they also provide a 'hook' 
 for other kinds of behaviors - like establishing virtual environments or sandboxes, providing 
-collaboration behavior, etc.
+collaboration behavior, adhering to port range restrictions, etc.
 
 There are three primary tasks of a launcher:
 1. Creation of the connection file on the remote (target) system
@@ -320,6 +323,11 @@ file illustrating these parameters...
   ]
 }
 ```
+Other options supported by launchers include: 
+* `--RemoteProcessProxy.port-range {port_range}`  - passes configured port-range to launcher where launcher applies 
+that range to kernel ports.  The port-range may be configured globally or on a per-kernelspec basis, as previously
+described.
+
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
 the [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 

@@ -166,7 +166,7 @@ validate_port_range <- function(port_range){
 
 # Check arguments
 parser <- arg_parser('R-kernel-launcher')
-parser <- add_argument(parser, "--port-range",
+parser <- add_argument(parser, "--RemoteProcessProxy.port-range",
        help="the range of ports impose for kernel ports")
 parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting JKG and expecting response")
@@ -184,8 +184,8 @@ if (!file.exists(connection_file)){
     # if port-range was provided, validate the range and determine bounds
     lower_port = 0
     upper_port = 0
-    if (!is.na(argv$port_range)){
-        range <- validate_port_range(argv$port_range)
+    if (!is.na(argv$RemoteProcessProxy.port_range)){
+        range <- validate_port_range(argv$RemoteProcessProxy.port_range)
         if (!is.na(range)){
             lower_port = range$lower_port
             upper_port = range$upper_port
