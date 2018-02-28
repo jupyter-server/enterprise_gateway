@@ -182,6 +182,7 @@ def _select_socket(lower_port, upper_port):
     """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
     sock = socket(AF_INET, SOCK_STREAM)
     found_port = False
+    retries = 0
     while not found_port:
         try:
             sock.bind(('0.0.0.0', _get_candidate_port(lower_port, upper_port)))

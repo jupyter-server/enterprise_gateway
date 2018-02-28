@@ -399,8 +399,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def launch_process(self, kernel_cmd, **kw):
         # Pass along port-range info to kernels...
-        kw['env']['EG_MIN_PORT_RANGE_SIZE'] = min_port_range_size
-        kw['env']['EG_MAX_PORT_RANGE_RETRIES'] = max_port_range_retries
+        kw['env']['EG_MIN_PORT_RANGE_SIZE'] = str(min_port_range_size)
+        kw['env']['EG_MAX_PORT_RANGE_RETRIES'] = str(max_port_range_retries)
 
         super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kw)
         # remove connection file because a) its not necessary any longer since launchers will return
@@ -554,6 +554,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
         sock = socket(AF_INET, SOCK_STREAM)
         found_port = False
+        retries = 0
         while not found_port:
             try:
                 sock.bind((ip, self._get_candidate_port()))
