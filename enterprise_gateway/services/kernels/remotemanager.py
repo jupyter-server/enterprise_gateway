@@ -194,4 +194,11 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         # If this is a remote kernel that's using a response address, we should skip the write_connection_file
         # since it will create 5 useless ports that would not adhere to port-range restrictions if configured.
         if not isinstance(self.process_proxy, RemoteProcessProxy) or not self.response_address:
+            # However, since we *may* want to limit the selected ports, go ahead and get the ports using
+            # the process proxy (will be LocalPropcessProxy for default case) since the port selection will
+            # handle the default case when the member ports aren't set anyway.
+            ports = self.process_proxy.select_ports(5)
+            self.shell_port=ports[0]; self.iopub_port=ports[1]; self.stdin_port=ports[2]; \
+                self.hb_port=ports[3]; self.control_port=ports[4]
+
             return super(RemoteKernelManager, self).write_connection_file()
