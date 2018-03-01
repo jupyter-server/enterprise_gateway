@@ -81,6 +81,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
         self.kernel_launch_timeout = default_kernel_launch_timeout
+        self.lower_port = 0
+        self.upper_port = 0
+        self._validate_port_range(proxy_config)
 
         # Handle authorization sets...
         # Take union of unauthorized users...
@@ -356,6 +359,65 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.pgid = process_info['pgid']
         self.ip = process_info['ip']
 
+    def _validate_port_range(self, proxy_config):
+        # Let port_range override global value - if set on kernelspec...
+        port_range = self.kernel_manager.parent.parent.port_range
+        if proxy_config.get('port_range'):
+            port_range = proxy_config.get('port_range')
+
+        try:
+            port_ranges = port_range.split("..")
+            self.lower_port = int(port_ranges[0])
+            self.upper_port = int(port_ranges[1])
+
+            port_range_size = self.upper_port - self.lower_port
+            if port_range_size != 0:
+                if port_range_size < min_port_range_size:
+                    raise RuntimeError(
+                        "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
+                        " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+        except ValueError as ve:
+            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
+        except IndexError as ie:
+            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
+
+        self.kernel_manager.port_range = port_range
+
+    def select_ports(self, count):
+        """Select and return n random ports that are available and adhere to the given port range, if applicable."""
+        ports = []
+        sockets = []
+        for i in range(count):
+            sock = self.select_socket()
+            ports.append(sock.getsockname()[1])
+            sockets.append(sock)
+        for sock in sockets:
+            sock.close()
+        return ports
+
+    def select_socket(self, ip=''):
+        """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
+        sock = socket(AF_INET, SOCK_STREAM)
+        found_port = False
+        retries = 0
+        while not found_port:
+            try:
+                sock.bind((ip, self._get_candidate_port()))
+                found_port = True
+            except Exception as e:
+                retries = retries + 1
+                if retries > max_port_range_retries:
+                    raise RuntimeError(
+                        "Failed to locate port within range {} after {} retries!".
+                        format(self.kernel_manager.port_range, max_port_range_retries))
+        return sock
+
+    def _get_candidate_port(self):
+        range_size = self.upper_port - self.lower_port
+        if range_size == 0:
+            return 0
+        return random.randint(self.lower_port, self.upper_port)
+
 
 class LocalProcessProxy(BaseProcessProxyABC):
 
@@ -391,10 +453,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_ip = None
         self.comm_port = 0
         self.dest_comm_port = 0
-        self.lower_port = 0
-        self.upper_port = 0
         self.tunnel_processes = {}
-        self._validate_port_range(proxy_config)
         self._prepare_response_socket()
 
     def launch_process(self, kernel_cmd, **kw):
@@ -416,32 +475,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
-    def _validate_port_range(self, proxy_config):
-        # Let port_range override global value - if set on kernelspec...
-        port_range = self.kernel_manager.parent.parent.port_range
-        if proxy_config.get('port_range'):
-            port_range = proxy_config.get('port_range')
-
-        try:
-            port_ranges = port_range.split("..")
-            self.lower_port = int(port_ranges[0])
-            self.upper_port = int(port_ranges[1])
-
-            port_range_size = self.upper_port - self.lower_port
-            if port_range_size != 0:
-                if port_range_size < min_port_range_size:
-                    raise RuntimeError(
-                        "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
-                        " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
-        except ValueError as ve:
-            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
-        except IndexError as ie:
-            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
-
-        self.kernel_manager.port_range = port_range
-
     def _prepare_response_socket(self):
-        s = self._select_socket(local_ip)
+        s = self.select_socket(local_ip)
         port = s.getsockname()[1]
         self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
         s.listen(1)
@@ -457,7 +492,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         """
         cf = connection_info
 
-        lports = self._select_ports(5)
+        lports = self.select_ports(5)
 
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
@@ -479,7 +514,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
         in use and has been previously validated.
         """
-        local_port = self._select_ports(1)[0]
+        local_port = self.select_ports(1)[0]
         self._create_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
         return local_port
 
@@ -537,41 +572,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # will add 60seconds to cull_idle_timeout to come up with the value for keep-alive
         # interval for the rest of the kernel channels.
         return cull_idle_timeout + 60
-
-    def _select_ports(self, count):
-        """Select and return n random ports that are available and adhere to the given port range, if applicable."""
-        ports = []
-        sockets = []
-        for i in range(count):
-            sock = self._select_socket()
-            ports.append(sock.getsockname()[1])
-            sockets.append(sock)
-        for sock in sockets:
-            sock.close()
-        return ports
-
-    def _select_socket(self, ip=''):
-        """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
-        sock = socket(AF_INET, SOCK_STREAM)
-        found_port = False
-        retries = 0
-        while not found_port:
-            try:
-                sock.bind((ip, self._get_candidate_port()))
-                found_port = True
-            except Exception as e:
-                retries = retries + 1
-                if retries > max_port_range_retries:
-                    raise RuntimeError(
-                        "Failed to locate port within range {} after {} retries!".
-                        format(self.kernel_manager.port_range, max_port_range_retries))
-        return sock
-
-    def _get_candidate_port(self):
-        range_size = self.upper_port - self.lower_port
-        if range_size == 0:
-            return 0
-        return random.randint(self.lower_port, self.upper_port)
 
     def _decrypt(self, data):
         decryptAES = lambda c, e: c.decrypt(base64.b64decode(e))
