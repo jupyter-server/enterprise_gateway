@@ -99,4 +99,42 @@ but it failed with a "Kernel error" and a SSHException.**
     Repeat the aforementioned step as `jdoe` on `node1` for each of the hosts listed in
     `EG_REMOTE_HOSTS` and restart Enterprise Gateway.
 
+- **I'm trying to launch a (Python/Scala/R) kernel but it failed with `TypeError: Incorrect padding`.**
 
+    ```
+    Traceback (most recent call last):
+      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1512, in _execute
+        result = yield result
+      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+        value = future.result()
+      ....
+      ....
+      ....
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/kernels/remotemanager.py", line 125, in _launch_kernel
+        return self.process_proxy.launch_process(kernel_cmd, **kw)
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 63, in launch_process
+        self.confirm_remote_startup(kernel_cmd, **kw)
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 174, in confirm_remote_startup
+        ready_to_connect = self.receive_connection_info()
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 565, in receive_connection_info
+        raise e
+    TypeError: Incorrect padding
+    ```
+
+    To address this issue, first ensure that the launchers used for each kernel are derived
+    from the same release as the Enterprise Gateway server.  Next ensure that `pycrypto 2.6.1`
+    or later is installed on all hosts using either `pip install` or `conda install` as shown below:
+
+    ```
+    [jdoe@node1 ~]$ pip uninstall pycrypto
+    [jdoe@node1 ~]$ pip install pycrypto
+    ```
+
+    or
+
+    ```
+    [jdoe@node1 ~]$ conda install pycrypto
+    ```
+
+    This should be done on the host running Enterprise Gateway as well as all the remote hosts
+    on which the kernel is launched.
