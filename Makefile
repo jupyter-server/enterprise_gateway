@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs install sdist test release docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark
+.PHONY: help build clean nuke dev dev-http docs kernelspecs install sdist test release docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -46,7 +46,7 @@ dev: ## Make a server in jupyter_websocket mode
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
-kernelspecs: 
+kernelspecs: ## Create an archive with sample kernelspecs
 	make VERSION=$(VERSION) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
