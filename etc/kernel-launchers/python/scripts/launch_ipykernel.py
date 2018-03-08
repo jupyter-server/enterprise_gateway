@@ -204,6 +204,9 @@ def _get_candidate_port(lower_port, upper_port):
 
 
 def _validate_port_range(port_range):
+    # if no argument was provided, return a range of 0
+    if not port_range:
+        return 0, 0
     try:
         port_ranges = port_range.split("..")
         lower_port = int(port_ranges[0])
