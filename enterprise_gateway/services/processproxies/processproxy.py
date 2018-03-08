@@ -590,6 +590,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         else:
             raise RuntimeError("RemoteProcessProxy.update_connection: connection information is null!")
 
+        if self.response_socket:
+            self.response_socket.shutdown(SHUT_RDWR)
+            self.response_socket.close()
+            self.response_socket = None
+
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
     def _extract_comm_port(self, connect_info):
@@ -696,6 +701,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                  "(using remote kill): {}".format(self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
             finally:
+                sock.shutdown(SHUT_WR)
                 sock.close()
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
