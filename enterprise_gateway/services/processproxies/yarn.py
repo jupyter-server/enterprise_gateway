@@ -262,6 +262,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except Exception as e:
             self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
                              format(kernel_id, type(e), e))
+        finally:
+            self.resource_mgr.http_conn.close()
 
         if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
@@ -282,6 +284,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except Exception as e:
             self.log.warning("Query for application ID '{}' failed with exception: '{}'.  Continuing...".
                            format(app_id, e))
+        finally:
+            self.resource_mgr.http_conn.close()
         if type(data) is dict and 'app' in data:
             return data['app']
         return None
