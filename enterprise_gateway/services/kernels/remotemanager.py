@@ -169,6 +169,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         # which then prevents process proxy cleanup.
         if self.process_proxy:
             self.process_proxy.cleanup()
+            self.process_proxy = None
         return super(RemoteKernelManager, self).cleanup(connection_file)
 
     def get_connection_info(self, session=False):
