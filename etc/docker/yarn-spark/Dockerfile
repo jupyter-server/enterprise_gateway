@@ -16,10 +16,10 @@ RUN cd /tmp && \
 
 # Update Java
 RUN cd /tmp && \
-	curl -LO 'http://download.oracle.com/otn-pub/java/jdk/8u151-b12/e758a0de34e24606bca991d704f6dcbf/jdk-8u151-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
+	curl -LO 'http://download.oracle.com/otn-pub/java/jdk/8u162-b12/0da788060d494f5095bf8624735fa2f1/jdk-8u162-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
 	rpm -e jdk-1.7.0_71-fcs.x86_64 && \
-	rpm -i /tmp/jdk-8u151-linux-x64.rpm && \
-	rm -f /tmp/jdk-8u151-linux-x64.rpm
+	rpm -i /tmp/jdk-8u162-linux-x64.rpm && \
+	rm -f /tmp/jdk-8u162-linux-x64.rpm
 
 
 # Install Anaconda
