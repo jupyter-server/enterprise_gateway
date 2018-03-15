@@ -88,6 +88,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     process_proxy = None
     response_address = None
     sigint_value = None
+    port_range = None
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
@@ -99,12 +100,15 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
     def format_kernel_cmd(self, extra_arguments=None):
-        """replace templated args (e.g. {response_address})"""
+        """replace templated args (e.g. {response_address} or {port_range})"""
         cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
 
-        if self.response_address:
-            ns = dict(response_address=self.response_address,)
-            ns.update(self._launch_args)
+        if self.response_address or self.port_range:
+            ns = self._launch_args.copy()
+            if self.response_address:
+                ns['response_address'] = self.response_address
+            if self.port_range:
+                ns['port_range'] = self.port_range
 
             pat = re.compile(r'\{([A-Za-z0-9_]+)\}')
             def from_ns(match):
@@ -187,8 +191,14 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return super(RemoteKernelManager, self).load_connection_info(info)
 
     def write_connection_file(self):
-        # Override purely for debug purposes
-        self.log.debug(
-            "RemoteKernelManager: Writing connection file with ip={}, control={}, hb={}, iopub={}, stdin={}, shell={}"
-            .format(self.ip, self.control_port, self.hb_port, self.iopub_port, self.stdin_port, self.shell_port))
-        return super(RemoteKernelManager, self).write_connection_file()
+        # If this is a remote kernel that's using a response address, we should skip the write_connection_file
+        # since it will create 5 useless ports that would not adhere to port-range restrictions if configured.
+        if not isinstance(self.process_proxy, RemoteProcessProxy) or not self.response_address:
+            # However, since we *may* want to limit the selected ports, go ahead and get the ports using
+            # the process proxy (will be LocalPropcessProxy for default case) since the port selection will
+            # handle the default case when the member ports aren't set anyway.
+            ports = self.process_proxy.select_ports(5)
+            self.shell_port=ports[0]; self.iopub_port=ports[1]; self.stdin_port=ports[2]; \
+                self.hb_port=ports[3]; self.control_port=ports[4]
+
+            return super(RemoteKernelManager, self).write_connection_file()

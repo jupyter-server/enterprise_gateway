@@ -186,6 +186,13 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.port=<Integer>
     Default: 8888
     Port on which to listen (KG_PORT env var)
+--EnterpriseGatewayApp.port_range=<Unicode>
+    Default: '0..0'
+    Specifies the lower and upper port numbers from which ports are created.
+    The bounded values are separated by '..' (e.g., 33245..34245 specifies a
+    range of 1000 ports to be randomly selected). A range of zero (e.g.,
+    33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env
+    var)
 --EnterpriseGatewayApp.port_retries=<Integer>
     Default: 50
     Number of ports to try if the specified port is not available
@@ -262,6 +269,17 @@ JupyterWebsocketPersonality options
       startup attempt will take place.  If a second timeout occurs, Enterprise 
       Gateway will report a failure to the client.  
       
+  EG_MAX_PORT_RANGE_RETRIES=5
+      The number of attempts made to locate an available port within the specified 
+      port range.  Only applies when --EnterpriseGatewayApp.port_range 
+      (or EG_PORT_RANGE) has been specified or is in use for the given kernel.
+            
+  EG_MIN_PORT_RANGE_SIZE=1000
+      The minimum port range size permitted when --EnterpriseGatewayApp.port_range 
+      (or EG_PORT_RANGE) is specified or is in use for the given kernel.  Port ranges 
+      reflecting smaller sizes will result in a failure to launch the corresponding 
+      kernel (since port-range can be specified within individual kernel specifications).
+      
   EG_SSH_PORT=22
       The port number used for ssh operations for installations choosing to 
       configure the ssh server on a port other than the default 22.
@@ -315,3 +333,6 @@ but then restrict access at the kernel level.
 globally defined values.  As a result, once a user is denied access at the global level, they will _always be denied
 access at the kernel level_.  These values apply to **all** process-proxy kernels, including the default
 `LocalProcessProxy`.
+* `port_range`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.port_range`.
+Any values specified in the config dictionary override the globally defined values.  These apply to all
+`RemoteProcessProxy` kernels.
