@@ -26,7 +26,6 @@ from enum import Enum
 from Crypto.Cipher import AES
 
 
-
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
 
@@ -701,7 +700,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                  "(using remote kill): {}".format(self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
             finally:
-                sock.shutdown(SHUT_WR)
+                try:
+                    sock.shutdown(SHUT_WR)
+                except Exception as e2:
+                    self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
+                                     "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
+                                                                      self.kernel_id, str(e2)))
                 sock.close()
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
