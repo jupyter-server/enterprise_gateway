@@ -70,6 +70,16 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def yarn_endpoint_default(self):
         return os.getenv(self.yarn_endpoint_env, self.yarn_endpoint_default_value)
 
+    # Conductor endpoint
+    conductor_endpoint_env = 'EG_CONDUCTOR_ENDPOINT'
+    conductor_endpoint_default_value = None
+    conductor_endpoint = Unicode(conductor_endpoint_default_value, config=True,
+        help="""The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT env var)""")
+
+    @default('conductor_endpoint')
+    def conductor_endpoint_default(self):
+        return os.getenv(self.conductor_endpoint_env, self.conductor_endpoint_default_value)
+
     _log_formatter_cls = LogFormatter
 
     @default('log_format')
