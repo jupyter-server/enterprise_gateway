@@ -79,9 +79,10 @@ The recommended approach for performing user impersonation when the kernel is la
 is to configure the `spark-submit` command within 
 [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
 to use the `--proxy-user ${KERNEL_USERNAME}` option.  This YARN option  requires that kerberos be configured within the
-cluster.  Please refer to the
+cluster.  In addition the gateway user (`elyra` by default) needs to be set up as a `proxyuser` superuser in hadoop configs.
+Please refer to the
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
-regarding the proper configuration of `--proxy-user`.
+regarding the proper configuration steps.
 
 ##### Impersonation in Standalone or YARN Client Mode
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
