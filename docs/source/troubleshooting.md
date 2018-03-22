@@ -139,8 +139,7 @@ but it failed with a "Kernel error" and a SSHException.**
     This should be done on the host running Enterprise Gateway as well as all the remote hosts
     on which the kernel is launched.
 
-- **I'm trying to use a notebook with user impersonation on a Kerberos authenticated
-cluster but it fails to authenticate.**
+- **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
 
     When using user impersonation in a YARN cluster with Kerberos authentication, if Kerberos is not
     setup properly you will usually see the following warning that will keep a notebook from connecting:
@@ -149,6 +148,5 @@ cluster but it fails to authenticate.**
     WARN Client: Exception encountered while connecting to the server : javax.security.sasl.SaslException: GSS initiate failed [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]
     ```
 
-    The most common cause for this WARN is when the user that started Enterprise Gateway is not
-    authenticated with Kerberos. This can happen when the user has either not run `kinit` or their
-    previous ticket has expired.
+    The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
+    with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
