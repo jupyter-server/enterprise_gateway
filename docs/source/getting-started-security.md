@@ -117,38 +117,28 @@ Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its cl
 
 1. You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile` options with the command:
 
-
 	```
 	jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
 	```
 
-As server starts up, the log should reflect the following,
+	As server starts up, the log should reflect the following,
 
-	`[EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888`
+	```
+	[EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
+	```
 
-Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled. 
+	Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled. 
 
-TIP:
-A self-signed certificate can be generated with openssl. For example, the following command will create a certificate valid for 365 days with both the key and certificate data written to the same file:
+	TIP:
+	A self-signed certificate can be generated with openssl. For example, the following command will create a certificate valid for 365 days with both the key and certificate data written to the same file:
 
-```bash
-docker run -t --rm \
-  -e KG_URL='http://<master ip>:8888' \
-  -e KG_HTTP_USER=guest \ 
-  -e KG_HTTP_PASS=guest-password \ 
-  -p 8888:8888 \
-  -e VALIDATE_KG_CERT='no' \
-  -e LOG_LEVEL=DEBUG \
-  -e KG_REQUEST_TIMEOUT=40 \
-  -e KG_CONNECT_TIMEOUT=40 \
-  -v ${HOME}/notebooks/:/tmp/notebooks \
-  -w /tmp/notebooks \
-  elyra/nb2kg
-```
+	```bash
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
+	```
 
 2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is NB2KG serverextension.
 
-During Jupyter notebook server startup, export the following environment variables where NB2KG will access during runtime,
+	During Jupyter notebook server startup, export the following environment variables where NB2KG will access during runtime,
 
 	```bash
 	export KG_CLIENT_CERT=${PATH_TO_PEM_FILE}
@@ -156,7 +146,7 @@ During Jupyter notebook server startup, export the following environment variabl
 	export KG_CLIENT_CA=${PATH_TO_SELFSIGNED_CA}
 	```
 
-Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
+	Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
 
 ##### Using Enterprise Gateway configuration file
 You can also utilize the Enterprise Gateway configuration file to set static configurations for the server. 
