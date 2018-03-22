@@ -48,6 +48,12 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kernel launcher sends the connection information - which is then written out upon its reception.  If push
             mode is configured, the kernel manager's IP is updated to the selected node.
         """
+        env_dict = kw.get('env')
+        # remove service credential
+        if env_dict is not None and 'KERNEL_EGO_SERVICE_CREDENTIAL' in env_dict:
+            self.rest_credential = env_dict['KERNEL_EGO_SERVICE_CREDENTIAL']
+            del env_dict['KERNEL_EGO_SERVICE_CREDENTIAL']
+
         super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         # dynamically update Spark submit parameters
@@ -58,8 +64,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.pid = self.local_proc.pid
         self.ip = local_ip
         self.env = kw.get('env')
-        self.log.debug("Conductor cluster kernel launched using Conductor endpoint: {}, pid: {}, Kernel ID: {}, cmd: '{}', env: '{}'"
-                       .format(self.conductor_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd, self.env))
+        self.log.debug("Conductor cluster kernel launched using Conductor endpoint: {}, pid: {}, Kernel ID: {}, cmd: '{}'"
+                       .format(self.conductor_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
@@ -77,7 +83,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         env_dict['SPARK_HOME'] = env_dict['KERNEL_SPARK_HOME']
         env_dict['PYSPARK_PYTHON'] = pjoin(env_dict['KERNEL_NOTEBOOK_DEPLOY_DIR'], 'install/bin/python') 
         if "--master" not in env_dict['SPARK_OPTS']:
-            env_dict['SPARK_OPTS'] = '--master %s --conf spark.ego.credential=%s --conf spark.pyspark.python=%s %s' % (env_dict['KERNEL_NOTEBOOK_MASTER_REST'], env_dict['KERNEL_EGO_SERVICE_CREDENTIAL'], env_dict['PYSPARK_PYTHON'], env_dict['SPARK_OPTS'])
+            env_dict['SPARK_OPTS'] = '--master %s --conf spark.ego.credential=%s --conf spark.pyspark.python=%s %s' % (env_dict['KERNEL_NOTEBOOK_MASTER_REST'], self.rest_credential, env_dict['PYSPARK_PYTHON'], env_dict['SPARK_OPTS'])
 
     def poll(self):
         """Submitting a new kernel/app will take a while to be SUBMITTED.
@@ -256,7 +262,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (env['KERNEL_EGO_SERVICE_CREDENTIAL'])
+        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/applications?applicationname=%s' % (self.conductor_endpoint, kernel_id)
@@ -288,7 +294,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (env['KERNEL_EGO_SERVICE_CREDENTIAL'])
+        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/applications?applicationid=%s' % (self.conductor_endpoint, app_id)
@@ -350,7 +356,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         response = None
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (env['KERNEL_EGO_SERVICE_CREDENTIAL'])
+        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/submissions/kill/%s' % (self.conductor_endpoint, driver['id'])
