@@ -131,9 +131,20 @@ Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meani
 TIP:
 A self-signed certificate can be generated with openssl. For example, the following command will create a certificate valid for 365 days with both the key and certificate data written to the same file:
 
-	```bash
-	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
-	```
+```bash
+docker run -t --rm \
+  -e KG_URL='http://<master ip>:8888' \
+  -e KG_HTTP_USER=guest \ 
+  -e KG_HTTP_PASS=guest-password \ 
+  -p 8888:8888 \
+  -e VALIDATE_KG_CERT='no' \
+  -e LOG_LEVEL=DEBUG \
+  -e KG_REQUEST_TIMEOUT=40 \
+  -e KG_CONNECT_TIMEOUT=40 \
+  -v ${HOME}/notebooks/:/tmp/notebooks \
+  -w /tmp/notebooks \
+  elyra/nb2kg
+```
 
 2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is NB2KG serverextension.
 
