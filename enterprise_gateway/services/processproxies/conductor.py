@@ -48,14 +48,14 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kernel launcher sends the connection information - which is then written out upon its reception.  If push
             mode is configured, the kernel manager's IP is updated to the selected node.
         """
-        env_dict = kw.get('env')
-        # remove service credential
-        if env_dict is not None and 'KERNEL_EGO_SERVICE_CREDENTIAL' in env_dict:
-            self.rest_credential = env_dict['KERNEL_EGO_SERVICE_CREDENTIAL']
-            del env_dict['KERNEL_EGO_SERVICE_CREDENTIAL']
-
         super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kw)
-
+        # Get cred from process env
+        env_dict = dict(os.environ.copy())
+        if env_dict is not None and 'EGO_SERVICE_CREDENTIAL' in env_dict:
+            self.rest_credential = env_dict['EGO_SERVICE_CREDENTIAL']
+        else:
+            self.log.error("ConductorClusterProcessProxy failed to obtain the Conductor credential.")
+            raise tornado.web.HTTPError(500, "ConductorClusterProcessProxy failed to obtain the Conductor credential.")
         # dynamically update Spark submit parameters
         self.update_launch_info(kernel_cmd, **kw)
         
