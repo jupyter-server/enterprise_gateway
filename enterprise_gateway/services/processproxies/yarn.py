@@ -41,15 +41,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
-            Yarn node so that its in place when the kernel is started.  This step is skipped if pull or socket modes 
-            are configured, which results in the kernel process determining ports and generating encoding key.
-            Once started, the method will poll the Yarn application (after discovering the application ID via the
-            kernel ID) until host is known.  Note that this polling may timeout and result in a 503 Http error (Service 
-            unavailable).
-            Once the host is determined the connection file is retrieved. If pull mode is configured, the remote file is 
-            copied locally and member variables are loaded based on its contents.  If socket mode is configured, the
-            kernel launcher sends the connection information - which is then written out upon its reception.  If push
-            mode is configured, the kernel manager's IP is updated to the selected node.
+            Yarn node so that its in place when the kernel is started.
         """
         super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kw)
 
