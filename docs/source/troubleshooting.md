@@ -138,3 +138,9 @@ but it failed with a "Kernel error" and a SSHException.**
 
     This should be done on the host running Enterprise Gateway as well as all the remote hosts
     on which the kernel is launched.
+
+- **The Kernel keeps dying when processing jobs that require large amount of resources (e.g. large files)**
+
+   This is usually seen when you are trying to use more resources then what is available for your kernel.
+   To address this issue, increase the amount of memory available for your YARN application or another
+   Resource Manager managing the kernel.
