@@ -151,3 +151,9 @@ but it failed with a "Kernel error" and a SSHException.**
 
     The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
     with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
+
+- **The Kernel keeps dying when processing jobs that require large amount of resources (e.g. large files)**
+
+   This is usually seen when you are trying to use more resources then what is available for your kernel.
+   To address this issue, increase the amount of memory available for your YARN application or another
+   Resource Manager managing the kernel.
