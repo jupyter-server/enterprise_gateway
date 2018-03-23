@@ -111,3 +111,70 @@ Note that SSH tunneling is enabled by default. In order to troubleshoot related 
 the environment variable `EG_ENABLE_TUNNELING=False`.  Note, there is no command-line or configuration file support
 for this variable.
 
+### Securing Enterprise Gateway Server
+
+##### Using SSL for encrypted communication
+Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its clients. With SSL enabled, all the
+communication between the server and client are encrypted and highly secure.
+
+1. You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile`
+options with the command:
+
+	```
+	jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
+	```
+
+	As server starts up, the log should reflect the following,
+
+	```
+	[EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
+	```
+
+	Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
+
+	TIP:
+	A self-signed certificate can be generated with openssl. For example, the following command will create a
+	certificate valid for 365 days with both the key and certificate data written to the same file:
+
+	```bash
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
+	```
+
+2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is NB2KG
+serverextension.
+
+	During Jupyter notebook server startup, export the following environment variables where NB2KG will access
+	during runtime:
+
+	```bash
+	export KG_CLIENT_CERT=${PATH_TO_PEM_FILE}
+	export KG_CLIENT_KEY=${PATH_TO_KEY_FILE}
+	export KG_CLIENT_CA=${PATH_TO_SELFSIGNED_CA}
+	```
+
+	Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
+
+##### Using Enterprise Gateway configuration file
+You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
+
+1. If you do not already have a configuration file, generate a Enterprise Gateway configuration file by running the
+following command:
+
+	```
+	jupyter enterprisegateway --generate-config
+	```
+
+2. By default, the configuration file will be generated `~/.jupyter/jupyter_enterprise_gateway_config.py`.
+
+3. By default, all the configuration fields in `jupyter_enterprise_gateway_config.py` are commented out. To enable SSL
+from the configuration file, modify the corresponding parameter to the appropriate value.
+
+	```
+	s,c.KernelGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
+	s,c.KernelGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
+	```
+
+4. Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
+provides better readability and debuggability.
+
+After configuring the above, the communication between NB2KG and Enterprise Gateway is SSL enabled.
