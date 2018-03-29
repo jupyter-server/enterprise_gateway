@@ -255,7 +255,7 @@ JupyterWebsocketPersonality options
 
 ### Addtional supported environment variables
 ```
-  EG_ENABLE_TUNNELING=True
+  EG_ENABLE_TUNNELING=False
       Indicates whether tunneling (via ssh) of the kernel and communication ports
       is enabled (True) or not (False).   
         
