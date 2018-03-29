@@ -105,11 +105,16 @@ will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 ### SSH Tunneling
 
 Jupyter Enterprise Gateway is now configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
-communication socket created within the launcher and used to perform remote and cross-user signalling functionality.
+communication socket created within the launcher and used to perform remote and cross-user signalling functionality. SSH
+tunneling is NOT enabled by default. Tunneling can be enabled/disabled via the environment variable `EG_ENABLE_TUNNELING=False`.
+Note, there is no command-line or configuration file support for this variable.
 
-Note that SSH tunneling is enabled by default. In order to troubleshoot related issues, tunneling can be disabled via
-the environment variable `EG_ENABLE_TUNNELING=False`.  Note, there is no command-line or configuration file support
-for this variable.
+Note that SSH by default validates host keys before connecting to remote hosts and the connection will fail for invalid
+or unknown hosts. Enterprise Gateway honors this requirement, and invalid or unknown hosts will cause tunneling to fail.
+Please perform necessary steps to validate all hosts before enabling SSH tunneling, such as:
+
+* SSH to each node cluster and accept the host key properly
+* Configure SSH to disable `StrictHostKeyChecking`
 
 ### Securing Enterprise Gateway Server
 
