@@ -36,7 +36,7 @@ default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
-tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'True').lower() == 'True'.lower())
+tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'True'.lower())
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 
 # Minimum port range size and max retries
@@ -223,7 +223,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
             host_ip = gethostbyname(host)
             if remote_pwd:
                 ssh.connect(host_ip, port=ssh_port, username=remote_user, password=remote_pwd)
@@ -548,7 +548,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             ssh_server = server + ":" + str(port)
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
-            ssh = "ssh -p %s -o StrictHostKeyChecking=no -o ServerAliveInterval=%i" % \
+            ssh = "ssh -p %s -o ServerAliveInterval=%i" % \
                 (port, self._get_keep_alive_interval(kernel_channel))
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
                 ssh, local_port, remote_ip, remote_port, server)
