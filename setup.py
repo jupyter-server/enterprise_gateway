@@ -37,7 +37,7 @@ Jupyter Notebooks to share resources across an Apache Spark cluster.
         'scripts/jupyter-enterprisegateway'
     ],
     install_requires=[
-        'jupyter_core>=4.0',
+        'jupyter_core>=4.4.0',
         'jupyter_client>=4.2.0',
         'notebook>=5.1.0,<6.0',
         'jupyter_kernel_gateway>=1.1.2',
