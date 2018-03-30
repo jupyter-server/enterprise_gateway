@@ -10,7 +10,7 @@ RUN cd /tmp && \
 	curl -LO 'http://vault.centos.org/6.9/os/Source/SPackages/rsyslog-5.8.10-10.el6_6.src.rpm' && \
 	rpm -i /tmp/rsyslog-5.8.10-10.el6_6.src.rpm && \
 	rm -f /tmp/rsyslog-5.8.10-10.el6_6.src.rpm && \
-	RUN cat /etc/bootstrap.sh | sed s/'service sshd'/'service rsyslog start|service sshd'/ | tr '|' '\n' > /tmp/bootstrap.sh && \
+	cat /etc/bootstrap.sh | sed s/'service sshd'/'service rsyslog start|service sshd'/ | tr '|' '\n' > /tmp/bootstrap.sh && \
 	mv /tmp/bootstrap.sh /etc && \
 	chmod 700 /etc/bootstrap.sh
 
