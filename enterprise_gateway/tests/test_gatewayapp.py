@@ -7,7 +7,7 @@ import unittest
 import os
 from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp, ioloop
 from kernel_gateway.notebook_http.swagger.handlers import SwaggerSpecHandler
-from tornado.testing import AsyncHTTPTestCase, LogTrapTestCase
+from tornado.testing import AsyncHTTPTestCase, ExpectLog
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 
@@ -66,7 +66,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.certfile, '/test/fake.crt')
         self.assertEqual(app.client_ca, '/test/fake_ca.crt')
 
-class TestGatewayAppBase(AsyncHTTPTestCase, LogTrapTestCase):
+class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     """Base class for integration style tests using HTTP/Websockets against an
     instance of the gateway app.
 
