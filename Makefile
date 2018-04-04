@@ -79,10 +79,10 @@ sdist: ## Make a dist/*.tar.gz source distribution
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && nosetests
+	$(SA) $(ENV) && nosetests -v
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && nosetests enterprise_gateway.tests.$(TEST)
+	$(SA) $(ENV) && nosetests -v enterprise_gateway.tests.$(TEST)
 endif
 
 release: POST_SDIST=upload
