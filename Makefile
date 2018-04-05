@@ -97,8 +97,12 @@ docker-image-yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
 docker-image-nb2kg:  ## Build elyra/nb2kg:dev docker image 
 
 # Actual working targets...
-docker-images docker-image-enterprise-gateway docker-image-yarn-spark docker-image-nb2kg:  
+docker-images docker-image-yarn-spark docker-image-nb2kg:  
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
+
+docker-image-enterprise-gateway: $(WHEEL_FILE) 
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
+
 
 # Here for doc purposes
 docker-clean: ## Remove docker images
