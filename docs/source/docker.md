@@ -23,6 +23,9 @@ The primary use of this image is to quickly build elyra/enterprise-gateway image
 purposes.  To build a local image, run `make docker-image-yarn-spark`.  Note: the tag for this image will
 still be `:2.1.0` since `elyra/enterprise-gateway` depends on this image/tag.
 
+As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another
+instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
+
 ### elyra/enterprise-gateway
 
 Image [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) is the primary image 
