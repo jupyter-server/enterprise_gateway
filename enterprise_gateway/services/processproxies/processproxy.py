@@ -230,8 +230,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             else:
                 ssh.connect(host_ip, port=ssh_port, username=remote_user)
         except Exception as e:
-            self.log.error("Exception '{}' occurred when creating a SSHClient connecting to '{}:{}' with user '{}', "
-                        "message='{}'.".format(type(e).__name__, host, ssh_port, remote_user, e))
+            current_host = gethostbyname(gethostname())
+            self.log.error("Exception '{}' occurred when creating a SSHClient at {} connecting to '{}:{}' with user '{}', "
+                        "message='{}'.".format(type(e).__name__, current_host, host, ssh_port, remote_user, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
