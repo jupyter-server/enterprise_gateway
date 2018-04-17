@@ -191,8 +191,9 @@ EnterpriseGatewayApp options
     Specifies the lower and upper port numbers from which ports are created.
     The bounded values are separated by '..' (e.g., 33245..34245 specifies a
     range of 1000 ports to be randomly selected). A range of zero (e.g.,
-    33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env
-    var)
+    33245..33245 or 0..0) disables port-range enforcement. If the specified
+    range overlaps with TCP's well-known port range of (0, 1024], then a
+    RuntimeError will be thrown. (EG_PORT_RANGE env var)
 --EnterpriseGatewayApp.port_retries=<Integer>
     Default: 50
     Number of ports to try if the specified port is not available

@@ -157,3 +157,25 @@ but it failed with a "Kernel error" and a SSHException.**
    This is usually seen when you are trying to use more resources then what is available for your kernel.
    To address this issue, increase the amount of memory available for your YARN application or another
    Resource Manager managing the kernel.
+
+- **I'm trying to launch a (Python/Scala/R) kernel with port range but it failed with `RuntimeError: Invalid port range `.**
+
+    ```
+    Traceback (most recent call last):
+      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1511, in _execute
+        result = yield result
+      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+        value = future.result()
+      ....
+      ....
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 478, in __init__
+        super(RemoteProcessProxy, self).__init__(kernel_manager, proxy_config)
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 87, in __init__
+        self._validate_port_range(proxy_config)
+      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 407, in _validate_port_range
+        "port numbers is (1024, 65535).".format(self.lower_port))
+    RuntimeError: Invalid port range '1000..2000' specified. Range for valid port numbers is (1024, 65535).
+    ```
+
+    To address this issue, make sure that the specified port range does not overlap with TCP's well-known
+    port range of (0, 1024].
