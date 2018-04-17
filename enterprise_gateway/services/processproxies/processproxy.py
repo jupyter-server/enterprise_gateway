@@ -57,6 +57,7 @@ local_ip = localinterfaces.public_ips()[0]
 
 random.seed()
 
+
 class KernelChannel(Enum):
     SHELL = "SHELL"
     IOPUB = "IOPUB"
@@ -151,7 +152,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 break
         else:
             self.log.warning("Wait timeout of {} seconds exhausted. Continuing...".
-                             format(max_poll_attempts*poll_interval))
+                             format(max_poll_attempts * poll_interval))
 
     def send_signal(self, signum):
         # if we have a local process, use its method, else determine if the ip is local or remote and issue
@@ -231,8 +232,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 ssh.connect(host_ip, port=ssh_port, username=remote_user)
         except Exception as e:
             current_host = gethostbyname(gethostname())
-            self.log.error("Exception '{}' occurred when creating a SSHClient at {} connecting to '{}:{}' with user '{}', "
-                        "message='{}'.".format(type(e).__name__, current_host, host, ssh_port, remote_user, e))
+            self.log.error(
+                "Exception '{}' occurred when creating a SSHClient at {} connecting to '{}:{}' with user '{}', "
+                "message='{}'.".format(type(e).__name__, current_host, host, ssh_port, remote_user, e))
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
@@ -261,7 +263,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def remote_signal(self, signum):
         val = None
         # if we have a process group, use that, else use the pid...
-        target = '-'+str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
+        target = '-' + str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
         cmd = 'kill -{} {}; echo $?'.format(signum, target)
         if signum > 0:  # only log if meaningful signal (not for poll)
             self.log.debug("Sending signal: {} to target: {} on host: {}".format(signum, target, self.ip))
@@ -286,7 +288,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if signum > 0:  # only log if meaningful signal (not for poll)
             self.log.debug("Sending signal: {} to target: {}".format(signum, target))
 
-        cmd = ['kill', '-'+str(signum), target]
+        cmd = ['kill', '-' + str(signum), target]
 
         with open(os.devnull, 'w') as devnull:
             result = subprocess.call(cmd, stderr=devnull)
@@ -368,6 +370,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         try:
             port_ranges = port_range.split("..")
+
             self.lower_port = int(port_ranges[0])
             self.upper_port = int(port_ranges[1])
 
@@ -377,6 +380,34 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     raise RuntimeError(
                         "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
                         " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+
+                # According to RFC 793, port is a 16-bit unsigned int. Which means the port
+                # numbers must be in the range (0, 65535). However, within that range,
+                # ports 0 - 1023 are called "well-known ports" and are typically reserved for
+                # specific purposes. For example, 0 is reserved for random port assignment,
+                # 80 is used for HTTP, 443 for TLS/SSL, 25 for SMTP, etc. But, there is
+                # flexibility as one can choose any port with the aforementioned protocols.
+                # Ports 1024 - 49151 are called "user or registered ports" that are bound to
+                # services running on the server listening to client connections. And, ports
+                # 49152 - 65535 are called "dynamic or ephemeral ports". A TCP connection
+                # has two endpoints. Each endpoint consists of an IP address and a port number.
+                # And, each connection is made up of a 4-tuple consisting of -- client-IP,
+                # client-port, server-IP, and server-port. A service runs on a server with a
+                # specific IP and is bound to a specific "user or registered port" that is
+                # advertised for clients to connect. So, when a client connects to a service
+                # running on a server, three out of 4-tuple - client-IP, client-port, server-IP -
+                # are already known. To be able to serve multiple clients concurrently, the
+                # server's IP stack assigns an ephemeral port for the connection to complete
+                # the 4-tuple.
+                #
+                # In case of JEG, we will accept ports in the range 1024 - 65535 as these days
+                # admins use dedicated hosts for individual services.
+                if ((self.lower_port < 1024) or (self.lower_port > 65535)):
+                    raise RuntimeError("Invalid port range '{}' specified. Range for valid "
+                                       "port numbers is (1024, 65535).".format(port_range))
+                if ((self.upper_port < 1024) or (self.upper_port > 65535)):
+                    raise RuntimeError("Invalid port range '{}' specified. Range for valid "
+                                       "port numbers is (1024, 65535).".format(port_range))
         except ValueError as ve:
             raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
         except IndexError as ie:
@@ -410,7 +441,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 if retries > max_port_range_retries:
                     raise RuntimeError(
                         "Failed to locate port within range {} after {} retries!".
-                        format(self.kernel_manager.port_range, max_port_range_retries))
+                            format(self.kernel_manager.port_range, max_port_range_retries))
         return sock
 
     def _get_candidate_port(self):
@@ -421,7 +452,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
 
 class LocalProcessProxy(BaseProcessProxyABC):
-
     def __init__(self, kernel_manager, proxy_config):
         super(LocalProcessProxy, self).__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
@@ -444,7 +474,6 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
 
 class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
-
     def __init__(self, kernel_manager, proxy_config):
         super(RemoteProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.response_socket = None
@@ -498,7 +527,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
         channels = KernelChannel.SHELL, KernelChannel.IOPUB, KernelChannel.STDIN, \
-            KernelChannel.HEARTBEAT, KernelChannel.CONTROL
+                   KernelChannel.HEARTBEAT, KernelChannel.CONTROL
 
         remote_ip = cf['ip']
 
@@ -550,7 +579,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
             ssh = "ssh -p %s -o ServerAliveInterval=%i" % \
-                (port, self._get_keep_alive_interval(kernel_channel))
+                  (port, self._get_keep_alive_interval(kernel_channel))
             cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
                 ssh, local_port, remote_ip, remote_port, server)
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
@@ -676,7 +705,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 # tunnel it, if desired ...
                 if tunneling_enabled is True:
                     self.comm_port = self._tunnel_to_port(KernelChannel.COMMUNICATION, self.assigned_ip,
-                                                         self.dest_comm_port, self.assigned_ip)
+                                                          self.dest_comm_port, self.assigned_ip)
                     self.comm_ip = '127.0.0.1'
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
                                    "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
@@ -685,7 +714,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     self.comm_port = self.dest_comm_port
                     self.comm_ip = self.assigned_ip
                     self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
-                                format(self.assigned_ip, self.comm_port, self.kernel_id))
+                                   format(self.assigned_ip, self.comm_port, self.kernel_id))
             except ValueError:
                 self.log.warning("comm_port returned from kernel launcher is not an integer: {} - ignoring.".
                                  format(comm_port))
@@ -776,7 +805,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 except Exception as e2:
                     self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
                                      "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
-                                                                      self.kernel_id, str(e2)))
+                                                                              self.kernel_id, str(e2)))
                 sock.close()
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
