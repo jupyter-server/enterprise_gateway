@@ -11,6 +11,8 @@
   "argv": [ 
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}"
   ]
 }
