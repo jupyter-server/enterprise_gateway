@@ -18,3 +18,15 @@ script:
     - jupyter enterprisegateway --help
     - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway
     - pip uninstall -y jupyter_enterprise_gateway
+
+after_success:
+  - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
+  - python --version
+  - pip --version
+  - pip list
+
+after_failure:
+  - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
+  - python --version
+  - pip --version
+  - pip list
