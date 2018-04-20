@@ -38,14 +38,15 @@ Jupyter Notebooks to share resources across an Apache Spark cluster.
     ],
     install_requires=[
         'jupyter_core>=4.4.0',
-        'jupyter_client>=4.2.0',
-        'notebook>=5.1.0,<6.0',
-        'jupyter_kernel_gateway>=1.1.2',
+        'jupyter_client>=5.2.0',
+        'notebook>=5.3.0,<6.0',
+        'jupyter_kernel_gateway>=2.0.0',
         'traitlets>=4.2.0',
-        'tornado>=4.2.0,<5.0',
+        'tornado>=4.2.0',
         'requests>=2.7,<3.0',
         'paramiko>=2.1.2',
-        'yarn-api-client>=0.2.3'
+        'yarn-api-client>=0.2.3',
+        'pyzmq>=17.0.0'
     ],
     classifiers=[
         'Intended Audience :: Developers',
