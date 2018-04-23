@@ -154,10 +154,11 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 app_state = self.get_application_state()
 
                 if app_state in YarnClusterProcessProxy.final_states:
-                    raise tornado.web.HTTPError(500, "KernelID: '{}', ApplicationID: '{}' unexpectedly found in"
-                                                     "state '{}' during kernel startup!".format(self.kernel_id,
-                                                                                                self.application_id,
-                                                                                                app_state))
+                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in " \
+                                                     "state '{}' during kernel startup!".\
+                                    format(self.kernel_id, self.application_id, app_state)
+                    self.log.error(error_message)
+                    raise tornado.web.HTTPError(500, reason=error_message)
 
                 self.log.debug("{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".
                                format(i, app_state, self.assigned_host, self.kernel_id, self.application_id))
@@ -199,7 +200,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.kill()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
-            raise tornado.web.HTTPError(error_http_code, timeout_message)
+            raise tornado.web.HTTPError(error_http_code, reason=timeout_message)
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
