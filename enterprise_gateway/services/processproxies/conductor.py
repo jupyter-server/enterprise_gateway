@@ -47,8 +47,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         if env_dict and 'EGO_SERVICE_CREDENTIAL' in env_dict:
             self.rest_credential = env_dict['EGO_SERVICE_CREDENTIAL']
         else:
-            self.log.error("ConductorClusterProcessProxy failed to obtain the Conductor credential.")
-            raise tornado.web.HTTPError(500, "ConductorClusterProcessProxy failed to obtain the Conductor credential.")
+            error_message = "ConductorClusterProcessProxy failed to obtain the Conductor credential."
+            self.log.error(error_message)
+            raise tornado.web.HTTPError(500, reason=error_message)
+
         # dynamically update Spark submit parameters
         self.update_launch_info(kernel_cmd, **kw)
         # Enable stderr PIPE for the run command
@@ -197,10 +199,11 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 app_state = self.get_application_state()
 
                 if app_state in ConductorClusterProcessProxy.final_states:
-                    raise tornado.web.HTTPError(500, "KernelID: '{}', ApplicationID: '{}' unexpectedly found in"
-                                                     "state '{}' during kernel startup!".format(self.kernel_id,
-                                                                                                self.application_id,
-                                                                                                app_state))
+                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in " \
+                                                     "state '{}' during kernel startup!".\
+                                    format(self.kernel_id, self.application_id, app_state)
+                    self.log.error(error_message)
+                    raise tornado.web.HTTPError(500, reason=error_message)
 
                 self.log.debug("{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".
                                format(i, app_state, self.assigned_host, self.kernel_id, self.application_id))
@@ -243,7 +246,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.kill()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
-            raise tornado.web.HTTPError(error_http_code, timeout_message)
+            raise tornado.web.HTTPError(error_http_code, reason=timeout_message)
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
@@ -380,7 +383,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             if self.application_id is None:
                 return None 
             self.log.debug("Driver does not exist, retrieving DriverID with ApplicationID: {}".format(self.application_id))
-            driver_info = get_driver_by_app_id(self.application_id)
+            driver_info = self.get_driver_by_app_id(self.application_id)
             if driver_info:
                 self.driver_id = driver_info['id']
             else:

@@ -239,7 +239,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
-                raise tornado.web.HTTPError(403, error_message)
+                raise tornado.web.HTTPError(403, reason=error_message)
             else:
                 raise e
         return ssh
@@ -352,7 +352,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                         "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request.". \
             format(kernel_username, differentiator_clause, kernel_clause)
         self.log.error(error_message)
-        raise tornado.web.HTTPError(403, error_message)
+        raise tornado.web.HTTPError(403, reason=error_message)
 
     def _enforce_limits(self, **kw):
         """
@@ -685,9 +685,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 if conn:
                     conn.close()
         else:
-            raise tornado.web.HTTPError(500,
-                                        "Unexpected runtime found for KernelID '{}'!  "
-                                        "No response socket exists".format(self.kernel_id))
+            error_message = "Unexpected runtime found for Kernel ID '{}'!  No response socket exists".format(self.kernel_id)
+            self.log.error(error_message)
+            raise tornado.web.HTTPError(500, reason=error_message)
+
         return ready_to_connect
 
     # Do NOT update connect_info with IP and other such artifacts in this method/function.
