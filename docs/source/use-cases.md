@@ -19,3 +19,6 @@ take advantage of specific functionality provided by the resource manager.
 
 - **As an administrator**, I want to constrain applications to specific port ranges so I can more easily identify
 issues and manage network configurations that adhere to my corporate policy.
+
+- **As an administrator**, I want to constrain the number of active kernels that each of my users can have at any 
+given time.
