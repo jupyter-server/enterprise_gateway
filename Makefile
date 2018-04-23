@@ -65,16 +65,18 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
-bdist: ## Make a dist/*.whl binary distribution
+bdist:
 	make $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)
 	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
 		&& rm -rf *.egg-info
 
-sdist: ## Make a dist/*.tar.gz source distribution
+sdist:
 	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
 		&& rm -rf *.egg-info
+
+dist: bdist sdist ## Make binary and source distribution to dist folder
 
 test: TEST?=
 test: ## Run unit tests
