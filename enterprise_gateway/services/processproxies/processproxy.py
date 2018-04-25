@@ -75,8 +75,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def __init__(self, kernel_manager, proxy_config):
         self.kernel_manager = kernel_manager
-        # use the zero-ip from the start, can prevent having to write out connection file again
-        self.kernel_manager.ip = '0.0.0.0'
         self.log = kernel_manager.log
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
@@ -482,7 +480,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.assigned_host = ''
         self.comm_ip = None
         self.comm_port = 0
-        self.dest_comm_port = 0
+        self.tunneled_connect_info = None    # Contains the destination connection info when tunneling in use
         self.tunnel_processes = {}
         self._prepare_response_socket()
 
@@ -622,7 +620,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 conn, address = self.response_socket.accept()
                 while 1:
                     buffer = conn.recv(1024)
-                    if not buffer:  # send is complete
+                    if not buffer:  # send is complete, process payload
                         self.log.debug("Received Payload '{}'".format(data))
                         payload = self._decrypt(data)
                         self.log.debug("Decrypted Payload '{}'".format(payload))
@@ -632,24 +630,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
                                        format(self.assigned_host, self.assigned_ip))
 
-                        # Set connection info to IP address of system where the kernel was launched
-                        connect_info['ip'] = self.assigned_ip
-
-                        if tunneling_enabled is True:
-                            # Open some tunnels
-                            tunnel_ports = self._tunnel_to_kernel(connect_info, self.assigned_ip)
-                            self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
-
-                            # Replace the remote connection ports with the local ports used to create SSH tunnels.
-                            connect_info['ip'] = '127.0.0.1'
-                            connect_info['shell_port'] = tunnel_ports[0]
-                            connect_info['iopub_port'] = tunnel_ports[1]
-                            connect_info['stdin_port'] = tunnel_ports[2]
-                            connect_info['hb_port'] = tunnel_ports[3]
-                            connect_info['control_port'] = tunnel_ports[4]
-
+                        self._setup_connection_info(connect_info)
                         ready_to_connect = True
-                        self._update_connection(connect_info)
                         break
                     data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
             except Exception as e:
@@ -671,8 +653,63 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                         "No response socket exists".format(self.kernel_id))
         return ready_to_connect
 
-    # Do NOT update connect_info with IP and other such artifacts in this method/function.
+    def _setup_connection_info(self, connect_info):
+        """
+        Take connection info (returned from launcher or loaded from session persistence) and properly
+        configure port variables for the 5 kernel and (possibly) the launcher communication port.  If
+        tunneling is enabled, these ports will be tunneled with the original port information recorded.
+        """
+
+        connect_info['ip'] = self.assigned_ip  # Set connection to IP address of system where the kernel was launched
+
+        if tunneling_enabled is True:
+            # Capture the current(tunneled) connect_info relative to the IP and ports (including the
+            # communication port - if present).
+            self.tunneled_connect_info = dict(connect_info)
+
+            # Open tunnels to the 5 ZMQ kernel ports
+            tunnel_ports = self._tunnel_to_kernel(connect_info, self.assigned_ip)
+            self.log.debug("Local ports used to create SSH tunnels: '{}'".format(tunnel_ports))
+
+            # Replace the remote connection ports with the local ports used to create SSH tunnels.
+            connect_info['ip'] = '127.0.0.1'
+            connect_info['shell_port'] = tunnel_ports[0]
+            connect_info['iopub_port'] = tunnel_ports[1]
+            connect_info['stdin_port'] = tunnel_ports[2]
+            connect_info['hb_port'] = tunnel_ports[3]
+            connect_info['control_port'] = tunnel_ports[4]
+
+            # If a communication port was provided, tunnel it
+            if 'comm_port' in connect_info:
+                self.comm_ip = connect_info['ip']
+                tunneled_comm_port = int(connect_info['comm_port'])
+                self.comm_port = self._tunnel_to_port(KernelChannel.COMMUNICATION, self.assigned_ip,
+                                                      tunneled_comm_port, self.assigned_ip)
+                connect_info['comm_port'] = self.comm_port
+                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
+                               "127.0.0.1:{}".format(self.assigned_ip, tunneled_comm_port,
+                                                     self.kernel_id, self.comm_port))
+
+        else:  # tunneling not enabled, still check for and record communication port
+            if 'comm_port' in connect_info:
+                self.comm_ip = connect_info['ip']
+                self.comm_port = int(connect_info['comm_port'])
+                self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
+                               format(self.assigned_ip, self.comm_port, self.kernel_id))
+
+        # If no communication port was provided, record that fact as well since this is useful to know
+        if 'comm_port' not in connect_info:
+            self.log.debug("Gateway communication port has NOT been established for KernelID '{}' (optional).".
+                           format(self.kernel_id))
+
+        self._update_connection(connect_info)
+
     def _update_connection(self, connect_info):
+        """
+        Updates the connection info member variables of the kernel manager.  Also pulls the PID and PGID
+        info, if present, in case we need to use it for lifecycle management.
+        Note: Do NOT update connect_info with IP and other such artifacts in this method/function.
+        """
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
         self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = self.kernel_manager.shell_port = \
             self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
@@ -681,47 +718,19 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             # Load new connection information into memory. No need to write back out to a file or track loopback, etc.
             # The launcher may also be sending back process info, so check and extract
             self._extract_pid_info(connect_info)
-            # Also check to see if the launcher wants to use socket-based signals
-            self._extract_comm_port(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
             self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
                            .format(self.kernel_id, self.assigned_host, connect_info))
         else:
             raise RuntimeError("RemoteProcessProxy.update_connection: connection information is null!")
 
+        # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             self.response_socket.shutdown(SHUT_RDWR)
             self.response_socket.close()
             self.response_socket = None
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
-
-    def _extract_comm_port(self, connect_info):
-        comm_port = connect_info.pop('comm_port', None)
-        if comm_port:
-            try:
-                self.dest_comm_port = int(comm_port)
-
-                # tunnel it, if desired ...
-                if tunneling_enabled is True:
-                    self.comm_port = self._tunnel_to_port(KernelChannel.COMMUNICATION, self.assigned_ip,
-                                                          self.dest_comm_port, self.assigned_ip)
-                    self.comm_ip = '127.0.0.1'
-                    self.log.debug("Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
-                                   "127.0.0.1:{}".format(self.assigned_ip, self.dest_comm_port,
-                                                         self.kernel_id, self.comm_port))
-                else:  # use what we got...
-                    self.comm_port = self.dest_comm_port
-                    self.comm_ip = self.assigned_ip
-                    self.log.debug("Established gateway communication to: {}:{} for KernelID '{}'".
-                                   format(self.assigned_ip, self.comm_port, self.kernel_id))
-            except ValueError:
-                self.log.warning("comm_port returned from kernel launcher is not an integer: {} - ignoring.".
-                                 format(comm_port))
-                comm_port = None
-        if comm_port is None:
-            self.log.debug("Gateway communication port has NOT been established for KernelID '{}' (optional).".
-                           format(self.kernel_id))
 
     def _extract_pid_info(self, connect_info):
         pid = connect_info.pop('pid', None)
@@ -825,7 +834,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                              'assigned_host': self.assigned_host,
                              'comm_ip': self.comm_ip,
                              'comm_port': self.comm_port,
-                             'dest_comm_port': self.dest_comm_port})
+                             'tunneled_connect_info': self.tunneled_connect_info})
         return process_info
 
     def load_process_info(self, process_info):
@@ -834,7 +843,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.assigned_host = process_info['assigned_host']
         self.comm_ip = process_info['comm_ip']
         self.comm_port = process_info['comm_port']
-        self.dest_comm_port = process_info['dest_comm_port']
+        if 'tunneled_connect_info' in process_info and process_info['tunneled_connect_info'] is not None:
+            # If this was a tunneled connection, re-establish tunnels.  Note, this will reset the
+            # communication socket (comm_ip, comm_port) members as well.
+            self._setup_connection_info(process_info['tunneled_connect_info'])
 
     @staticmethod
     def get_current_time():
