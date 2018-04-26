@@ -95,9 +95,7 @@ def gateway_listener(sock, parent_pid):
                 os.kill(int(parent_pid), signum)
             elif request.get('shutdown'):
                 shutdown = bool(request.get('shutdown'))
-                if shutdown:
-                    print("Listener received shutdown request, terminating parent (pid: {}).".format(parent_pid))
-                    os.kill(int(parent_pid), signal.SIGTERM)
+
         else:  # check parent
             try:
                 os.kill(int(parent_pid), 0)
