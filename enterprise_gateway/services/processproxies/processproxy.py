@@ -4,6 +4,7 @@
 
 import os
 import sys
+import re
 import signal
 import abc
 import json
@@ -53,7 +54,29 @@ max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
 remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
 
-local_ip = localinterfaces.public_ips()[0]
+
+# Allow users to specify local ips (regular expressions can be used) that should not be included
+# when determining the response address.  For example, on systems with many network interfaces,
+# some may have their IPs appear the local interfaces list (e.g., docker's 172.17.0.* is an example)
+# that should not be used.  This env can be used to indicate such IPs.
+local_ip_blacklist = os.getenv('EG_LOCAL_IP_BLACKLIST','').split(',')
+
+
+def get_local_ip():
+    """
+    Honor the blacklist-ed IPs, locating the first not in the list.
+    """
+    for ip in localinterfaces.public_ips():
+        is_blacklisted = False
+        for blacklisted_ip in local_ip_blacklist:  # exhaust blacklist, applying regexs
+            if re.match(blacklisted_ip, ip):
+                is_blacklisted = True
+                break
+        if not is_blacklisted:
+            return ip
+    return localinterfaces.public_ips()[0]  # all were blacklisted, so go with the first
+
+local_ip = get_local_ip()
 
 random.seed()
 
@@ -529,7 +552,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def _prepare_response_socket(self):
         s = self.select_socket(local_ip)
         port = s.getsockname()[1]
-        self.log.debug("Response socket bound to port: {} using {}s timeout".format(port, socket_timeout))
+        self.log.debug("Response socket launched on {}, port: {} using {}s timeout".format(local_ip, port, socket_timeout))
         s.listen(1)
         s.settimeout(socket_timeout)
         self.kernel_manager.response_address = local_ip + ':' + str(port)
