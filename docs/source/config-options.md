@@ -284,6 +284,15 @@ JupyterWebsocketPersonality options
   EG_SSH_PORT=22
       The port number used for ssh operations for installations choosing to 
       configure the ssh server on a port other than the default 22.
+      
+  EG_LOCAL_IP_BLACKLIST=''
+      A comma-separated list of local IPv4 addresses (or regular expressions) that
+      should not be used when determining the response address used to convey connection
+      information back to Enterprise Gateway from a remote kernel.  In some cases, other
+      network interfaces (e.g., docker with 172.17.0.*) can interfere - leading to 
+      connection failures during kernel startup.
+      Example: EG_LOCAL_IP_BLACKLIST=172.17.0.*,192.168.0.27 will eliminate the use of
+      all addresses in 172.17.0 as well as 192.168.0.27
 ```
 The following environment variables may be useful for troubleshooting:
 ```
