@@ -75,6 +75,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def __init__(self, kernel_manager, proxy_config):
         self.kernel_manager = kernel_manager
+        # Initialize to 0 IP primarily so restarts of remote kernels don't encounter local-only enforcement during
+        # relaunch (see jupyter_client.manager.start_kernel().
+        self.kernel_manager.ip = '0.0.0.0'
         self.log = kernel_manager.log
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
         self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
@@ -378,6 +381,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.pid = process_info['pid']
         self.pgid = process_info['pgid']
         self.ip = process_info['ip']
+        self.kernel_manager.ip = process_info['ip']
 
     def _validate_port_range(self, proxy_config):
         # Let port_range override global value - if set on kernelspec...
