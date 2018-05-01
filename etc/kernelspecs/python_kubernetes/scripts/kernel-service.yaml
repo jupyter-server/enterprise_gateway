@@ -5,7 +5,7 @@ metadata:
     kernel_id: $kernel_id
     app: enterprise-gateway
   name: eg-$kernel_id
-  namespace: default
+  namespace: $namespace
 spec:
   ports:
   - name: comm-port

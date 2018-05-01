@@ -127,10 +127,11 @@ def return_connection_info(connection_file, response_addr, disable_gateway_socke
         cf_json = json.load(fp)
         fp.close()
 
-    # add process and process group ids into connection info.
-    pid = os.getpid()
-    cf_json['pid'] = str(pid)
-    cf_json['pgid'] = str(os.getpgid(pid))
+    # add process and process group ids into connection info if not kubernetes
+    if context != 'k8s':
+        pid = os.getpid()
+        cf_json['pid'] = str(pid)
+        cf_json['pgid'] = str(os.getpgid(pid))
 
     # prepare socket address for handling signals
     if not disable_gateway_socket:

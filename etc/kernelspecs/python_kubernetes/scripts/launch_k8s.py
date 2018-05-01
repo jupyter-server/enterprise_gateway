@@ -3,6 +3,9 @@ import argparse
 import yaml
 from kubernetes import client, config
 from string import Template
+import urllib3
+
+urllib3.disable_warnings()
 
 # FIXME - these should be variable...
 DOCKER_IMAGE = 'elyra/k8s-kernel:dev'
@@ -22,8 +25,9 @@ def main():
 
     kwds = dict()
     kwds['kernel_id'] = os.environ.get('KERNEL_ID')
-    kwds['response_address'] = response_addr
     kwds['language'] = os.environ.get('KERNEL_LANGUAGE')
+    kwds['namespace'] = os.environ.get('EG_KUBERNETES_NAMESPACE')
+    kwds['response_address'] = response_addr
     kwds['docker_image'] = DOCKER_IMAGE
     kwds['comm_port'] = COMM_PORT
     kwds['stdin_port'] = STDIN_PORT
@@ -37,16 +41,21 @@ def main():
         f.close()
         svc = yaml.load(Template(yaml_template).substitute(kwds))
         k8s_svc_cli = client.CoreV1Api()
-        resp = k8s_svc_cli.create_namespaced_service(body=svc, namespace="default")
-        print("Service created. status='%s'" % str(resp.status))
-
+        resp = k8s_svc_cli.create_namespaced_service(body=svc, namespace=kwds['namespace'])
+    '''
     with open(os.path.join(os.path.dirname(__file__), "kernel-deploy.yaml")) as f:
         yaml_template = f.read()
         f.close()
         dep = yaml.load(Template(yaml_template).substitute(kwds))
         k8s_dep_cli = client.AppsV1beta2Api()
-        resp = k8s_dep_cli.create_namespaced_deployment(body=dep, namespace="default")
-        print("Deployment created. status='%s'" % str(resp.status))
+        resp = k8s_dep_cli.create_namespaced_deployment(body=dep, namespace=kwds['namespace'])
+    '''
+    with open(os.path.join(os.path.dirname(__file__), "kernel-job.yaml")) as f:
+        yaml_template = f.read()
+        f.close()
+        job = yaml.load(Template(yaml_template).substitute(kwds))
+        k8s_job_cli = client.BatchV1Api()
+        resp = k8s_job_cli.create_namespaced_job(body=job, namespace=kwds['namespace'])
 
 
 if __name__ == '__main__':

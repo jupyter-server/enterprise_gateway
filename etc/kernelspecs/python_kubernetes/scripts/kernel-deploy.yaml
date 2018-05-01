@@ -2,6 +2,7 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: eg-$kernel_id
+  namespace: $namespace
   labels:
     kernel_id: $kernel_id
     app: enterprise-gateway
@@ -16,6 +17,7 @@ spec:
         kernel_id: $kernel_id
         app: enterprise-gateway
     spec:
+      restartPolicy: Never
       containers:
       - env:
         - name: EG_RESPONSE_ADDRESS
@@ -24,5 +26,6 @@ spec:
           value: $language
         image: $docker_image
         name: eg-$kernel_id
+        namespace: $namespace
         ports:
         - containerPort: $comm_port

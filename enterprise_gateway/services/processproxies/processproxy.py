@@ -6,6 +6,7 @@ import os
 import sys
 import re
 import signal
+import errno
 import abc
 import json
 import paramiko
@@ -215,7 +216,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
-            self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
+                    self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
         return result
 
     def terminate(self):
@@ -844,6 +845,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
             sock = socket(AF_INET, SOCK_STREAM)
             try:
+                sock.settimeout(socket_timeout)
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
                 if signum > 0:  # Polling (signum == 0) is too frequent
@@ -870,12 +872,13 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
             sock = socket(AF_INET, SOCK_STREAM)
             try:
+                sock.settimeout(socket_timeout)
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
             except Exception as e:
                 self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
-                                 "(using remote kill): {}".format(self.comm_ip, self.comm_port,
+                                 "(using alternate shutdown): {}".format(self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
             finally:
                 try:
