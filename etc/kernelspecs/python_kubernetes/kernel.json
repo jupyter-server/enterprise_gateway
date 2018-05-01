@@ -2,13 +2,15 @@
   "language": "python",
   "display_name": "Python on Kubernetes",
   "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.kubernetes.KubernetesProcessProxy"
+    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy"
   },
   "env": {
-    "LAUNCH_OPTS": ""
+    "KERNEL_LANGUAGE": "python"
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/python_kubernetes/bin/run.sh",
+    "python",
+    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_k8s.py",
+    "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
 }

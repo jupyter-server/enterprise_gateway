@@ -10,11 +10,14 @@ from tornado import web
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from .processproxy import RemoteProcessProxy
+from kubernetes import client, config
 
-poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
-kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log, but its only writable by root
+poll_interval = float(os.environ.get('EG_POLL_INTERVAL', '0.5'))
+k8s_config_file = os.environ.get('EG_KUBERNETES_CONFIG', '~/.kube/config')
 
 local_ip = localinterfaces.public_ips()[0]
+
+config.load_kube_config(config_file=k8s_config_file)
 
 
 class KubernetesProcessProxy(RemoteProcessProxy):
@@ -26,15 +29,16 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
             self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
+        self.k8s_client = client.CoreV1Api()
 
     def launch_process(self, kernel_cmd, **kw):
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 
+        kw['env']['EG_KUBERNETES_CONFIG'] = k8s_config_file
+
         self.local_proc = launch_kernel(kernel_cmd, **kw)
         self.pid = self.local_proc.pid
         self.ip = local_ip
-        self.assigned_ip = local_ip  # FIXME
-        self.assigned_host = 'localhost'  # FIXME
 
         self.log.info("Kubernetes kernel launched: pid: {}, KernelID: {}, cmd: '{}'"
                       .format(self.pid, self.kernel_id, kernel_cmd))
@@ -53,11 +57,36 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             i += 1
             self.handle_timeout()
 
-            self.log.debug("{}: Waiting to connect.  Host: '{}', KernelID: '{}'".
-                           format(i, self.assigned_host, self.kernel_id))
+            pod_status = self.get_k8s_status()
 
-            #if self.assigned_host != '':
-            ready_to_connect = self.receive_connection_info()
+            if pod_status:
+                self.log.debug("{}: Waiting to connect to k8s pod. "
+                               "Status: '{}', Pod IP: '{}', Host IP: '{}', KernelID: '{}'".
+                           format(i, pod_status.phase, self.assigned_ip, pod_status.host_ip, self.kernel_id))
+
+                if self.assigned_host != '':
+                    ready_to_connect = self.receive_connection_info()
+            else:
+                self.log.debug("{}: Waiting to connect to k8s pod. "
+                               "Status: 'None', Pod IP: 'None', Host IP: 'None', KernelID: '{}'".
+                           format(i, self.kernel_id))
+
+    def get_k8s_status(self):
+        # Gets the current application state using the application_id already obtained.  Once the assigned host
+        # has been identified, it is nolonger accessed.
+        app_state = None
+        ret = self.k8s_client.list_pod_for_all_namespaces(label_selector="kernel_id=" + self.kernel_id)
+
+        if ret and ret.items:
+            pod_info = ret.items[0]
+            if pod_info.status:
+                if pod_info.status.phase == 'Running' and self.assigned_host == '':
+                    ret = self.k8s_client.list_service_for_all_namespaces(label_selector="kernel_id=" + self.kernel_id)
+                    self.assigned_host = pod_info.status.pod_ip  # ? should be host_ip?
+                    self.assigned_ip = pod_info.status.pod_ip
+                    self.assigned_ip = ret.items[0].spec.cluster_ip
+                return pod_info.status
+        return None
 
     def handle_timeout(self):
         time.sleep(poll_interval)

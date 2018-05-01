@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo language=${ENV_LANGUAGE}
-echo reponse-addr=${ENV_RESPONSE_ADDRESS}
+echo language=${KERNEL_LANGUAGE}
+echo reponse-addr=${EG_RESPONSE_ADDRESS}
 
 #CMD=${1:-"--help"}
 #if [[ "$CMD" == "--help" ]];
@@ -18,14 +18,13 @@ echo reponse-addr=${ENV_RESPONSE_ADDRESS}
 #fi
 
 
-if [[ "${ENV_LANGUAGE}" == "python" ]];
+if [[ "${KERNEL_LANGUAGE}" == "python" ]];
 then
-	echo "python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${ENV_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s"
-	python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${ENV_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s
+	echo "python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s"
+	python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s
 else
 	echo ""
-	echo "Note: Enterprise Gateway can be manually started using 'sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh'..."
-	echo "      YARN application logs can be found at '/usr/local/hadoop-2.7.1/logs/userlogs'"
+	echo "Starting bash with '$*'"
 	/bin/bash -c "$*"
 fi
 exit 0

@@ -1,0 +1,28 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: eg-$kernel_id
+  labels:
+    kernel_id: $kernel_id
+    app: enterprise-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      kernel_id: $kernel_id
+  template:
+    metadata:
+      labels:
+        kernel_id: $kernel_id
+        app: enterprise-gateway
+    spec:
+      containers:
+      - env:
+        - name: EG_RESPONSE_ADDRESS
+          value: $response_address
+        - name: KERNEL_LANGUAGE
+          value: $language
+        image: $docker_image
+        name: eg-$kernel_id
+        ports:
+        - containerPort: $comm_port

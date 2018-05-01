@@ -18,5 +18,3 @@ RUN chown root.root /etc/bootstrap-kernel.sh && \
 WORKDIR /usr/local/share/jupyter 
 
 ENTRYPOINT ["/etc/bootstrap-kernel.sh"]
-
-EXPOSE 8888
