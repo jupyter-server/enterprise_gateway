@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eg-$kernel_id
+  namespace: $namespace
+  labels:
+    kernel_id: $kernel_id
+    app: enterprise-gateway
+spec:
+  template:
+    metadata:
+      labels:
+        kernel_id: $kernel_id
+        app: enterprise-gateway
+    spec:
+      restartPolicy: Never
+      containers:
+      - env:
+        - name: EG_RESPONSE_ADDRESS
+          value: $response_address
+        - name: KERNEL_LANGUAGE
+          value: $language
+        image: $docker_image
+        name: eg-$kernel_id
+        namespace: $namespace
