@@ -19,18 +19,29 @@ if ( is.null(min_port_range_size) )
 # Initializes the Spark session/context and SQL context
 initialize_spark_session <- function() {
     # Make sure SparkR package is loaded last; this is necessary
-    # to avoid the need to fully qualify package namspace (using ::)
+    # to avoid the need to fully qualify package namespace (using ::)
     old <- getOption("defaultPackages")
     options(defaultPackages = c(old, "SparkR"))
 
-    makeActiveBinding(".sparkRsession", sparkSessionFn, SparkR:::.sparkREnv)
-    makeActiveBinding(".sparkRjsc", sparkContextFn, SparkR:::.sparkREnv)
+    if (identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "eager")) {
+        # Start the spark context immediately if set to eager
+        spark <- SparkR::sparkR.session(enableHiveSupport = FALSE)
+        assign("spark", spark, envir = .GlobalEnv)
+        sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils", "getJavaSparkContext", spark)
+        sqlContext <<- SparkR::sparkRSQL.init(sc)
+        assign("sc", sc, envir = .GlobalEnv)
 
-    delayedAssign("spark", {get(".sparkRsession", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
+    } else {
+        # Keep lazy evaluation as default starting mode if initialization mode is lazy or not set at all
+        makeActiveBinding(".sparkRsession", sparkSessionFn, SparkR:::.sparkREnv)
+        makeActiveBinding(".sparkRjsc", sparkContextFn, SparkR:::.sparkREnv)
 
-    # backward compatibility for Spark 1.6 and earlier notebooks
-    delayedAssign("sc", {get(".sparkRjsc", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
-    delayedAssign("sqlContext", {spark}, assign.env=.GlobalEnv)
+        delayedAssign("spark", {get(".sparkRsession", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
+
+        # backward compatibility for Spark 1.6 and earlier notebooks
+        delayedAssign("sc", {get(".sparkRjsc", envir=SparkR:::.sparkREnv)}, assign.env=.GlobalEnv)
+        delayedAssign("sqlContext", {spark}, assign.env=.GlobalEnv)
+    }
 }
 
 sparkSessionFn <- local({
@@ -172,6 +183,8 @@ parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting JKG and expecting response")
 parser <- add_argument(parser, "connection_file",
        help="Connection file name to be used; dictated by JKG")
+parser <- add_argument(parser, "--RemoteProcessProxy.spark-context-initialization-mode",
+       help="the initialization mode of the spark context: lazy, eager or none")
 
 argv <- parse_args(parser)
 
@@ -223,7 +236,11 @@ if (!file.exists(connection_file)){
     }
 }
 
-initialize_spark_session()
+# If spark context creation is desired go ahead and initialize the session/context
+# Otherwise, skip spark context creation if set to none
+if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+    initialize_spark_session()
+}
 
 # Start the kernel
 IRkernel::main(connection_file)
@@ -231,4 +248,6 @@ IRkernel::main(connection_file)
 unlink(connection_file)
 
 # Stop the context and exit
-sparkR.session.stop()
+if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+    sparkR.session.stop()
+}
