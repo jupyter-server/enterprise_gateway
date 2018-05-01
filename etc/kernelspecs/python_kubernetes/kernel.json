@@ -1,0 +1,14 @@
+{
+  "language": "python",
+  "display_name": "Python on Kubernetes",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.kubernetes.KubernetesProcessProxy"
+  },
+  "env": {
+    "LAUNCH_OPTS": ""
+  },
+  "argv": [
+    "/usr/local/share/jupyter/kernels/python_kubernetes/bin/run.sh",
+    "{response_address}"
+  ]
+}
