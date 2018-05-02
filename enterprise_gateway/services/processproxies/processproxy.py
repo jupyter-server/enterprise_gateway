@@ -125,6 +125,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             env_dict.pop(k, None)
 
         self._enforce_authorization(**kw)
+        self._enforce_limits(**kw)
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kw.get('env')))
 
@@ -352,6 +353,24 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             format(kernel_username, differentiator_clause, kernel_clause)
         self.log.error(error_message)
         raise tornado.web.HTTPError(403, error_message)
+
+    def _enforce_limits(self, **kw):
+        """
+            Enforces any limits that may be imposed by the configuration.
+        """
+
+        # if kernels-per-user is configured, ensure that this next kernel is still within the limit
+        max_kernels_per_user = self.kernel_manager.parent.parent.max_kernels_per_user
+        if max_kernels_per_user >= 0:
+            env_dict = kw.get('env')
+            username = env_dict['KERNEL_USERNAME']
+            current_kernel_count = self.kernel_manager.parent.parent.kernel_session_manager.active_sessions(username)
+            if current_kernel_count >= max_kernels_per_user:
+                error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
+                                "active {}.".format(max_kernels_per_user, username, current_kernel_count,
+                                                    "kernel" if max_kernels_per_user == 1 else "kernels")
+                self.log.error(error_message)
+                raise tornado.web.HTTPError(403, reason=error_message)
 
     def get_process_info(self):
         process_info = {'pid': self.pid, 'pgid': self.pgid, 'ip': self.ip}

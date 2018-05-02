@@ -136,6 +136,17 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def port_range_default(self):
         return os.getenv(self.port_range_env, self.port_range_default_value)
 
+    # Max Kernels per User
+    max_kernels_per_user_env = 'EG_MAX_KERNELS_PER_USER'
+    max_kernels_per_user_default_value = -1
+    max_kernels_per_user = Integer(max_kernels_per_user_default_value, config=True,
+        help="""Specifies the maximum number of kernels a user can have active simultaneously.  A value of -1 disables
+        enforcement.  (EG_MAX_KERNELS_PER_USER env var)""")
+
+    @default('max_kernels_per_user')
+    def max_kernels_per_user_default(self):
+        return int(os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value))
+
     kernel_spec_manager = Instance(RemoteKernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(

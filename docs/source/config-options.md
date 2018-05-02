@@ -183,6 +183,11 @@ EnterpriseGatewayApp options
     Default: None
     Limits the number of kernel instances allowed to run by this gateway.
     Unbounded by default. (KG_MAX_KERNELS env var)
+--EnterpriseGatewayApp.max_kernels_per_user=<Integer>
+    Default: -1
+    Specifies the maximum number of kernels a user can have active
+    simultaneously.  A value of -1 disables enforcement.
+    (EG_MAX_KERNELS_PER_USER env var)
 --EnterpriseGatewayApp.port=<Integer>
     Default: 8888
     Port on which to listen (KG_PORT env var)
