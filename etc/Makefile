@@ -1,7 +1,7 @@
 # Copyright (c) Juper Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help clean docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark toree-launcher
+.PHONY: help clean docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes toree-launcher
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -42,7 +42,7 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	mkdir -p kernel-launchers/scala/lib
 	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) package; cp target/scala-2.11/*.jar ../lib)
 	
-docker-images: docker-image-enterprise-gateway docker-image-nb2kg docker-image-yarn-spark ## Build docker images
+docker-images: docker-image-enterprise-gateway docker-image-nb2kg docker-image-yarn-spark docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kernels ## Build docker images
 
 test-parent:
 	@echo wheel=../$(WHEEL_FILE)
@@ -77,8 +77,6 @@ docker-image-yarn-spark: ../.image-yarn-spark ## Build elyra/yarn-spark:2.1.0 do
 	@touch ../.image-yarn-spark
 	@-docker images elyra/yarn-spark:$(YARN_SPARK_TAG)
 
-docker-clean: docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark ## Remove docker images
-
 docker-clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
 	@rm -f ../.image-enterprise-gateway
 	@-docker rmi -f elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
@@ -90,3 +88,42 @@ docker-clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
 docker-clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 	@rm -f ../.image-yarn-spark
 	@-docker rmi -f elyra/yarn-spark:$(YARN_SPARK_TAG)
+
+## Kubernetes container images
+
+docker-images-kubernetes: docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kerneles
+
+docker-image-kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gateway ## Build elyra/kubernetes-enterprise-gateway:dev docker image
+../.image-kubernetes-enterprise-gateway: docker/kubernetes-enterprise-gateway/* ../$(WHEEL_FILE) $(KERNELSPECS_FILE)
+	@make docker-clean-kubernetes-enterprise-gateway
+	@make -C .. bdist
+	@mkdir -p ../build/docker/kubernetes-enterprise-gateway
+	cp docker/kubernetes-enterprise-gateway/* ../build/docker/kubernetes-enterprise-gateway
+	cp ../dist/jupyter_enterprise_gateway* ../build/docker/kubernetes-enterprise-gateway
+	@(cd ../build/docker/kubernetes-enterprise-gateway; docker build -t elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) . )
+	@touch ../.image-kubernetes-enterprise-gateway
+	@-docker images elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
+
+docker-image-kubernetes-kerneles: ../.image-kubernetes-kernels ## Build elyra/kubernetes-kernels:dev docker image
+../.image-kubernetes-kernels: docker/kubernetes-kernels/*
+	@make docker-clean-kubernetes-kernels
+	@mkdir -p ../build/docker/kubernetes-kernels
+	cp docker/kubernetes-kernels/* ../build/docker/kubernetes-kernels
+	@(cd ../build/docker/kubernetes-kernels; docker build -t elyra/kubernetes-kernels:$(NB2KG_TAG) . )
+	@touch ../.image-kubernetes-kernels
+	@-docker images elyra/kubernetes-kernels:$(NB2KG_TAG)
+
+docker-clean-kubernetes: docker-clean-kubernetes-enterprise-gateway  docker-clean-kubernetes-kerneles
+
+docker-clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
+	@rm -f ../.image-kubernetes-enterprise-gateway
+	@-docker rmi -f elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
+
+docker-clean-kubernetes-kerneles: ## Remove elyra/kubernetes-kerneles:dev docker image
+	@rm -f ../.image-kubernetes-kerneles
+	@-docker rmi -f elyra/kubernetes-kerneles:$(NB2KG_TAG)
+
+##
+
+docker-clean: docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes-enterprise-gateway docker-clean-kubernetes-kernels## Remove docker images
+
