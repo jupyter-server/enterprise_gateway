@@ -17,6 +17,8 @@
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.port-range",
-    "{port_range}"
+    "{port_range}",
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "lazy"
   ]
 }

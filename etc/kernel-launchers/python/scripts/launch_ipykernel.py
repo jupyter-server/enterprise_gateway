@@ -9,9 +9,16 @@ from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from IPython import embed_kernel
-from pyspark.sql import SparkSession
 from threading import Thread
 from Crypto.Cipher import AES
+
+# Determine if pyspark is present.  If not, then treat the initialization-mode
+# as if 'none' was used.
+can_create_spark_context = True
+try:
+    from pyspark.sql import SparkSession
+except ImportError:
+    can_create_spark_context = False
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -62,15 +69,6 @@ def initialize_spark_session():
 def sql(query):
     """Placeholder function. When called will wait for Spark session to be initialized and call ``spark.sql(query)``"""
     return spark.sql(query)
-
-
-# placeholder objects for Spark session variables which are initialized in a background thread
-spark = WaitingForSparkSessionToBeInitialized(global_variable_name='spark')
-sc = WaitingForSparkSessionToBeInitialized(global_variable_name='sc')
-sqlContext = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlContext')
-sqlCtx = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlCtx')
-
-thread_to_initialize_spark_session = Thread(target=initialize_spark_session)
 
 
 def prepare_gateway_socket(lower_port, upper_port):
@@ -262,7 +260,11 @@ def gateway_listener(sock):
 
 if __name__ == "__main__":
     """
-        Usage: spark-submit launch_ipykernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
+        Usage: spark-submit launch_ipykernel [connection_file]
+            [--RemoteProcessProxy.response-address <response_addr>]
+            [--RemoteProcessProxy.disable-gateway-socket]
+            [--RemoteProcessProxy.port-range <lowerPort>..<upperPort>]
+            [--RemoteProcessProxy.spark-context-initialization-mode {lazy|eager|none}]
     """
 
     parser = argparse.ArgumentParser()
@@ -274,13 +276,34 @@ if __name__ == "__main__":
                         default=False)
     parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', default='lazy',
+                        help='the initialization mode of the spark context: lazy, eager or none')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
     disable_gateway_socket = arguments['disable_gateway_socket']
     lower_port, upper_port = _validate_port_range(arguments['port_range'])
+    init_mode = arguments['init_mode']
     ip = "0.0.0.0"
+
+    # if a spark context is desired, but pyspark is not present, we should probably
+    # let it be known (as best we can) that they won't be getting a spark context.
+    if not can_create_spark_context and init_mode != 'none':
+        print("A spark context was desired but the pyspark distribution is not present.  "
+              "Spark context creation will not occur.")
+
+    # since 'lazy' and 'eager' behave the same, just check if not none
+    create_spark_context = can_create_spark_context and init_mode != 'none'
+
+    # placeholder objects for Spark session variables which are initialized in a background thread
+    if create_spark_context:
+        spark = WaitingForSparkSessionToBeInitialized(global_variable_name='spark')
+        sc = WaitingForSparkSessionToBeInitialized(global_variable_name='sc')
+        sqlContext = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlContext')
+        sqlCtx = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlCtx')
+
+        thread_to_initialize_spark_session = Thread(target=initialize_spark_session)
 
     # If the connection file doesn't exist, then create it.
     if not os.path.isfile(connection_file):
@@ -299,7 +322,8 @@ if __name__ == "__main__":
                 gateway_listener_thread.start()
 
     # start to initialize the Spark session in the background
-    thread_to_initialize_spark_session.start()
+    if create_spark_context:
+        thread_to_initialize_spark_session.start()
 
     # launch the IPython kernel instance
     embed_kernel(connection_file=connection_file, ip=ip)
@@ -310,4 +334,5 @@ if __name__ == "__main__":
         pass
 
     # stop the SparkContext after the kernel is stopped/killed
-    spark.stop()
+    if create_spark_context:
+        spark.stop()
