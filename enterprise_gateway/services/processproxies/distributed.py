@@ -121,4 +121,4 @@ class DistributedProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log.error(timeout_message)
             self.kill()
-            raise tornado.web.HTTPError(error_http_code, timeout_message)
+            raise tornado.web.HTTPError(error_http_code, reason=timeout_message)
