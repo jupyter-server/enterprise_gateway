@@ -327,6 +327,17 @@ Other options supported by launchers include:
 * `--RemoteProcessProxy.port-range {port_range}`  - passes configured port-range to launcher where launcher applies 
 that range to kernel ports.  The port-range may be configured globally or on a per-kernelspec basis, as previously
 described.
+* `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]`  - indicates the *timeframe* in which the
+spark context will be created.  
+    - `lazy` (default) attempts to defer initialization as late as possible - although can vary depending on the 
+    underlying kernel and launcher implementation.
+    - `eager` attempts to create the spark context as soon as possible.
+    - `none` skips spark context creation altogether.
+    
+    Note that some launchers may not be able to support all modes.  For example, the scala launcher uses the Toree 
+    kernel - which currently assumes a spark context will exist.  As a result, a mode of `none` doesn't apply.
+    Similarly, the `lazy` and `eager` modes in the Python launcher are essentially the same, with the spark context
+    creation occurring immediately, but in the background thereby minimizing the kernel's startup time.
 
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
