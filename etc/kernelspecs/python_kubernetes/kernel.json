@@ -9,7 +9,7 @@
   },
   "argv": [
     "python",
-    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_k8s.py",
+    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_kubernetes.py",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]

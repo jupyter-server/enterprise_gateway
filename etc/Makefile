@@ -91,7 +91,7 @@ docker-clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 
 ## Kubernetes container images
 
-docker-images-kubernetes: docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kerneles
+docker-images-kubernetes: docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kernel
 
 docker-image-kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gateway ## Build elyra/kubernetes-enterprise-gateway:dev docker image
 ../.image-kubernetes-enterprise-gateway: docker/kubernetes-enterprise-gateway/* ../$(WHEEL_FILE) $(KERNELSPECS_FILE)
@@ -104,24 +104,24 @@ docker-image-kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gate
 	@touch ../.image-kubernetes-enterprise-gateway
 	@-docker images elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
-docker-image-kubernetes-kerneles: ../.image-kubernetes-kernels ## Build elyra/kubernetes-kernels:dev docker image
-../.image-kubernetes-kernels: docker/kubernetes-kernels/*
-	@make docker-clean-kubernetes-kernels
-	@mkdir -p ../build/docker/kubernetes-kernels
-	cp docker/kubernetes-kernels/* ../build/docker/kubernetes-kernels
-	@(cd ../build/docker/kubernetes-kernels; docker build -t elyra/kubernetes-kernels:$(NB2KG_TAG) . )
-	@touch ../.image-kubernetes-kernels
-	@-docker images elyra/kubernetes-kernels:$(NB2KG_TAG)
+docker-image-kubernetes-kernel: ../.image-kubernetes-kernel ## Build elyra/kubernetes-kernel:dev docker image
+../.image-kubernetes-kernel: docker/kubernetes-kernel/*
+	@make docker-clean-kubernetes-kernel
+	@mkdir -p ../build/docker/kubernetes-kernel
+	cp docker/kubernetes-kernel/* ../build/docker/kubernetes-kernel
+	@(cd ../build/docker/kubernetes-kernel; docker build -t elyra/kubernetes-kernel:$(NB2KG_TAG) . )
+	@touch ../.image-kubernetes-kernel
+	@-docker images elyra/kubernetes-kernel:$(NB2KG_TAG)
 
-docker-clean-kubernetes: docker-clean-kubernetes-enterprise-gateway  docker-clean-kubernetes-kerneles
+docker-clean-kubernetes: docker-clean-kubernetes-enterprise-gateway  docker-clean-kubernetes-kernel
 
 docker-clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
 	@rm -f ../.image-kubernetes-enterprise-gateway
 	@-docker rmi -f elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
-docker-clean-kubernetes-kerneles: ## Remove elyra/kubernetes-kerneles:dev docker image
-	@rm -f ../.image-kubernetes-kerneles
-	@-docker rmi -f elyra/kubernetes-kerneles:$(NB2KG_TAG)
+docker-clean-kubernetes-kernel: ## Remove elyra/kubernetes-kernel:dev docker image
+	@rm -f ../.image-kubernetes-kernel
+	@-docker rmi -f elyra/kubernetes-kernel:$(NB2KG_TAG)
 
 ##
 

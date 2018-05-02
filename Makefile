@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs kernelspecs install sdist test release docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes docker-clean-kubernetes-enterprise-gateway docker-clean-kubernetes-kernels
+.PHONY: help build clean nuke dev dev-http docs install sdist test release docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes docker-clean-kubernetes-enterprise-gateway docker-clean-kubernetes-kernel
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -92,10 +92,10 @@ docker-image-yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
 docker-image-nb2kg:  ## Build elyra/nb2kg:dev docker image
 docker-images-kubernetes: ## Build kubernetes docker images
 docker-image-kubernetes-enterprise-gateway: ## Build elyra/kubernetes-enterprise-gateway:dev docker image
-docker-image-kubernetes-kernels: ## Build elyra/kubernetes-kernels:dev docker image
+docker-image-kubernetes-kernel: ## Build elyra/kubernetes-kernel:dev docker image
 
 # Actual working targets...
-docker-images docker-image-enterprise-gateway docker-image-yarn-spark docker-image-nb2kg docker-images-kubernetes docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kernels:
+docker-images docker-image-enterprise-gateway docker-image-yarn-spark docker-image-nb2kg docker-images-kubernetes docker-image-kubernetes-enterprise-gateway docker-image-kubernetes-kernel:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 docker-image-enterprise-gateway: $(WHEEL_FILE)
@@ -109,9 +109,9 @@ docker-clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
 docker-clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 docker-kubernetes-clean: ## Remove kubernetes docker images
 docker-clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
-docker-clean-kubernetes-kernels: ## Remove elyra/kubernetes-kernels:dev docker image
+docker-clean-kubernetes-kernel: ## Remove elyra/kubernetes-kernel:dev docker image
 
-docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes docker-clean-kubernetes-enterprise-gateway docker-clean-kubernetes-kernels:
+docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark docker-clean-kubernetes docker-clean-kubernetes-enterprise-gateway docker-clean-kubernetes-kernel:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 

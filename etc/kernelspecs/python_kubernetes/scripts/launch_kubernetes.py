@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings()
 
 # FIXME - these should be variable...
-DOCKER_IMAGE = 'elyra/k8s-kernel:dev'
+DOCKER_IMAGE = 'elyra/kubernetes-kernel:dev'
 COMM_PORT = '32456'
 STDIN_PORT = '48691'
 CONTROL_PORT = '40544'
