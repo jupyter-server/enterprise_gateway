@@ -8,7 +8,7 @@ import signal
 import re
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
-from ..processproxies.processproxy import RemoteProcessProxy
+from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 
@@ -90,6 +90,8 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     sigint_value = None
     port_range = None
 
+    restarting = False  # need to track whether we're in a restart situation or not
+
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
             self.log.debug("Instantiating kernel '{}' with process proxy: {}".
@@ -139,6 +141,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             self.process_proxy.shutdown_listener()
 
     def restart_kernel(self, now=False, **kw):
+        self.restarting = True
         kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
         # Check if this is a remote process proxy and if now = True. If so, check its connection count. If no
         # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
@@ -153,6 +156,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         super(RemoteKernelManager, self).restart_kernel(now, **kw)
         # Refresh persisted state.
         self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
+        self.restarting = False
 
     def signal_kernel(self, signum):
         """Need to override base method because it tries to send a signal to the (local)
@@ -192,9 +196,10 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return super(RemoteKernelManager, self).load_connection_info(info)
 
     def write_connection_file(self):
-        # If this is a remote kernel that's using a response address, we should skip the write_connection_file
-        # since it will create 5 useless ports that would not adhere to port-range restrictions if configured.
-        if not isinstance(self.process_proxy, RemoteProcessProxy) or not self.response_address:
+        # If this is a remote kernel that's using a response address or we're restarting, we should skip the
+        # write_connection_file since it will create 5 useless ports that would not adhere to port-range
+        # restrictions if configured.
+        if (isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address) and not self.restarting:
             # However, since we *may* want to limit the selected ports, go ahead and get the ports using
             # the process proxy (will be LocalPropcessProxy for default case) since the port selection will
             # handle the default case when the member ports aren't set anyway.
