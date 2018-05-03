@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: enterprise-gateway
+  name: enterprise-gateway
+spec:
+  ports:
+  - name: http
+    port: 8888
+    targetPort: 8888
+  selector:
+    gateway-selector: enterprise-gateway
+  sessionAffinity: ClientIP
+  type: ClusterIP
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: enterprise-gateway
+  labels:
+    gateway-selector: enterprise-gateway
+    app: enterprise-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      gateway-selector: enterprise-gateway
+  template:
+    metadata:
+      labels:
+        gateway-selector: enterprise-gateway
+        app: enterprise-gateway
+    spec:
+      containers:
+      - image: elyra/kubernetes-enterprise-gateway:dev
+        name: enterprise-gateway
+        args: ["--elyra"]
+        ports:
+        - containerPort: 8888

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export ANACONDA_HOME=/opt/anaconda2
+export ANACONDA_HOME=/opt/conda
 
 export JAVA_HOME=/usr/java/default
 
@@ -9,11 +9,12 @@ export PYSPARK_PYTHON=${ANACONDA_HOME}/bin/python
 export PATH=${ANACONDA_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${JAVA_HOME}/bin
 
 # Enterprise Gateway variables
-export EG_REMOTE_HOSTS=${EG_REMOTE_HOSTS:-HOSTNAME}
 export EG_SSH_PORT=${EG_SSH_PORT:-2122}
 export KG_IP=${KG_IP:-0.0.0.0}
 export KG_PORT=${KG_PORT:-8888}
 export KG_PORT_RETRIES=${KG_PORT_RETRIES:-0}
+
+export EG_KUBERNETES_CONFIG=/root/.kube/config
 
 # TODO: figure out why tunneling doesn't work from non-root user.
 # To use tunneling set this variable to 'True' and run as root.

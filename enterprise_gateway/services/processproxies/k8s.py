@@ -21,8 +21,10 @@ logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', lo
 
 poll_interval = float(os.environ.get('EG_POLL_INTERVAL', '0.5'))
 
-k8s_config_file = os.environ.get('EG_KUBERNETES_CONFIG', '~/.kube/config')  # FIXME - promote to option
-k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')  # FIXME - promote to option
+# FIXME - promote to options
+k8s_config_file = os.environ.get('EG_KUBERNETES_CONFIG', '~/.kube/config')
+k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
+k8s_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel:dev')
 
 local_ip = localinterfaces.public_ips()[0]
 
@@ -46,6 +48,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
         kw['env']['EG_KUBERNETES_CONFIG'] = k8s_config_file
         kw['env']['EG_KUBERNETES_NAMESPACE'] = k8s_namespace
+        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
+        kw['env']['EG_KERNEL_RESPONSE_ADDRESS'] = self.kernel_manager.response_address
 
         self.local_proc = launch_kernel(kernel_cmd, **kw)
         self.pid = self.local_proc.pid
@@ -90,22 +94,30 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
     def kill(self):
         """Kill a kernel.
-        :return: None if the deployment is gracefully terminated, False otherwise. 
+        :return: None if the job is gracefully terminated, False otherwise.
         """
-        # FIXME - deployment vs. job
+
         result = None
 
         if self.service_name:  # We only have something to terminate if we have a name
-            result = self.terminate_deployment()
+            result = self.terminate_job()
 
             if result:
-                self.log.debug("KubernetesProcessProxy.kill, deployment: {}, kernel ID: {} has been terminated."
+                self.log.debug("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has been terminated."
                            .format(self.service_name, self.kernel_id))
+                self.service_name = None
                 result = None  # maintain jupyter contract
             else:
-                self.log.warning("KubernetesProcessProxy.kill, deployment: {}, kernel ID: {} has not been terminated."
+                self.log.warning("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has not been terminated."
                            .format(self.service_name, self.kernel_id))
         return result
+
+    def cleanup(self):
+        # Since kubernetes objects don't go away on their own, we need to perform the same cleanup we'd normally
+        # perform on forced kill situations.
+
+        self.kill()
+        super(RemoteProcessProxy, self).cleanup()
 
     def confirm_remote_startup(self, kernel_cmd, **kw):
         """ Confirms the remote application has started by obtaining connection information from the remote
@@ -136,21 +148,15 @@ class KubernetesProcessProxy(RemoteProcessProxy):
     def get_status(self):
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's service
         # is selected where the service's cluster IP is then used, which "fronts" the pod's IP via an endpoint.
-        # FIXME - its still TBD whether we should use the service cluster IP or can simply use the pod IP when EG
-        # is also a k8s app
         pod_status = None
-        ret = client.CoreV1Api().list_namespaced_pod(namespace=k8s_namespace,
+        ret = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(namespace=k8s_namespace,
                                                      label_selector="kernel_id=" + self.kernel_id)
-
         if ret and ret.items:
             pod_info = ret.items[0]
             if pod_info.status:
                 if pod_info.status.phase == 'Running' and self.assigned_host == '':
-                    self.assigned_ip = pod_info.status.pod_ip
-                    self.assigned_host = pod_info.status.pod_ip
-
-                    # if we need clusterIP, do this...
-                    ret = client.CoreV1Api().list_namespaced_service(namespace=k8s_namespace,
+                    # Pod is Running - get the cluster IP from its fronting service
+                    ret = client.CoreV1Api(client.ApiClient()).list_namespaced_service(namespace=k8s_namespace,
                                                                      label_selector="kernel_id=" + self.kernel_id)
                     if ret and ret.items:
                         svc_info = ret.items[0]
@@ -160,16 +166,16 @@ class KubernetesProcessProxy(RemoteProcessProxy):
                 return pod_info.status
         return pod_status
 
-    def terminate_deployment(self):
-        # Kubernetes objects don't go away on their own - so we need to tear down the service and deployment
+    def terminate_job(self):
+        # Kubernetes objects don't go away on their own - so we need to tear down the service and job
         # associated with the kernel.
-        # FIXME - deployment vs. job
         result = True
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
 
-        # First delete the service, then the deployment.
+        # First delete the service,
         try:
-            ret = client.CoreV1Api().delete_namespaced_service(namespace=k8s_namespace, name=self.service_name)
+            ret = client.CoreV1Api(client.ApiClient()).delete_namespaced_service(namespace=k8s_namespace,
+                                                                                 name=self.service_name)
             if ret and ret.status != 'Success':
                 self.log.warning("Failure occurred deleting service: {}".format(ret))
         except Exception as err:
@@ -179,22 +185,9 @@ class KubernetesProcessProxy(RemoteProcessProxy):
                 self.log.warning("Error occurred deleting service: {}".format(err))
                 result = False
 
-        # delete deployment... FIXME - if we don't need service, then need to capture deployment name in status
-        """
+        # then the job...
         try:
-            ret = client.AppsV1beta2Api().delete_namespaced_deployment(namespace=k8s_namespace, body=body,
-                                                                   name=self.service_name)
-            if ret and ret.status != 'Success':
-                self.log.warning("Failure occurred deleting deployment: {}".format(ret))
-        except Exception as err:
-            if isinstance(err, client.rest.ApiException) and err.status == 404:
-                pass  # okay if its not found
-            else:
-                self.log.warning("Error occurred deleting deployment: {}".format(err))
-                result = False
-        """
-        try:
-            ret = client.BatchV1Api().delete_namespaced_job(namespace=k8s_namespace, body=body,
+            ret = client.BatchV1Api(client.ApiClient()).delete_namespaced_job(namespace=k8s_namespace, body=body,
                                                     name=self.service_name)
             if ret and ret.status != 'Success':
                 self.log.warning("Failure occurred deleting job: {}".format(ret))

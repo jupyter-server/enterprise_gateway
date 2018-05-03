@@ -21,34 +21,14 @@ then
 	exit 0
 fi
 
-: ${HADOOP_PREFIX:=/usr/local/hadoop}
-
-$HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
-
-rm /tmp/*.pid
-
-# installing libraries if any - (resource urls added comma separated to the ACP system variable)
-cd $HADOOP_PREFIX/share/hadoop/common ; for cp in ${ACP//,/ }; do  echo == $cp; curl -LO $cp ; done; cd -
-
-# altering the hostname in core-site and enterprise-gateway startup configuration
-sed s/HOSTNAME/$HOSTNAME/ /usr/local/hadoop/etc/hadoop/core-site.xml.template > /usr/local/hadoop/etc/hadoop/core-site.xml
 sed s/HOSTNAME/$HOSTNAME/ /usr/local/share/jupyter/start-enterprise-gateway.sh.template > /usr/local/share/jupyter/start-enterprise-gateway.sh
 chmod 0755 /usr/local/share/jupyter/start-enterprise-gateway.sh
 
-# setting spark defaults
-cp $SPARK_HOME/conf/spark-defaults.conf.template  $SPARK_HOME/conf/spark-defaults.conf
-
-cp $SPARK_HOME/conf/metrics.properties.template $SPARK_HOME/conf/metrics.properties
-
-
-CMD=${1:-"--help"}
 if [[ "$CMD" == "--elyra" ]];
 then
-	sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh
+	/usr/local/share/jupyter/start-enterprise-gateway.sh
 else
 	echo ""
-	echo "Note: Enterprise Gateway can be manually started using 'sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh'..."
-	echo "      YARN application logs can be found at '/usr/local/hadoop-2.7.1/logs/userlogs'"
 	/bin/bash -c "$*"
 fi
 exit 0

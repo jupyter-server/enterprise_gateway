@@ -4,20 +4,15 @@ FROM elyra/anaconda:dev
 COPY jupyter_enterprise_gateway*.whl /tmp
 RUN pip install kubernetes && \
     pip install send2trash && \
+    pip install jupyter_core==v4.4.0 && \
     pip install /tmp/jupyter_enterprise_gateway*.whl && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
+ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+ADD start-enterprise-gateway.sh.template /usr/local/share/jupyter
+
 # Create service user 'elyra'. Pin uid/gid to 1111.
-# Grant sudo privs to elyra. Unlock passwd (for ssh).
-# Add users 'bob' and 'alice' for test/demo purposes.
-# Add user 'jovyan' for compatibility with other Jupyter images.
-RUN adduser elyra -u 1111 --ingroup users && \
-	echo "elyra ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/elyra && \
-	chmod 0440 /etc/sudoers.d/elyra && \
-	passwd -fu elyra && \
-	adduser bob -u 1112 --ingroup users && \
-	adduser alice -u 1113 --ingroup users && \
-	adduser jovyan -u 1000 --ingroup users
+RUN useradd elyra -m -u 1111 -G users
 
 USER elyra
 
@@ -26,9 +21,11 @@ RUN ssh-keygen -q -N "" -t rsa -f /home/elyra/.ssh/id_rsa && \
 	cp /home/elyra/.ssh/id_rsa.pub /home/elyra/.ssh/authorized_keys && \
 	chmod 0700 /home/elyra
 
-COPY ~/.kube /home/elyra/.kube/
+COPY kube_config /home/elyra/.kube/config
 
 USER root
+
+COPY kube_config /root/.kube/config
 
 ADD ssh_config /home/elyra/.ssh/config
 RUN chmod 600 /home/elyra/.ssh/config && \
@@ -39,8 +36,10 @@ COPY bootstrap-enterprise-gateway.sh /etc/bootstrap-enterprise-gateway.sh
 RUN chown root.root /etc/bootstrap-enterprise-gateway.sh && \
 	chmod 0700 /etc/bootstrap-enterprise-gateway.sh
 
-WORKDIR /usr/local/share/jupyter
-
 ENTRYPOINT ["/etc/bootstrap-enterprise-gateway.sh"]
 
 EXPOSE 8888
+
+WORKDIR /usr/local/share/jupyter
+
+#USER elyra

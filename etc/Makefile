@@ -8,7 +8,7 @@ ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
 KERNELSPECS_FILE:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
-KERNELSPECS_FILES:=$(shell find kernel-launchers/python kernel-launchers/R kernel-launchers/scala/toree-launcher/src -type f -name '*')
+KERNELSPECS_FILES:=$(shell find kernel-launchers/python kernel-launchers/R kernel-launchers/scala/toree-launcher/src kernel-launchers/kubernetes -type f -name '*')
 TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
 
 ENTERPRISE_GATEWAY_TAG:=dev
@@ -33,6 +33,7 @@ $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib
 	@echo ../build/kernelspecs/*_python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
 	@echo ../build/kernelspecs/*_R_* | xargs -t -n 1 cp -r kernel-launchers/R/*
 	@echo ../build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
+	@echo ../build/kernelspecs/*_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@mkdir -p ../dist
 	rm -f $(KERNELSPECS_FILE)
 	@( cd ../build/kernelspecs; tar -pvczf "../$(KERNELSPECS_FILE)" * )
