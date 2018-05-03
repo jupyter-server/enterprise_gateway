@@ -56,7 +56,6 @@ sparkSessionFn <- local({
 
          sparkSession <- SparkR::sparkR.session(
                                         sparkHome=Sys.getenv("SPARK_HOME"),
-                                        appName=Sys.getenv("KERNEL_ID"),
                                         sparkConfig=sparkConfigList);
          sparkSession
        }
@@ -75,7 +74,6 @@ sparkContextFn <- local({
 
         sparkContext <- SparkR:::sparkR.sparkContext(
                                           sparkHome=Sys.getenv("SPARK_HOME"),
-                                          appName=Sys.getenv("KERNEL_ID"),
                                           sparkEnvirMap=SparkR:::convertNamedListToEnv(sparkConfigList))
 
         message ("Spark session obtained.")
@@ -185,6 +183,9 @@ parser <- add_argument(parser, "connection_file",
        help="Connection file name to be used; dictated by JKG")
 parser <- add_argument(parser, "--RemoteProcessProxy.spark-context-initialization-mode",
        help="the initialization mode of the spark context: lazy, eager or none")
+parser <- add_argument(parser, "--customAppName",
+       help="the custom application name to be set")
+
 
 argv <- parse_args(parser)
 
@@ -239,6 +240,10 @@ if (!file.exists(connection_file)){
 # If spark context creation is desired go ahead and initialize the session/context
 # Otherwise, skip spark context creation if set to none
 if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+    # Add custom application name (spark.app.name) spark config if available
+    if (!is.na(argv$customAppName)){
+        sparkConfigList[['spark.app.name']] <- argv$customAppName
+    }
     initialize_spark_session()
 }
 
