@@ -81,7 +81,11 @@ class KernelSessionManager(LoggingConfigurable):
             username = kernel_session['username']
             if username not in self._sessionsByUser:
                 self._sessionsByUser[username] = []
-            self._sessionsByUser[username].append(kernel_id)
+                self._sessionsByUser[username].append(kernel_id)
+            else:
+                # Only append if not there yet (e.g. restarts will be there already)
+                if kernel_id not in self._sessionsByUser[username]:
+                    self._sessionsByUser[username].append(kernel_id)
             self._commit_sessions()  # persist changes
         finally:
             kernels_lock.release()
