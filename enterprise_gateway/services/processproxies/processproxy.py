@@ -10,7 +10,6 @@ import json
 import paramiko
 import logging
 import time
-import tornado
 import pexpect
 import getpass
 from tornado import web
@@ -233,16 +232,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             else:
                 ssh.connect(host_ip, port=ssh_port, username=remote_user)
         except Exception as e:
+            http_status_code = 500
             current_host = gethostbyname(gethostname())
-            self.log.error(
-                "Exception '{}' occurred when creating a SSHClient at {} connecting to '{}:{}' with user '{}', "
-                "message='{}'.".format(type(e).__name__, current_host, host, ssh_port, remote_user, e))
+            error_message = "Exception '{}' occurred when creating a SSHClient at {} connecting " \
+                            "to '{}:{}' with user '{}', message='{}'.".\
+                format(type(e).__name__, current_host, host, ssh_port, remote_user, e)
             if e is paramiko.SSHException or paramiko.AuthenticationException:
+                http_status_code = 403
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
-                raise tornado.web.HTTPError(403, reason=error_message)
-            else:
-                raise e
+
+            self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         return ssh
 
     def rsh(self, host, command):
@@ -352,8 +352,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         error_message = "User '{}' is {} to start kernel{} " \
                         "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request.". \
             format(kernel_username, differentiator_clause, kernel_clause)
-        self.log.error(error_message)
-        raise tornado.web.HTTPError(403, reason=error_message)
+        self.log_and_raise(http_status_code=403, reason=error_message)
 
     def _enforce_limits(self, **kw):
         """
@@ -370,8 +369,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
                                 "active {}.".format(max_kernels_per_user, username, current_kernel_count,
                                                     "kernel" if max_kernels_per_user == 1 else "kernels")
-                self.log.error(error_message)
-                raise tornado.web.HTTPError(403, reason=error_message)
+                self.log_and_raise(http_status_code=403, reason=error_message)
 
     def get_process_info(self):
         process_info = {'pid': self.pid, 'pgid': self.pgid, 'ip': self.ip}
@@ -398,9 +396,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             port_range_size = self.upper_port - self.lower_port
             if port_range_size != 0:
                 if port_range_size < min_port_range_size:
-                    raise RuntimeError(
-                        "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
-                        " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+                    self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
+                        "Range size must be at least {} as specified by env EG_MIN_PORT_RANGE_SIZE".
+                        format(port_range, min_port_range_size))
 
                 # According to RFC 793, port is a 16-bit unsigned int. Which means the port
                 # numbers must be in the range (0, 65535). However, within that range,
@@ -423,16 +421,18 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 #
                 # In case of JEG, we will accept ports in the range 1024 - 65535 as these days
                 # admins use dedicated hosts for individual services.
-                if ((self.lower_port < 1024) or (self.lower_port > 65535)):
-                    raise RuntimeError("Invalid port range '{}' specified. Range for valid "
-                                       "port numbers is (1024, 65535).".format(port_range))
-                if ((self.upper_port < 1024) or (self.upper_port > 65535)):
-                    raise RuntimeError("Invalid port range '{}' specified. Range for valid "
-                                       "port numbers is (1024, 65535).".format(port_range))
+                if self.lower_port < 1024 or self.lower_port > 65535:
+                    self.log_and_raise(http_status_code=500, reason="Invalid port range '{}' specified. "
+                                    "Range for valid port numbers is (1024, 65535).".format(port_range))
+                if self.upper_port < 1024 or self.upper_port > 65535:
+                    self.log_and_raise(http_status_code=500, reason="Invalid port range '{}' specified. "
+                                    "Range for valid port numbers is (1024, 65535).".format(port_range))
         except ValueError as ve:
-            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
+            self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
+                            "Error was: {}".format(port_range, ve))
         except IndexError as ie:
-            raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
+            self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
+                            "Error was: {}".format(port_range, ie))
 
         self.kernel_manager.port_range = port_range
 
@@ -460,9 +460,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             except Exception as e:
                 retries = retries + 1
                 if retries > max_port_range_retries:
-                    raise RuntimeError(
-                        "Failed to locate port within range {} after {} retries!".
-                            format(self.kernel_manager.port_range, max_port_range_retries))
+                    self.log_and_raise(http_status_code=500, reason="Failed to locate port within range {} "
+                            "after {} retries!".format(self.kernel_manager.port_range, max_port_range_retries))
         return sock
 
     def _get_candidate_port(self):
@@ -470,6 +469,25 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if range_size == 0:
             return 0
         return random.randint(self.lower_port, self.upper_port)
+
+    def log_and_raise(self, http_status_code=None, reason=None):
+        """
+        Helper method that combines the logging and raising of exceptions.  If http_status_code is
+        is provided an HTTPError is created using the status code and reason.  If http_status_code is
+        not provided, a RuntimeError is raised with reason as the message.  In either case, an error is
+        logged using the reason.  If reason is not provided a generic message will be used.
+        :param http_status_code:
+        :param reason:
+        :return:
+        """
+        if reason is None:
+            reason = "Internal server issue!"
+
+        self.log.error(reason)
+        if http_status_code:
+            raise web.HTTPError(status_code=http_status_code, reason=reason)
+        else:
+            raise RuntimeError(reason)
 
 
 class LocalProcessProxy(BaseProcessProxyABC):
@@ -548,12 +566,13 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         rports = cf['shell_port'], cf['iopub_port'], cf['stdin_port'], cf['hb_port'], cf['control_port']
 
         channels = KernelChannel.SHELL, KernelChannel.IOPUB, KernelChannel.STDIN, \
-                   KernelChannel.HEARTBEAT, KernelChannel.CONTROL
+            KernelChannel.HEARTBEAT, KernelChannel.CONTROL
 
         remote_ip = cf['ip']
 
         if not tunnel.try_passwordless_ssh(server + ":" + str(port), key):
-            raise RuntimeError("Must use password-less scheme by setting up the SSH public key on the cluster nodes")
+            self.log_and_raise(http_status_code=403, reason="Must use password-less scheme by setting up the "
+                            "SSH public key on the cluster nodes")
 
         for lp, rp, kc in zip(lports, rports, channels):
             self._create_ssh_tunnel(kc, lp, rp, remote_ip, server, port, key)
@@ -577,7 +596,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             process = self._spawn_ssh_tunnel(kernel_channel, local_port, remote_port, remote_ip, server, port, key)
             self.tunnel_processes[channel_name] = process
         except Exception as e:
-            raise RuntimeError("Could not open SSH tunnel for port {}. Exception: '{}'".format(channel_name, e))
+            self.log_and_raise(http_status_code=500, reason="Could not open SSH tunnel for port {}. Exception: '{}'"
+                        .format(channel_name, e))
 
     def _spawn_ssh_tunnel(self, kernel_channel, local_port, remote_port, remote_ip, server, port=ssh_port, key=None):
         """ This method spawns a child process to create a SSH tunnel and returns the spawned process.
@@ -662,18 +682,17 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
                                    .format(self.kernel_id, self.assigned_host))
                 else:
-                    self.log.error(
-                        "The following exception occurred waiting for connection file response for KernelId '{}' "
-                        "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e)))
+                    error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
+                        "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
                     self.kill()
-                    raise e
+                    self.log_and_raise(http_status_code=500, reason=error_message)
             finally:
                 if conn:
                     conn.close()
         else:
-            error_message = "Unexpected runtime found for Kernel ID '{}'!  No response socket exists".format(self.kernel_id)
-            self.log.error(error_message)
-            raise tornado.web.HTTPError(500, reason=error_message)
+            error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
+                format(self.kernel_id)
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
         return ready_to_connect
 
@@ -746,7 +765,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.log.debug("Received connection info for KernelID '{}' from host '{}': {}..."
                            .format(self.kernel_id, self.assigned_host, connect_info))
         else:
-            raise RuntimeError("RemoteProcessProxy.update_connection: connection information is null!")
+            error_message = "Unexpected runtime encountered for Kernel ID '{}' - " \
+                            "connection information is null!".format(self.kernel_id)
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
