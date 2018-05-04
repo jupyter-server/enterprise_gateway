@@ -5,8 +5,6 @@
 import os
 import json
 import time
-import tornado
-from tornado import web
 from socket import *
 from .processproxy import RemoteProcessProxy
 
@@ -38,8 +36,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
         try:
             result = self.rsh(self.ip, cmd)
         except Exception as e:
-            self.log.error("Failure occurred starting remote kernel on '{}'. Exception: '{}'.".format(self.ip, e))
-            raise e
+            error_message = "Failure occurred starting remote kernel on '{}'. Exception: '{}'.".format(self.ip, e)
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
         for line in result:
             result_pid = line.strip()
@@ -47,8 +45,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         try:
             self.pid = int(result_pid)
         except ValueError:
-            raise RuntimeError("Failure occurred starting remote kernel on '{}'.  Returned result: {}"
-                               .format(self.ip, result))
+            error_message = "Failure occurred starting remote kernel on '{}'.  Returned result: {}".\
+                format(self.ip, result)
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
         self.log.info("Remote kernel launched on '{}', pid: {}, KernelID: {}, cmd: '{}'"
                       .format(self.assigned_host, self.pid, self.kernel_id, kernel_cmd))
@@ -116,9 +115,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.log.error(timeout_message)
             self.kill()
-            raise tornado.web.HTTPError(error_http_code, reason=timeout_message)
+            self.log_and_raise(http_status_code=500, reason=timeout_message)
