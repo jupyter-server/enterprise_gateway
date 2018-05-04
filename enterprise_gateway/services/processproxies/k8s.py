@@ -41,7 +41,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
             self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
-        self.service_name = ''
+        self.job_name = ''
 
     def launch_process(self, kernel_cmd, **kw):
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
@@ -99,17 +99,17 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
         result = None
 
-        if self.service_name:  # We only have something to terminate if we have a name
+        if self.job_name:  # We only have something to terminate if we have a name
             result = self.terminate_job()
 
             if result:
                 self.log.debug("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has been terminated."
-                           .format(self.service_name, self.kernel_id))
-                self.service_name = None
+                               .format(self.job_name, self.kernel_id))
+                self.job_name = None
                 result = None  # maintain jupyter contract
             else:
                 self.log.warning("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has not been terminated."
-                           .format(self.service_name, self.kernel_id))
+                                 .format(self.job_name, self.kernel_id))
         return result
 
     def cleanup(self):
@@ -146,8 +146,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
                            format(i, self.kernel_id))
 
     def get_status(self):
-        # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's service
-        # is selected where the service's cluster IP is then used, which "fronts" the pod's IP via an endpoint.
+        # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's job
+        # is selected to get the job name (for deletion) and the pod's IP is used for the assigned_ip.
         pod_status = None
         ret = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(namespace=k8s_namespace,
                                                      label_selector="kernel_id=" + self.kernel_id)
@@ -155,14 +155,14 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             pod_info = ret.items[0]
             if pod_info.status:
                 if pod_info.status.phase == 'Running' and self.assigned_host == '':
-                    # Pod is Running - get the cluster IP from its fronting service
-                    ret = client.CoreV1Api(client.ApiClient()).list_namespaced_service(namespace=k8s_namespace,
+                    # Pod is Running - get the name from the corresponding job instance
+                    ret = client.BatchV1Api(client.ApiClient()).list_namespaced_job(namespace=k8s_namespace,
                                                                      label_selector="kernel_id=" + self.kernel_id)
                     if ret and ret.items:
-                        svc_info = ret.items[0]
-                        self.service_name = svc_info.metadata.name
-                        self.assigned_ip = svc_info.spec.cluster_ip
-                        self.assigned_host = svc_info.spec.cluster_ip
+                        job_info = ret.items[0]
+                        self.job_name = job_info.metadata.name
+                        self.assigned_ip = pod_info.status.pod_ip
+                        self.assigned_host = pod_info.status.pod_ip
                 return pod_info.status
         return pod_status
 
@@ -172,23 +172,10 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         result = True
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
 
-        # First delete the service,
-        try:
-            ret = client.CoreV1Api(client.ApiClient()).delete_namespaced_service(namespace=k8s_namespace,
-                                                                                 name=self.service_name)
-            if ret and ret.status != 'Success':
-                self.log.warning("Failure occurred deleting service: {}".format(ret))
-        except Exception as err:
-            if isinstance(err, client.rest.ApiException) and err.status == 404:
-                pass  # okay if its not found
-            else:
-                self.log.warning("Error occurred deleting service: {}".format(err))
-                result = False
-
-        # then the job...
+        # Delete the job...
         try:
             ret = client.BatchV1Api(client.ApiClient()).delete_namespaced_job(namespace=k8s_namespace, body=body,
-                                                    name=self.service_name)
+                                                                              name=self.job_name)
             if ret and ret.status != 'Success':
                 self.log.warning("Failure occurred deleting job: {}".format(ret))
         except Exception as err:
