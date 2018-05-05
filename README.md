@@ -1,11 +1,18 @@
+**[Technical Overview](#technical-overview)** |
+**[Features](#features)** |
+**[Installation](#installation)** |
+**[System Architecture](#system-architecture)** |
+**[Contributing](#contributing)** |
+
 # Jupyter Enterprise Gateway
 
-[![Google Group](https://img.shields.io/badge/-Google%20Group-lightgrey.svg)](https://groups.google.com/forum/#!forum/jupyter) 
 [![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway) 
 [![Build Status](https://travis-ci.org/jupyter-incubator/enterprise_gateway.svg?branch=master)](https://travis-ci.org/jupyter-incubator/enterprise_gateway)
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
+[![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
-## Overview
+
+## Technical Overview
 
 Jupyter Enterprise Gateway is a web server that provides headless access to Jupyter kernels within 
 an enterprise.  Built directly upon Jupyter Kernel Gateway, Jupyter Enterprise Gateway leverages all 
