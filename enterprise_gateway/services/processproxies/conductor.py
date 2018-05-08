@@ -6,13 +6,9 @@ import os
 import signal
 import json
 import time
-import tornado
-import logging
 import subprocess
-import errno
 import socket
 import re
-from tornado import web
 from jupyter_client import launch_kernel, localinterfaces
 from .processproxy import RemoteProcessProxy
 
@@ -48,8 +44,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.rest_credential = env_dict['EGO_SERVICE_CREDENTIAL']
         else:
             error_message = "ConductorClusterProcessProxy failed to obtain the Conductor credential."
-            self.log.error(error_message)
-            raise tornado.web.HTTPError(500, reason=error_message)
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
         # dynamically update Spark submit parameters
         self.update_launch_info(kernel_cmd, **kw)
@@ -202,8 +197,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in " \
                                                      "state '{}' during kernel startup!".\
                                     format(self.kernel_id, self.application_id, app_state)
-                    self.log.error(error_message)
-                    raise tornado.web.HTTPError(500, reason=error_message)
+                    self.log_and_raise(http_status_code=500, reason=error_message)
 
                 self.log.debug("{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".
                                format(i, app_state, self.assigned_host, self.kernel_id, self.application_id))
@@ -245,8 +239,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                         format(self.application_id, self.kernel_launch_timeout)
             self.kill()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.log.error(timeout_message)
-            raise tornado.web.HTTPError(error_http_code, reason=timeout_message)
+            self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def get_application_id(self, ignore_final_states=False):
         # Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
