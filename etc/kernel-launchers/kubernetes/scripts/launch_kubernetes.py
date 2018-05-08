@@ -10,7 +10,7 @@ urllib3.disable_warnings()
 def launch_kubernetes_kernel():
     # Launches a containerized kernel as a kubernetes Job, fronted by a service (to expose the ports).
 
-    config.load_kube_config(os.environ.get('EG_KUBERNETES_CONFIG'))
+    config.load_incluster_config()
 
     keywords = dict()
     keywords['kernel_id'] = os.environ.get('KERNEL_ID')

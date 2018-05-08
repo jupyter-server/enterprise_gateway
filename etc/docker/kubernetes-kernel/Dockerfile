@@ -8,8 +8,11 @@ COPY bootstrap-kernel.sh /etc/bootstrap-kernel.sh
 
 RUN mkdir -p /opt/elyra/bin && \
     mkdir -p /opt/elyra/conf
+
 COPY launch_ipykernel.py /opt/elyra/bin/launch_ipykernel.py
+
 COPY connection.json /opt/elyra/conf/connection.json
+
 RUN chown root.root /etc/bootstrap-kernel.sh && \
 	chmod 0700 /etc/bootstrap-kernel.sh && \
 	chown -R root.root /opt/elyra && \

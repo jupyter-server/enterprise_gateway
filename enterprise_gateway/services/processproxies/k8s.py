@@ -22,13 +22,12 @@ logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', lo
 poll_interval = float(os.environ.get('EG_POLL_INTERVAL', '0.5'))
 
 # FIXME - promote to options
-k8s_config_file = os.environ.get('EG_KUBERNETES_CONFIG', '~/.kube/config')
 k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
 k8s_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel:dev')
 
 local_ip = localinterfaces.public_ips()[0]
 
-config.load_kube_config(config_file=k8s_config_file)
+config.load_incluster_config()
 
 
 class KubernetesProcessProxy(RemoteProcessProxy):
@@ -44,12 +43,16 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         self.job_name = ''
 
     def launch_process(self, kernel_cmd, **kw):
-        super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
-
-        kw['env']['EG_KUBERNETES_CONFIG'] = k8s_config_file
+        # Set env before superclass call so we see these in the debug output
         kw['env']['EG_KUBERNETES_NAMESPACE'] = k8s_namespace
         kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
         kw['env']['EG_KERNEL_RESPONSE_ADDRESS'] = self.kernel_manager.response_address
+
+        # Transfer internal env vars since the launcher starts fresh
+        kw['env']['KUBERNETES_SERVICE_HOST'] = os.environ.get('KUBERNETES_SERVICE_HOST')
+        kw['env']['KUBERNETES_SERVICE_PORT'] = os.environ.get('KUBERNETES_SERVICE_PORT')
+
+        super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 
         self.local_proc = launch_kernel(kernel_cmd, **kw)
         self.pid = self.local_proc.pid

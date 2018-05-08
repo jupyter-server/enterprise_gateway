@@ -21,18 +21,16 @@ RUN ssh-keygen -q -N "" -t rsa -f /home/elyra/.ssh/id_rsa && \
 	cp /home/elyra/.ssh/id_rsa.pub /home/elyra/.ssh/authorized_keys && \
 	chmod 0700 /home/elyra
 
-COPY kube_config /home/elyra/.kube/config
-
 USER root
 
-COPY kube_config /root/.kube/config
-
 ADD ssh_config /home/elyra/.ssh/config
+
 RUN chmod 600 /home/elyra/.ssh/config && \
     chown elyra:elyra /home/elyra/.ssh/config
 
 # install boot script
 COPY bootstrap-enterprise-gateway.sh /etc/bootstrap-enterprise-gateway.sh
+
 RUN chown root.root /etc/bootstrap-enterprise-gateway.sh && \
 	chmod 0700 /etc/bootstrap-enterprise-gateway.sh
 
