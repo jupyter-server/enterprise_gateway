@@ -73,7 +73,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         env_dict = kw.get('env')
         # add SPARK_HOME, PYSPARK_PYTHON, update SPARK_OPT to contain SPARK_MASTER and EGO_SERVICE_CREDENTIAL
         env_dict['SPARK_HOME'] = env_dict['KERNEL_SPARK_HOME']
-        env_dict['PYSPARK_PYTHON'] = pjoin(env_dict['KERNEL_NOTEBOOK_DEPLOY_DIR'], 'install/bin/python')
+        env_dict['PYSPARK_PYTHON'] = env_dict['KERNEL_PYSPARK_PYTHON']
         # add KERNEL_SPARK_OPTS to append user configured Spark configuration
         user_defined_spark_opts = ''
         if 'KERNEL_SPARK_OPTS' in env_dict:
