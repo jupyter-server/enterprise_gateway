@@ -40,13 +40,14 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
             self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
-        self.job_name = ''
+        self.pod_name = ''
 
     def launch_process(self, kernel_cmd, **kw):
         # Set env before superclass call so we see these in the debug output
         kw['env']['EG_KUBERNETES_NAMESPACE'] = k8s_namespace
         kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
-        kw['env']['EG_KERNEL_RESPONSE_ADDRESS'] = self.kernel_manager.response_address
+        kw['env']['EG_RESPONSE_ADDRESS'] = self.kernel_manager.response_address
+        kw['env']['KERNEL_CONNECTION_FILE'] = self.get_connection_filename()
 
         # Transfer internal env vars since the launcher starts fresh
         kw['env']['KUBERNETES_SERVICE_HOST'] = os.environ.get('KUBERNETES_SERVICE_HOST')
@@ -97,22 +98,22 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
     def kill(self):
         """Kill a kernel.
-        :return: None if the job is gracefully terminated, False otherwise.
+        :return: None if the pod is gracefully terminated, False otherwise.
         """
 
         result = None
 
-        if self.job_name:  # We only have something to terminate if we have a name
-            result = self.terminate_job()
+        if self.pod_name:  # We only have something to terminate if we have a name
+            result = self.terminate_pod()
 
             if result:
-                self.log.debug("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has been terminated."
-                               .format(self.job_name, self.kernel_id))
-                self.job_name = None
+                self.log.debug("KubernetesProcessProxy.kill, pod: {}, kernel ID: {} has been terminated."
+                               .format(self.pod_name, self.kernel_id))
+                self.pod_name = None
                 result = None  # maintain jupyter contract
             else:
-                self.log.warning("KubernetesProcessProxy.kill, job: {}, kernel ID: {} has not been terminated."
-                                 .format(self.job_name, self.kernel_id))
+                self.log.warning("KubernetesProcessProxy.kill, pod: {}, kernel ID: {} has not been terminated."
+                                 .format(self.pod_name, self.kernel_id))
         return result
 
     def cleanup(self):
@@ -136,8 +137,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             pod_status = self.get_status()
             if pod_status:
                 self.log.debug("{}: Waiting to connect to k8s pod. "
-                               "Status: '{}', Pod IP: '{}', Host IP: '{}', KernelID: '{}'".
-                           format(i, pod_status.phase, self.assigned_ip, pod_status.host_ip, self.kernel_id))
+                               "Name: '{}', Status: '{}', Pod IP: '{}', Host IP: '{}', KernelID: '{}'".
+                               format(i, self.pod_name, pod_status.phase, self.assigned_ip, pod_status.host_ip, self.kernel_id))
 
                 if self.assigned_host != '':
                     ready_to_connect = self.receive_connection_info()
@@ -145,48 +146,54 @@ class KubernetesProcessProxy(RemoteProcessProxy):
                     self.pgid = 0
             else:
                 self.log.debug("{}: Waiting to connect to k8s pod. "
-                               "Status: 'None', Pod IP: 'None', Host IP: 'None', KernelID: '{}'".
-                           format(i, self.kernel_id))
+                               "Name: '{}', Status: 'None', Pod IP: 'None', Host IP: 'None', KernelID: '{}'".
+                               format(i, self.pod_name, self.kernel_id))
 
     def get_status(self):
-        # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's job
-        # is selected to get the job name (for deletion) and the pod's IP is used for the assigned_ip.
+        # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
+        # is used for the assigned_ip.
         pod_status = None
         ret = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(namespace=k8s_namespace,
                                                      label_selector="kernel_id=" + self.kernel_id)
         if ret and ret.items:
             pod_info = ret.items[0]
+            self.pod_name = pod_info.metadata.name
             if pod_info.status:
                 if pod_info.status.phase == 'Running' and self.assigned_host == '':
-                    # Pod is Running - get the name from the corresponding job instance
-                    ret = client.BatchV1Api(client.ApiClient()).list_namespaced_job(namespace=k8s_namespace,
-                                                                     label_selector="kernel_id=" + self.kernel_id)
-                    if ret and ret.items:
-                        job_info = ret.items[0]
-                        self.job_name = job_info.metadata.name
-                        self.assigned_ip = pod_info.status.pod_ip
-                        self.assigned_host = pod_info.status.pod_ip
+                    # Pod is running, capture IP
+                    self.assigned_ip = pod_info.status.pod_ip
+                    self.assigned_host = pod_info.status.pod_ip
                 return pod_info.status
         return pod_status
 
-    def terminate_job(self):
-        # Kubernetes objects don't go away on their own - so we need to tear down the service and job
+    def terminate_pod(self):
+        # Kubernetes objects don't go away on their own - so we need to tear down the pod
         # associated with the kernel.
-        result = True
+        result = False
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
 
-        # Delete the job...
+        # Delete the pod...
         try:
-            ret = client.BatchV1Api(client.ApiClient()).delete_namespaced_job(namespace=k8s_namespace, body=body,
-                                                                              name=self.job_name)
-            if ret and ret.status != 'Success':
-                self.log.warning("Failure occurred deleting job: {}".format(ret))
+            # What gets returned from this call is a 'V1Status'.  It looks a bit like JSON but appears to be
+            # intentionally obsfucated.  Attempts to load the status field fail due to malformed json.  As a
+            # result, we'll see if the status field contains either 'Succeeded' or 'Failed' - since that should
+            # indicate the phase value.
+            # FIXME - we may want to revisit this.
+            v1_status = client.CoreV1Api(client.ApiClient()).delete_namespaced_pod(namespace=k8s_namespace, body=body,
+                                                                                   name=self.pod_name)
+            if v1_status and v1_status.status:
+                if 'Succeeded' in v1_status.status or 'Failed' in v1_status.status:
+                    result = True
+                else:
+                    self.log.debug("Pod deletion status: '{}'".format(v1_status))
+
+            if not result:
+                self.log.warning("Failure occurred deleting pod: {}".format(v1_status))
         except Exception as err:
             if isinstance(err, client.rest.ApiException) and err.status == 404:
-                pass  # okay if its not found
+                result = True  # okay if its not found
             else:
-                self.log.warning("Error occurred deleting job: {}".format(err))
-                result = False
+                self.log.warning("Error occurred deleting pod: {}".format(err))
         return result
 
     def handle_timeout(self):

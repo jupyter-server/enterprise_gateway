@@ -12,7 +12,7 @@ spec:
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
-  type: ClusterIP
+  type: NodePort
 ---
 apiVersion: apps/v1beta2
 kind: Deployment
@@ -33,7 +33,14 @@ spec:
         app: enterprise-gateway
     spec:
       containers:
-      - image: elyra/kubernetes-enterprise-gateway:dev
+      - env:
+        - name: EG_TUNNELING_ENABLED
+          value: "False"
+        - name: EG_CULL_IDLE_TIMEOUT
+          value: "600"
+        - name: EG_LOG_LEVEL
+          value: "DEBUG"
+        image: elyra/kubernetes-enterprise-gateway:dev
         name: enterprise-gateway
         args: ["--elyra"]
         ports:

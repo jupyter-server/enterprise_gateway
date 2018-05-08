@@ -7,10 +7,18 @@ from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from IPython import embed_kernel
-#from pyspark.sql import SparkSession
 from threading import Thread
+import pkg_resources
 
-'''
+can_create_spark_context = True
+try:
+    pkg_resources.get_distribution('pyspark')
+except pkg_resources.DistributionNotFound:
+    can_create_spark_context = False
+else:
+    from pyspark.sql import SparkSession
+
+
 class WaitingForSparkSessionToBeInitialized(object):
     """Wrapper object for SparkContext and other Spark session variables while the real Spark session is being
     initialized in a background thread. The class name is intentionally worded verbosely explicit as it will show up
@@ -55,22 +63,18 @@ def initialize_spark_session():
 def sql(query):
     """Placeholder function. When called will wait for Spark session to be initialized and call ``spark.sql(query)``"""
     return spark.sql(query)
-'''
 
-def prepare_gateway_socket(context):
-    if context == 'k8s':
-        gateway_port = 32456
-    else:
-        gateway_port = 0
+
+def prepare_gateway_socket():
     sock = socket(AF_INET, SOCK_STREAM)
-    sock.bind(('0.0.0.0', gateway_port))
+    sock.bind(('0.0.0.0', 0))
     print("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
     sock.listen(1)
     sock.settimeout(5)
     return sock
 
 
-def return_connection_info(connection_file, ip, response_addr, disable_gateway_socket, context):
+def return_connection_info(connection_file, ip, response_addr, disable_gateway_socket):
     gateway_sock = None
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
@@ -88,15 +92,14 @@ def return_connection_info(connection_file, ip, response_addr, disable_gateway_s
         cf_json = json.load(fp)
         fp.close()
 
-    # add process and process group ids into connection info if not kubernetes
-    if context != 'k8s':
-        pid = os.getpid()
-        cf_json['pid'] = str(pid)
-        cf_json['pgid'] = str(os.getpgid(pid))
+    # add process and process group ids into connection info
+    pid = os.getpid()
+    cf_json['pid'] = str(pid)
+    cf_json['pgid'] = str(os.getpgid(pid))
 
     # prepare socket address for handling signals
     if not disable_gateway_socket:
-        gateway_sock = prepare_gateway_socket(context)
+        gateway_sock = prepare_gateway_socket()
         cf_json['comm_port'] = gateway_sock.getsockname()[1]
 
     s = socket(AF_INET, SOCK_STREAM)
@@ -157,6 +160,7 @@ def gateway_listener(sock):
 if __name__ == "__main__":
     """
         Usage: spark-submit launch_ipykernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
+            [--RemoteProcessProxy.disable-gateway-socket] [--RemoteProcessProxy.no-spark-context]
     """
 
     parser = argparse.ArgumentParser()
@@ -166,27 +170,25 @@ if __name__ == "__main__":
     parser.add_argument('--RemoteProcessProxy.disable-gateway-socket', dest='disable_gateway_socket',
                         action='store_true', help='Disable use of gateway socket for extended communications',
                         default=False)
-    parser.add_argument('--RemoteProcessProxy.context', dest='context',
-                        metavar='default|k8s', help='Indicate context for launcher',
-                        default='default')
+    parser.add_argument('--RemoteProcessProxy.no-spark-context', dest='no_spark_context',
+                        action='store_true', help='Indicates that no spark context should be created',
+                        default=False)
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
     disable_gateway_socket = arguments['disable_gateway_socket']
-    context = arguments['context']
+    create_spark_context = can_create_spark_context and not arguments['no_spark_context']
     ip = "0.0.0.0"
 
     # placeholder objects for Spark session variables which are initialized in a background thread
-    '''
-    if context != 'k8s':
+    if create_spark_context:
         spark = WaitingForSparkSessionToBeInitialized(global_variable_name='spark')
         sc = WaitingForSparkSessionToBeInitialized(global_variable_name='sc')
         sqlContext = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlContext')
         sqlCtx = WaitingForSparkSessionToBeInitialized(global_variable_name='sqlCtx')
 
         thread_to_initialize_spark_session = Thread(target=initialize_spark_session)
-    '''
 
     # If the connection file doesn't exist, then create it.
     if not os.path.isfile(connection_file):
@@ -195,14 +197,14 @@ if __name__ == "__main__":
         write_connection_file(fname=connection_file, ip=ip, key=key)
 
     if response_addr:
-        gateway_socket = return_connection_info(connection_file, ip, response_addr, disable_gateway_socket, context)
+        gateway_socket = return_connection_info(connection_file, ip, response_addr, disable_gateway_socket)
         if gateway_socket:  # socket in use, start gateway listener thread
             gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket,))
             gateway_listener_thread.start()
 
     # start to initialize the Spark session in the background
-    #if context != 'k8s':
-    #    thread_to_initialize_spark_session.start()
+    if create_spark_context:
+        thread_to_initialize_spark_session.start()
 
     # launch the IPython kernel instance
     embed_kernel(connection_file=connection_file, ip=ip)
@@ -212,8 +214,6 @@ if __name__ == "__main__":
     except:
         pass
 
-    '''
     # stop the SparkContext after the kernel is stopped/killed
-    if context != 'k8s':
+    if create_spark_context:
         spark.stop()
-    '''

@@ -26,7 +26,7 @@ chmod 0755 /usr/local/share/jupyter/start-enterprise-gateway.sh
 
 if [[ "$CMD" == "--elyra" ]];
 then
-	/usr/local/share/jupyter/start-enterprise-gateway.sh
+	su elyra -c /usr/local/share/jupyter/start-enterprise-gateway.sh
 else
 	echo ""
 	/bin/bash -c "$*"

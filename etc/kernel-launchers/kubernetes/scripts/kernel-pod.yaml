@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: eg-$kernel_id
+  namespace: $namespace
+  labels:
+    kernel_id: $kernel_id
+    app: enterprise-gateway
+spec:
+  restartPolicy: Never
+  containers:
+  - env:
+    - name: EG_RESPONSE_ADDRESS
+      value: $response_address
+    - name: KERNEL_CONNECTION_FILENAME
+      value: $connection_filename
+    - name: KERNEL_CREATE_SPARK_CONTEXT
+      value: $create_spark_context
+    - name: KERNEL_LANGUAGE
+      value: $language
+    image: $docker_image
+    name: eg-$kernel_id

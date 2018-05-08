@@ -20,8 +20,8 @@ echo reponse-addr=${EG_RESPONSE_ADDRESS}
 
 if [[ "${KERNEL_LANGUAGE}" == "python" ]];
 then
-	echo "python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s"
-	python /opt/elyra/bin/launch_ipykernel.py /opt/elyra/conf/connection.json --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.context k8s
+	echo "python /opt/elyra/bin/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.no-spark-context"
+	python /opt/elyra/bin/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.no-spark-context
 else
 	echo ""
 	echo "Starting bash with '$*'"
