@@ -382,9 +382,10 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             Enforces any limits that may be imposed by the configuration.
         """
 
-        # if kernels-per-user is configured, ensure that this next kernel is still within the limit
+        # if kernels-per-user is configured, ensure that this next kernel is still within the limit.  If this
+        # is due to a restart, skip enforcement since we're re-using that id.
         max_kernels_per_user = self.kernel_manager.parent.parent.max_kernels_per_user
-        if max_kernels_per_user >= 0:
+        if max_kernels_per_user >= 0 and not self.kernel_manager.restarting:
             env_dict = kw.get('env')
             username = env_dict['KERNEL_USERNAME']
             current_kernel_count = self.kernel_manager.parent.parent.kernel_session_manager.active_sessions(username)
