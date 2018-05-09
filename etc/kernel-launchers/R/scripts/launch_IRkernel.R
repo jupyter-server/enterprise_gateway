@@ -25,7 +25,7 @@ initialize_spark_session <- function() {
 
     if (identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "eager")) {
         # Start the spark context immediately if set to eager
-        spark <- SparkR::sparkR.session(enableHiveSupport = FALSE)
+        spark <- SparkR::sparkR.session(enableHiveSupport = FALSE, sparkConfig=sparkConfigList)
         assign("spark", spark, envir = .GlobalEnv)
         sc <- SparkR:::callJStatic("org.apache.spark.sql.api.r.SQLUtils", "getJavaSparkContext", spark)
         sqlContext <<- SparkR::sparkRSQL.init(sc)
