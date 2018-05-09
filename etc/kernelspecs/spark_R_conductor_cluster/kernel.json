@@ -1,0 +1,20 @@
+{
+  "language": "R",
+  "display_name": "Spark R (Spark Cluster Mode)",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.conductor.ConductorClusterProcessProxy"
+  },
+  "env": {
+    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "LAUNCH_OPTS": "--customAppName ${KERNEL_ID}"
+  },
+  "argv": [
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}",
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "eager"
+  ]
+}
