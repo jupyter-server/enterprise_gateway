@@ -17,6 +17,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
     def __init__(self, kernel_manager, proxy_config):
         super(DistributedProcessProxy, self).__init__(kernel_manager, proxy_config)
+        self.kernel_log = None
         if proxy_config.get('remote_hosts'):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
@@ -49,8 +50,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
                 format(self.ip, result)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
-        self.log.info("Remote kernel launched on '{}', pid: {}, KernelID: {}, cmd: '{}'"
-                      .format(self.assigned_host, self.pid, self.kernel_id, kernel_cmd))
+        self.log.info("Remote kernel launched on '{}', pid: {}, ID: {}, Log file: {}:{}, Command: '{}'.  ".
+                      format(self.assigned_host, self.pid, self.kernel_id, self.assigned_host, self.kernel_log, kernel_cmd))
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
@@ -83,8 +84,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
         for arg in argv_cmd:
             cmd += ' {}'.format(arg)
 
-        kernel_log = os.path.join(kernel_log_dir, "kernel-{}.log".format(kid))
-        cmd += ' >> {} 2>&1 & echo $!'.format(kernel_log)
+        self.kernel_log = os.path.join(kernel_log_dir, "kernel-{}.log".format(kid))
+        cmd += ' >> {} 2>&1 & echo $!'.format(self.kernel_log)
 
         return cmd
 
@@ -115,7 +116,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
+            reason = "Waited too long ({}s) to get connection file.  Check Enterprise Gateway log and kernel " \
+                     "log ({}:{}) for more information.".\
+                format(self.kernel_launch_timeout, self.assigned_host, self.kernel_log)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.kill()
             self.log_and_raise(http_status_code=500, reason=timeout_message)
