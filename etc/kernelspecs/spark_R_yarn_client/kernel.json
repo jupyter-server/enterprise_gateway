@@ -6,7 +6,7 @@
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.sparkr.r.command=/opt/anaconda2/lib/R/bin/Rscript",
     "SPARK_YARN_USER_ENV": "PATH=/opt/anaconda2/bin:$PATH",
     "LAUNCH_OPTS": ""
   },
