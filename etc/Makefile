@@ -15,6 +15,8 @@ ENTERPRISE_GATEWAY_TAG:=dev
 NB2KG_TAG:=dev
 YARN_SPARK_TAG:=2.1.0
 
+NO_CACHE?=--no-cache
+
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -53,7 +55,7 @@ docker-image-enterprise-gateway: docker-image-yarn-spark ../.image-enterprise-ga
 	@mkdir -p ../build/docker/enterprise-gateway
 	cp docker/enterprise-gateway/* ../build/docker/enterprise-gateway
 	cp ../dist/jupyter_enterprise_gateway* ../build/docker/enterprise-gateway
-	@(cd ../build/docker/enterprise-gateway; docker build -t elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) . )
+	@(cd ../build/docker/enterprise-gateway; docker build $(NO_CACHE) -t elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) . )
 	@touch ../.image-enterprise-gateway
 	@-docker images elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
@@ -62,7 +64,7 @@ docker-image-nb2kg: ../.image-nb2kg ## Build elyra/nb2kg:dev docker image
 	@make docker-clean-nb2kg
 	@mkdir -p ../build/docker/nb2kg
 	cp docker/nb2kg/* ../build/docker/nb2kg
-	@(cd ../build/docker/nb2kg; docker build -t elyra/nb2kg:$(NB2KG_TAG) . )
+	@(cd ../build/docker/nb2kg; docker build $(NO_CACHE) -t elyra/nb2kg:$(NB2KG_TAG) . )
 	@touch ../.image-nb2kg
 	@-docker images elyra/nb2kg:$(NB2KG_TAG)
 
@@ -71,7 +73,7 @@ docker-image-yarn-spark: ../.image-yarn-spark ## Build elyra/yarn-spark:2.1.0 do
 	@make docker-clean-yarn-spark
 	@mkdir -p ../build/docker/yarn-spark
 	cp docker/yarn-spark/* ../build/docker/yarn-spark
-	@(cd ../build/docker/yarn-spark; docker build -t elyra/yarn-spark:$(YARN_SPARK_TAG) . )
+	@(cd ../build/docker/yarn-spark; docker build $(NO_CACHE) -t elyra/yarn-spark:$(YARN_SPARK_TAG) . )
 	@touch ../.image-yarn-spark
 	@-docker images elyra/yarn-spark:$(YARN_SPARK_TAG)
 
