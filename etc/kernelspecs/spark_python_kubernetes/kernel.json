@@ -1,0 +1,20 @@
+{
+  "language": "python",
+  "display_name": "Spark - Python (Kubernetes Mode)",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy"
+  },
+  "env": {
+    "SPARK_HOME": "/opt/spark",
+    "SPARK_MASTER_URL": "k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}",
+    "KUBE_LABELS": "--conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID}",
+    "KERNEL_ENVS": "--conf spark.kubernetes.driverEnv.EG_RESPONSE_ADDRESS=${EG_RESPONSE_ADDRESS} --conf spark.kubernetes.driverEnv.KERNEL_CONNECTION_FILENAME=${KERNEL_CONNECTION_FILENAME}",
+    "SPARK_IMAGES": "--conf spark.kubernetes.driver.docker.image=kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0 --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.2.0-kubernetes-0.5.0",
+    "SPARK_RSS": "--conf spark.kubernetes.initcontainer.docker.image=kubespark/spark-init:v2.2.0-kubernetes-0.5.0 --conf spark.kubernetes.resourceStagingServer.uri=http://${KUBERNETES_SERVICE_HOST}",
+    "SPARK_OPTS": "--master ${SPARK_MASTER_URL} --deploy-mode cluster --name eg-${KERNEL_ID} ${KUBE_LABELS} ${KERNEL_ENVS} ${SPARK_IMAGES} ${SPARK_RSS} --conf spark.kubernetes.submission.waitAppCompletion=false",
+    "LAUNCH_OPTS": ""
+  },
+  "argv": [
+    "/usr/local/share/jupyter/kernels/spark_python_kubernetes/bin/run.sh"
+  ]
+}

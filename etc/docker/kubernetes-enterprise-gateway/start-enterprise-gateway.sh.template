@@ -1,12 +1,9 @@
 #!/bin/bash
 
-export ANACONDA_HOME=/opt/conda
-
-export JAVA_HOME=/usr/java/default
-
-
-export PYSPARK_PYTHON=${ANACONDA_HOME}/bin/python
-export PATH=${ANACONDA_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${JAVA_HOME}/bin
+#export ANACONDA_HOME=/opt/conda
+#export JAVA_HOME=/usr/java/default
+#export PYSPARK_PYTHON=${ANACONDA_HOME}/bin/python
+#export PATH=${ANACONDA_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${JAVA_HOME}/bin
 
 # Enterprise Gateway variables
 export EG_SSH_PORT=${EG_SSH_PORT:-2122}
