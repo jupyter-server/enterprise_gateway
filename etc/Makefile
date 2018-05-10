@@ -8,7 +8,7 @@ ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
 KERNELSPECS_FILE:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
-KERNELSPECS_FILES:=$(shell find kernel-launchers/python kernel-launchers/R kernel-launchers/scala/toree-launcher/src kernel-launchers/kubernetes -type f -name '*')
+KERNELSPECS_FILES:=$(shell find kernel-launchers kernelspecs -type f -name '*')
 TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
 
 ENTERPRISE_GATEWAY_TAG:=dev
