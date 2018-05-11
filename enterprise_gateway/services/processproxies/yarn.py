@@ -183,17 +183,18 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            reason = "Application ID is None. Failed to submit a new application to YARN within {} seconds.". \
+            reason = "Application ID is None. Failed to submit a new application to YARN within {} seconds.  " \
+                     "Check Enterprise Gateway log for more information.". \
                 format(self.kernel_launch_timeout)
             error_http_code = 500
             if self.get_application_id(True):
                 if self.query_app_state_by_id(self.application_id) != "RUNNING":
-                    reason = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!". \
-                        format(time_interval, self.application_id, self.kernel_launch_timeout)
+                    reason = "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!  "\
+                        "Check YARN configuration.".format(time_interval, self.application_id, self.kernel_launch_timeout)
                     error_http_code = 503
                 else:
-                    reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file". \
-                        format(self.application_id, self.kernel_launch_timeout)
+                    reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file.  " \
+                        "Check YARN logs for more information.".format(self.application_id, self.kernel_launch_timeout)
             self.kill()
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
