@@ -34,6 +34,8 @@ spec:
     spec:
       containers:
       - env:
+        - name: EG_KUBERNETES_NAMESPACE
+          value: "default"
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT

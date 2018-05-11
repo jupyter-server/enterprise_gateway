@@ -12,6 +12,7 @@ KERNELSPECS_FILES:=$(shell find kernel-launchers kernelspecs -type f -name '*')
 TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
 
 ENTERPRISE_GATEWAY_TAG:=dev
+KERNEL_TAG:=dev
 NB2KG_TAG:=dev
 YARN_SPARK_TAG:=2.1.0
 
@@ -30,10 +31,10 @@ kernelspecs: $(KERNELSPECS_FILE) ## Make a tar.gz file consisting of kernelspec 
 $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib  
 	@mkdir -p ../build/kernelspecs
 	cp -r kernelspecs ../build
-	@echo ../build/kernelspecs/*_python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
+	@echo ../build/kernelspecs/{spark_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
 	@echo ../build/kernelspecs/*_R_* | xargs -t -n 1 cp -r kernel-launchers/R/*
 	@echo ../build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
-	@echo ../build/kernelspecs/*_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
+	@echo ../build/kernelspecs/python_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@mkdir -p ../dist
 	rm -f $(KERNELSPECS_FILE)
 	@( cd ../build/kernelspecs; tar -pvczf "../$(KERNELSPECS_FILE)" * )
@@ -98,6 +99,7 @@ docker-image-kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gate
 ../.image-kubernetes-enterprise-gateway: docker/kubernetes-enterprise-gateway/* ../$(WHEEL_FILE) $(KERNELSPECS_FILE)
 	@make docker-clean-kubernetes-enterprise-gateway
 	@make -C .. bdist
+	@make -C .. kernelspecs
 	@mkdir -p ../build/docker/kubernetes-enterprise-gateway
 	cp docker/kubernetes-enterprise-gateway/* ../build/docker/kubernetes-enterprise-gateway
 	cp ../dist/jupyter_enterprise_gateway* ../build/docker/kubernetes-enterprise-gateway
@@ -106,23 +108,29 @@ docker-image-kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gate
 	@-docker images elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
 docker-image-kubernetes-kernel: ../.image-kubernetes-kernel ## Build elyra/kubernetes-kernel:dev docker image
-../.image-kubernetes-kernel: docker/kubernetes-kernel/*
+../.image-kubernetes-kernel: docker/kubernetes-kernel/* $(KERNELSPECS_FILE)
 	@make docker-clean-kubernetes-kernel
+	@make -C .. kernelspecs
 	@mkdir -p ../build/docker/kubernetes-kernel
 	cp docker/kubernetes-kernel/* ../build/docker/kubernetes-kernel
-	@(cd ../build/docker/kubernetes-kernel; docker build -t elyra/kubernetes-kernel:$(NB2KG_TAG) . )
+	cp ../dist/jupyter_enterprise_gateway_kernelspecs* ../build/docker/kubernetes-kernel
+	@(cd ../build/docker/kubernetes-kernel; docker build -t elyra/kubernetes-kernel:$(KERNEL_TAG) . )
 	@touch ../.image-kubernetes-kernel
-	@-docker images elyra/kubernetes-kernel:$(NB2KG_TAG)
+	@-docker images elyra/kubernetes-kernel:$(KERNEL_TAG)
 
 docker-clean-kubernetes: docker-clean-kubernetes-enterprise-gateway  docker-clean-kubernetes-kernel
 
 docker-clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
 	@rm -f ../.image-kubernetes-enterprise-gateway
+	@-docker rmi -f elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)_x
+	@-docker tag elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)_x
 	@-docker rmi -f elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
 docker-clean-kubernetes-kernel: ## Remove elyra/kubernetes-kernel:dev docker image
 	@rm -f ../.image-kubernetes-kernel
-	@-docker rmi -f elyra/kubernetes-kernel:$(NB2KG_TAG)
+	@-docker rmi -f elyra/kubernetes-kernel:$(KERNEL_TAG)_x
+	@-docker tag elyra/kubernetes-kernel:$(KERNEL_TAG) elyra/kubernetes-kernel:$(KERNEL_TAG)_x
+	@-docker rmi -f elyra/kubernetes-kernel:$(KERNEL_TAG)
 
 ##
 

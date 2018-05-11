@@ -44,17 +44,12 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
     def launch_process(self, kernel_cmd, **kw):
 
-        kw['env'].update(os.environ.copy())
-
         # Set env before superclass call so we see these in the debug output
-        kw['env']['EG_KUBERNETES_NAMESPACE'] = k8s_namespace
-        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
-        kw['env']['EG_RESPONSE_ADDRESS'] = self.kernel_manager.response_address
-        kw['env']['KERNEL_CONNECTION_FILENAME'] = self.get_connection_filename()
 
-        # Transfer internal env vars since the launcher starts fresh
-        # kw['env']['KUBERNETES_SERVICE_HOST'] = os.environ.get('KUBERNETES_SERVICE_HOST')
-        # kw['env']['KUBERNETES_SERVICE_PORT'] = os.environ.get('KUBERNETES_SERVICE_PORT')
+        # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
+        # transfer its env to each launched kernel.
+        kw['env'].update(os.environ.copy())
+        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
 
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 

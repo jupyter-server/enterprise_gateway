@@ -1,21 +1,8 @@
-FROM elyra/anaconda:dev
+FROM kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0
 
-# install boot script
+RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev && \
+    pip install cffi ipykernel ipython jupyter_client
 
-COPY bootstrap-kernel.sh /etc/bootstrap-kernel.sh
+ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 
-# install kernel support scripts
-
-RUN mkdir -p /opt/elyra/bin && \
-    mkdir -p /opt/elyra/conf
-
-COPY launch_ipykernel.py /opt/elyra/bin/launch_ipykernel.py
-
-RUN chown root.root /etc/bootstrap-kernel.sh && \
-	chmod 0700 /etc/bootstrap-kernel.sh && \
-	chown -R root.root /opt/elyra && \
-	chmod 0700 /opt/elyra/bin/launch_ipykernel.py
-
-WORKDIR /usr/local/share/jupyter 
-
-ENTRYPOINT ["/etc/bootstrap-kernel.sh"]
+COPY bootstrap-kernel.sh /usr/local/share/jupyter/kernels

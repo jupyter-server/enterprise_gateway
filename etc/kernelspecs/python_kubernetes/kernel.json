@@ -9,6 +9,10 @@
   },
   "argv": [
     "python",
-    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_kubernetes.py"
+    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_kubernetes.py",
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.no-spark-context"
   ]
 }

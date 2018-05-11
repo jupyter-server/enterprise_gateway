@@ -1,30 +1,19 @@
 #!/bin/bash
 
-echo language=${KERNEL_LANGUAGE}
-echo reponse-addr=${EG_RESPONSE_ADDRESS}
-
-#CMD=${1:-"--help"}
-#if [[ "$CMD" == "--help" ]];
-#then
-#	echo ""
-#	echo "usage: docker run <language>"
-#	echo ""
-#	echo "where <language> is:"
-#	echo "    --scala  ... Invokes the Toree kernel."
-#	echo "    --r      ... Invokes the IR kernel."
-#	echo "    --help   ... Produces this message."
-#	echo "    <other>  ... Invokes '/bin/bash -c <other>'.  Use <other>='bash' to explore within the container."
-#	echo ""
-#fi
-
+echo kernel-bootstrap.sh: language=${KERNEL_LANGUAGE}, connection-file=${KERNEL_CONNECTION_FILENAME}, reponse-addr=${EG_RESPONSE_ADDRESS}, no-spark-context=${NO_SPARK_CONTEXT}
 
 if [[ "${KERNEL_LANGUAGE}" == "python" ]];
 then
-	echo "python /opt/elyra/bin/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.no-spark-context"
-	python /opt/elyra/bin/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.no-spark-context
+	echo "python /usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} ${NO_SPARK_CONTEXT}"
+	python /usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_ipykernel.py ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} ${NO_SPARK_CONTEXT}
+elif [[ "${KERNEL_LANGUAGE}" == "scala" ]];
+then
+	echo "KERNEL_LANGUAGE '${KERNEL_LANGUAGE}' is not yet supported."
+elif [[ "${KERNEL_LANGUAGE}" == "R" ]];
+then
+	echo "KERNEL_LANGUAGE '${KERNEL_LANGUAGE}' is not yet supported."
 else
-	echo ""
-	echo "Starting bash with '$*'"
-	/bin/bash -c "$*"
+	echo "Unrecognized value for KERNEL_LANGUAGE: '${KERNEL_LANGUAGE}'!"
+	exit 1
 fi
 exit 0

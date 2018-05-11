@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: eg-$kernel_id
+  name: $kernel_username-$kernel_id
   namespace: $namespace
   labels:
     kernel_id: $kernel_id
@@ -14,9 +14,10 @@ spec:
       value: $response_address
     - name: KERNEL_CONNECTION_FILENAME
       value: $connection_filename
-    - name: KERNEL_CREATE_SPARK_CONTEXT
-      value: $create_spark_context
     - name: KERNEL_LANGUAGE
       value: $language
+    - name: NO_SPARK_CONTEXT
+      value: $no_spark_context
     image: $docker_image
-    name: eg-$kernel_id
+    name: $kernel_username-$kernel_id
+    command: ["/usr/local/share/jupyter/kernels/bootstrap-kernel.sh"]
