@@ -3,11 +3,8 @@
 """Kernel managers that operate against a remote process."""
 
 import os
-import time
-import tornado
 import signal
 import logging
-from tornado import web
 from socket import *
 from jupyter_client import launch_kernel, localinterfaces
 from .processproxy import RemoteProcessProxy
@@ -18,12 +15,8 @@ urllib3.disable_warnings()
 # Default logging level of kubernetes produces too much noise - raise to warning only.
 logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
 
-
-poll_interval = float(os.environ.get('EG_POLL_INTERVAL', '0.5'))
-
-# FIXME - promote to options
 k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
-k8s_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel:dev')
+k8s_default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel:dev')
 
 local_ip = localinterfaces.public_ips()[0]
 
@@ -36,10 +29,11 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
     def __init__(self, kernel_manager, proxy_config):
         super(KubernetesProcessProxy, self).__init__(kernel_manager, proxy_config)
-        if proxy_config.get('remote_hosts'):
-            self.hosts = proxy_config.get('remote_hosts').split(',')
-        else:
-            self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
+
+        # Determine kernel image to use
+        self.k8s_kernel_image = k8s_default_kernel_image
+        if proxy_config.get('image_name'):
+            self.k8s_kernel_image = proxy_config.get('image_name')
         self.pod_name = ''
 
     def launch_process(self, kernel_cmd, **kw):
@@ -49,7 +43,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
         kw['env'].update(os.environ.copy())
-        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = k8s_kernel_image
+        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = self.k8s_kernel_image
 
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 
@@ -57,8 +51,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
-        self.log.info("Kubernetes kernel launched: pid: {}, KernelID: {}, cmd: '{}'"
-                      .format(self.pid, self.kernel_id, kernel_cmd))
+        self.log.info("Kubernetes kernel launched: Kernel image: {}, KernelID: {}, cmd: '{}'"
+                      .format(self.k8s_kernel_image, self.kernel_id, kernel_cmd))
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
@@ -136,7 +130,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             if pod_status:
                 self.log.debug("{}: Waiting to connect to k8s pod. "
                                "Name: '{}', Status: '{}', Pod IP: '{}', Host IP: '{}', KernelID: '{}'".
-                               format(i, self.pod_name, pod_status.phase, self.assigned_ip, pod_status.host_ip, self.kernel_id))
+                               format(i, self.pod_name, pod_status.phase, self.assigned_ip, pod_status.host_ip,
+                                      self.kernel_id))
 
                 if self.assigned_host != '':
                     ready_to_connect = self.receive_connection_info()
@@ -193,16 +188,3 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             else:
                 self.log.warning("Error occurred deleting pod: {}".format(err))
         return result
-
-    def handle_timeout(self):
-        time.sleep(poll_interval)
-        time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
-
-        if time_interval > self.kernel_launch_timeout:
-            error_http_code = 500
-            reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.log.error(timeout_message)
-            self.kill()
-            raise tornado.web.HTTPError(error_http_code, timeout_message)
-

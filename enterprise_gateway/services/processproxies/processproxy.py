@@ -562,10 +562,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.kernel_manager.cleanup_connection_file()
 
     @abc.abstractmethod
-    def handle_timeout(self):
-        pass
-
-    @abc.abstractmethod
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
 
@@ -822,6 +818,18 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if pid or pgid:  # if either process ids were updated, update the ip as well and don't use local_proc
             self.ip = self.assigned_ip
             self.local_proc = None
+
+    def handle_timeout(self):
+        time.sleep(poll_interval)
+        time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
+
+        if time_interval > self.kernel_launch_timeout:
+            error_http_code = 500
+            reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
+            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
+            self.log.error(timeout_message)
+            self.kill()
+            raise tornado.web.HTTPError(error_http_code, timeout_message)
 
     def cleanup(self):
         self.assigned_ip = None
