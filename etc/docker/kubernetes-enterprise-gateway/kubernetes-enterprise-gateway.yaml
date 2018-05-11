@@ -22,7 +22,7 @@ metadata:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       gateway-selector: enterprise-gateway
