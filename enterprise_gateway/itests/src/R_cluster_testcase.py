@@ -1,7 +1,7 @@
-from elyra_client import ElyraClient
+from .elyra_client import ElyraClient
 import pytest
 import re
-from notebook_body import NBCodeEntity
+from .notebook_body import NBCodeEntity
 from time import sleep
 
 
@@ -24,15 +24,15 @@ def setup(host, username):
 def test_hello_world(setup):
     assert setup.run_cell(1) == "[1] \"Hello World\""
 
-
+@pytest.mark.skip(reason="WIP")
 def test_get_application_id(setup):
     assert re.match("'application*", setup.run_cell(2))
 
-
+@pytest.mark.skip(reason="WIP")
 def test_get_spark_version(setup):
     assert re.match("'2.2.*", setup.run_cell(3))
 
-
+@pytest.mark.skip(reason="WIP")
 def test_get_resource(setup):
     assert re.search("spark.master[ ]+\"yarn\"", setup.run_cell( 4))
 

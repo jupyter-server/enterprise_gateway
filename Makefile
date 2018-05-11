@@ -117,28 +117,24 @@ docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yar
 # itest should have these targets up to date: bdist kernelspecs docker-image-enterprise-gateway 
 
 # itest configurable settings
-# indicates which host (gateway or notebook) to connect to...
+# indicates which host (gateway) to connect to...
 ITEST_HOST:=localhost:8888
 # indicates the user to emulate.  This equates to 'KERNEL_USERNAME'...
 ITEST_USER:=bob
 # indicates the other set of options to use.  At this time, only the python notebooks succeed, so we're skipping R and Scala.
-ITEST_OPTIONS:=--notebook_files=../notebooks/Python_Client1.ipynb,../notebooks/Python_Cluster1.ipynb
+ITEST_OPTIONS:=
 
 ENTERPRISE_GATEWAY_TAG:=dev
 
-# here's a complete example of the options (besides host and user) with their expected values ...
-# ITEST_OPTIONS=--notebook_dir=<path-to-notebook-dir, default=../notebooks>  --notebook_files=<comma-separated-list-of-notebook-paths> \
-# --target_kernels=<comma-separated-list-of-kernels> --continue_when_error=<boolean, default=True>
+# here's an example of the options (besides host and user) with their expected values ...
+# ITEST_OPTIONS=--impersonation < True | False >
 
 PREP_DOCKER:=1
 itest: ## Run integration tests (optionally) against docker container
 ifeq (1, $(PREP_DOCKER))
 	make docker-prep
 endif
-	@rm -rf build/itests
-	@mkdir -p build/itests
-	@cp -r enterprise_gateway/itests build
-	(cd build/itests/src/; $(SA) $(ENV); python main.py --host=$(ITEST_HOST) --username=$(ITEST_USER) $(ITEST_OPTIONS))
+	(cd enterprise_gateway/itests/src/; pytest *_testcase.py --host=$(ITEST_HOST) --username=$(ITEST_USER) $(ITEST_OPTIONS))
 	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
 
 docker-prep: 
