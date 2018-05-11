@@ -1,7 +1,7 @@
-from elyra_client import ElyraClient
+from .elyra_client import ElyraClient
 import pytest
 import re
-from notebook_body import NBCodeEntity
+from .notebook_body import NBCodeEntity
 
 
 @pytest.fixture(autouse=True)

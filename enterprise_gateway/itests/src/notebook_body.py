@@ -4,7 +4,7 @@ import os
 import json
 import websocket
 from collections import deque
-from elyra_client import ElyraClient
+from .elyra_client import ElyraClient
 
 itest_cell_timeout = int(os.getenv('ITEST_CELL_TIMEOUT', 30))
 
