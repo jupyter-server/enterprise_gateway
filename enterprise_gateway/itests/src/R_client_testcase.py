@@ -1,7 +1,7 @@
-from elyra_client import ElyraClient
+from .elyra_client import ElyraClient
 import pytest
 import re
-from notebook_body import NBCodeEntity
+from .notebook_body import NBCodeEntity
 from time import sleep
 
 
@@ -24,7 +24,7 @@ def setup(host, username):
 def test_hello_world(setup):
     assert setup.run_cell(1) == "[1] \"Hello World\""
 
-
+@pytest.mark.skip(reason="WIP")
 def test_get_application_id(setup):
     assert re.search("'application_*", setup.run_cell(2))
 
