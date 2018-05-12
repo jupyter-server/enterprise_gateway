@@ -118,18 +118,18 @@ docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yar
 
 # itest configurable settings
 # indicates which host (gateway) to connect to...
-ITEST_HOST:=localhost:8888
+ITEST_HOST?=localhost:8888
 # indicates the user to emulate.  This equates to 'KERNEL_USERNAME'...
-ITEST_USER:=bob
+ITEST_USER?=bob
 # indicates the other set of options to use.  At this time, only the python notebooks succeed, so we're skipping R and Scala.
-ITEST_OPTIONS:=
+ITEST_OPTIONS?=
 
-ENTERPRISE_GATEWAY_TAG:=dev
+ENTERPRISE_GATEWAY_TAG?=dev
 
 # here's an example of the options (besides host and user) with their expected values ...
 # ITEST_OPTIONS=--impersonation < True | False >
 
-PREP_DOCKER:=1
+PREP_DOCKER?=1
 itest: ## Run integration tests (optionally) against docker container
 ifeq (1, $(PREP_DOCKER))
 	make docker-prep
