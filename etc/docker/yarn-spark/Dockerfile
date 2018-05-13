@@ -11,10 +11,7 @@ COPY yarn-site.xml.template /usr/local/hadoop/etc/hadoop/
 RUN cd /tmp && \
 	curl -LO 'http://vault.centos.org/6.9/os/Source/SPackages/rsyslog-5.8.10-10.el6_6.src.rpm' && \
 	rpm -i /tmp/rsyslog-5.8.10-10.el6_6.src.rpm && \
-	rm -f /tmp/rsyslog-5.8.10-10.el6_6.src.rpm && \
-	cat /etc/bootstrap.sh | sed s/'service sshd'/'service rsyslog start|service sshd'/ | tr '|' '\n' > /tmp/bootstrap.sh && \
-	mv /tmp/bootstrap.sh /etc && \
-	chmod 700 /etc/bootstrap.sh
+	rm -f /tmp/rsyslog-5.8.10-10.el6_6.src.rpm
 
 # Update Java
 RUN cd /tmp && \
