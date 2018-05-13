@@ -48,6 +48,8 @@ service rsyslog status
 service sshd restart
 service sshd status
 
+sudo -u elyra ssh $(hostname -i) "whoami"
+
 # If we're not running in standalone mode, don't run as elyra.
 # If we're running in standalone mode, startup yarn, hdfs, etc.
 if [[ "$YARN_HOST" == "$HOSTNAME" || "$FROM" == "YARN" ]];
