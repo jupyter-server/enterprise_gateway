@@ -17,13 +17,13 @@ if ( is.null(min_port_range_size) )
     min_port_range_size = 1000
 
 # Initializes the Spark session/context and SQL context
-initialize_spark_session <- function() {
+initialize_spark_session <- function(mode) {
     # Make sure SparkR package is loaded last; this is necessary
     # to avoid the need to fully qualify package namespace (using ::)
     old <- getOption("defaultPackages")
     options(defaultPackages = c(old, "SparkR"))
 
-    if (identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "eager")) {
+    if (identical(mode, "eager")) {
         # Start the spark context immediately if set to eager
         spark <- SparkR::sparkR.session(enableHiveSupport = FALSE, sparkConfig=sparkConfigList)
         assign("spark", spark, envir = .GlobalEnv)
@@ -244,7 +244,7 @@ if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none"
     if (!is.na(argv$customAppName)){
         sparkConfigList[['spark.app.name']] <- argv$customAppName
     }
-    initialize_spark_session()
+    initialize_spark_session(argv$RemoteProcessProxy.spark_context_initialization_mode)
 }
 
 # Start the kernel
