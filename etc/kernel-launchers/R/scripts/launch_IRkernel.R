@@ -113,6 +113,7 @@ return_connection_info <- function(connection_file, response_addr){
   response_port <- response_parts[[1]][2]
 
   # Read in connection file to send back to JKG
+  con <- NULL
   tryCatch(
     {
         con <- socketConnection(host=response_ip, port=response_port, blocking=FALSE, server=FALSE)
@@ -139,7 +140,9 @@ return_connection_info <- function(connection_file, response_addr){
         return(NA)
     },
     finally={
-        close(con)
+        if (!is.null(con)) {
+            close(con)
+        }
     }
   )
 }
@@ -178,9 +181,9 @@ parser <- arg_parser('R-kernel-launcher')
 parser <- add_argument(parser, "--RemoteProcessProxy.port-range",
        help="the range of ports impose for kernel ports")
 parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
-       help="the IP:port address of the system hosting JKG and expecting response")
+       help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
 parser <- add_argument(parser, "connection_file",
-       help="Connection file name to be used; dictated by JKG")
+       help="Connection file name to be used; dictated by Enterprise Gateway")
 parser <- add_argument(parser, "--RemoteProcessProxy.spark-context-initialization-mode",
        help="the initialization mode of the spark context: lazy, eager or none")
 parser <- add_argument(parser, "--customAppName",

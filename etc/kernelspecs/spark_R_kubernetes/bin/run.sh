@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo
-echo "Starting IPython kernel for Spark in Kubernetes mode ${USER_CLAUSE}"
+echo "Starting IRkernel for Spark in Kubernetes mode ${USER_CLAUSE}"
 echo
 
 if [ -z "${SPARK_HOME}" ]; then
@@ -20,7 +20,7 @@ set -x
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
-     "local://${PROG_HOME}/scripts/launch_ipykernel.py" \
+     "local://${PROG_HOME}/scripts/launch_IRkernel.R" \
      "${LAUNCH_OPTS}" \
      "$@"
 set +x
