@@ -81,7 +81,7 @@ dist: bdist sdist ## Make binary and source distribution to dist folder
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && nosetests -v
+	$(SA) $(ENV) && nosetests -v enterprise_gateway.tests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
 	$(SA) $(ENV) && nosetests -v enterprise_gateway.tests.$(TEST)
@@ -134,7 +134,7 @@ itest: ## Run integration tests (optionally) against docker container
 ifeq (1, $(PREP_DOCKER))
 	make docker-prep
 endif
-	($(SA) $(ENV) && cd enterprise_gateway/itests/src/; pytest *_testcase.py --host=$(ITEST_HOST) --username=$(ITEST_USER) $(ITEST_OPTIONS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_HOST) KERNEL_USERNAME=$(ITEST_USER) nosetests -v enterprise_gateway.itests)
 	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
 
 docker-prep: 

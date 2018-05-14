@@ -16,7 +16,7 @@ install:
     - pip freeze
 script:
     - jupyter enterprisegateway --help
-    - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway
+    - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
     - pip uninstall -y jupyter_enterprise_gateway
 
 after_success:
