@@ -82,6 +82,83 @@ spec:
         ports:
         - containerPort: 8888
 ```
+##### Kernelspec Modifications
+One of the more common areas of customization we see occur within the kernelspec files located
+in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions,
+the kernels directory can be exposed as a 
+_[Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes)_ thereby making 
+it available to all pods within the Kubernetes cluster.
+
+As an example, we have included stanza for creating a Persistent Volume (PV) and Persistent Volume 
+Claim (PVC), along with appropriate references to the PVC within each pod definition within  
+`kubernetes-enterprise-gateway.yaml`.  By default, these references are commented out as they require
+the system administrator configure the appropriate PV type (e.g., nfs) and server IP.
+
+```yaml
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: kernelspecs-pv
+  labels:
+    app: enterprise-gateway
+spec:
+  capacity:
+    storage: 10Mi
+  accessModes:
+    - ReadOnlyMany
+  nfs:
+    server: <IPv4>
+    path: /usr/local/share/jupyter/kernels
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: kernelspecs-pvc
+  labels:
+    app: enterprise-gateway
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Mi
+  selector:
+    matchLabels:
+      app: enterprise-gateway
+```
+Once a Persistent Volume and Persistent Volume Claim have been created, pods that desire mounting
+the volume can simply refer to it by its PVC name.
+
+Here you can see how `kubernetes-enterprise-gateway.yaml` references use of the volume (via `volumeMounts`
+for the container specification and `volumes` in the pod specification):
+```yaml
+    spec:
+      containers:
+      - env:
+        - name: EG_KUBERNETES_NAMESPACE
+          value: "default"
+        - name: EG_TUNNELING_ENABLED
+          value: "False"
+        - name: EG_CULL_IDLE_TIMEOUT
+          value: "600"
+        - name: EG_LOG_LEVEL
+          value: "DEBUG"
+        image: elyra/kubernetes-enterprise-gateway:dev
+        name: enterprise-gateway
+        args: ["--elyra"]
+        ports:
+        - containerPort: 8888
+# Uncomment to enable PV for kernelspecs
+        volumeMounts:
+        - mountPath: /usr/local/share/jupyter/kernels
+          name: kernelspecs
+      volumes:
+      - name: kernelspecs
+        persistentVolumeClaim:
+          claimName: kernelspecs-pvc
+```
+Note that because the `kernel-pod.yaml` resides in the kernelspecs hierarchy, updates or 
+modifications to kubernetes kernel instances can also take place.
 
 ### Kubernetes Kernel Instances
 There are essentially two kinds of kernels (independent of language) launched within an 
@@ -120,7 +197,15 @@ spec:
       value: $no_spark_context
     image: $docker_image
     name: $kernel_username-$kernel_id
-    command: ["/usr/local/share/jupyter/kernels/bootstrap-kernel.sh"]
+    command: ["/etc/bootstrap-kernel.sh"]
+# Uncomment to enable PV for kernelspecs
+    volumeMounts:
+    - mountPath: /usr/local/share/jupyter/kernels
+      name: kernelspecs
+  volumes:
+   - name: kernelspecs
+     persistentVolumeClaim:
+       claimName: kernelspecs-pvc
 ```
 There are a number of items worth noting:
 1. Each kernel pod can be identified in two ways using `kubectl`: 1) by the global label
@@ -136,6 +221,8 @@ has built-in logic for auto-restarting failed kernels and any other restart poli
 interfere with the built-in behaviors.
 4. The parameters to the launcher that is built into the image are communicated via environment
 variables as noted in the `env:` section above.
+5. If the kernelspecs hierarchy is exposed with a Persistent Volume, the `kernel-pod.yaml` file
+will contain the `mountPath` and PVC name.
 
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the
@@ -360,6 +447,14 @@ https://elyra-kube1.foo.bar.com:30000/dashboard/#!/overview?namespace=default
 ```
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on
 the far right.
+
+- User \"system:serviceaccount:default:default\" cannot list pods in the namespace \"default\"
+
+On a recent deployment, Enterprise Gateway was not able to create or list kernel pods.  Found
+the following command was necessary.  (Need to revisit security setup.)
+```bash
+kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin  --serviceaccount=default:default
+```
 
 
 ### Spark-on-Kubernetes Setup (internal)

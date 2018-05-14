@@ -1,3 +1,43 @@
+# This file defines the Kubernetes objects necessary for Enterprise Gateway to run witihin Kubernetes.
+#
+# Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
+# is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
+# are mounting the NFS directory from the specified server.  To enable this functionality, uncomment the
+# corresponding stanzas for PersistentVolume, PersistentVolumeClaim, and the volumeMounts and volumes
+# stanzas in the Enterprise-Gateway deployment.  In addition, the volumeMounts and volumes stanzas
+# in any kernel-pod.yaml files (e.g., python_kubernetes) should also be uncommented.
+#
+#kind: PersistentVolume
+#apiVersion: v1
+#metadata:
+#  name: kernelspecs-pv
+#  labels:
+#    app: enterprise-gateway
+#spec:
+#  capacity:
+#    storage: 10Mi
+#  accessModes:
+#    - ReadOnlyMany
+#  nfs:
+#    server: <IPv4>
+#    path: /usr/local/share/jupyter/kernels
+#---
+#kind: PersistentVolumeClaim
+#apiVersion: v1
+#metadata:
+#  name: kernelspecs-pvc
+#  labels:
+#    app: enterprise-gateway
+#spec:
+#  accessModes:
+#    - ReadOnlyMany
+#  resources:
+#    requests:
+#      storage: 10Mi
+#  selector:
+#    matchLabels:
+#      app: enterprise-gateway
+#---
 apiVersion: v1
 kind: Service
 metadata:
@@ -47,3 +87,11 @@ spec:
         args: ["--elyra"]
         ports:
         - containerPort: 8888
+# Uncomment to enable PV for kernelspecs
+#        volumeMounts:
+#        - mountPath: /usr/local/share/jupyter/kernels
+#          name: kernelspecs
+#      volumes:
+#      - name: kernelspecs
+#        persistentVolumeClaim:
+#          claimName: kernelspecs-pvc

@@ -5,4 +5,4 @@ RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev && \
 
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 
-COPY bootstrap-kernel.sh /usr/local/share/jupyter/kernels
+COPY bootstrap-kernel.sh /etc
