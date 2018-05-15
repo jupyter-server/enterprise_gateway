@@ -18,7 +18,7 @@ JARS="${TOREE_ASSEMBLY}"
 LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
 LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
 
-SPARK_OPTS=""
+SPARK_OPTS="--name ${KERNEL_USERNAME}-${KERNEL_ID}"
 TOREE_OPTS="--alternate-sigint USR2"
 
 set -x
