@@ -15,7 +15,7 @@ urllib3.disable_warnings()
 # Default logging level of kubernetes produces too much noise - raise to warning only.
 logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
 
-k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
+k8s_default_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
 k8s_default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel-py:dev')
 
 local_ip = localinterfaces.public_ips()[0]
@@ -38,6 +38,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         if proxy_config.get('executor_image_name'):
             self.k8s_kernel_executor_image = proxy_config.get('executor_image_name')
         self.pod_name = ''
+        self.k8s_namespace = None
 
     def launch_process(self, kernel_cmd, **kw):
 
@@ -45,9 +46,12 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
-        kw['env'].update(os.environ.copy())
+        kw['env'].update(os.environ.copy())  # FIXME: Should probably leverage new process-whitelist in JKG #280
         kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = self.k8s_kernel_image
         kw['env']['EG_KUBERNETES_KERNEL_EXECUTOR_IMAGE'] = self.k8s_kernel_executor_image
+        if not kw['env'].get('KERNEL_NAMESPACE'):
+            kw['env']['KERNEL_NAMESPACE'] = k8s_default_namespace
+        self.k8s_namespace = kw['env']['KERNEL_NAMESPACE']
 
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 
@@ -55,8 +59,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
-        self.log.info("Kubernetes kernel launched: Kernel image: {}, KernelID: {}, cmd: '{}'"
-                      .format(self.k8s_kernel_image, self.kernel_id, kernel_cmd))
+        self.log.info("Kubernetes kernel launched: Kernel image: {}, Namespace: {}, KernelID: {}, cmd: '{}'"
+                      .format(self.k8s_kernel_image, self.k8s_namespace, self.kernel_id, kernel_cmd))
         self.confirm_remote_startup(kernel_cmd, **kw)
 
         return self
@@ -103,13 +107,13 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             result = self.terminate_pod()
 
             if result:
-                self.log.debug("KubernetesProcessProxy.kill, pod: {}, kernel ID: {} has been terminated."
-                               .format(self.pod_name, self.kernel_id))
+                self.log.debug("KubernetesProcessProxy.kill, pod: {}.{}, kernel ID: {} has been terminated."
+                               .format(self.k8s_namespace, self.pod_name, self.kernel_id))
                 self.pod_name = None
                 result = None  # maintain jupyter contract
             else:
-                self.log.warning("KubernetesProcessProxy.kill, pod: {}, kernel ID: {} has not been terminated."
-                                 .format(self.pod_name, self.kernel_id))
+                self.log.warning("KubernetesProcessProxy.kill, pod: {}.{}, kernel ID: {} has not been terminated."
+                                 .format(self.k8s_namespace, self.pod_name, self.kernel_id))
         return result
 
     def cleanup(self):
@@ -117,7 +121,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         # perform on forced kill situations.
 
         self.kill()
-        super(RemoteProcessProxy, self).cleanup()
+        super(KubernetesProcessProxy, self).cleanup()
 
     def confirm_remote_startup(self, kernel_cmd, **kw):
         """ Confirms the remote application has started by obtaining connection information from the remote
@@ -132,25 +136,25 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
             pod_status = self.get_status()
             if pod_status:
-                self.log.debug("{}: Waiting to connect to k8s pod. "
+                self.log.debug("{}: Waiting to connect to k8s pod in namespace '{}'. "
                                "Name: '{}', Status: '{}', Pod IP: '{}', Host IP: '{}', KernelID: '{}'".
-                               format(i, self.pod_name, pod_status.phase, self.assigned_ip, pod_status.host_ip,
-                                      self.kernel_id))
+                               format(i, self.k8s_namespace, self.pod_name, pod_status.phase, self.assigned_ip,
+                                      pod_status.host_ip, self.kernel_id))
 
                 if self.assigned_host != '':
                     ready_to_connect = self.receive_connection_info()
                     self.pid = 0  # We won't send process signals for kubernetes lifecycle management
                     self.pgid = 0
             else:
-                self.log.debug("{}: Waiting to connect to k8s pod. "
+                self.log.debug("{}: Waiting to connect to k8s pod in namespace '{}'. "
                                "Name: '{}', Status: 'None', Pod IP: 'None', Host IP: 'None', KernelID: '{}'".
-                               format(i, self.pod_name, self.kernel_id))
+                               format(i, self.k8s_namespace, self.pod_name, self.kernel_id))
 
     def get_status(self):
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
         pod_status = None
-        ret = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(namespace=k8s_namespace,
+        ret = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(namespace=self.k8s_namespace,
                                                      label_selector="kernel_id=" + self.kernel_id)
         if ret and ret.items:
             pod_info = ret.items[0]
@@ -176,8 +180,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             # result, we'll see if the status field contains either 'Succeeded' or 'Failed' - since that should
             # indicate the phase value.
             # FIXME - we may want to revisit this.
-            v1_status = client.CoreV1Api(client.ApiClient()).delete_namespaced_pod(namespace=k8s_namespace, body=body,
-                                                                                   name=self.pod_name)
+            v1_status = client.CoreV1Api(client.ApiClient()).delete_namespaced_pod(namespace=self.k8s_namespace,
+                                                                                   body=body, name=self.pod_name)
             if v1_status and v1_status.status:
                 if 'Succeeded' in v1_status.status or 'Failed' in v1_status.status:
                     result = True
@@ -192,3 +196,12 @@ class KubernetesProcessProxy(RemoteProcessProxy):
             else:
                 self.log.warning("Error occurred deleting pod: {}".format(err))
         return result
+
+    def get_process_info(self):
+        process_info = super(KubernetesProcessProxy, self).get_process_info()
+        process_info.update({'k8s_namespace': self.k8s_namespace})
+        return process_info
+
+    def load_process_info(self, process_info):
+        super(KubernetesProcessProxy, self).load_process_info(process_info)
+        self.k8s_namespace = process_info['k8s_namespace']

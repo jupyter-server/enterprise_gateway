@@ -17,7 +17,7 @@ def launch_kubernetes_kernel(connection_file, response_addr, no_spark_context):
     keywords['kernel_id'] = os.environ.get('KERNEL_ID')
     keywords['kernel_username'] = os.environ.get('KERNEL_USERNAME')
     keywords['language'] = os.environ.get('KERNEL_LANGUAGE')
-    keywords['namespace'] = os.environ.get('EG_KUBERNETES_NAMESPACE')
+    keywords['namespace'] = os.environ.get('KERNEL_NAMESPACE')
     keywords['docker_image'] = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE')
     keywords['response_address'] = response_addr
     keywords['connection_filename'] = connection_file

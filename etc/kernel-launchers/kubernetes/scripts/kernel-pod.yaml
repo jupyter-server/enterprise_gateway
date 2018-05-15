@@ -28,6 +28,8 @@ spec:
       value: $kernel_username
     - name: KERNEL_ID
       value: $kernel_id
+    - name: KERNEL_NAMESPACE
+      value: $namespace
     image: $docker_image
     name: $kernel_username-$kernel_id
     command: ["/etc/bootstrap-kernel.sh"]

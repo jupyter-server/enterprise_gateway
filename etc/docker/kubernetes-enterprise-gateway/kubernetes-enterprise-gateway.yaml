@@ -58,6 +58,7 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: enterprise-gateway
+  namespace: default
   labels:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway
