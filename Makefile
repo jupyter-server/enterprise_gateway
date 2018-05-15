@@ -134,7 +134,7 @@ itest: ## Run integration tests (optionally) against docker container
 ifeq (1, $(PREP_DOCKER))
 	make docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_HOST) KERNEL_USERNAME=$(ITEST_USER) nosetests -v enterprise_gateway.itests)
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_HOST) KERNEL_USERNAME=$(ITEST_USER) nosetests -v -s enterprise_gateway.itests)
 	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
 
 docker-prep: 

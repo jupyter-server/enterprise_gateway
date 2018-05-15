@@ -3,7 +3,7 @@ import os
 import requests
 
 from uuid import uuid4
-# from pprint import pprint
+from pprint import pprint
 from tornado.escape import json_encode, json_decode, utf8
 from tornado.websocket import websocket_connect
 from tornado.ioloop import IOLoop
@@ -81,8 +81,6 @@ class Kernel:
 
     def execute(self, code, timeout=DEFAULT_TIMEOUT):
 
-        kernel_socket = None
-        response_type = None
         response = []
 
         #print('')
@@ -101,6 +99,9 @@ class Kernel:
             #pprint(message)
             future = kernel_socket.write_message(message)
             response_message = IOLoop.current().run_sync(lambda: future, timeout)
+            pprint('>>>>>>>>>>>>>>>>>>>')
+            print('Received message from kernel with msg_id:{}'.format(msg_id))
+            pprint(response_message)
 
             while True:
                 msg_future = kernel_socket.read_message()
@@ -108,9 +109,9 @@ class Kernel:
 
                 response_message = json_decode(utf8(response_message))
 
-                #pprint('>>>>>>>>>>>>>>>>>>>')
-                #print('Received message from kernel')
-                #pprint(response_message)
+                pprint('>>>>>>>>>>>>>>>>>>>')
+                print('Received message from kernel with msg_id:{}'.format(msg_id))
+                pprint(response_message)
 
                 # Ensure this message is for us (ids match)
                 if 'msg_id' not in response_message['parent_header'] or response_message['parent_header']['msg_id'] != msg_id:
@@ -122,17 +123,13 @@ class Kernel:
                     raise RuntimeError('ERROR: {}:{}'.format(response_message['content']['ename'], response_message['content']['evalue']))
 
                 if response_message_type == 'stream':
-                    response_type = 'text'
                     response.append(self._process_response_message(response_message['content']['text']))
 
                 if response_message_type == 'execute_result' or response_message_type == 'display_data':
                     if 'text/plain' in response_message['content']['data']:
-                        response_type = 'text'
                         response.append(self._process_response_message(response_message['content']['data']['text/plain']))
                     elif 'text/html' in response_message['content']['data']:
-                        response_type = 'html'
                         response.append(self._process_response_message(response_message['content']['data']['text/html']))
-                    continue
 
                 elif response_message_type == 'status':
                     if response_message['content']['execution_state'] == 'idle':
