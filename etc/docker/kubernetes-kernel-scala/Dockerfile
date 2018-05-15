@@ -11,4 +11,6 @@ RUN cd /tmp && \
 	cp toree-0.2.0/toree/lib/toree-assembly-0.2.0-incubating.jar /usr/local/share/jupyter/kernels/spark_scala_kubernetes/lib && \
 	rm -rf toree-0.2.0*
 
-COPY bootstrap-kernel.sh /etc
+COPY *.sh /etc/
+
+CMD /etc/spark-exec.sh

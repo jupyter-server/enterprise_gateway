@@ -18,11 +18,8 @@ RUN mkdir -p /usr/share/doc/R/html && \
 # Install OOTB kernelspecs
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 
-COPY bootstrap-kernel.sh /etc
+COPY *.sh /etc/
 
 ENV R_LIBS_USER ${R_HOME}/library:${SPARK_HOME}/R/lib
 
-# FIXME Set the extra classpath option.  This will work around an issue that has
-# been fixed in the Spark-on-kubernetes repo, but not persisted in their
-# images yet. https://github.com/apache-spark-on-k8s/spark/pull/541
-ENV SPARK_SUBMIT_EXTRA_CLASSPATH=/opt/spark/spark-examples.jar
+CMD /etc/spark-exec.sh

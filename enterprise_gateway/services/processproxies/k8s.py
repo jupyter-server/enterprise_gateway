@@ -16,7 +16,7 @@ urllib3.disable_warnings()
 logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
 
 k8s_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
-k8s_default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel:dev')
+k8s_default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel-py:dev')
 
 local_ip = localinterfaces.public_ips()[0]
 
@@ -34,6 +34,9 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         self.k8s_kernel_image = k8s_default_kernel_image
         if proxy_config.get('image_name'):
             self.k8s_kernel_image = proxy_config.get('image_name')
+        self.k8s_kernel_executor_image = self.k8s_kernel_image  # Default the executor image to current image
+        if proxy_config.get('executor_image_name'):
+            self.k8s_kernel_executor_image = proxy_config.get('executor_image_name')
         self.pod_name = ''
 
     def launch_process(self, kernel_cmd, **kw):
@@ -44,6 +47,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         # transfer its env to each launched kernel.
         kw['env'].update(os.environ.copy())
         kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = self.k8s_kernel_image
+        kw['env']['EG_KUBERNETES_KERNEL_EXECUTOR_IMAGE'] = self.k8s_kernel_executor_image
 
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
 
