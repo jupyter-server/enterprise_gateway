@@ -1,5 +1,4 @@
 import unittest
-import re
 
 from enterprise_gateway.itests.kernel_client import KernelLauncher
 
@@ -16,27 +15,27 @@ class ScalaKernelBaseTestCase(object):
 
     def test_hello_world(self):
         result = self.kernel.execute('println("Hello World")')
-        assert re.search('Hello World', result)
+        self.assertRegexpMatches(result, 'Hello World')
 
     def test_get_application_id(self):
         result = self.kernel.execute('sc.applicationId')
-        assert re.search('application_', result)
+        self.assertRegexpMatches(result, 'application_')
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        assert re.search('2.1', result)
+        self.assertRegexpMatches(result, '2.1')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('sc.getConf.get("spark.master")')
-        assert re.search('yarn', result)
+        self.assertRegexpMatches(result, 'yarn')
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('sc.getConf.get("spark.submit.deployMode")')
-        assert re.findall('(cluster|client)', result)
+        self.assertRegexpMatches(result, '(cluster|client)')
 
     def test_get_host_address(self):
         result = self.kernel.execute('sc.getConf.get("spark.driver.host")')
-        assert re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', result)
+        self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
 class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseTestCase):

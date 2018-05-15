@@ -1,22 +1,32 @@
-sudo: false
+sudo: required
 language: python
+
 python:
     - 2.7
-    - 3.3
     - 3.4
-    - 3.5
     - 3.6
 
+services:
+    - docker
+
 env:
+  global:
     - ASYNC_TEST_TIMEOUT=30
+
+before_install:
+    - mkdir -p $HOME/.sbt/launchers/1.0.3
+    - curl -L -o $HOME/.sbt/launchers/1.0.3/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.0.3/sbt-launch-1.0.3.jar
+
 install:
-    - pip install --upgrade setuptools pip pycrypto
-    - python setup.py bdist_wheel sdist
+    - pip install --upgrade setuptools pip websocket-client
+    - make bdist kernelspecs docker-image-enterprise-gateway
     - pip install dist/*.whl coverage
     - pip freeze
+
 script:
     - jupyter enterprisegateway --help
     - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
+    - make itest
     - pip uninstall -y jupyter_enterprise_gateway
 
 after_success:
@@ -24,9 +34,11 @@ after_success:
   - python --version
   - pip --version
   - pip list
+  - docker logs itest
 
 after_failure:
   - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
   - python --version
   - pip --version
   - pip list
+  - docker logs itest
