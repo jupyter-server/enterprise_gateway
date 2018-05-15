@@ -27,9 +27,9 @@ Entering `make` with no parameters yields the following:
 
 ```
 activate                       eval `make activate`
-bdist                          Make a dist/*.whl binary distribution
 clean                          Make a clean source tree
 dev                            Make a server in jupyter_websocket mode
+dist                           Make binary and source distribution to dist folder
 docker-clean-enterprise-gateway Remove elyra/enterprise-gateway:dev docker image
 docker-clean-nb2kg             Remove elyra/nb2kg:dev docker image
 docker-clean-yarn-spark        Remove elyra/yarn-spark:2.1.0 docker image
@@ -38,15 +38,13 @@ docker-image-enterprise-gateway Build elyra/enterprise-gateway:dev docker image
 docker-image-nb2kg             Build elyra/nb2kg:dev docker image 
 docker-image-yarn-spark        Build elyra/yarn-spark:2.1.0 docker image
 docker-images                  Build docker images
-docker-prep                    Prepare enterprise-gateway docker container for integration tests
 docs                           Make HTML documentation
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
 itest                          Run integration tests (optionally) against docker container
-kernelspecs                    Make a tar.gz file consisting of kernelspec files
+kernelspecs                    Create an archive with sample kernelspecs
 nuke                           Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
-sdist                          Make a dist/*.tar.gz source distribution
 test                           Run unit tests
 ```
 Some of the more useful commands are listed below.
@@ -75,7 +73,7 @@ otherwise the command will use the default environment.
 Build a wheel file that can then be installed via `pip install`
 
 ```
-make bdist
+make dist
 ```
 
 ### Build the kernelspec tar file
@@ -116,6 +114,18 @@ Run the unit test suite.
 
 ```
 make test
+```
+
+### Run the integration tests
+
+Run the integration tests suite. T
+
+hese tests will bootstrap a docker image with Apache Spark using YARN resource manager and
+Jupyter Enterprise Gateway and perform various tests for each kernel in both YARN client
+and YARN cluster mode.
+
+```
+make itest
 ```
 
 ### Build the docker images
