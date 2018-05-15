@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+if [ "${EG_IMPERSONATION_ENABLED}" = "True" ]; then
+#        IMPERSONATION_OPTS="--proxy-user ${KERNEL_USERNAME:-UNSPECIFIED}"
+        USER_CLAUSE="as user ${KERNEL_USERNAME:-UNSPECIFIED}"
+else
+#        IMPERSONATION_OPTS=""
+        USER_CLAUSE="on behalf of user ${KERNEL_USERNAME:-UNSPECIFIED}"
+fi
+
 echo
 echo "Starting IRkernel for Spark in Kubernetes mode ${USER_CLAUSE}"
 echo

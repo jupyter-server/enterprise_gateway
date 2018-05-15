@@ -21,7 +21,7 @@ def launch_kubernetes_kernel(connection_file, response_addr, no_spark_context):
     keywords['docker_image'] = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE')
     keywords['response_address'] = response_addr
     keywords['connection_filename'] = connection_file
-    keywords['no_spark_context'] = "--RemoteProcessProxy.no-spark-context" if no_spark_context else ""
+    keywords['no_spark_context_opt'] = "--RemoteProcessProxy.no-spark-context" if no_spark_context else ""
 
     with open(os.path.join(os.path.dirname(__file__), "kernel-pod.yaml")) as f:
         yaml_template = f.read()

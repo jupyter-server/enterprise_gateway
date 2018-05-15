@@ -143,8 +143,16 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if env_dict.get('KERNEL_LAUNCH_TIMEOUT'):
             self.kernel_launch_timeout = float(env_dict.get('KERNEL_LAUNCH_TIMEOUT'))
 
-        # add the applicable kernel_id to the env dict
+        # add the applicable kernel_id and language to the env dict
         env_dict['KERNEL_ID'] = self.kernel_id
+
+        kernel_language = 'unknown-kernel-language'
+        if len(self.kernel_manager.kernel_spec.language) > 0:
+            kernel_language = self.kernel_manager.kernel_spec.language.lower()
+        # if already set in env: stanza, let that override.
+        env_dict['KERNEL_LANGUAGE'] = env_dict.get('KERNEL_LANGUAGE', kernel_language)
+
+        # Remove any potential sensitive (e.g., passwords) or annoying values (e.g., LG_COLORS)
         for k in env_pop_list:
             env_dict.pop(k, None)
 

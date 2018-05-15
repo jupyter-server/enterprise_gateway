@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help clean clean-docker clean-docker-enterprise-gateway clean-docker-nb2kg clean-docker-yarn-spark \
-    clean-kubernetes clean-kubernetes-py clean-kubernetes-r toree-launcher
+    clean-kubernetes clean-kubernetes-py clean-kubernetes-r clean-kubernetes-scala toree-launcher
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -94,7 +94,7 @@ clean-docker-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 
 ## Kubernetes container images
 
-kubernetes-images: kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r
+kubernetes-images: kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-kernel-scala
 
 kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gateway ## Build elyra/kubernetes-enterprise-gateway:dev docker image
 ../.image-kubernetes-enterprise-gateway: docker/kubernetes-enterprise-gateway/* ../$(WHEEL_FILE) $(KERNELSPECS_FILE)
@@ -108,6 +108,7 @@ kubernetes-enterprise-gateway: ../.image-kubernetes-enterprise-gateway ## Build 
 	@touch ../.image-kubernetes-enterprise-gateway
 	@-docker images elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)
 
+# FIXME - build functions for these that take the image name or language suffix
 kubernetes-kernel-py: ../.image-kubernetes-kernel-py ## Build elyra/kubernetes-kernel-py:dev docker image
 ../.image-kubernetes-kernel-py: docker/kubernetes-kernel-py/* $(KERNELSPECS_FILE)
 	@make clean-kubernetes-kernel-py
@@ -130,8 +131,20 @@ kubernetes-kernel-r: ../.image-kubernetes-kernel-r ## Build elyra/kubernetes-ker
 	@touch ../.image-kubernetes-kernel-r
 	@-docker images elyra/kubernetes-kernel-r:$(KERNEL_TAG)
 
-clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r
+kubernetes-kernel-scala: ../.image-kubernetes-kernel-scala ## Build elyra/kubernetes-kernel-scala:dev docker image
+../.image-kubernetes-kernel-scala: docker/kubernetes-kernel-scala/* $(KERNELSPECS_FILE)
+	@make clean-kubernetes-kernel-scala
+	@make -C .. kernelspecs
+	@mkdir -p ../build/docker/kubernetes-kernel-scala
+	cp docker/kubernetes-kernel-scala/* ../build/docker/kubernetes-kernel-scala
+	cp ../dist/jupyter_enterprise_gateway_kernelspecs* ../build/docker/kubernetes-kernel-scala
+	@(cd ../build/docker/kubernetes-kernel-scala; docker build -t elyra/kubernetes-kernel-scala:$(KERNEL_TAG) . )
+	@touch ../.image-kubernetes-kernel-scala
+	@-docker images elyra/kubernetes-kernel-scala:$(KERNEL_TAG)
 
+clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
+
+# FIXME - build functions for these that take the image name 
 clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
 	@rm -f ../.image-kubernetes-enterprise-gateway
 	@-docker rmi -f elyra/kubernetes-enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG)_x
@@ -149,6 +162,12 @@ clean-kubernetes-kernel-r: ## Remove elyra/kubernetes-kernel-r:dev docker image
 	@-docker rmi -f elyra/kubernetes-kernel-r:$(KERNEL_TAG)_x
 	@-docker tag elyra/kubernetes-kernel-r:$(KERNEL_TAG) elyra/kubernetes-kernel-r:$(KERNEL_TAG)_x
 	@-docker rmi -f elyra/kubernetes-kernel-r:$(KERNEL_TAG)
+
+clean-kubernetes-kernel-scala: ## Remove elyra/kubernetes-kernel-scala:dev docker image
+	@rm -f ../.image-kubernetes-kernel-scala
+	@-docker rmi -f elyra/kubernetes-kernel-scala:$(KERNEL_TAG)_x
+	@-docker tag elyra/kubernetes-kernel-scala:$(KERNEL_TAG) elyra/kubernetes-kernel-scala:$(KERNEL_TAG)_x
+	@-docker rmi -f elyra/kubernetes-kernel-scala:$(KERNEL_TAG)
 ##
 
 clean-docker: clean-docker-enterprise-gateway clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes-enterprise-gateway clean-kubernetes ## Remove docker images

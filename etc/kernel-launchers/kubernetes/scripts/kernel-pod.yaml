@@ -22,8 +22,8 @@ spec:
       value: $connection_filename
     - name: KERNEL_LANGUAGE
       value: $language
-    - name: NO_SPARK_CONTEXT
-      value: $no_spark_context
+    - name: KERNEL_NO_SPARK_CONTEXT_OPT
+      value: $no_spark_context_opt
     image: $docker_image
     name: $kernel_username-$kernel_id
     command: ["/etc/bootstrap-kernel.sh"]

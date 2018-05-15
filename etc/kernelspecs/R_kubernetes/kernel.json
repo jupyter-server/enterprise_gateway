@@ -8,7 +8,6 @@
     }
   },
   "env": {
-    "KERNEL_LANGUAGE": "R"
   },
   "argv": [
     "python",

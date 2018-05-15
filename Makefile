@@ -3,7 +3,7 @@
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
     clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway \
-    clean-kubernetes-kernel-py clean-kubernetes-kernel-r
+    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -96,9 +96,10 @@ kubernetes-images: ## Build kubernetes docker images
 kubernetes-enterprise-gateway: ## Build elyra/kubernetes-enterprise-gateway:dev docker image
 kubernetes-kernel-py: ## Build elyra/kubernetes-kernel-py:dev docker image
 kubernetes-kernel-r: ## Build elyra/kubernetes-kernel-r:dev docker image
+kubernetes-kernel-scala: ## Build elyra/kubernetes-kernel-scala:dev docker image
 
 # Actual working targets...
-docker-images docker-enterprise-gateway docker-yarn-spark docker-nb2kg kubernetes-images kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r:
+docker-images docker-enterprise-gateway docker-yarn-spark docker-nb2kg kubernetes-images kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-kernel-scala:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 docker-image-enterprise-gateway: $(WHEEL_FILE)
@@ -114,8 +115,9 @@ clean-kubernetes: ## Remove kubernetes docker images
 clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
 clean-kubernetes-kernel-py: ## Remove elyra/kubernetes-kernel-py:dev docker image
 clean-kubernetes-kernel-r: ## Remove elyra/kubernetes-kernel-r:dev docker image
+clean-kubernetes-kernel-scala: ## Remove elyra/kubernetes-kernel-scala:dev docker image
 
-clean-docker clean-docker-enterprise-gateway clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py  clean-kubernetes-kernel-r:
+clean-docker clean-docker-enterprise-gateway clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 
