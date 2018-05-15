@@ -44,7 +44,7 @@ of the project docs. Here's a quick start using `pip`:
 
 ```bash
 # install from pypi
-pip install jupyter_enterprise_gateway
+pip install --upgrade jupyter_enterprise_gateway
 
 # show all config options
 jupyter enterprisegateway --help-all
