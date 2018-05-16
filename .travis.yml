@@ -18,7 +18,7 @@ before_install:
     - curl -L -o $HOME/.sbt/launchers/1.0.3/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.0.3/sbt-launch-1.0.3.jar
 
 install:
-    - pip install --upgrade setuptools pip pycrypto websocket
+    - pip install --upgrade setuptools pip websocket-client
     - make bdist kernelspecs docker-image-enterprise-gateway
     - pip install dist/*.whl coverage
     - pip freeze
