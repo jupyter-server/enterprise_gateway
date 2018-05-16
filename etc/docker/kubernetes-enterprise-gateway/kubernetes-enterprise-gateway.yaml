@@ -43,6 +43,7 @@ kind: Service
 metadata:
   labels:
     app: enterprise-gateway
+    component: enterprise-gateway
   name: enterprise-gateway
 spec:
   ports:
@@ -53,6 +54,9 @@ spec:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
   type: NodePort
+# Uncomment in order to use <k8s-master>:8888
+#  externalIPs:
+#  - 9.30.118.200
 ---
 apiVersion: apps/v1beta2
 kind: Deployment
@@ -62,6 +66,7 @@ metadata:
   labels:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway
+    component: enterprise-gateway
 spec:
   replicas: 2
   selector:
@@ -72,6 +77,7 @@ spec:
       labels:
         gateway-selector: enterprise-gateway
         app: enterprise-gateway
+        component: enterprise-gateway
     spec:
       containers:
       - env:

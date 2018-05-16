@@ -12,6 +12,7 @@ metadata:
   labels:
     kernel_id: $kernel_id
     app: enterprise-gateway
+    component: kernel
 spec:
   restartPolicy: Never
   containers:
