@@ -3,7 +3,7 @@ import os
 import requests
 
 from uuid import uuid4
-from pprint import pprint
+# from pprint import pprint
 from tornado.escape import json_encode, json_decode, utf8
 from tornado.websocket import websocket_connect
 from tornado.ioloop import IOLoop
@@ -112,7 +112,10 @@ class Kernel:
                 #print('Received message from kernel')
                 #pprint(response_message)
 
-                response_message_id = response_message['parent_header']['msg_id']
+                # Ensure this message is for us (ids match)
+                if 'msg_id' not in response_message['parent_header'] or response_message['parent_header']['msg_id'] != msg_id:
+                    continue
+
                 response_message_type = response_message['msg_type']
 
                 if response_message_type == 'error':
