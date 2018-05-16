@@ -11,7 +11,7 @@ RUN apk add --no-cache build-base libzmq openssl-dev python-dev && \
 # then some R things...
 RUN mkdir -p /usr/share/doc/R/html && \
     Rscript --slave --no-save --no-restore-history \
-        -e "install.packages(pkgs=c('argparser','jsonlite','uuid','stringr','repr','IRdisplay','evaluate', 'crayon', 'pbdZMQ', 'devtools', 'digest'), \
+        -e "install.packages(pkgs=c('argparser','jsonlite','uuid','stringr','repr','IRdisplay','evaluate', 'crayon', 'pbdZMQ', 'devtools', 'digest', 'base64enc'), \
         lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
         -e "devtools::install_github('IRkernel/IRkernel')"
 
