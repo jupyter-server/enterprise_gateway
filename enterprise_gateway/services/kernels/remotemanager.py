@@ -6,11 +6,12 @@ import os
 import sys
 import signal
 import re
+import uuid
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from tornado import gen
-from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
+from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes, unicode_type)
 
 
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
@@ -23,7 +24,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
     @gen.coroutine
-    def start_kernel(self, kernel_id=None, *args, **kwargs):
+    def start_kernel(self, *args, **kwargs):
         self.log.debug("RemoteMappingKernelManager.start_kernel: {}".format(kwargs['kernel_name']))
         kernel_id = yield gen.maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
@@ -76,6 +77,37 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         if func:
             func()
         return True
+
+    def new_kernel_id(self, **kwargs):
+        """Override used to provide a mechanism by which clients can specify a kernel's id.  In this case
+           that mechanism is via the per-kernel environment variable: KERNEL_ID.  If specified, its value
+           will be validated and returned, otherwise the result from the superclass method is returned.
+
+           NOTE: This method exists in jupyter_client.multikernelmanager.py for releases > 5.2.3.  If you
+           find that this method is not getting invoked, then you likely need to update the version of
+           jupyter_client.  The Enterprise Gateway dependency will be updated once new releases of
+           jupyter_client are more prevalent.
+        """
+        kernel_id = None
+        env = kwargs.get('env')
+        if env and env.get('KERNEL_ID'):   # If there's a KERNEL_ID in the env, check it out
+            # convert string back to UUID - validating string in the process.
+            str_kernel_id = env.get('KERNEL_ID')
+            try:
+                str_v4_kernel_id = str(uuid.UUID(str_kernel_id, version=4))
+                if str_kernel_id != str_v4_kernel_id:  # Given string is not uuid v4 compliant
+                    raise ValueError("value is not uuid v4 compliant")
+            except ValueError as ve:
+                self.log.error("Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{}'!  Error: {}".
+                               format(str_kernel_id, ve))
+                raise ve
+            # user-provided id is valid, use it
+            kernel_id = unicode_type(str_kernel_id)
+            self.log.debug("Using user-provided kernel_id: {}".format(kernel_id))
+        else:
+            kernel_id = super(RemoteMappingKernelManager, self).new_kernel_id(**kwargs)
+
+        return kernel_id
 
 
 class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
