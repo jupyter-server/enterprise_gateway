@@ -1,0 +1,20 @@
+{
+  "language": "python",
+  "display_name": "Python on Kubernetes with Tensorflow",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+    "config": {
+      "image_name": "elyra/kubernetes-kernel-tf-py:dev"
+    }
+  },
+  "env": {
+  },
+  "argv": [
+    "python",
+    "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_kubernetes.py",
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.no-spark-context"
+  ]
+}
