@@ -1,4 +1,0 @@
-nose
-mock
-websocket-client
-pytest
