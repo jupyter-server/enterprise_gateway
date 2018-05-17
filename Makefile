@@ -18,12 +18,7 @@ help:
 
 build:
 env: ## Make a dev environment
-	-conda create -y -n $(ENV) -c conda-forge --file requirements-conda.txt \
-		--file requirements-test.txt
-	$(SA) $(ENV) && \
-		pip install -r requirements.txt && \
-		pip install -r requirements-doc.txt && \
-		pip install -e .
+	-conda env create --file requirements.yml --name $(ENV)
 
 activate: ## eval `make activate`
 	@echo "$(SA) $(ENV)"
