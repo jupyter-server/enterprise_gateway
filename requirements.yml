@@ -1,3 +1,6 @@
+channels:
+  - conda-forge
+  - defaults
 dependencies:
   - jupyter_core>=4.4.0
   - jupyter_client>=5.2.0
