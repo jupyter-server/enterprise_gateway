@@ -56,8 +56,10 @@ DOCKER_IMAGES := enterprise-gateway nb2kg yarn-spark
 KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py
 IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 
-docker-images: $(DOCKER_IMAGES) kubernetes-images
+docker-images: $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 kubernetes-images: $(KUBERNETES_IMAGES)
+
+kubernetes-publish: publish-kubernetes-enterprise-gateway publish-kubernetes-kernel-py publish-kubernetes-kernel-tf-py publish-kubernetes-kernel-r publish-kubernetes-kernel-scala
 
 clean-images: clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes-enterprise-gateway clean-kubernetes
 clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-tf-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
@@ -88,6 +90,13 @@ FILES_kubernetes-kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-enterprise-gateway := ../dist/jupyter_enterprise_gateway*
+
+# Publish each publish image on $(IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
+define PUBLISH_IMAGE
+publish-$1:
+	@docker push $(HUB_ORG)/$1:$(TAG)
+endef
+$(foreach image,$(IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 
 # Generate image creation targets for each entry in $(IMAGES).  Switch 'eval' to 'info' to see what is produced.
 define BUILD_IMAGE

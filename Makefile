@@ -3,7 +3,8 @@
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
     clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway \
-    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py
+    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py \
+    kubernetes-publish
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -122,6 +123,8 @@ clean-kubernetes-kernel-tf-py: ## Remove elyra/kubernetes-kernel-tf-py:dev docke
 clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
+kubernetes-publish: ## Push kubernetes docker images to docker hub
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 # itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway 
 
