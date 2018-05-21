@@ -18,7 +18,7 @@ help:
 
 build:
 env: ## Make a dev environment
-	-conda env create -y --file requirements.yml --name $(ENV)
+	-conda env create --file requirements.yml --name $(ENV)
 
 activate: ## eval `make activate`
 	@echo "$(SA) $(ENV)"
