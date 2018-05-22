@@ -5,17 +5,67 @@ from enterprise_gateway.itests.kernel_client import KernelLauncher
 
 class ScalaKernelBaseTestCase(object):
     """
-    R Related test cases where there is a concrete
-    test class for each available kernelspec for R kernels
-
-    IPython related kernelspec
-    - spark_R_yarn_client
-    - spark_R_yarn_cluster
+    Scala related test cases common to vanilla Scala kernels
     """
 
     def test_hello_world(self):
         result = self.kernel.execute('println("Hello World")')
         self.assertRegexpMatches(result, 'Hello World')
+
+    def test_restart(self):
+        """
+        1. Set a variable to a known value.
+        2. Restart the kernel
+        3. Attempt to increment the variable, verify an error was received (due to undefined variable)
+        """
+        self.kernel.execute("var x = 123")
+        original_value = int(self.kernel.execute("x"))  # This will only return the value.
+        self.assertEquals(original_value, 123)
+
+        self.assertTrue(self.kernel.restart())
+
+        error_result = self.kernel.execute("var y = x + 1")
+        self.assertRegexpMatches(error_result, 'Compile Error')
+
+    def test_interrupt(self):
+        """
+        1. Set a variable to a known value.
+        2. Spawn a thread that will perform an interrupt after some number of seconds,
+        3. Issue a long-running command - that spans during of interrupt thread wait time,
+        4. Interrupt the kernel,
+        5. Attempt to increment the variable, verify expected result.
+        """
+        self.kernel.execute("var x = 123")
+        original_value = int(self.kernel.execute("x"))  # This will only return the value.
+        self.assertEquals(original_value, 123)
+
+        # Start a thread that performs the interrupt.  This thread must wait long enough to issue
+        # the next cell execution.
+        self.kernel.start_interrupt_thread()
+
+        # Build the code list to interrupt, in this case, its a sleep call.
+        interrupted_code = list()
+        interrupted_code.append('println("begin")\n')
+        interrupted_code.append("Thread.sleep(30000)\n")
+        interrupted_code.append('println("end")\n')
+        interrupted_result = self.kernel.execute(interrupted_code)
+
+        # Ensure the result indicates an interrupt occurred
+        self.assertRegexpMatches(interrupted_result, 'java.lang.InterruptedException')
+
+        # Wait for thread to terminate - should be terminated already
+        self.kernel.terminate_interrupt_thread()
+
+        # Increment the pre-interrupt variable and ensure its value is correct
+        self.kernel.execute("var y = x + 1")
+        interrupted_value = int(self.kernel.execute("y"))  # This will only return the value.
+        self.assertEquals(interrupted_value, 124)
+
+
+class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
+    """
+    Scala related tests cases common to Spark on Yarn
+    """
 
     def test_get_application_id(self):
         result = self.kernel.execute('sc.applicationId')
@@ -38,7 +88,7 @@ class ScalaKernelBaseTestCase(object):
         self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
-class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseTestCase):
+class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseYarnTestCase):
     KERNELSPEC = "spark_scala_yarn_client"
 
     @classmethod
@@ -59,7 +109,7 @@ class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseTestCase):
         cls.launcher.shutdown(cls.kernel.kernel_id)
 
 
-class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseTestCase):
+class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseYarnTestCase):
     KERNELSPEC = "spark_scala_yarn_cluster"
 
     @classmethod

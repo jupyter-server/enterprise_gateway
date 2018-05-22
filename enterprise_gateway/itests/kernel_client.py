@@ -1,7 +1,8 @@
 
 import os
 import requests
-
+import time
+import re
 from uuid import uuid4
 from pprint import pprint
 from tornado.escape import json_encode, json_decode, utf8
@@ -18,6 +19,7 @@ DEFAULT_TIMEOUT = 60 * 60
 class KernelLauncher:
     DEFAULT_USERNAME = os.getenv('KERNEL_USERNAME', 'bob')
     DEFAULT_GATEWAY_HOST = os.getenv('GATEWAY_HOST', 'localhost:8888')
+    KERNEL_LAUNCH_TIMEOUT = os.getenv('KERNEL_LAUNCH_TIMEOUT', '40')
 
     def __init__(self, host=DEFAULT_GATEWAY_HOST):
         self.http_api_endpoint = 'http://{}/api/kernels'.format(host)
@@ -28,8 +30,8 @@ class KernelLauncher:
         print('Launching a {} kernel ....'.format(kernelspec_name))
 
         json_data = {'name': kernelspec_name}
-        if username is not None:
-            json_data['env'] = {'KERNEL_USERNAME': username}
+        json_data['env'] = {'KERNEL_USERNAME': username,
+                            'KERNEL_LAUNCH_TIMEOUT': KernelLauncher.KERNEL_LAUNCH_TIMEOUT}
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
@@ -40,7 +42,7 @@ class KernelLauncher:
             raise RuntimeError('Error creating kernel : {} response code \n {}'.
                                format(response.status_code, response.content))
 
-        self.kernel = Kernel(self.ws_api_endpoint, kernel_id, timeout)
+        self.kernel = Kernel(self.http_api_endpoint, self.ws_api_endpoint, kernel_id, timeout)
         return self.kernel
 
     def shutdown(self, kernel_id):
@@ -63,16 +65,20 @@ class Kernel:
 
     DEAD_MSG_ID = 'deadbeefdeadbeefdeadbeefdeadbeef'
     POST_IDLE_TIMEOUT = 0.5
+    DEFAULT_INTERRUPT_WAIT = 5
 
-    def __init__(self, ws_api_endpoint, kernel_id, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, http_api_endpoint, ws_api_endpoint, kernel_id, timeout=DEFAULT_TIMEOUT):
 
         self.shutting_down = False
+        self.restarting = False
+        self.http_api_endpoint = http_api_endpoint
+        self.kernel_http_api_endpoint = '{}/{}'.format(http_api_endpoint, kernel_id)
         self.ws_api_endpoint = ws_api_endpoint
-        self.kernel_api_endpoint = '{}/{}/channels'.format(ws_api_endpoint, kernel_id)
+        self.kernel_ws_api_endpoint = '{}/{}/channels'.format(ws_api_endpoint, kernel_id)
         self.kernel_id = kernel_id
-        print('Initializing kernel client ({}) to {}'.format(kernel_id, self.kernel_api_endpoint))
+        print('Initializing kernel client ({}) to {}'.format(kernel_id, self.kernel_ws_api_endpoint))
 
-        self.kernel_socket = websocket.create_connection(self.kernel_api_endpoint, timeout=timeout,
+        self.kernel_socket = websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout,
                                                          enable_multithread=True)
 
         self.response_queues = {}
@@ -80,6 +86,7 @@ class Kernel:
         # startup reader thread
         self.response_reader = Thread(target=self._read_responses)
         self.response_reader.start()
+        self.interrupt_thread = None
 
     def shutdown(self):
         # Terminate thread, close socket and clear queues.
@@ -111,10 +118,10 @@ class Kernel:
                     response_message_type = response_message['msg_type']
 
                     if response_message_type == 'error':
-                        raise RuntimeError('ERROR: {}:{}'.format(response_message['content']['ename'],
-                                                                 response_message['content']['evalue']))
-
-                    if response_message_type == 'stream':
+                        response.append('{}:{}:{}'.format(response_message['content']['ename'],
+                                                                 response_message['content']['evalue'],
+                                                                 response_message['content']['traceback']))
+                    elif response_message_type == 'stream':
                         response.append(Kernel._convert_raw_response(response_message['content']['text']))
 
                     elif response_message_type == 'execute_result' or response_message_type == 'display_data':
@@ -137,6 +144,43 @@ class Kernel:
             print(b)
 
         return '\n'.join(response)
+
+    def interrupt(self):
+        url = "{}/{}".format(self.kernel_http_api_endpoint, "interrupt")
+        response = requests.post(url)
+        if response.status_code == 204:
+            print('Kernel {} interrupted'.format(self.kernel_id))
+            return True
+        else:
+            raise RuntimeError('Unexpected response interrupting kernel {}: {}'.format(self.kernel_id, response.content))
+
+    def restart(self, timeout=DEFAULT_TIMEOUT):
+        self.restarting = True
+        self.kernel_socket.close()
+        self.kernel_socket = None
+        url = "{}/{}".format(self.kernel_http_api_endpoint, "restart")
+        response = requests.post(url)
+        if response.status_code == 200:
+            print('Kernel {} restarted'.format(self.kernel_id))
+            self.kernel_socket = websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout,
+                                                             enable_multithread=True)
+            self.restarting = False
+            return True
+        else:
+            raise RuntimeError('Unexpected response restarting kernel {}: {}'.format(self.kernel_id, response.content))
+
+    def start_interrupt_thread(self, wait_time = DEFAULT_INTERRUPT_WAIT):
+        self.interrupt_thread = Thread(target=self.perform_interrupt, args=(wait_time,))
+        self.interrupt_thread.start()
+
+    def perform_interrupt(self, wait_time):
+        time.sleep(wait_time)  # Allow parent to start executing cell to interrupt
+        self.interrupt()
+
+    def terminate_interrupt_thread(self):
+        if self.interrupt_thread:
+            self.interrupt_thread.join()
+            self.interrupt_thread = None
 
     def _send_request(self, code):
         """
@@ -189,25 +233,30 @@ class Kernel:
         """
         try:
             while not self.shutting_down:
-                raw_message = self.kernel_socket.recv()
-                response_message = json_decode(utf8(raw_message))
+                try:
+                    raw_message = self.kernel_socket.recv()
+                    response_message = json_decode(utf8(raw_message))
 
-                msg_id = Kernel._get_msg_id(response_message)
+                    msg_id = Kernel._get_msg_id(response_message)
 
-                if msg_id not in self.response_queues:  # this will happen when the msg_id is generated by the server
-                    self.response_queues[msg_id] = queue.Queue()
+                    if msg_id not in self.response_queues:  # this will happen when the msg_id is generated by the server
+                        self.response_queues[msg_id] = queue.Queue()
 
-                # insert into queue
-                self.response_queues.get(msg_id).put_nowait(response_message)
-
-            print('Response reader thread exiting...')
+                    # insert into queue
+                    self.response_queues.get(msg_id).put_nowait(response_message)
+                except BaseException as be1:
+                    if self.restarting:  # If restarting, wait until restart has completed - which includes new socket
+                        while self.restarting:
+                            time.sleep(1)
+                        continue
+                    raise be1
 
         except websocket.WebSocketConnectionClosedException:
             pass  # websocket closure most likely due to shutdown
 
-        except BaseException as be:
+        except BaseException as be2:
             if not self.shutting_down:
-                print('Unexpected exception encountered ({})'.format(be))
+                print('Unexpected exception encountered ({})'.format(be2))
 
         print('Response reader thread exiting...')
 
@@ -242,7 +291,7 @@ class Kernel:
             'parent_header': {},
             'channel': 'shell',
             'content': {
-                'code': code,
+                'code': "".join(code),
                 'silent': False,
                 'store_history': False,
                 'user_expressions': {},
