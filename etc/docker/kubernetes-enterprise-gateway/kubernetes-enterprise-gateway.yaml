@@ -1,4 +1,4 @@
-# This file defines the Kubernetes objects necessary for Enterprise Gateway to run witihin Kubernetes.
+# This file defines the Kubernetes objects necessary for Enterprise Gateway to run within Kubernetes.
 #
 # Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
 # is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
@@ -68,7 +68,8 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
 spec:
-  replicas: 2
+  #update to deploy multiple replicas of EG
+  replicas: 1
   selector:
     matchLabels:
       gateway-selector: enterprise-gateway
