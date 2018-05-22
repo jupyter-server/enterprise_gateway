@@ -1,5 +1,5 @@
 import unittest
-
+import os
 from enterprise_gateway.itests.kernel_client import KernelLauncher
 
 
@@ -13,11 +13,11 @@ class PythonKernelBaseTestCase(object):
         self.assertRegexpMatches(result, 'Hello World')
 
     def test_restart(self):
-        """
-        1. Set a variable to a known value.
-        2. Restart the kernel
-        3. Attempt to increment the variable, verify an error was received (due to undefined variable)
-        """
+
+        # 1. Set a variable to a known value.
+        # 2. Restart the kernel
+        # 3. Attempt to increment the variable, verify an error was received (due to undefined variable)
+
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("print(x)"))  # This will only return the value.
         self.assertEquals(original_value, 123)
@@ -28,13 +28,13 @@ class PythonKernelBaseTestCase(object):
         self.assertRegexpMatches(error_result, 'NameError')
 
     def test_interrupt(self):
-        """
-        1. Set a variable to a known value.
-        2. Spawn a thread that will perform an interrupt after some number of seconds,
-        3. Issue a long-running command - that spans during of interrupt thread wait time,
-        4. Interrupt the kernel,
-        5. Attempt to increment the variable, verify expected result.
-        """
+
+        # 1. Set a variable to a known value.
+        # 2. Spawn a thread that will perform an interrupt after some number of seconds,
+        # 3. Issue a long-running command - that spans during of interrupt thread wait time,
+        # 4. Interrupt the kernel,
+        # 5. Attempt to increment the variable, verify expected result.
+
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("print(x)"))  # This will only return the value.
         self.assertEquals(original_value, 123)
@@ -89,8 +89,30 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
         self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
+class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_LOCAL_NAME", "python2")
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPythonKernelLocal, cls).setUpClass()
+        print('>>>')
+        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
+        # initialize environment
+        cls.launcher = KernelLauncher()
+        cls.kernel = cls.launcher.launch(cls.KERNELSPEC)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestPythonKernelLocal, cls).tearDownClass()
+        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
+        # shutdown environment
+        cls.launcher.shutdown(cls.kernel.kernel_id)
+
+
 class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
-    KERNELSPEC = "spark_python_yarn_client"
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")
 
     @classmethod
     def setUpClass(cls):
@@ -112,7 +134,7 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
 
 
 class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseYarnTestCase):
-    KERNELSPEC = "spark_python_yarn_cluster"
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLUSTER_NAME", "spark_python_yarn_cluster")
 
     @classmethod
     def setUpClass(cls):
