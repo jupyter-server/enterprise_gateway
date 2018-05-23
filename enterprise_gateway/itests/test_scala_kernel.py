@@ -1,5 +1,5 @@
 import unittest
-
+import os
 from enterprise_gateway.itests.kernel_client import KernelLauncher
 
 
@@ -13,11 +13,11 @@ class ScalaKernelBaseTestCase(object):
         self.assertRegexpMatches(result, 'Hello World')
 
     def test_restart(self):
-        """
-        1. Set a variable to a known value.
-        2. Restart the kernel
-        3. Attempt to increment the variable, verify an error was received (due to undefined variable)
-        """
+
+        # 1. Set a variable to a known value.
+        # 2. Restart the kernel
+        # 3. Attempt to increment the variable, verify an error was received (due to undefined variable)
+
         self.kernel.execute("var x = 123")
         original_value = int(self.kernel.execute("x"))  # This will only return the value.
         self.assertEquals(original_value, 123)
@@ -28,13 +28,13 @@ class ScalaKernelBaseTestCase(object):
         self.assertRegexpMatches(error_result, 'Compile Error')
 
     def test_interrupt(self):
-        """
-        1. Set a variable to a known value.
-        2. Spawn a thread that will perform an interrupt after some number of seconds,
-        3. Issue a long-running command - that spans during of interrupt thread wait time,
-        4. Interrupt the kernel,
-        5. Attempt to increment the variable, verify expected result.
-        """
+
+        # 1. Set a variable to a known value.
+        # 2. Spawn a thread that will perform an interrupt after some number of seconds,
+        # 3. Issue a long-running command - that spans during of interrupt thread wait time,
+        # 4. Interrupt the kernel,
+        # 5. Attempt to increment the variable, verify expected result.
+
         self.kernel.execute("var x = 123")
         original_value = int(self.kernel.execute("x"))  # This will only return the value.
         self.assertEquals(original_value, 123)
@@ -88,8 +88,30 @@ class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
         self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
+class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
+    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.1_scala")
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestScalaKernelLocal, cls).setUpClass()
+        print('>>>')
+        print('Starting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
+        # initialize environment
+        cls.launcher = KernelLauncher()
+        cls.kernel = cls.launcher.launch(cls.KERNELSPEC)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestScalaKernelLocal, cls).tearDownClass()
+        print('Shutting down Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        # shutdown environment
+        cls.launcher.shutdown(cls.kernel.kernel_id)
+
+
+
 class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseYarnTestCase):
-    KERNELSPEC = "spark_scala_yarn_client"
+    KERNELSPEC = os.getenv("SCALA_KERNEL_CLIENT_NAME", "spark_scala_yarn_client")
 
     @classmethod
     def setUpClass(cls):
@@ -110,7 +132,7 @@ class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseYarnTestCase):
 
 
 class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseYarnTestCase):
-    KERNELSPEC = "spark_scala_yarn_cluster"
+    KERNELSPEC = os.getenv("SCALA_KERNEL_CLUSTER_NAME", "spark_scala_yarn_cluster")
 
     @classmethod
     def setUpClass(cls):
