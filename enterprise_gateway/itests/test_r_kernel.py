@@ -1,6 +1,6 @@
 import unittest
 import os
-from enterprise_gateway.itests.kernel_client import KernelLauncher
+from enterprise_gateway.client.gateway_client import GatewayClient
 
 
 class RKernelBaseTestCase(object):
@@ -98,15 +98,15 @@ class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
         print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
-        cls.launcher = KernelLauncher()
-        cls.kernel = cls.launcher.launch(cls.KERNELSPEC)
+        cls.gatewayClient = GatewayClient()
+        cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
 
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelLocal, cls).tearDownClass()
         print('Shutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
         # shutdown environment
-        cls.launcher.shutdown(cls.kernel.kernel_id)
+        cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 class TestRKernelClient(unittest.TestCase, RKernelBaseYarnTestCase):
@@ -119,15 +119,15 @@ class TestRKernelClient(unittest.TestCase, RKernelBaseYarnTestCase):
         print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
-        cls.launcher = KernelLauncher()
-        cls.kernel = cls.launcher.launch(cls.KERNELSPEC)
+        cls.gatewayClient = GatewayClient()
+        cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
 
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelClient, cls).tearDownClass()
         print('Shutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
         # shutdown environment
-        cls.launcher.shutdown(cls.kernel.kernel_id)
+        cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 class TestRKernelCluster(unittest.TestCase, RKernelBaseYarnTestCase):
@@ -140,15 +140,15 @@ class TestRKernelCluster(unittest.TestCase, RKernelBaseYarnTestCase):
         print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
-        cls.launcher = KernelLauncher()
-        cls.kernel = cls.launcher.launch(cls.KERNELSPEC)
+        cls.gatewayClient = GatewayClient()
+        cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
 
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelCluster, cls).tearDownClass()
         print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
         # shutdown environment
-        cls.launcher.shutdown(cls.kernel.kernel_id)
+        cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 if __name__ == '__main__':

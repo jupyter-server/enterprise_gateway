@@ -16,7 +16,16 @@ except ImportError:
 
 DEFAULT_TIMEOUT = 60 * 60
 
-class KernelLauncher:
+
+class GatewayClient:
+    """
+    *** E X P E R I M E N T A L *** *** E X P E R I M E N T A L ***
+
+    An experimental Gateway Client that is used for Enterprise Gateway
+    integration tests and can be leveraged for micro service type of
+    connections.
+
+    """
     DEFAULT_USERNAME = os.getenv('KERNEL_USERNAME', 'bob')
     DEFAULT_GATEWAY_HOST = os.getenv('GATEWAY_HOST', 'localhost:8888')
     KERNEL_LAUNCH_TIMEOUT = os.getenv('KERNEL_LAUNCH_TIMEOUT', '40')
@@ -24,41 +33,40 @@ class KernelLauncher:
     def __init__(self, host=DEFAULT_GATEWAY_HOST):
         self.http_api_endpoint = 'http://{}/api/kernels'.format(host)
         self.ws_api_endpoint = 'ws://{}/api/kernels'.format(host)
-        self.kernel = None
 
-    def launch(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=DEFAULT_TIMEOUT):
-        print('Launching a {} kernel ....'.format(kernelspec_name))
+    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=DEFAULT_TIMEOUT):
+        print('Starting a {} kernel ....'.format(kernelspec_name))
 
-        json_data = {'name': kernelspec_name}
-        json_data['env'] = {'KERNEL_USERNAME': username,
-                            'KERNEL_LAUNCH_TIMEOUT': KernelLauncher.KERNEL_LAUNCH_TIMEOUT}
+        json_data = {'name': kernelspec_name,
+                     'env': {'KERNEL_USERNAME': username,
+                             'KERNEL_LAUNCH_TIMEOUT': GatewayClient.KERNEL_LAUNCH_TIMEOUT} }
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
             json_data = response.json()
             kernel_id = json_data.get("id")
-            print('Launched kernel with id {}'.format(kernel_id))
+            print('Started kernel with id {}'.format(kernel_id))
         else:
-            raise RuntimeError('Error creating kernel : {} response code \n {}'.
+            raise RuntimeError('Error starting kernel : {} response code \n {}'.
                                format(response.status_code, response.content))
 
-        self.kernel = Kernel(self.http_api_endpoint, self.ws_api_endpoint, kernel_id, timeout)
-        return self.kernel
+        return Kernel(self.http_api_endpoint, self.ws_api_endpoint, kernel_id, timeout)
 
-    def shutdown(self, kernel_id):
-        print("Shutting down kernel : {} ....".format(kernel_id))
-        if self.kernel:
-            self.kernel.shutdown()
+    def shutdown_kernel(self, kernel):
+        print("Shutting down kernel : {} ....".format(kernel.kernel_id))
 
-        if not kernel_id:
+        if not kernel:
             return False
-        url = "{}/{}".format(self.http_api_endpoint, kernel_id)
+
+        kernel.shutdown()
+
+        url = "{}/{}".format(self.http_api_endpoint, kernel.kernel_id)
         response = requests.delete(url)
         if response.status_code == 204:
-            print('Kernel {} shutdown'.format(kernel_id))
+            print('Kernel {} shutdown'.format(kernel.kernel_id))
             return True
         else:
-            raise RuntimeError('Error shutting down kernel {}: {}'.format(kernel_id, response.content))
+            raise RuntimeError('Error shutting down kernel {}: {}'.format(kernel.kernel_id, response.content))
 
 
 class Kernel:
@@ -78,8 +86,8 @@ class Kernel:
         self.kernel_id = kernel_id
         print('Initializing kernel client ({}) to {}'.format(kernel_id, self.kernel_ws_api_endpoint))
 
-        self.kernel_socket = websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout,
-                                                         enable_multithread=True)
+        self.kernel_socket = \
+            websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True)
 
         self.response_queues = {}
 
@@ -119,8 +127,8 @@ class Kernel:
 
                     if response_message_type == 'error':
                         response.append('{}:{}:{}'.format(response_message['content']['ename'],
-                                                                 response_message['content']['evalue'],
-                                                                 response_message['content']['traceback']))
+                                                          response_message['content']['evalue'],
+                                                          response_message['content']['traceback']))
                     elif response_message_type == 'stream':
                         response.append(Kernel._convert_raw_response(response_message['content']['text']))
 
@@ -152,7 +160,8 @@ class Kernel:
             print('Kernel {} interrupted'.format(self.kernel_id))
             return True
         else:
-            raise RuntimeError('Unexpected response interrupting kernel {}: {}'.format(self.kernel_id, response.content))
+            raise RuntimeError('Unexpected response interrupting kernel {}: {}'.
+                               format(self.kernel_id, response.content))
 
     def restart(self, timeout=DEFAULT_TIMEOUT):
         self.restarting = True
@@ -162,14 +171,14 @@ class Kernel:
         response = requests.post(url)
         if response.status_code == 200:
             print('Kernel {} restarted'.format(self.kernel_id))
-            self.kernel_socket = websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout,
-                                                             enable_multithread=True)
+            self.kernel_socket = \
+                websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True)
             self.restarting = False
             return True
         else:
             raise RuntimeError('Unexpected response restarting kernel {}: {}'.format(self.kernel_id, response.content))
 
-    def start_interrupt_thread(self, wait_time = DEFAULT_INTERRUPT_WAIT):
+    def start_interrupt_thread(self, wait_time=DEFAULT_INTERRUPT_WAIT):
         self.interrupt_thread = Thread(target=self.perform_interrupt, args=(wait_time,))
         self.interrupt_thread.start()
 
@@ -239,7 +248,8 @@ class Kernel:
 
                     msg_id = Kernel._get_msg_id(response_message)
 
-                    if msg_id not in self.response_queues:  # this will happen when the msg_id is generated by the server
+                    if msg_id not in self.response_queues:
+                        # this will happen when the msg_id is generated by the server
                         self.response_queues[msg_id] = queue.Queue()
 
                     # insert into queue
@@ -262,7 +272,6 @@ class Kernel:
 
     @staticmethod
     def _get_msg_id(message):
-
         msg_id = Kernel.DEAD_MSG_ID
         if message and 'msg_id' in message['parent_header'] and message['parent_header']['msg_id']:
             msg_id = message['parent_header']['msg_id']
