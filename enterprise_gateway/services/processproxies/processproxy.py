@@ -113,7 +113,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # Take union of unauthorized users...
         self.unauthorized_users = self.kernel_manager.parent.parent.unauthorized_users
         if proxy_config.get('unauthorized_users'):
-            self.unauthorized_users.union(set(proxy_config.get('unauthorized_users').split(',')))
+            self.unauthorized_users = self.unauthorized_users.union(proxy_config.get('unauthorized_users').split(','))
 
         # Let authorized users override global value - if set on kernelspec...
         if proxy_config.get('authorized_users'):
