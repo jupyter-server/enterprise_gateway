@@ -10,7 +10,7 @@ class RKernelBaseTestCase(object):
 
     def test_hello_world(self):
         result = self.kernel.execute('print("Hello World", quote = FALSE)')
-        self.assertRegexpMatches(result, 'Hello World')
+        self.assertRegex(result, 'Hello World')
 
     def test_restart(self):
 
@@ -25,7 +25,7 @@ class RKernelBaseTestCase(object):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("y = x + 1")
-        self.assertRegexpMatches(error_result, 'Error in eval')
+        self.assertRegex(error_result, 'Error in eval')
 
     def test_interrupt(self):
 
@@ -69,23 +69,23 @@ class RKernelBaseYarnTestCase(RKernelBaseTestCase):
 
     def test_get_application_id(self):
         result = self.kernel.execute('SparkR:::callJMethod(SparkR:::callJMethod(sc, "sc"), "applicationId")')
-        self.assertRegexpMatches(result, 'application_')
+        self.assertRegex(result, 'application_')
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sparkR.version()")
-        self.assertRegexpMatches(result, '2.1')
+        self.assertRegex(result, '2.1')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
-        self.assertRegexpMatches(result, 'yarn')
+        self.assertRegex(result, 'yarn')
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.submit.deployMode"))')
-        self.assertRegexpMatches(result, '(cluster|client)')
+        self.assertRegex(result, '(cluster|client)')
 
     def test_get_host_address(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.driver.host"))')
-        self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+        self.assertRegex(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
 class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
