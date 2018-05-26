@@ -361,8 +361,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             env_dict['KERNEL_USERNAME'] = kernel_username
 
         # Now perform authorization checks
-        if kernel_username in self.unauthorized_users:
-            self._raise_authorization_error(kernel_username, "not authorized")
+        if self.unauthorized_users.__len__() > 0:
+            if kernel_username in self.unauthorized_users:
+                self._raise_authorization_error(kernel_username, "not authorized")
 
         # If authorized users are non-empty, ensure user is in that set.
         if self.authorized_users.__len__() > 0:

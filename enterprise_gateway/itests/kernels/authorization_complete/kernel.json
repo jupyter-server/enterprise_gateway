@@ -1,0 +1,20 @@
+{
+  "display_name": "Authorization Testing",
+  "language": "python",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy",
+    "config": {
+      "authorized_users": "authorized_user_1,authorized_user_2",
+      "unauthorized_users": "unauthorized_user_1,unauthorized_user_2"
+    }
+  },
+  "env": {
+  },
+  "argv": [
+    "python",
+    "-m",
+    "ipykernel_launcher",
+    "-f",
+    "{connection_file}"
+  ]
+}
