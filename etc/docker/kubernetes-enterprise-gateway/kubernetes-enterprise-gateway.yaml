@@ -90,6 +90,8 @@ spec:
           value: "600"
         - name: EG_LOG_LEVEL
           value: "DEBUG"
+        - name: EG_KERNEL_LAUNCH_TIMEOUT
+          value: "60"
         image: elyra/kubernetes-enterprise-gateway:dev
         name: enterprise-gateway
         args: ["--elyra"]
