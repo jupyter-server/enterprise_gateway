@@ -10,7 +10,7 @@ class PythonKernelBaseTestCase(object):
 
     def test_hello_world(self):
         result = self.kernel.execute("print('Hello World')")
-        self.assertRegex(result, 'Hello World')
+        self.assertRegexpMatches(result, 'Hello World')
 
     def test_restart(self):
 
@@ -25,7 +25,7 @@ class PythonKernelBaseTestCase(object):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("y = x + 1")
-        self.assertRegex(error_result, 'NameError')
+        self.assertRegexpMatches(error_result, 'NameError')
 
     def test_interrupt(self):
 
@@ -52,7 +52,7 @@ class PythonKernelBaseTestCase(object):
         interrupted_result = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
-        self.assertRegex(interrupted_result, 'KeyboardInterrupt')
+        self.assertRegexpMatches(interrupted_result, 'KeyboardInterrupt')
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
@@ -70,23 +70,23 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
 
     def test_get_application_id(self):
         result = self.kernel.execute("print(sc.applicationId)")
-        self.assertRegex(result, 'application_')
+        self.assertRegexpMatches(result, 'application_')
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegex(result, '2.1.*')
+        self.assertRegexpMatches(result, '2.1.*')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute("sc.getConf().get('spark.master')")
-        self.assertRegex(result, 'yarn.*')
+        self.assertRegexpMatches(result, 'yarn.*')
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
-        self.assertRegex(result, '(cluster|client)')
+        self.assertRegexpMatches(result, '(cluster|client)')
 
     def test_get_host_address(self):
         result = self.kernel.execute("print(sc.getConf().get('spark.driver.host'))")
-        self.assertRegex(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+        self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
