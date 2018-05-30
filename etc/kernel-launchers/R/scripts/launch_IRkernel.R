@@ -222,11 +222,13 @@ if (!file.exists(connection_file)){
     # Launch the gateway listener logic in an async manner and poll for the existence of
     # the connection file before continuing.  Should there be an issue, Enterprise Gateway
     # will terminate the launcher, so there's no need for a timeout.
-    python_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
-               "python -c \"import os, sys, imp;
+    python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
+
+    gw_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
+                paste(python_cmd,"-c \"import os, sys, imp;
                 gl = imp.load_source('setup_gateway_listener', '${listener_file}');
-                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port}, upper_port=${upper_port})\""))
-    system(python_cmd, wait=FALSE)
+                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port}, upper_port=${upper_port})\"")))
+    system(gw_listener_cmd, wait=FALSE)
 
     while (!file.exists(connection_file)) {
         Sys.sleep(0.5)
