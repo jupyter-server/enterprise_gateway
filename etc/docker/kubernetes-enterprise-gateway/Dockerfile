@@ -4,7 +4,7 @@ RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp
-RUN pip install cffi kubernetes send2trash jupyter_core==v4.4.0 /tmp/jupyter_enterprise_gateway*.whl && \
+RUN pip install cffi kubernetes send2trash /tmp/jupyter_enterprise_gateway*.whl && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/

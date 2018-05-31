@@ -22,6 +22,7 @@ echo "Starting Jupyter Enterprise Gateway..."
 
 jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
+	--KernelSpecManager.whitelist=${EG_KERNEL_WHITELIST} \
 	--MappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--MappingKernelManager.cull_interval=30 \
 	--MappingKernelManager.cull_connected=True 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
