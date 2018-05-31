@@ -71,7 +71,7 @@ sdist:
 	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
 		&& rm -rf *.egg-info
 
-dist: bdist sdist ## Make binary and source distribution to dist folder
+dist: bdist sdist kernelspecs ## Make source, binary and kernelspecs distribution to dist folder
 
 test: TEST?=
 test: ## Run unit tests
