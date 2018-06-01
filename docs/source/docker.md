@@ -55,3 +55,34 @@ also sets some of the new variables that pertain to enterprise gateway (e.g., `K
 
 To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the 
 tag for this image will be `:dev`.
+
+## Kubernetes Images
+The following sections describe the docker images used within Kubernetes environments - all of which can be pulled from 
+the [Enterprise Gateway organization](https://hub.docker.com/r/elyra/) on dockerhub.
+
+### elyra/kubernetes-enterprise-gateway
+The primary image for Kubernetes support, [elyra/kubernetes-enterprise-gateway](https://hub.docker.com/r/elyra/kubernetes-enterprise-gateway/) 
+contains the Enterprise Gateway server software and default kernelspec files.  Its deployment is completely a function 
+of the [kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml) file
+
+We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container
+since we've found those to require post-deployment modifications from time to time.
+
+### elyra/kubernetes-kernel-py
+Image [elyra/kubernetes-kernel-py](https://hub.docker.com/r/elyra/kubernetes-kernel-py/) contains the IPython kernel.  It is currently built on the spark-on-kubernetes image 
+(`kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0`) and can be launched 
+as a spark application or in *vanilla* mode depending on its kernelspecs attributes.  We will likely introduce separate,
+non-spark, containers based on anaconda - so each kernelspec will likely be associated with different images.
+
+### elyra/kubernetes-kernel-tf-py
+Image [elyra/kubernetes-kernel-tf-py](https://hub.docker.com/r/elyra/kubernetes-kernel-tf-py/) is built on the Tensorflow image (`tensorflow/tensorflow:1.8.0-py3`) and is solely a *vanilla* kernel in the 
+sense that it does not support Spark context creation.  As noted in the image name, its language is Python and uses
+the IPython kernel within.
+
+### elyra/kubernetes-kernel-scala
+Image [elyra/kubernetes-kernel-scala](https://hub.docker.com/r/elyra/kubernetes-kernel-scala/) contains the Scala (Apache Toree) kernel and is currently build on the spark-on-kubernetes image (`kubespark/spark-driver:v2.2.0-kubernetes-0.5.0`).
+Since Toree is currently tied to Spark, creation of a *vanilla* mode Scala kernel is not high on our current set of priorities.
+
+### elyra/kubernetes-kernel-r
+Image [elyra/kubernetes-kernel-r](https://hub.docker.com/r/elyra/kubernetes-kernel-r/) contains the IRKernel and is currently built on the spark-on-kubernetes image (`kubespark/spark-driver-r:v2.2.0-kubernetes-0.5.0`).
+Like with `elyra/kubernetes-kernel-py` it can be launched in two modes depending on the need of a Spark context.

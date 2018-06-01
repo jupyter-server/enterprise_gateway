@@ -1,4 +1,4 @@
-## Enabling Client Mode/Standalone Support
+## Enabling YARN Client Mode or Spark Standalone Support
 
 Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by
 installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will
@@ -26,17 +26,17 @@ SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP di
 EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3.fyre.ibm.com,elyra-node-4.fyre.ibm.com,elyra-node-5.fyre.ibm.com
 ```
 
-**Configuring Kernels for YARN Client mode**
+### Configuring Kernels for YARN Client mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6.0/jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz).
+[e.g. jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.1/jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz).
 
-Considering we would like to enable the iPython Kernel that comes pre-installed with Anaconda to run on
+Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on
 Yarn Client mode, we would have to copy the sample configuration folder **spark_python_yarn_client**
 to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.1/jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
 
@@ -75,7 +75,7 @@ After that, you should have a kernel.json that looks similar to the one below:
 After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have 
 a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents.
 
-**Configuring Kernels for Spark Standalone mode**
+### Configuring Kernels for Spark Standalone mode
 
 The main difference between YARN Client and Standalone is the values used in SPARK_OPTS for the ```--master``` parameter.
 
