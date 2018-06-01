@@ -1,4 +1,4 @@
-## Enabling Cluster Mode Support
+## Enabling YARN Cluster Mode Support
 
 To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to
 provide additional configuration options in a cluster deployment.
@@ -17,17 +17,17 @@ SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP di
 EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
 ``` 
 
-**Configuring Kernels for YARN Cluster mode**
+### Configuring Kernels for YARN Cluster mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6.0/jupyter_enterprise_gateway_kernelspecs-0.6.0.tar.gz).
+[e.g. jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.1/jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz).
 
-Considering we would like to enable the iPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
+Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
 would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed 
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.6/enterprise_gateway_kernelspecs.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.1/jupyter_enterprise_gateway_kernelspecs-0.9.1.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
 

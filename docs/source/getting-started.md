@@ -8,6 +8,8 @@ The following Resource Managers are supported with the Jupyter Enterprise Gatewa
 * Spark Standalone
 * YARN Resource Manager - Client Mode
 * YARN Resource Manager - Cluster Mode
+* IBM Spectrum Conductor - Cluster Mode
+* Kubernetes
 
 The following kernels have been tested with the Jupyter Enterprise Gateway:
 
@@ -52,7 +54,7 @@ latest Python version (currently Python 2.7 and Python 3.6).
 * Install the version of Anaconda which you downloaded, following the instructions on the download
 page.
 
-* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/0.6.0)
+* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/0.9.1)
 using `pip`(part of Anaconda) along with its dependencies.
 
 ```bash
@@ -86,17 +88,20 @@ kernels with Jupyter Enterprise Gateway:
 
 * [Installing and Configuring kernels](getting-started-kernels.md)
 
-### Configuring Spark Resource Managers
+### Configuring Resource Managers
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided
-deep integrarion with YARN resource manager. Having said that, EG also supports running in 
-pseudo-distributed utilizing both YARN client or Spark Standalone modes. 
+deep integrarion with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway 
+also supports running in a pseudo-distributed utilizing both YARN client or Spark Standalone modes. 
+We've also recently added  Kubernetes and IBM Spectrum Conductor integrations. 
 
-Please follow the links below to learn more specific details about how to enable/configure
-the different modes: 
+Please follow the links below to learn specific details about how to enable/configure
+the different modes of distributing your kernels: 
 
-* [Enabling Cluster Mode support](getting-started-cluster-mode.md)
-* [Enabling Client Mode/Standalone support](getting-started-client-mode.md)
+* [Enabling YARN Cluster Mode support](getting-started-cluster-mode.html)
+* [Enabling YARN Client Mode or Spark Standalone support](getting-started-client-mode.html)
+* [Enabling Kubernetes Support](getting-started-kubernetes.html)
+* [Enabling IBM Spectrum Conductor Support](getting-started-conductor.html)
 
 ### Starting Enterprise Gateway
 Very few arguments are necessary to minimally start Enterprise Gateway.  The following command 

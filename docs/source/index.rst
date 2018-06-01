@@ -20,9 +20,11 @@ the number of active kernels can be dramatically increased.
    getting-started
    getting-started-cluster-mode
    getting-started-client-mode
-   getting-started-advanced-features
+   getting-started-kubernetes
+   getting-started-conductor
    getting-started-kernels
    getting-started-security
+   getting-started-other-features
 
 .. toctree::
    :maxdepth: 2

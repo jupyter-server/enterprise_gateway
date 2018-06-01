@@ -1,11 +1,13 @@
 ## System Architecture
 
-Below are sections presenting details of the Enterprise Gateway internals and other related items.  
-While we will attempt to maintain its consistency, the ultimate answers are in the code itself.
+Below are sections presenting details of the Enterprise Gateway internals and other related items. While we will attempt 
+to maintain its consistency, the ultimate answers are in the code itself.
 
 ### Enterprise Gateway Process Proxy Extensions
 Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support 
-remote kernel sessions on behalf of multiple users within resource managed frameworks such as YARN.  Enterprise 
+remote kernel sessions on behalf of multiple users within resource managed frameworks such as 
+[Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) or 
+[Kubernetes](https://kubernetes.io/).  Enterprise 
 Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager`, 
 `MultiKernelManager` and `KernelSpec` classes, along with an additional abstraction known as a 
 *process proxy*.
@@ -75,7 +77,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
 ```
 
 The `RemoteKernelSpec` class definition can be found in 
-[remotekernelspec.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
+[remotekernelspec.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
 
 See the [Process Proxy](#process-proxy) section for more details.
 
@@ -99,7 +101,7 @@ place of the process instance used in today's implementation.  Any interaction w
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
-[remotemanager.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
 
 ### Process Proxy
 Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
@@ -109,11 +111,33 @@ and `RemoteProcessProxy`.
 `LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain 
 a `process_proxy` stanza will use `LocalProcessProxy`.  
 
-`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are two 
-built-in subclasses of `RemoteProcessProxy` - `DistributedProcessProxy` - representing a proof of concept 
-class that remotes a kernel via ssh and `YarnClusterProcessProxy` - representing the design target of launching 
-kernels hosted as yarn applications via yarn/cluster mode.  These class definitions can be found in the
-[processproxies package](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/enterprise_gateway/services/processproxies).
+`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are four 
+built-in subclasses of `RemoteProcessProxy` ...
+- `DistributedProcessProxy` - largely a proof of concept class, `DistributedProcessProxy` is responsible for the launch 
+and management of kernels distributed across and explicitly defined set of hosts using ssh.  Hosts are determined
+via a round-robin algorithm (that we should make pluggable someday).
+- `YarnClusterProcessProxy` - is responsible for the discovery and management of kernels hosted as yarn applications 
+within a YARN-managed cluster.
+- `KubernetesProcessProxy` - is responsible for the discovery and management of kernels hosted
+within a Kubernetes cluster.
+- `ConductorClusterProcessProxy` - is responsible for the discovery and management of kernels hosted
+within an IBM Spectrum Conductor cluster.
+
+You might notice that the last three process proxies do not necessarily control the *launch* of the kernel.  This is 
+because the native jupyter framework is utilized such that the script that is invoked by the framework is what 
+launches the kernel against that particular resource manager.  As a result, the *startup time* actions of these process
+proxies is more about discovering where the kernel *landed* within the cluster in order to establish a mechanism for 
+determining lifetime.  *Discovery* typically consists of using the resource manager's API to locate the kernel who's name includes its kernel ID 
+in some fashion.
+
+On the other hand, the `DistributedProcessProxy` essentially wraps the kernelspec argument vector (i.e., invocation 
+string) in a remote shell since the host is determined by Enterprise Gateway, eliminating the discovery step from
+its implementation.
+
+These class definitions can be found in the
+[processproxies package](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
+Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not 
+required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a *bring your own process proxy* model.
 
 ![Process Class Hierarchy](images/process_proxy_hierarchy.png)
 
@@ -214,7 +238,7 @@ timeout can be specified as a client attribute of the Notebook session.
 
 ###### YarnClusterProcessProxy
 As part of its base offering, Enterprise Gateway provides an implementation of a process proxy 
-that communicates with the YARN resource manager that has been instructed to launcher a kernel
+that communicates with the YARN resource manager that has been instructed to launch a kernel
 on one of its worker nodes.  The node on which the kernel is launched is up to the resource
 manager - which enables an optimized distribution of kernel resources.
 
@@ -223,7 +247,12 @@ to locate the kernel and monitor its life-cycle.  However, once the kernel has r
 connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
 
 This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line 
-option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.
+option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is 
+located.  To accommodate increased flexibility, the endpoint definition can be defined within 
+the process proxy stanza of the kernelspec, enabling the ability to direct specific kernels to 
+different YARN clusters.
+
+See [Enabling YARN Cluster Mode Support](getting-started-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
 
 ###### DistributedProcessProxy
 Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
@@ -235,8 +264,41 @@ host.  It then uses ssh to launch the kernel on the target host.  As a result, a
 files must reside on the remote hosts in the same directory structure as on the Enterprise 
 Gateway server.
 
-It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their resources (within
-the kernel process itself) are not managed by the YARN resource manager. 
+It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their 
+resources (within the kernel process itself) are not managed by the YARN resource manager. 
+
+Like the yarn endpoint parameter the `remote_hosts` parameter can be specified within the 
+process proxy configuration to override the global value - enabling finer-grained kernel distributions.
+
+See 
+[Enabling YARN Client Mode or Spark Standalone Support](getting-started-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
+
+###### KubernetesProcessProxy
+With the popularity of Kubernetes within the enterprise, Enterprise Gateway now provides an implementation
+of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API.  Unlike
+the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
+cluster as a *Service* and *Deployment*.  The primary vehicle by which this is accomplished is via the
+[kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml) 
+file that contains the necessary metadata to define its deployment.  
+
+See 
+[Enabling Kubernetes Support](getting-started-kubernetes.html#enabling-kubernetes-support) for details.
+
+###### ConductorClusterProcessProxy
+Enterprise Gateway also provides an implementation of a process proxy 
+that communicates with an IBM Spectrum Conductor resource manager that has been instructed to launch a kernel
+on one of its worker nodes.  The node on which the kernel is launched is up to the resource
+manager - which enables an optimized distribution of kernel resources.
+
+Derived from `RemoteProcessProxy`, `ConductorClusterProcessProxy` uses Conductor's REST-ful API
+to locate the kernel and monitor its life-cycle.  However, once the kernel has returned its
+connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
+
+This process proxy is reliant on the `--EnterpriseGatewayApp.conductor_endpoint` command line 
+option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where the Conductor resource manager is 
+located.  
+
+See [Enabling IBM Spectrum Conductor Support](getting-started-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
 
 #### Process Proxy Configuration
 Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 

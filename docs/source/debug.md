@@ -1,4 +1,6 @@
 ## Debugging Jupyter Enterprise Gateway
+This page discusses how to go about debugging Enterprise Gateway.  We also provide troubleshooting information
+on our [Troubleshooting](troubleshooting.html) page.
 
 ### Configuring your IDE for debugging Jupyter Enterprise Gateway
 
