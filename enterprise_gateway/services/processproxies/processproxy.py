@@ -835,9 +835,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.log.error(timeout_message)
             self.kill()
-            raise tornado.web.HTTPError(error_http_code, timeout_message)
+            self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def cleanup(self):
         self.assigned_ip = None

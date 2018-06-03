@@ -8,7 +8,7 @@ import urllib3
 urllib3.disable_warnings()
 
 
-def launch_kubernetes_kernel(connection_file, response_addr, no_spark_context):
+def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_mode):
     # Launches a containerized kernel as a kubernetes pod.
 
     config.load_incluster_config()
@@ -21,7 +21,7 @@ def launch_kubernetes_kernel(connection_file, response_addr, no_spark_context):
     keywords['docker_image'] = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE')
     keywords['response_address'] = response_addr
     keywords['connection_filename'] = connection_file
-    keywords['no_spark_context_opt'] = "--RemoteProcessProxy.no-spark-context" if no_spark_context else ""
+    keywords['spark_context_init_mode'] = spark_context_init_mode
 
     with open(os.path.join(os.path.dirname(__file__), "kernel-pod.yaml")) as f:
         yaml_template = f.read()
@@ -32,20 +32,20 @@ def launch_kubernetes_kernel(connection_file, response_addr, no_spark_context):
 if __name__ == '__main__':
     """
         Usage: launch_kubernetes_kernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
-                    [--RemoteProcessProxy.no-spark-context]
+                    [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
     """
 
     parser = argparse.ArgumentParser()
     parser.add_argument('connection_file', help='Connection file to write connection info')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.no-spark-context', dest='no_spark_context',
-                        action='store_true', help='Indicates that no spark context should be created',
-                        default=False)
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
+                        help='Indicates whether or how a spark context should be created',
+                        default='lazy')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
-    no_spark_context = arguments['no_spark_context']
+    spark_context_init_mode = arguments['spark_context_init_mode']
 
-    launch_kubernetes_kernel(connection_file, response_addr, no_spark_context)
+    launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_mode)

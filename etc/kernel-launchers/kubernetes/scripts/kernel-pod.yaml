@@ -23,8 +23,8 @@ spec:
       value: $connection_filename
     - name: KERNEL_LANGUAGE
       value: $language
-    - name: KERNEL_NO_SPARK_CONTEXT_OPT
-      value: $no_spark_context_opt
+    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
+      value: $spark_context_init_mode
     - name: KERNEL_USERNAME
       value: $kernel_username
     - name: KERNEL_ID
