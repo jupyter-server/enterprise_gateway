@@ -10,7 +10,7 @@
   },
   "env": {
     "SPARK_HOME": "/opt/spark",
-    "__TOREE_SPARK_OPTS__": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --kubernetes-namespace ${KERNEL_NAMESPACE} --driver-memory 2G --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${EG_KUBERNETES_KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=${EG_KUBERNETES_KERNEL_EXECUTOR_IMAGE} --conf spark.kubernetes.submission.waitAppCompletion=false",
+    "__TOREE_SPARK_OPTS__": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --kubernetes-namespace ${KERNEL_NAMESPACE} --driver-memory 2G --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.label.component=kernel --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.component=kernel --conf spark.kubernetes.driver.docker.image=${EG_KUBERNETES_KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=${EG_KUBERNETES_KERNEL_EXECUTOR_IMAGE} --conf spark.kubernetes.submission.waitAppCompletion=false",
     "__TOREE_OPTS__": "--alternate-sigint USR2",
     "LAUNCH_OPTS": "",
     "DEFAULT_INTERPRETER": "Scala"
@@ -20,6 +20,8 @@
     "--profile",
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "eager"
   ]
 }
