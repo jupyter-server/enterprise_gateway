@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo kernel-bootstrap.sh: language=${KERNEL_LANGUAGE}, connection-file=${KERNEL_CONNECTION_FILENAME}, reponse-addr=${EG_RESPONSE_ADDRESS}, no-spark-context-opt=${KERNEL_NO_SPARK_CONTEXT_OPT}
+echo kernel-bootstrap.sh: language=${KERNEL_LANGUAGE}, connection-file=${KERNEL_CONNECTION_FILENAME}, reponse-addr=${EG_RESPONSE_ADDRESS}, spark-context-init-mode=${KERNEL_SPARK_CONTEXT_INIT_MODE}
 
 if [[ "${KERNEL_LANGUAGE}" != "scala" ]];
 then
@@ -11,12 +11,20 @@ fi
 PROG_HOME=/usr/local/share/jupyter/kernels/scala_kubernetes
 KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
 TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
+if [ ! -f ${TOREE_ASSEMBLY} ]; then
+    echo "Toree assembly '${PROG_HOME}/lib/toree-assembly-*.jar' is missing.  Exiting..."
+    exit 1
+fi
 
 # Toree launcher jar path, plus required lib jars (toree-assembly)
 JARS="${TOREE_ASSEMBLY}"
 # Toree launcher app path
 LAUNCHER_JAR=`(cd "${PROG_HOME}/lib"; ls -1 toree-launcher*.jar;)`
 LAUNCHER_APP="${PROG_HOME}/lib/${LAUNCHER_JAR}"
+if [ ! -f ${LAUNCHER_APP} ]; then
+    echo "Scala launcher jar '${PROG_HOME}/lib/toree-launcher*.jar' is missing.  Exiting..."
+    exit 1
+fi
 
 SPARK_OPTS="--name ${KERNEL_USERNAME}-${KERNEL_ID}"
 TOREE_OPTS="--alternate-sigint USR2"
@@ -29,7 +37,7 @@ eval exec \
      --class launcher.ToreeLauncher \
      "${LAUNCHER_APP}" \
      "${TOREE_OPTS}" \
-     "--profile ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} ${KERNEL_NO_SPARK_CONTEXT_OPT}"
+     "--profile ${KERNEL_CONNECTION_FILENAME} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}"
 set +x
 
 exit 0

@@ -5,7 +5,7 @@ ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 # Install Toree for both vanilla and cluster
 RUN cd /tmp && \
     apk --no-cache add curl && \
-	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc3/toree-pip/toree-0.2.0.tar.gz && \
+	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
 	tar xf toree-0.2.0.tar.gz && \
 	cp toree-0.2.0/toree/lib/toree-assembly-0.2.0-incubating.jar /usr/local/share/jupyter/kernels/scala_kubernetes/lib && \
 	cp toree-0.2.0/toree/lib/toree-assembly-0.2.0-incubating.jar /usr/local/share/jupyter/kernels/spark_scala_kubernetes/lib && \

@@ -15,6 +15,7 @@
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
-    "--RemoteProcessProxy.no-spark-context"
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "none"
   ]
 }
