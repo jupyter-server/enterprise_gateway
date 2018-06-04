@@ -1,4 +1,6 @@
 ## Troubleshooting
+This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
+instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.html) page.
 
 - **I'm trying to launch a (Python/Scala/R) kernel in YARN Cluster Mode but it failed with 
 a "Kernel error" and State: 'FAILED'.**

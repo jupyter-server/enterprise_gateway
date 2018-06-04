@@ -9,10 +9,9 @@ We have plenty to do, now and in the future.  Here's where we're headed:
   * Lifecycle management
   * Time running, stop/kill, Profile Management, etc
 * Support for other resource managers
-  * Kubernetes
-  * Platform Conductor
 * User Environments
 * High Availability
+  * Session persistence
 * Batch REST API
 
 We'd love to hear any other use cases you might have and look forward to your contributions to Jupyter Enterprise Gateway.
