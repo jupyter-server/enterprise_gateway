@@ -53,23 +53,23 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 #
 
 DOCKER_IMAGES := enterprise-gateway nb2kg yarn-spark
-KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py
+KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py
 IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 
 docker-images: $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 kubernetes-images: $(KUBERNETES_IMAGES)
 
-kubernetes-publish: publish-kubernetes-enterprise-gateway publish-kubernetes-kernel-py publish-kubernetes-kernel-tf-py publish-kubernetes-kernel-r publish-kubernetes-kernel-scala
+kubernetes-publish: publish-kubernetes-enterprise-gateway publish-kubernetes-kernel-py publish-kubernetes-kernel-tf-py publish-kubernetes-kernel-r publish-kubernetes-spark-kernel-r publish-kubernetes-kernel-scala
 
 clean-images: clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes-enterprise-gateway clean-kubernetes
-clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-tf-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
+clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-tf-py clean-kubernetes-kernel-r clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
 DEPENDS_yarn-spark:
 DEPENDS_enterprise-gateway: yarn-spark
 DEPENDS_kubernetes-enterprise-gateway: $(KERNELSPECS_FILE)
-DEPENDS_kubernetes-kernel-py DEPENDS_kubernetes-kernel-r DEPENDS_kubernetes-kernel-scala DEPENDS_kubernetes-kernel-tf-py: $(KERNELSPECS_FILE)
+DEPENDS_kubernetes-kernel-py DEPENDS_kubernetes-kernel-r DEPENDS_kubernetes-spark-kernel-r DEPENDS_kubernetes-kernel-scala DEPENDS_kubernetes-kernel-tf-py: $(KERNELSPECS_FILE)
 
 # Extra targets for each docker image...
 TARGETS_nb2kg:
@@ -79,7 +79,7 @@ TARGETS_enterprise-gateway: kernelspecs
 	@-docker tag $(HUB_ORG)/yarn-spark:$(TAG) $(HUB_ORG)/yarn-spark:2.1.0
 TARGETS_kubernetes-enterprise-gateway: kernelspecs
 	@make -C .. bdist
-TARGETS_kubernetes-kernel-py TARGETS_kubernetes-kernel-r TARGETS_kubernetes-kernel-scala TARGETS_kubernetes-kernel-tf-py: kernelspecs
+TARGETS_kubernetes-kernel-py TARGETS_kubernetes-kernel-r TARGETS_kubernetes-spark-kernel-r TARGETS_kubernetes-kernel-scala TARGETS_kubernetes-kernel-tf-py: kernelspecs
 
 # Extra files for each docker image...
 FILES_nb2kg :=
@@ -88,6 +88,7 @@ FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway*
 FILES_kubernetes-kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kubernetes-spark-kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kubernetes-enterprise-gateway := ../dist/jupyter_enterprise_gateway*
 
