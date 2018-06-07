@@ -1,7 +1,8 @@
-This image enables the use of an IRKernel kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is currently built on [jupyter/r-notebook](https://hub.docker.com/r/jupyter/r-notebook/).
+This image enables the use of an IRKernel kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is currently built on [kubespark/spark-driver-r:v2.2.0-kubernetes-0.5.0](https://hub.docker.com/r/kubespark/spark-driver-r/) deriving from the [apache-spark-on-k8s](https://github.com/apache-spark-on-k8s/spark) fork.
 
 # What it Gives You
 * IRKernel kernel support 
+* Spark on kubernetes support from within a Jupyter Notebook
 
 # Basic Use
 Pull [elyra/kubernetes-enterprise-gateway](https://hub.docker.com/r/elyra/kubernetes-enterprise-gateway/), along with all of the elyra/kubernetes-kernel-* images to each of your kubernetes nodes.  Although manual seeding of images across the cluster is not required, it is highly recommended since kernel startup times can timeout and image downloads can seriously undermine that window.

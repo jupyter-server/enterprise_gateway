@@ -3,7 +3,7 @@
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
     clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway \
-    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py \
+    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-spark-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py \
     kubernetes-publish
 
 SA:=source activate
@@ -97,11 +97,12 @@ kubernetes-images: ## Build kubernetes docker images
 kubernetes-enterprise-gateway: ## Build elyra/kubernetes-enterprise-gateway:dev docker image
 kubernetes-kernel-py: ## Build elyra/kubernetes-kernel-py:dev docker image
 kubernetes-kernel-r: ## Build elyra/kubernetes-kernel-r:dev docker image
+kubernetes-spark-kernel-r: ## Build elyra/kubernetes-spark-kernel-r:dev docker image
 kubernetes-kernel-scala: ## Build elyra/kubernetes-kernel-scala:dev docker image
 kubernetes-kernel-tf-py: ## Build elyra/kubernetes-kernel-tf-py:dev docker image
 
 # Actual working targets...
-docker-images enterprise-gateway yarn-spark nb2kg kubernetes-images kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py:
+docker-images enterprise-gateway yarn-spark nb2kg kubernetes-images kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 docker-image-enterprise-gateway: $(WHEEL_FILE)
@@ -117,10 +118,11 @@ clean-kubernetes: ## Remove kubernetes docker images
 clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
 clean-kubernetes-kernel-py: ## Remove elyra/kubernetes-kernel-py:dev docker image
 clean-kubernetes-kernel-r: ## Remove elyra/kubernetes-kernel-r:dev docker image
+clean-kubernetes-spark-kernel-r: ## Remove elyra/kubernetes-spark-kernel-r:dev docker image
 clean-kubernetes-kernel-scala: ## Remove elyra/kubernetes-kernel-scala:dev docker image
 clean-kubernetes-kernel-tf-py: ## Remove elyra/kubernetes-kernel-tf-py:dev docker image
 
-clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py:
+clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-spark-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 kubernetes-publish: ## Push kubernetes docker images to docker hub

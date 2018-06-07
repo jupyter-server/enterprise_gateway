@@ -1,7 +1,7 @@
-library(SparkR)
 library(argparser)
 library(jsonlite)
 
+require("SparkR")
 require("base64enc")
 require("digest")
 require("stringr")
