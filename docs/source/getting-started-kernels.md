@@ -97,7 +97,7 @@ Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")'
 # Create an R-script to run and install packages
 cat <<'EOF' > install_packages.R
 install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
-                   'devtools', 'uuid', 'digest', 'RCurl', 'argparser'),
+                   'devtools', 'uuid', 'digest', 'RCurl', 'curl', 'argparser'),
                    repos='http://cran.rstudio.com/')
 devtools::install_github('IRkernel/IRkernel')
 IRkernel::installspec(user = FALSE)
