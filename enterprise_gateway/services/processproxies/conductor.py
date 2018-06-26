@@ -283,7 +283,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
+        authorization = 'Authorization: %s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/applications?driverid=%s' % (self.conductor_endpoint, driver_id)
@@ -314,7 +314,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
+        authorization = 'Authorization: %s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/applications?applicationid=%s' % (self.conductor_endpoint, app_id)
@@ -386,7 +386,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         response = None
         env = self.env
         header = 'Accept: application/json'
-        authorization = 'Authorization: PlatformToken token=%s' % (self.rest_credential)
+        authorization = 'Authorization: %s' % (self.rest_credential)
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/submissions/kill/%s' % (self.conductor_endpoint, self.driver_id)
