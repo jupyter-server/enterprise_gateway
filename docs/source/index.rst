@@ -7,7 +7,7 @@ remote notebooks throughout your enterprise compute cluster.  This enables bette
 server is no longer the single location for kernel activity which, in Big Data environments, can result in large
 processes that together deplete your single node of its resources.
 
-.. figure:: images/Scalability-before-JEG.gif
+.. figure:: images/Scalability-Before-JEG.gif
    :align: center
 
    By default, Jupyter runs kernels locally - potentially exhausting the server of resources
@@ -16,7 +16,7 @@ By leveraging the functionality of the
 underlying resource management applications like Hadoop YARN, Kubernetes, etc., Jupyter Enterprise Gateway
 distributes kernels across the compute cluster, increasing the number of simultaneously active kernels dramatically.
 
-.. figure:: images/Scalability-after-JEG.gif
+.. figure:: images/Scalability-After-JEG.gif
    :align: center
 
    Jupyter Enterprise Gateway leverages local resource managers to distribute kernels
