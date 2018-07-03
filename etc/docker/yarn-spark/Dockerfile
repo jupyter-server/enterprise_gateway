@@ -1,7 +1,7 @@
 # Use docker image with Spark 2.1 and Hadoop 2.7 (sequenceiq/hadoop-docker:2.7.1)
 FROM aghorbani/spark:2.1.0
 
-ENV ANACONDA_HOME=/opt/anaconda2
+ENV ANACONDA_HOME=/opt/anaconda3
 ENV PATH=$ANACONDA_HOME/bin:$PATH
 ENV PYSPARK_PYTHON=$ANACONDA_HOME/bin/python
 
@@ -23,9 +23,9 @@ RUN cd /tmp && \
 
 # Install Anaconda
 RUN cd /tmp && \
-	curl -O https://repo.continuum.io/archive/Anaconda2-4.4.0-Linux-x86_64.sh && \
-    bash /tmp/Anaconda2-4.4.0-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
-    rm -f /tmp/Anaconda2-4.4.0-Linux-x86_64.sh
+	curl -O https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh && \
+    bash /tmp/Anaconda3-4.4.0-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
+    rm -f /tmp/Anaconda3-4.4.0-Linux-x86_64.sh
 
 # Install Toree
 RUN cd /tmp && \
@@ -77,4 +77,4 @@ CMD ["--help"]
 LABEL Hadoop.version="2.7.1"
 LABEL Spark.version="2.1.0"
 LABEL Anaconda.version="4.4.0"
-LABEL Anaconda.python.version="2.7.13"
+LABEL Anaconda.python.version="3.6.1"
