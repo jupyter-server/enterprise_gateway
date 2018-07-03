@@ -20,7 +20,6 @@ RUN cd /tmp && \
 	rpm -i /tmp/jdk-8u172-linux-x64.rpm && \
 	rm -f /tmp/jdk-8u172-linux-x64.rpm
 
-
 # Install Anaconda
 RUN cd /tmp && \
 	curl -O https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh && \
@@ -28,12 +27,8 @@ RUN cd /tmp && \
     rm -f /tmp/Anaconda3-4.4.0-Linux-x86_64.sh
 
 # Install Toree
-RUN cd /tmp && \
-	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
-	pip install --upgrade setuptools --user python && \
-	pip install /tmp/toree-0.2.0.tar.gz && \
-	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala && \
-	rm -f /tmp/toree-0.2.0.tar.gz
+RUN pip install https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
+	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
 RUN conda install --yes --quiet -c r r-essentials r-irkernel && \
