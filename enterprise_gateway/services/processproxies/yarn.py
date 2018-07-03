@@ -292,7 +292,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
             output, stderr = process.communicate()
-            response = json.loads(output).get('state') if output else None
+            response = json.loads(output.decode('utf-8')).get('state') if output else None
         except Exception as e:
             self.log.warning("Query for application state with cmd '{}' failed with exception: '{}'.  Continuing...".
                            format(cmd, e))
@@ -314,7 +314,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
             output, stderr = process.communicate()
-            response = json.loads(output) if output else None
+            response = json.loads(output.decode('utf-8')) if output else None
         except Exception as e:
             self.log.warning("Termination of application with cmd '{}' failed with exception: '{}'.  Continuing...".
                            format(cmd, e))
