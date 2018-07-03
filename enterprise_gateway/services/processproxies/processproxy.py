@@ -341,6 +341,25 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         """
         return self.kernel_manager.connection_file
 
+    def get_kernel_username(self, **kw):
+        """
+            Checks the process env for KERNEL_USERNAME.  If set, that value is returned, else KERNEL_USERNAME is
+            initialized to the current user and that value is returned.
+        :param kw:
+        :return:
+        """
+
+        # Get the env
+        env_dict = kw.get('env')
+
+        # Ensure KERNEL_USERNAME is set
+        kernel_username = env_dict.get('KERNEL_USERNAME')
+        if kernel_username is None:
+            kernel_username = getpass.getuser()
+            env_dict['KERNEL_USERNAME'] = kernel_username
+
+        return kernel_username
+
     def _enforce_authorization(self, **kw):
         """
             Regardless of impersonation enablement, this method first adds the appropriate value for 
@@ -364,10 +383,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.parent.parent.impersonation_enabled)
 
         # Ensure KERNEL_USERNAME is set
-        kernel_username = env_dict.get('KERNEL_USERNAME')
-        if kernel_username is None:
-            kernel_username = getpass.getuser()
-            env_dict['KERNEL_USERNAME'] = kernel_username
+        kernel_username = self.get_kernel_username(**kw)
 
         # Now perform authorization checks
         if kernel_username in self.unauthorized_users:

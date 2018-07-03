@@ -1,5 +1,27 @@
 # This file defines the Kubernetes objects necessary for Enterprise Gateway to run within Kubernetes.
 #
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: enterprise-gateway
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
 # Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
 # is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
 # are mounting the NFS directory from the specified server.  To enable this functionality, uncomment the
@@ -37,7 +59,7 @@
 #  selector:
 #    matchLabels:
 #      app: enterprise-gateway
-#---
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -45,6 +67,7 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
   name: enterprise-gateway
+  namespace: enterprise-gateway
 spec:
   ports:
   - name: http
@@ -56,13 +79,13 @@ spec:
   type: NodePort
 # Uncomment in order to use <k8s-master>:8888
 #  externalIPs:
-#  - 9.30.118.200
+#  - k8s-master-public-ip
 ---
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: enterprise-gateway
-  namespace: default
+  namespace: enterprise-gateway
   labels:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway
@@ -83,7 +106,7 @@ spec:
       containers:
       - env:
         - name: EG_KUBERNETES_NAMESPACE
-          value: "default"
+          value: "enterprise-gateway"
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT
