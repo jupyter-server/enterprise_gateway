@@ -68,8 +68,8 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
 spec:
-  #update to deploy multiple replicas of EG
-  replicas: 1
+# Uncomment/Update to deploy multiple replicas of EG
+#  replicas: 1
   selector:
     matchLabels:
       gateway-selector: enterprise-gateway
