@@ -1,7 +1,7 @@
 # Use docker image with Spark 2.1 and Hadoop 2.7 (sequenceiq/hadoop-docker:2.7.1)
 FROM aghorbani/spark:2.1.0
 
-ENV ANACONDA_HOME=/opt/anaconda2
+ENV ANACONDA_HOME=/opt/anaconda3
 ENV PATH=$ANACONDA_HOME/bin:$PATH
 ENV PYSPARK_PYTHON=$ANACONDA_HOME/bin/python
 
@@ -20,20 +20,15 @@ RUN cd /tmp && \
 	rpm -i /tmp/jdk-8u172-linux-x64.rpm && \
 	rm -f /tmp/jdk-8u172-linux-x64.rpm
 
-
 # Install Anaconda
 RUN cd /tmp && \
-	curl -O https://repo.continuum.io/archive/Anaconda2-4.4.0-Linux-x86_64.sh && \
-    bash /tmp/Anaconda2-4.4.0-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
-    rm -f /tmp/Anaconda2-4.4.0-Linux-x86_64.sh
+	curl -O https://repo.continuum.io/archive/Anaconda3-4.4.0-Linux-x86_64.sh && \
+    bash /tmp/Anaconda3-4.4.0-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
+    rm -f /tmp/Anaconda3-4.4.0-Linux-x86_64.sh
 
 # Install Toree
-RUN cd /tmp && \
-	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
-	pip install --upgrade setuptools --user python && \
-	pip install /tmp/toree-0.2.0.tar.gz && \
-	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala && \
-	rm -f /tmp/toree-0.2.0.tar.gz
+RUN pip install https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
+	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
 RUN conda install --yes --quiet -c r r-essentials r-irkernel && \
@@ -77,4 +72,4 @@ CMD ["--help"]
 LABEL Hadoop.version="2.7.1"
 LABEL Spark.version="2.1.0"
 LABEL Anaconda.version="4.4.0"
-LABEL Anaconda.python.version="2.7.13"
+LABEL Anaconda.python.version="3.6.1"
