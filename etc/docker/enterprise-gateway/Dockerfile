@@ -3,6 +3,7 @@ FROM elyra/yarn-spark:2.1.0
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp
 RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
+    pip install --upgrade ipykernel jupyter-client notebook && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
