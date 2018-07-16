@@ -238,12 +238,21 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
         self.personality.init_configurables()
 
+    def init_webapp(self):
+        super(EnterpriseGatewayApp, self).init_webapp()
+
+        # As of Notebook 5.6, remote kernels are prevented: https://github.com/jupyter/notebook/pull/3714/ unless
+        # 'allow_remote_access' is enabled.  Since this is the entire purpose of EG, we'll unconditionally set that
+        # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
+        self.web_app.settings['allow_remote_access'] = True
+
     def start(self):
         """Starts an IO loop for the application. """
 
         # Note that we *intentionally* reference the KernelGatewayApp so that we bypass
         # its start() logic and just call that of JKG's superclass.
         super(KernelGatewayApp, self).start()
+
         self.log.info('Jupyter Enterprise Gateway at http{}://{}:{}'.format(
             's' if self.keyfile else '', self.ip, self.port
         ))
