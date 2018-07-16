@@ -151,8 +151,9 @@ endif
 	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_HOST) KERNEL_USERNAME=$(ITEST_USER) nosetests -v enterprise_gateway.itests)
 	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
 
+PREP_TIMEOUT?=60
 docker-prep: 
 	@-docker rm -f itest >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
 	@-docker run -itd -p 8888:8888 -h itest --name itest -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) --elyra
-	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt 30 ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest |grep 'Jupyter Enterprise Gateway at http'; r=$$?; done; if [ $$attempts -ge 30 ]; then echo "Wait for startup timed out!"; exit 1; fi;)
+	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest |grep 'Jupyter Enterprise Gateway at http'; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
