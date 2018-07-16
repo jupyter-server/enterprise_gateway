@@ -18,7 +18,14 @@ RUN mkdir -p /usr/share/doc/R/html && \
 # Install OOTB kernelspecs
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 
-COPY *.sh /etc/
+COPY spark-exec.sh /etc/
+
+RUN addgroup -S -g 620 eg-kernel && adduser -S -u 620 -G eg-kernel eg-kernel && \
+    chown eg-kernel.eg-kernel /etc/spark-exec.sh && \
+	chmod 0755 /etc/spark-exec.sh && \
+	chown -R eg-kernel.eg-kernel /usr/local/share/jupyter /opt/spark/work-dir
+
+USER eg-kernel
 
 ENV R_LIBS_USER ${R_HOME}/library:${SPARK_HOME}/R/lib
 
