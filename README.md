@@ -11,6 +11,17 @@
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
+Jupyter Enterprise Gateway enables Jupyter Notebook to launch remote kernels in a distributed cluster,
+including Apache Spark managed by YARN or IBM Spectrum Conductor, Kubernetes.
+
+It provides out of the box support for the following kernels:
+
+* Python using IPython kernel
+* R using IRkernel
+* Scala using Apache Toree kernel
+
+Jupyter Enterprise Gateway does not manage multiple Jupyter Notebook deployments, for that
+you should look for [JupyterHub](https://github.com/jupyterhub/jupyterhub).
 
 ## Technical Overview
 
@@ -52,6 +63,7 @@ jupyter enterprisegateway --help-all
 # run it with default options
 jupyter enterprisegateway
 ```
+
 Please check the [Configuration Options page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/config-options.html) 
 for information about the supported options.
 
