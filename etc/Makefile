@@ -53,7 +53,7 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 #
 
 DOCKER_IMAGES := enterprise-gateway nb2kg yarn-spark
-KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py
+KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py kubernetes-kernel-tf-py-gpu
 IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 
 docker-images: $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
