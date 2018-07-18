@@ -63,7 +63,7 @@ the [Enterprise Gateway organization](https://hub.docker.com/r/elyra/) on docker
 ### elyra/kubernetes-enterprise-gateway
 The primary image for Kubernetes support, [elyra/kubernetes-enterprise-gateway](https://hub.docker.com/r/elyra/kubernetes-enterprise-gateway/) 
 contains the Enterprise Gateway server software and default kernelspec files.  Its deployment is completely a function 
-of the [kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml) file
+of the [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file
 
 We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container
 since we've found those to require post-deployment modifications from time to time.
