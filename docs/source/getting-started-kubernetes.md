@@ -29,7 +29,7 @@ The service is currently configured as type `NodePort` but is intended for type
 are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`.  As
 a result, kernel creation requests will be routed to different deployment instances (see 
 deployment) thereby diminishing the need for a `LoadBalancer` type. Here's the service 
-yaml entry from [kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml):
+yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml):
 ```yaml
 apiVersion: v1
 kind: Service
@@ -50,7 +50,7 @@ spec:
 The deployment yaml essentially houses the pod description.  By increasing the number of `replicas`
 a configuration can experience instant benefits of distributing enterprise-gateway instances across 
 the cluster.  This implies that once session persistence is provided, we should be able to provide 
-highly available (HA) kernels.  Here's the yaml portion from [kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml)
+highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
 that defines the Kubernetes deployment and pod (some items may have changed):
 ```yaml
 apiVersion: apps/v1beta2
@@ -99,7 +99,7 @@ _[Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volu
 it available to all pods within the Kubernetes cluster.
 
 As an example, we have included a stanza for creating a Persistent Volume (PV) and Persistent Volume 
-Claim (PVC), along with appropriate references to the PVC within each pod definition within [kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml).
+Claim (PVC), along with appropriate references to the PVC within each pod definition within [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml).
  By default, these references are commented out as they require
 the system administrator configure the appropriate PV type (e.g., nfs) and server IP.
 
@@ -138,7 +138,7 @@ spec:
 Once a Persistent Volume and Persistent Volume Claim have been created, pods that desire mounting
 the volume can simply refer to it by its PVC name.
 
-Here you can see how `kubernetes-enterprise-gateway.yaml` references use of the volume (via `volumeMounts`
+Here you can see how `enterprise-gateway.yaml` references use of the volume (via `volumeMounts`
 for the container specification and `volumes` in the pod specification):
 ```yaml
     spec:
@@ -323,11 +323,11 @@ docker pull elyra/kubernetes-kernel-py:dev
 
 **Note:** It is important to pre-seed the worker nodes with **all** kernel images, otherwise the automatic download 
 time will count against the kernel's launch timeout.  Although this will likely only impact the first launch of a given 
-kernel on a given work node, when multiplied against the number of kernels and worker nodes, it will prove to be a 
+kernel on a given worker node, when multiplied against the number of kernels and worker nodes, it will prove to be a 
 frustrating user experience. 
 
 If it is not possible to pre-seed the nodes, you will likely need to adjust the `EG_KERNEL_LAUNCH_TIMEOUT` value 
-in the `kubernetes-enterprise-gateway.yaml` file as well as the `KG_REQUEST_TIMEOUT` parameter that issue the kernel 
+in the `enterprise-gateway.yaml` file as well as the `KG_REQUEST_TIMEOUT` parameter that issue the kernel 
 start requests from the `NB2KG` extension of the Notebook client.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
@@ -335,7 +335,7 @@ From the master node, create the service and deployment using the yaml file from
 repository:
 
 ```
-kubectl apply -f etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml
+kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
 
 service "enterprise-gateway" created
 deployment "enterprise-gateway" created
@@ -364,7 +364,7 @@ the cluster-ip entry (e.g.,`10.110.253.220`).
 five-character suffixes.)
 
 **Tip:** You can avoid the need to point at a different port each time EG is launched by adding an
-`externalIPs:` entry to the `spec:` section of the `kubernetes-enterprise-gateway.yaml` file.  The
+`externalIPs:` entry to the `spec:` section of the `enterprise-gateway.yaml` file.  The
 file is delivered with this entry commented out.  Of course, you'll need to change the IP address
 to that of your kubernetes master node once the comments characters have been removed.
 ```text

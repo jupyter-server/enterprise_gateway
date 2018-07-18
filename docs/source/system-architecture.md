@@ -278,7 +278,7 @@ With the popularity of Kubernetes within the enterprise, Enterprise Gateway now 
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API.  Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
 cluster as a *Service* and *Deployment*.  The primary vehicle by which this is accomplished is via the
-[kubernetes-enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/docker/kubernetes-enterprise-gateway/kubernetes-enterprise-gateway.yaml) 
+[enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
 file that contains the necessary metadata to define its deployment.  
 
 See 
