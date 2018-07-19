@@ -18,6 +18,7 @@ def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_
     keywords['kernel_username'] = os.environ.get('KERNEL_USERNAME')
     keywords['language'] = os.environ.get('KERNEL_LANGUAGE')
     keywords['namespace'] = os.environ.get('KERNEL_NAMESPACE')
+    keywords['service_account'] = os.environ.get('KERNEL_SERVICE_ACCOUNT_NAME')
     keywords['docker_image'] = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE')
     keywords['response_address'] = response_addr
     keywords['connection_filename'] = connection_file
@@ -26,8 +27,23 @@ def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_
     with open(os.path.join(os.path.dirname(__file__), "kernel-pod.yaml")) as f:
         yaml_template = f.read()
         f.close()
-        job = yaml.load(Template(yaml_template).substitute(keywords))
-        client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=job, namespace=keywords['namespace'])
+        kernel_namespace = keywords['namespace']
+
+        # Perform substitutions, then, for each document in yaml, issue creation statements.
+        objects = yaml.load_all(Template(yaml_template).substitute(keywords))
+        for job in objects:
+            # Creation for additional kinds of k8s objects can be added below.  Refer to
+            # https://github.com/kubernetes-client/python for API signatures.  Other examples
+            # can be found in https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
+            if job['kind'] == 'Pod':
+                client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=job, namespace=kernel_namespace)
+            elif job['kind'] == 'PersistentVolumeClaim':
+                client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(body=job, namespace=kernel_namespace)
+            elif job['kind'] == 'PersistentVolume':
+                client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=job)
+            else:
+                print("WARNING! Unhandled 'kind' of {} found in yaml file!".format(job['kind']))
+                # FIXME - should we raise?
 
 if __name__ == '__main__':
     """

@@ -7,28 +7,65 @@ metadata:
   labels:
     app: enterprise-gateway
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: enterprise-gateway-sa
+  namespace: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: enterprise-gateway-controller
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "services", "persistentvolumnes", "persistentvolumeclaims"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["rolebindings"]
+    verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  # Referenced by EG_KERNEL_CLUSTER_ROLE below
+  name: kernel-controller
+  labels:
+    app: enterprise-gateway
+    component: kernel
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: enterprise-gateway
+  name: enterprise-gateway-controller
   labels:
     app: enterprise-gateway
+    component: enterprise-gateway
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: enterprise-gateway-sa
     namespace: enterprise-gateway
 roleRef:
   kind: ClusterRole
-  name: cluster-admin
+  name: enterprise-gateway-controller
   apiGroup: rbac.authorization.k8s.io
----
-# Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
-# is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
-# are mounting the NFS directory from the specified server.  To enable this functionality, uncomment the
-# corresponding stanzas for PersistentVolume, PersistentVolumeClaim, and the volumeMounts and volumes
-# stanzas in the Enterprise-Gateway deployment.  In addition, the volumeMounts and volumes stanzas
-# in any kernel-pod.yaml files (e.g., python_kubernetes) should also be uncommented.
-#
+#---
+## Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
+## is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
+## are mounting the NFS directory from the specified server.  To enable this functionality, uncomment the
+## corresponding stanzas for PersistentVolume, PersistentVolumeClaim, and the volumeMounts and volumes
+## stanzas in the Enterprise-Gateway deployment.
+##
 #kind: PersistentVolume
 #apiVersion: v1
 #metadata:
@@ -41,13 +78,14 @@ roleRef:
 #  accessModes:
 #    - ReadOnlyMany
 #  nfs:
-#    server: <IPv4>
+#    server: <nfs-server-IP>
 #    path: /usr/local/share/jupyter/kernels
 #---
 #kind: PersistentVolumeClaim
 #apiVersion: v1
 #metadata:
 #  name: kernelspecs-pvc
+#  namespace: enterprise-gateway
 #  labels:
 #    app: enterprise-gateway
 #spec:
@@ -103,10 +141,23 @@ spec:
         app: enterprise-gateway
         component: enterprise-gateway
     spec:
+      # Created above.
+      serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
-        - name: EG_KUBERNETES_NAMESPACE
+          # Created above.
+        - name: EG_NAMESPACE
           value: "enterprise-gateway"
+
+          # Created above.  Used if no KERNEL_NAMESPACE is provided by client.
+        - name: EG_KERNEL_CLUSTER_ROLE
+          value: "kernel-controller"
+
+          # All kernels reside in the EG namespace if True, otherwise KERNEL_NAMESPACE
+          # must be provided or one will be created for each kernel.
+        - name: EG_SHARED_NAMESPACE
+          value: "False"
+
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT
@@ -122,7 +173,7 @@ spec:
         args: ["--elyra"]
         ports:
         - containerPort: 8888
-# Uncomment to enable PV for kernelspecs
+## Uncomment to enable PV for kernelspecs
 #        volumeMounts:
 #        - mountPath: /usr/local/share/jupyter/kernels
 #          name: kernelspecs

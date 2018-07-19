@@ -75,8 +75,14 @@ as a spark application or in *vanilla* mode depending on its kernelspecs attribu
 non-spark, containers based on anaconda - so each kernelspec will likely be associated with different images.
 
 ### elyra/kubernetes-kernel-tf-py
-Image [elyra/kubernetes-kernel-tf-py](https://hub.docker.com/r/elyra/kubernetes-kernel-tf-py/) is built on the Tensorflow image (`tensorflow/tensorflow:1.8.0-py3`) and is solely a *vanilla* kernel in the 
+Image [elyra/kubernetes-kernel-tf-py](https://hub.docker.com/r/elyra/kubernetes-kernel-tf-py/) is built on the Tensorflow image (`tensorflow/tensorflow:1.9.0-py3`) and is solely a *vanilla* kernel in the 
 sense that it does not support Spark context creation.  As noted in the image name, its language is Python and uses
+the IPython kernel within.
+
+### elyra/kubernetes-kernel-tf-gpu-py
+Image [elyra/kubernetes-kernel-tf-gpu-py](https://hub.docker.com/r/elyra/kubernetes-kernel-tf-gpu-py/) is built on the Tensorflow image (`tensorflow/tensorflow:1.9.0-gpu-py3`) and, 
+like its sibling image, does not support Spark context creation.  Unique to this image, on the other hand, is the fact that 
+it can support GPUs.  As noted in the image name, its language is Python and uses
 the IPython kernel within.
 
 ### elyra/kubernetes-kernel-scala
