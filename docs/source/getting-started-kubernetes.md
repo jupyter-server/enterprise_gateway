@@ -37,6 +37,7 @@ metadata:
   labels:
     app: enterprise-gateway
   name: enterprise-gateway
+  namespace: enterprise-gateway
 spec:
   ports:
   - name: http
@@ -48,7 +49,7 @@ spec:
   type: NodePort
 ```
 The deployment yaml essentially houses the pod description.  By increasing the number of `replicas`
-a configuration can experience instant benefits of distributing enterprise-gateway instances across 
+a configuration can experience instant benefits of distributing Enterprise Gateway instances across 
 the cluster.  This implies that once session persistence is provided, we should be able to provide 
 highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
 that defines the Kubernetes deployment and pod (some items may have changed):
@@ -71,10 +72,15 @@ spec:
         gateway-selector: enterprise-gateway
         app: enterprise-gateway
     spec:
+      serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
-        - name: EG_KUBERNETES_NAMESPACE
-          value: "default"
+        - name: EG_NAMESPACE
+          value: "enterprise-gateway"
+        - name: EG_KERNEL_CLUSTER_ROLE
+          value: "kernel-controller"
+        - name: EG_SHARED_NAMESPACE
+          value: "False"
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT
@@ -91,6 +97,154 @@ spec:
         ports:
         - containerPort: 8888
 ```
+#### Namespaces
+A best practice for Kubernetes applications running in an enterprise is to isolate applications via namespaces.  Since 
+Enterprise Gateway also requires isolation at the kernel level, it makes sense to use a namespace for each kernel, by default.
+
+The initial namespace is created in the `enterprise-gateway.yaml` file using a default name of `enterprise-gateway`.  This
+name is communicated to the EG application via the env variable `EG_NAMESPACE`.  All Enterprise Gateway components
+reside in this namespace. 
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+```
+
+By default, kernel namespaces are created when the respective kernel is launched.  At that time, the kernel namespace name
+is computed from the kernel username (`KERNEL_USERNAME`) and its Id (`KERNEL_ID`) just like the kernel pod name.  Upon a
+kernel's termination, this namespace - provided it was created by Enterprise Gateway - will be deleted.
+
+Installations wishing to pre-create the kernel namespace can do so by conveying the name of the kernel namespace via
+`KERNEL_NAMESPACE` in the `env` portion of the kernel creation request.  (They must also provide the namespace's 
+service account name via `KERNEL_SERVICE_ACCOUNT_NAME` - see next section.)  When `KERNEL_NAMESPACE` is set, 
+Enterprise Gateway will not attempt to create a kernel-specific namespace, nor will it attempt its deletion.  As a 
+result, kernel namespace lifecycle management is the user's responsibility.
+
+Although **not recommended**, installations requiring everything in the same namespace - Enterprise Gateway and all its 
+kernels - can do so by setting env `EG_SHARED_NAMESPACE` to `True`. When set, all kernels will run in the enterprise
+gateway namespace, essentially eliminating all aspects of isolation between kernel instances.
+
+#### Role-Based Access Control (RBAC)
+Another best practice of Kubernetes applications is to define the minimally viable set of permissions
+for the application.  Enterprise Gateway does this by defining role-based access control (RBAC) objects for
+both Enterprise Gateway and kernels.
+
+Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and rolebindings, 
+a cluster-scoped role binding is required.  The cluster role binding `enterprise-gateway-controller` also references the
+subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and
+also created by the yaml file.
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: enterprise-gateway-sa
+  namespace: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: enterprise-gateway-controller
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "services"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["rolebindings"]
+    verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: enterprise-gateway-controller
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+subjects:
+  - kind: ServiceAccount
+    name: enterprise-gateway-sa
+    namespace: enterprise-gateway
+roleRef:
+  kind: ClusterRole
+  name: enterprise-gateway-controller
+  apiGroup: rbac.authorization.k8s.io 
+```
+
+The `enterprise-gateway.yaml` file also defines the minimally viable roles for a kernel pod - most of which
+are required for Spark support.  Since kernels, by default, reside within their own namespace created upon their
+launch, a cluster role is used within a namespace-scoped role binding created when the kernel's namespace is created.
+The name of the kernel cluster role is `kernel-controller` and, when Enterprise Gateway creates the namespace and
+role binding, is also the name of the role binding instance.
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: kernel-controller
+  labels:
+    app: enterprise-gateway
+    component: kernel
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list", "create", "delete"]
+```
+
+As noted above, installations wishing to pre-create their own kernel namespaces should provide the name of 
+the service account associated with the namespace via `KERNEL_SERVICE_ACCOUNT_NAME` in the `env` portion of the kernel
+creation request (along with `KERNEL_NAMESPACE`).  If not provided, the built-in namespace service account, `default`, 
+will be referenced.  In such circumstances, Enterprise Gateway will **not** create a role binding on the name for the 
+service account, so it is the user's responsibility to ensure that the service account has the capability to perform 
+equivalent operations as defined by the `kernel-controller` role.
+
+Here's an example of the creation of a custom namespace (`kernel-ns`) with its own service account (`kernel-sa`)
+and role binding (`kernel-controller`) that references the cluster-scoped role (`kernel-controller`) and includes
+appropriate labels to help with administration and analysis:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kernel-ns
+  labels:
+    app: enterprise-gateway
+    component: kernel
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kernel-sa
+  namespace: kernel-ns
+  labels:
+    app: enterprise-gateway
+    component: kernel
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: kernel-controller
+  namespace: kernel-ns
+  labels:
+    app: enterprise-gateway
+    component: kernel
+subjects:
+  - kind: ServiceAccount
+    name: kernel-sa
+    namespace: kernel-ns
+roleRef:
+  kind: ClusterRole
+  name: kernel-controller
+  apiGroup: rbac.authorization.k8s.io
+```
+
 ##### Kernelspec Modifications
 One of the more common areas of customization we see occur within the kernelspec files located
 in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions,
@@ -144,8 +298,12 @@ for the container specification and `volumes` in the pod specification):
     spec:
       containers:
       - env:
-        - name: EG_KUBERNETES_NAMESPACE
-          value: "default"
+        - name: EG_NAMESPACE
+          value: "enterprise-gateway"
+        - name: EG_KERNEL_CLUSTER_ROLE
+          value: "kernel-controller"
+        - name: EG_SHARED_NAMESPACE
+          value: "False"
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT
@@ -199,6 +357,7 @@ metadata:
     app: enterprise-gateway
 spec:
   restartPolicy: Never
+  serviceAccountName: $service_account
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS
@@ -212,14 +371,6 @@ spec:
     image: $docker_image
     name: $kernel_username-$kernel_id
     command: ["/etc/bootstrap-kernel.sh"]
-# Uncomment to enable PV for kernelspecs
-    volumeMounts:
-    - mountPath: /usr/local/share/jupyter/kernels
-      name: kernelspecs
-  volumes:
-   - name: kernelspecs
-     persistentVolumeClaim:
-       claimName: kernelspecs-pvc
 ```
 There are a number of items worth noting:
 1. Kernel pods can be identified in three ways using `kubectl`: 
@@ -230,16 +381,23 @@ all -l app=enterprise-gateway`)
     operations.
     1. By the *component* label `component=kernel` - useful when needing to identity only kernels and not other enterprise-gateway
     components.  (Note, the latter can be isolated via `component=enterprise-gateway`.)
-2. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its 
+    
+    Note that since kernels run in isolated namespaces by default, it's often helpful to include the 
+    clause `--all-namespaces` on commands that will span namespaces.  To isolate commands to a given
+    namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
+1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its 
 kernel_id (env `KERNEL_ID`).  This identifier also applies to those kernels launched 
 within `spark-on-kubernetes`.
-3. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already
+1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the
+same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a 
+namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users
+wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME`
+as these are both used in the `kernel-pod.yaml` as `$namespace` and `$service_account`, respectively.
+1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already
 has built-in logic for auto-restarting failed kernels and any other restart policy would likely
 interfere with the built-in behaviors.
-4. The parameters to the launcher that is built into the image are communicated via environment
+1. The parameters to the launcher that is built into the image are communicated via environment
 variables as noted in the `env:` section above.
-5. If the kernelspecs hierarchy is exposed with a Persistent Volume, the `kernel-pod.yaml` file
-will contain the `mountPath` and PVC name.
 
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the
@@ -382,11 +540,11 @@ is highly recommended.
 ### Kubernetes Tips
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes envrionment.
 
-- All objects created on behalf of enterprise gateway can be located using the label `app=enterprise-gateway`.  You'll
+- All objects created on behalf of Enterprise Gateway can be located using the label `app=enterprise-gateway`.  You'll
 probably see duplicated entries for the deployments(deploy) and replication sets (rs) - I didn't include the
 duplicates here.
 ```
-kubectl get all -l app=enterprise-gateway
+kubectl get all -l app=enterprise-gateway --all-namespaces
 
 NAME                        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 deploy/enterprise-gateway   1         1         1            1           3h
@@ -401,18 +559,38 @@ po/enterprise-gateway-74c46cb7fc-jrkl7          1/1       Running   0          3
 ```
 - All objects related to a given kernel can be located using the label `kernel_id=<kernel_id>`
 ```
-kubectl get all -l kernel_id=5e755458-a114-4215-96b7-bcb016fc7b62
+kubectl get all -l kernel_id=5e755458-a114-4215-96b7-bcb016fc7b62 --all-namespaces
 
 NAME                                            READY     STATUS    RESTARTS   AGE
 po/alice-5e755458-a114-4215-96b7-bcb016fc7b62   1/1       Running   0          28s
 ```
+Note: because kernels are, by default, isolated to their own namespace, you could also find all objects of a
+given kernel using only the `--namespace <kernel-namespace>` clause.
 
 - To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
 ```
 kubectl delete all -l app=enterprise-gateway
 ```
+or simply delete the namespace
+```
+kubectl delete ns enterprise-gateway
+```
+
+A kernel's objects can be similarly deleted using the kernel's namespace...
+```
+kubectl delete ns <kernel-namespace>
+```
 Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger
-Jupyter's auto-restart logic.
+Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object
+deletions.
+
+Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster 
+roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`.
+The following commands can be used to delete these:
+```
+kubectl delete clusterrole -l app=enterprise-gateway 
+kubectl delete clusterrolebinding -l app=enterprise-gateway
+```
 
 - To enter into a given pod (i.e., container) in order to get a better idea of what might be happening within the
 container, use the exec command with the pod name

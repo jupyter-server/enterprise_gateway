@@ -1,11 +1,11 @@
 Jupyter Enterprise Gateway
 ==========================
 
-Jupyter Enterprise Gateway is a web server (built directly on `Jupyter Kernel Gateway
-<http://jupyter-kernel-gateway.readthedocs.io/en/latest/>`_) that enables the ability to launch kernels on behalf of
-remote notebooks throughout your enterprise compute cluster.  This enables better resource management since the web
-server is no longer the single location for kernel activity which, in Big Data environments, can result in large
-processes that together deplete your single node of its resources.
+`Jupyter Enterprise Gateway <https://github.com/jupyter-incubator/enterprise_gateway>`_ is a web server (built directly
+on `Jupyter Kernel Gateway <http://jupyter-kernel-gateway.readthedocs.io/en/latest/>`_) that enables the ability to
+launch kernels on behalf of remote notebooks throughout your enterprise compute cluster.  This enables better resource
+management since the web server is no longer the single location for kernel activity which, in Big Data environments,
+can result in large processes that together deplete your single node of its resources.
 
 .. figure:: images/Scalability-Before-JEG.gif
    :align: center
@@ -14,7 +14,7 @@ processes that together deplete your single node of its resources.
 
 By leveraging the functionality of the
 underlying resource management applications like Hadoop YARN, Kubernetes, etc., Jupyter Enterprise Gateway
-distributes kernels across the compute cluster, increasing the number of simultaneously active kernels dramatically.
+distributes kernels across the compute cluster, dramatically increasing the number of simultaneously active kernels.
 
 .. figure:: images/Scalability-After-JEG.gif
    :align: center

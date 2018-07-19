@@ -15,7 +15,10 @@ urllib3.disable_warnings()
 # Default logging level of kubernetes produces too much noise - raise to warning only.
 logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
 
-enterprise_gateway_namespace = os.environ.get('EG_KUBERNETES_NAMESPACE', 'default')
+enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
+default_kernel_service_account_name = os.environ.get('EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME', 'default')
+kernel_cluster_role = os.environ.get('EG_KERNEL_CLUSTER_ROLE', 'cluster-admin')
+shared_namespace = bool(os.getenv('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
 default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel-py:dev')
 
 local_ip = localinterfaces.public_ips()[0]
@@ -206,19 +209,37 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         return result
 
     def _determine_kernel_namespace(self, **kw):
+
+        # Since we need the service account name regardless of whether we're creating the namespace or not,
+        # get it now.
+        service_account_name = KubernetesProcessProxy._determine_kernel_service_account_name(**kw)
+
         # If KERNEL_NAMESPACE was provided, then we assume it already exists.  If not provided, then we'll
         # create the namespace and record that we'll want to delete it as well.
-
         namespace = kw['env'].get('KERNEL_NAMESPACE')
         if namespace is None:
-            namespace = self._create_kernel_namespace(self.get_kernel_username(**kw))
+            # check if shared namespace is configured...
+            if shared_namespace:  # if so, set to EG namespace
+                namespace = enterprise_gateway_namespace
+                self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
+                                 format(namespace))
+            else:
+                namespace = self._create_kernel_namespace(self.get_kernel_username(**kw), service_account_name)
             kw['env']['KERNEL_NAMESPACE'] = namespace  # record in env since kernel needs this
         else:
             self.log.info("KERNEL_NAMESPACE provided by client: {}".format(namespace))
 
         return namespace
 
-    def _create_kernel_namespace(self, kernel_username):
+    @staticmethod
+    def _determine_kernel_service_account_name(**kw):
+        # Check if an account name was provided.  If not, set to the default name (which can be set
+        # from the EG env as well).  Finally, ensure the env value is set.
+        service_account_name = kw['env'].get('KERNEL_SERVICE_ACCOUNT_NAME', default_kernel_service_account_name)
+        kw['env']['KERNEL_SERVICE_ACCOUNT_NAME'] = service_account_name
+        return service_account_name
+
+    def _create_kernel_namespace(self, kernel_username, service_account_name):
         # Creates the namespace for the kernel based on the kernel username and kernel id.  Since we're creating
         # the namespace, we'll also note that it should be deleted as well.  In addition, the kernel pod may need
         # to list/create other pods (true for spark-on-k8s), so we'll also create a RoleBinding associated with
@@ -234,47 +255,49 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
         # create the namespace
         try:
-            v1_namespace = client.CoreV1Api().create_namespace(body=body)
+            client.CoreV1Api().create_namespace(body=body)
             self.delete_kernel_namespace = True
             self.log.info("Created kernel namespace: {}".format(namespace))
 
             # Now create a RoleBinding for this namespace for the default ServiceAccount.  We'll reference
             # the ClusterRole, but that will only be applied for this namespace.  This prevents the need for
             # creating a role each time.
-            self._create_role_binding(namespace)
-
+            self._create_role_binding(namespace, service_account_name)
         except Exception as err:
             if self.delete_kernel_namespace:
-                self.log.warning("Error occurred creating role binding for namespace '{}': {}, using Enterprise Gateway namespace {}".
-                                 format(namespace, err, enterprise_gateway_namespace))
+                reason = "Error occurred creating role binding for namespace '{}': {}".format(namespace, err)
                 # delete the namespace since we'll be using the EG namespace...
                 body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
                 client.CoreV1Api().delete_namespace(name=namespace, body=body)
                 self.log.warning("Deleted kernel namespace: {}".format(namespace))
             else:
-                self.log.warning("Error occurred creating namespace '{}': {}, using Enterprise Gateway namespace {}".
-                             format(namespace, err, enterprise_gateway_namespace))
-            namespace = enterprise_gateway_namespace
+                reason = "Error occurred creating namespace '{}': {}".format(namespace, err)
+            self.log_and_raise(http_status_code=500, reason=reason)
 
         return namespace
 
-    def _create_role_binding(self, namespace):
-        # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole cluster-admin.
+    def _create_role_binding(self, namespace, service_account_name):
+        # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole named by
+        # EG_KERNEL_CLUSTER_ROLE.
         # Note that roles referenced in RoleBindings are scoped to the namespace so re-using the cluster role prevents
         # the need for creating a new role with each kernel.
+        # The ClusterRole will be bound to the kernel service user identified by KERNEL_SERVICE_ACCOUNT_NAME then
+        # EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME, respectively.
         # We will not use a try/except clause here since _create_kernel_namespace will handle exceptions.
 
-        role_binding_name = 'kernel-rb'
+        role_binding_name = kernel_cluster_role  # use same name for binding as cluster role
         labels = {'app': 'enterprise-gateway', 'component': 'kernel', 'kernel_id': self.kernel_id}
         binding_metadata = client.V1ObjectMeta(name=role_binding_name, labels=labels)
-        binding_role_ref = client.V1RoleRef(api_group='', kind='ClusterRole', name='cluster-admin')
-        binding_subjects = client.V1Subject(api_group='', kind='ServiceAccount', name='default', namespace=namespace)
+        binding_role_ref = client.V1RoleRef(api_group='', kind='ClusterRole', name=kernel_cluster_role)
+        binding_subjects = client.V1Subject(api_group='', kind='ServiceAccount', name=service_account_name,
+                                            namespace=namespace)
 
         body = client.V1RoleBinding(kind='RoleBinding', metadata=binding_metadata, role_ref=binding_role_ref,
                                     subjects=[binding_subjects])
 
         client.RbacAuthorizationV1Api().create_namespaced_role_binding(namespace=namespace, body=body)
-        self.log.info("Created kernel role-binding '{}' for namespace: {}".format(role_binding_name, namespace))
+        self.log.info("Created kernel role-binding '{}' in namespace: {} for service account: {}".
+                      format(role_binding_name, namespace, service_account_name))
 
     def get_process_info(self):
         process_info = super(KubernetesProcessProxy, self).get_process_info()

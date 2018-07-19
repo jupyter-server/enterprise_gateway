@@ -1,9 +1,5 @@
 # This file defines the Kubernetes objects necessary for Enterprise Gateway kernels to run witihin Kubernetes.
 #
-# Kernelspecs (of which some scripts may be required) can be exposed via a PersistentVolume (and
-# corresponding PersistentVolumeClaim) which will be assumed to already exist (created by Enterprise Gateway's
-# startup).  If in use, the volumeMounts and volumes stanzas should be uncommented below.
-#
 apiVersion: v1
 kind: Pod
 metadata:
@@ -15,6 +11,7 @@ metadata:
     component: kernel
 spec:
   restartPolicy: Never
+  serviceAccountName: $service_account
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS
@@ -34,11 +31,3 @@ spec:
     image: $docker_image
     name: $kernel_username-$kernel_id
     command: ["/etc/bootstrap-kernel.sh"]
-# Uncomment to enable PV for kernelspecs
-#    volumeMounts:
-#    - mountPath: /usr/local/share/jupyter/kernels
-#      name: kernelspecs
-#  volumes:
-#  - name: kernelspecs
-#    persistentVolumeClaim:
-#      claimName: kernelspecs-pvc
