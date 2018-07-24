@@ -8,7 +8,7 @@ for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.i
 * Spark 2.1.0
 * Java 1.8 (jdk-8u162)
 * Anaconda 4.4 (python 2.7.13) with R packages
-* Toree 0.2.0.rc3
+* Toree 0.2.0.rc5
 * `elyra` service user, with system users `jovyan`, `bob`, and `alice`.  The jovyan uid is `1000` to match other jupyter
  images.
 * Password-less ssh for service user
