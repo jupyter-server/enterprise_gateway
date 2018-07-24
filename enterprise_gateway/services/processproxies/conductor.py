@@ -287,7 +287,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         cookie_jar = pjoin(env['KERNEL_NOTEBOOK_DATA_DIR'], env['KERNEL_NOTEBOOK_COOKIE_JAR'])
         sslconf = env['KERNEL_CURL_SECURITY_OPT'].split()
         url = '%s/v1/applications?driverid=%s' % (self.conductor_endpoint, driver_id)
-        cmd = ['curl', '-v', '-b', cookie_jar, '-X', 'GET', header, '-H', authorization, url]
+        cmd = ['curl', '-v', '-b', cookie_jar, '-X', 'GET', '-H', header, '-H', authorization, url]
         cmd[2:2] = sslconf
         
         # Perform REST call
