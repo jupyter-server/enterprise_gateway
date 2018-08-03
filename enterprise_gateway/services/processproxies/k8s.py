@@ -13,12 +13,12 @@ import urllib3
 urllib3.disable_warnings()
 
 # Default logging level of kubernetes produces too much noise - raise to warning only.
-logging.getLogger('kubernetes').setLevel(os.getenv('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
+logging.getLogger('kubernetes').setLevel(os.environ.get('EG_KUBERNETES_LOG_LEVEL', logging.WARNING))
 
 enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 default_kernel_service_account_name = os.environ.get('EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME', 'default')
 kernel_cluster_role = os.environ.get('EG_KERNEL_CLUSTER_ROLE', 'cluster-admin')
-shared_namespace = bool(os.getenv('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
+shared_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
 default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel-py:dev')
 
 local_ip = localinterfaces.public_ips()[0]
@@ -33,16 +33,25 @@ class KubernetesProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(KubernetesProcessProxy, self).__init__(kernel_manager, proxy_config)
 
-        # Determine kernel image to use
-        self.kernel_image = default_kernel_image
-        if proxy_config.get('image_name'):
-            self.kernel_image = proxy_config.get('image_name')
-        self.kernel_executor_image = self.kernel_image  # Default the executor image to current image
-        if proxy_config.get('executor_image_name'):
-            self.kernel_executor_image = proxy_config.get('executor_image_name')
         self.pod_name = ''
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
+        self._determine_kernel_images(proxy_config)
+
+    def _determine_kernel_images(self, proxy_config):
+        """
+            Determine which kernel images to use.  Initialize to the default, then let any defined in the process
+            proxy override that.  Finally, let those provided by client be the final say.
+        """
+        self.kernel_image = default_kernel_image
+        if proxy_config.get('image_name'):
+            self.kernel_image = proxy_config.get('image_name')
+        self.kernel_image = os.environ.get('KERNEL_IMAGE', self.kernel_image)  # support BYO Image
+
+        self.kernel_executor_image = self.kernel_image  # Default the executor image to current image
+        if proxy_config.get('executor_image_name'):
+            self.kernel_executor_image = proxy_config.get('executor_image_name')
+        self.kernel_executor_image = os.environ.get('KERNEL_EXECUTOR_IMAGE', self.kernel_executor_image)
 
     def launch_process(self, kernel_cmd, **kw):
 
@@ -51,8 +60,8 @@ class KubernetesProcessProxy(RemoteProcessProxy):
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
         kw['env'].update(os.environ.copy())  # FIXME: Should probably leverage new process-whitelist in JKG #280
-        kw['env']['EG_KUBERNETES_KERNEL_IMAGE'] = self.kernel_image
-        kw['env']['EG_KUBERNETES_KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
+        kw['env']['KERNEL_IMAGE'] = self.kernel_image
+        kw['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
         self.kernel_namespace = self._determine_kernel_namespace(**kw)  # will create namespace if not provided
 
         super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)

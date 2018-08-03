@@ -1,8 +1,9 @@
 import os
+import sys
 import yaml
 import argparse
 from kubernetes import client, config
-from string import Template
+from string import Template, Formatter
 import urllib3
 
 urllib3.disable_warnings()
@@ -13,37 +14,71 @@ def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_
 
     config.load_incluster_config()
 
+    # Capture keywords and their values.
     keywords = dict()
-    keywords['kernel_id'] = os.environ.get('KERNEL_ID')
-    keywords['kernel_username'] = os.environ.get('KERNEL_USERNAME')
-    keywords['language'] = os.environ.get('KERNEL_LANGUAGE')
-    keywords['namespace'] = os.environ.get('KERNEL_NAMESPACE')
-    keywords['service_account'] = os.environ.get('KERNEL_SERVICE_ACCOUNT_NAME')
-    keywords['docker_image'] = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE')
-    keywords['response_address'] = response_addr
-    keywords['connection_filename'] = connection_file
-    keywords['spark_context_init_mode'] = spark_context_init_mode
 
+    # Factory values...
+    keywords['eg_response_address'] = response_addr
+    keywords['kernel_connection_filename'] = connection_file
+    keywords['kernel_spark_context_init_mode'] = spark_context_init_mode
+
+    # Walk env variables looking for names prefixed with KERNEL_.  When found, set corresponding keyword value
+    # with name in lower case.
+    for name, value in os.environ.items():
+        if name.startswith('KERNEL_'):
+            keywords[name.lower()] = value
+
+    # Read the kernel-pod yaml file, stripping off any commented lines.  This allows instances of the
+    # yaml file to comment out substitution parameters since we want to fail the launch if any are left
+    # unsubstituted.  Otherwise, commented out parameters could fail the launch if they had no substitutions.
+    #
+    yaml_template = ''
     with open(os.path.join(os.path.dirname(__file__), "kernel-pod.yaml")) as f:
-        yaml_template = f.read()
+        for line in f:
+            line = line.split('#', 1)[0]
+            yaml_template = yaml_template + line
         f.close()
-        kernel_namespace = keywords['namespace']
 
-        # Perform substitutions, then, for each document in yaml, issue creation statements.
-        objects = yaml.load_all(Template(yaml_template).substitute(keywords))
-        for job in objects:
-            # Creation for additional kinds of k8s objects can be added below.  Refer to
-            # https://github.com/kubernetes-client/python for API signatures.  Other examples
-            # can be found in https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
-            if job['kind'] == 'Pod':
-                client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=job, namespace=kernel_namespace)
-            elif job['kind'] == 'PersistentVolumeClaim':
-                client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(body=job, namespace=kernel_namespace)
-            elif job['kind'] == 'PersistentVolume':
-                client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=job)
+    # Perform substitutions, then verify all parameters have been replaced.  If any
+    # parameters still exist, print their names and exit.  If all have been replaced,
+    # iterate over each document, issue creation statements.
+    #
+    k8s_yaml = Template(yaml_template).safe_substitute(keywords)
+
+    # Check for non-substituted parameters - exit if found.
+    #
+    missing_params = [param[1] for param in Formatter().parse(k8s_yaml) if param[1]]
+    if len(missing_params) > 0:
+        missing_params = ['${' + param[1] + '}' for param in Formatter().parse(k8s_yaml) if param[1]]
+        if len(missing_params) > 0:
+            sys.exit("ERROR - The following parameters were not substituted - kernel launch terminating! {}".
+                     format(missing_params))
+
+    # For each k8s object (kind), call the appropriate API method.  Too bad there isn't a method
+    # that can take a set of objects.
+    #
+    # Creation for additional kinds of k8s objects can be added below.  Refer to
+    # https://github.com/kubernetes-client/python for API signatures.  Other examples can be found in
+    # https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
+    #
+    kernel_namespace = keywords['kernel_namespace']
+    k8s_objs = yaml.load_all(k8s_yaml)
+    for k8s_obj in k8s_objs:
+        if k8s_obj.get('kind'):
+            if k8s_obj['kind'] == 'Pod':
+                client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
+            elif k8s_obj['kind'] == 'PersistentVolumeClaim':
+                client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(
+                    body=k8s_obj, namespace=kernel_namespace)
+            elif k8s_obj['kind'] == 'PersistentVolume':
+                client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
             else:
-                print("WARNING! Unhandled 'kind' of {} found in yaml file!".format(job['kind']))
-                # FIXME - should we raise?
+                sys.exit("ERROR - Unhandled Kubernetes object kind '{}' found in yaml file - kernel launch terminating!".
+                      format(k8s_obj['kind']))
+        else:
+            sys.exit("ERROR - Unknown Kubernetes object '{}' found in yaml file - kernel launch terminating!".
+                      format(k8s_obj))
+
 
 if __name__ == '__main__':
     """
