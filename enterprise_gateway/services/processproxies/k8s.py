@@ -145,6 +145,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
                     self.pid = 0  # We won't send process signals for kubernetes lifecycle management
                     self.pgid = 0
             else:
+                self.detect_launch_failure()
                 self.log.debug("{}: Waiting to connect to k8s pod in namespace '{}'. "
                                "Name: '{}', Status: 'None', Pod IP: 'None', Host IP: 'None', KernelID: '{}'".
                                format(i, self.kernel_namespace, self.pod_name, self.kernel_id))
