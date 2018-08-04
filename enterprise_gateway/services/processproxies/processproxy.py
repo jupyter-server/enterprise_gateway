@@ -230,7 +230,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     result = self.local_signal(signal.SIGTERM)
                 else:
                     result = self.remote_signal(signal.SIGTERM)
-            self.log.debug("SIGTERM signal sent to pid: {}".format(self.pid))
+                self.log.debug("SIGTERM signal sent to pid: {}".format(self.pid))
         return result
 
     @staticmethod
@@ -567,6 +567,29 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     @abc.abstractmethod
     def confirm_remote_startup(self, kernel_cmd, **kw):
         pass
+
+    def detect_launch_failure(self):
+        """
+        Helper method called from implementations of confirm_remote_startup() that checks if
+        self.local_proc (a popen instance) has terminated prior to the confirmation of startup.
+        This prevents users from having to wait for the kernel timeout duration to know if the
+        launch fails.  It also helps distinguish local invocation issues from remote post-launch
+        issues since the failure will be relatively immediate.
+
+        Note that this method only applies to those process proxy implementations that launch
+        from the local node.  Proxies like DistributedProcessProxy using rsh against a remote
+        node, so there's not `local_proc` in play to interrogate.
+        """
+
+        # Check if the local proc has faulted (poll() will return non-None with a non-zero return
+        # code in such cases).  If a fault was encountered, raise server error (500) with a message
+        # indicating to check the EG log for more information.
+        if self.local_proc and self.local_proc.poll() > 0:
+            self.local_proc.wait()
+            error_message = "Error occurred during launch of KernelID: {}.  " \
+                            "Check Enterprise Gateway log for more information.".format(self.kernel_id)
+            self.local_proc = None
+            self.log_and_raise(http_status_code=500, reason=error_message)
 
     def _prepare_response_socket(self):
         s = self.select_socket(local_ip)

@@ -204,6 +204,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
                 if self.assigned_host != '':
                     ready_to_connect = self.receive_connection_info()
+            else:
+                self.detect_launch_failure()
 
     def get_application_state(self):
         # Gets the current application state using the application_id already obtained.  Once the assigned host
