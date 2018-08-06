@@ -33,8 +33,8 @@ the following ways:
     * Local to the Enterprise Gateway server (today's Kernel Gateway behavior)
     * On specific nodes of the cluster utilizing a round-robin algorithm
     * On nodes identified by an associated resource manager
-* Provides support for Yarn Resource Management out of the box.  Others can be configured via Enterprise 
-Gateway's extensible framework.
+* Provides support Apache Spark managed by YARN, IBM Spectrum Conductor or Kubernetes out of the box.  
+Others can be configured via Enterprise Gateway's extensible framework.
 * Secure communication from the client, through the Enterprise Gateway server, to the kernels
 * Multi-tenant capabilities
 * Ability to associate profiles consisting of configuration settings to a kernel for a given user
