@@ -128,12 +128,14 @@ class TestableJSONErrorsHandler(JSONErrorsMixin):
         self.headers = {}
         self.response = None
         self.status_code = None
+        self.reason = None
 
     def finish(self, response):
         self.response = response
 
-    def set_status(self, status_code):
+    def set_status(self, status_code, reason=None):
         self.status_code = status_code
+        self.reason = reason
 
     def set_header(self, name, value):
         self.headers[name] = value
