@@ -29,7 +29,7 @@ RUN cd /tmp && \
 
 # Install Toree
 RUN cd /tmp && \
-	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc5/toree-pip/toree-0.2.0.tar.gz && \
+	curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc6/toree-pip/toree-0.2.0.tar.gz && \
 	pip install --upgrade setuptools --user python && \
 	pip install /tmp/toree-0.2.0.tar.gz && \
 	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala && \

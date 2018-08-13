@@ -24,7 +24,7 @@ Follow the steps below to install/configure the Toree kernel:
 
 ``` Bash
 # pip-install the Apache Toree installer
-pip install https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc3/toree-pip/toree-0.2.0.tar.gz
+pip install https://dist.apache.org/repos/dist/dev/incubator/toree/0.2.0-incubating-rc6/toree-pip/toree-0.2.0.tar.gz
 
 # install a new Toree Scala kernel which will be updated with Enterprise Gateway's custom kernel scripts
 jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --interpreters="Scala"

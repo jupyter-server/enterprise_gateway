@@ -16,6 +16,6 @@ val sparkVersion = "2.1.1"
 
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10" // Apache v2
-libraryDependencies += "org.apache.toree" %% "toree-assembly" % "0.2.0-incubating" from "https://repository.apache.org/content/repositories/orgapachetoree-1012/org/apache/toree/toree-assembly/0.2.0-incubating/toree-assembly-0.2.0-incubating.jar"
+libraryDependencies += "org.apache.toree" %% "toree-assembly" % "0.2.0-incubating" from "https://repository.apache.org/content/repositories/orgapachetoree-1013/org/apache/toree/toree-assembly/0.2.0-incubating/toree-assembly-0.2.0-incubating.jar"
 
 unmanagedJars in Compile += file("lib/toree-assembly.jar")
