@@ -9,6 +9,7 @@
 [![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway) 
 [![Build Status](https://travis-ci.org/jupyter-incubator/enterprise_gateway.svg?branch=master)](https://travis-ci.org/jupyter-incubator/enterprise_gateway)
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://codecov.io/github/jupyter-incubator/enterprise_gateway/coverage.svg?branch=master)](https://codecov.io/github/jupyter-incubator/enterprise_gateway?branch=master)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
 Jupyter Enterprise Gateway enables Jupyter Notebook to launch remote kernels in a distributed cluster,

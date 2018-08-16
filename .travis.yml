@@ -35,6 +35,8 @@ after_success:
   - pip --version
   - pip list
   - docker logs itest
+  - pip install codecov
+  - codecov
 
 after_failure:
   - echo "Travis exited with ${TRAVIS_TEST_RESULT}"
