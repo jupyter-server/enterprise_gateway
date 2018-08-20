@@ -39,7 +39,7 @@ we would have to copy the sample configuration folder **spark_scala_yarn_client*
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
@@ -69,7 +69,7 @@ we would have to copy the sample configuration folder **spark_python_yarn_client
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
@@ -117,7 +117,7 @@ we would have to copy the sample configuration folder **spark_R_yarn_client** an
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.9.4/jupyter_enterprise_gateway_kernelspecs-0.9.4.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
