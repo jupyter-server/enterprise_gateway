@@ -8,7 +8,7 @@ The following kernels have been tested with the Jupyter Enterprise Gateway:
 * R/Apache Spark 2.x with IRkernel
 
 We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter-incubator/enterprise_gateway/releases)
-(e.g. [jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v0.7.0/jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz))
+(e.g. [jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz))
 that can be extracted and modified to fit your configuration.
 
 Please find below more details on specific kernels:
@@ -27,7 +27,7 @@ Follow the steps below to install/configure the Toree kernel:
 pip install https://dist.apache.org/repos/dist/release/incubator/toree/0.2.0-incubating/toree-pip/toree-0.2.0.tar.gz
 
 # install a new Toree Scala kernel which will be updated with Enterprise Gateway's custom kernel scripts
-jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --interpreters="Scala"
+jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.x" --interpreters="Scala"
 
 ```
 
@@ -39,15 +39,15 @@ we would have to copy the sample configuration folder **spark_scala_yarn_client*
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.7.0/jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_cluster/ spark_scala_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_cluster/ spark_scala_yarn_cluster/
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_client/ spark_scala_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_client/ spark_scala_yarn_client/
 
 cp $KERNELS_FOLDER/spark_scala/lib/*.jar  $KERNELS_FOLDER/spark_scala_yarn_cluster/lib
 ```
@@ -69,15 +69,15 @@ we would have to copy the sample configuration folder **spark_python_yarn_client
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.7.0/jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_client/ spark_python_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_client/ spark_python_yarn_client/
 ```
 
 For more information about the iPython kernel, please visit the [iPython kernel](http://ipython.readthedocs.io/en/stable/) page.
@@ -117,15 +117,15 @@ we would have to copy the sample configuration folder **spark_R_yarn_client** an
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/download/v0.7.0/jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz
+wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_cluster/ spark_R_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_cluster/ spark_R_yarn_cluster/
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-0.7.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_client/ spark_R_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_client/ spark_R_yarn_client/
 ```
 
 For more information about the iR kernel, please visit the [iR kernel](https://irkernel.github.io/) page.
