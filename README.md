@@ -12,7 +12,7 @@
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
 Jupyter Enterprise Gateway enables Jupyter Notebook to launch remote kernels in a distributed cluster,
-including Apache Spark managed by YARN, IBM Spectrum Conductor or Kubernetes.
+including Apache Spark managed by YARN or IBM Spectrum Conductor.
 
 It provides out of the box support for the following kernels:
 
