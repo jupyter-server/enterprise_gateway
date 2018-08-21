@@ -34,7 +34,7 @@ the following ways:
     * Local to the Enterprise Gateway server (today's Kernel Gateway behavior)
     * On specific nodes of the cluster utilizing a round-robin algorithm
     * On nodes identified by an associated resource manager
-* Provides support Apache Spark managed by YARN, IBM Spectrum Conductor or Kubernetes out of the box.  
+* Provides support Apache Spark managed by YARN or IBM Spectrum Conductor out of the box.  
 Others can be configured via Enterprise Gateway's extensible framework.
 * Secure communication from the client, through the Enterprise Gateway server, to the kernels
 * Multi-tenant capabilities
