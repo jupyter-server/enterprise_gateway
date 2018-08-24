@@ -92,8 +92,8 @@ kernels with Jupyter Enterprise Gateway:
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided
 deep integration with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway 
-also supports running in a pseudo-distributed utilizing both YARN client or Spark Standalone modes. 
-We've also recently added  Kubernetes and IBM Spectrum Conductor integrations. 
+also supports running in a pseudo-distributed mode utilizing both YARN client or Spark Standalone modes. 
+We've also recently added Kubernetes and IBM Spectrum Conductor integrations. 
 
 Please follow the links below to learn specific details about how to enable/configure
 the different modes of distributing your kernels: 
@@ -140,8 +140,8 @@ fi
 [NB2KG](https://github.com/jupyter-incubator/nb2kg) is used to connect a Notebook from a
 local desktop or laptop to the Enterprise Gateway instance on the Spark/YARN cluster. We strongly recommend
 that NB2KG [v0.1.0](https://github.com/jupyter-incubator/nb2kg/releases/tag/v0.1.0) be used as our team has 
-provided some security enhancements to enable for conveying the notebook  user (for configurations when 
-Enterprise Gateway is running behind a secured gateway) and allowing for increased request  timeouts (due 
+provided some security enhancements to enable for conveying the notebook user (for configurations when 
+Enterprise Gateway is running behind a secured gateway) and allowing for increased request timeouts (due 
 to the longer kernel startup times when interacting with the resource manager or distribution operations). 
 
 Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter-incubator/nb2kg#run-notebook-server), 
