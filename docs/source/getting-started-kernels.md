@@ -35,7 +35,7 @@ jupyter toree install --spark_home="${SPARK_HOME}" --kernel_name="Spark 2.1" --i
 
 Considering we would like to enable the Scala Kernel to run on YARN Cluster and Client mode
 we would have to copy the sample configuration folder **spark_scala_yarn_client** and
-**spark_scala_yarn_client** to where the Jupyter kernels are installed
+**spark_scala_yarn_cluster** to where the Jupyter kernels are installed
 (e.g. jupyter kernelspec list)
 
 ``` Bash
