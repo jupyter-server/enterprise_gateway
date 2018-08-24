@@ -91,7 +91,7 @@ kernels with Jupyter Enterprise Gateway:
 ### Configuring Resource Managers
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided
-deep integrarion with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway 
+deep integration with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway 
 also supports running in a pseudo-distributed utilizing both YARN client or Spark Standalone modes. 
 We've also recently added  Kubernetes and IBM Spectrum Conductor integrations. 
 
