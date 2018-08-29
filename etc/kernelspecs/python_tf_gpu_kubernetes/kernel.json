@@ -4,7 +4,7 @@
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
     "config": {
-      "image_name": "elyra/kubernetes-kernel-tf-py-gpu:dev"
+      "image_name": "elyra/kubernetes-kernel-tf-gpu-py:dev"
     }
   },
   "env": {

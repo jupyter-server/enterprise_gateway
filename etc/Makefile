@@ -34,11 +34,15 @@ kernelspecs: $(KERNELSPECS_FILE) ## Make a tar.gz file consisting of kernelspec 
 
 $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib  
 	@mkdir -p ../build/kernelspecs
+        # Seed the build tree with initial files
 	cp -r kernelspecs ../build
+        # Distribute language and config-sensitive files.
 	@echo ../build/kernelspecs/{spark_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
 	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/*
 	@echo ../build/kernelspecs/{spark_,}scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
-	@echo ../build/kernelspecs/{python,R,scala,python_tf}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
+	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
+        # Perform the copy again to enable local, per-kernel, overrides
+	cp -r kernelspecs ../build
 	@mkdir -p ../dist
 	rm -f $(KERNELSPECS_FILE)
 	@( cd ../build/kernelspecs; tar -pvczf "../$(KERNELSPECS_FILE)" * )
