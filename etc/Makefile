@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help clean clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark \
-    clean-kubernetes clean-kubernetes-py clean-kubernetes-tf-py clean-kubernetes-tf-gpu-py clean-kubernetes-r clean-kubernetes-scala toree-launcher
+    clean-kubernetes clean-py clean-tf-py clean-tf-gpu-py clean-r clean-scala toree-launcher
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -57,46 +57,46 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 # Docker image build section ***********************************************
 #
 
-DOCKER_IMAGES := enterprise-gateway nb2kg yarn-spark
-KUBERNETES_IMAGES = kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py kubernetes-kernel-tf-gpu-py
+DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark
+KUBERNETES_IMAGES = enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 
 docker-images: $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 kubernetes-images: $(KUBERNETES_IMAGES)
 
-kubernetes-publish: publish-kubernetes-enterprise-gateway publish-kubernetes-kernel-py publish-kubernetes-kernel-tf-py publish-kubernetes-kernel-tf-gpu-py publish-kubernetes-kernel-r publish-kubernetes-spark-kernel-r publish-kubernetes-kernel-scala
+kubernetes-publish: publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
-clean-images: clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes-enterprise-gateway clean-kubernetes
-clean-kubernetes: clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-tf-py clean-kubernetes-kernel-tf-gpu-py clean-kubernetes-kernel-r clean-kubernetes-kernel-r clean-kubernetes-kernel-scala
+clean-images: clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kubernetes
+clean-kubernetes: clean-enterprise-gateway clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-r clean-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
 DEPENDS_yarn-spark:
-DEPENDS_enterprise-gateway: yarn-spark
-DEPENDS_kubernetes-enterprise-gateway: $(KERNELSPECS_FILE)
-DEPENDS_kubernetes-kernel-py DEPENDS_kubernetes-kernel-r DEPENDS_kubernetes-spark-kernel-r DEPENDS_kubernetes-kernel-scala DEPENDS_kubernetes-kernel-tf-py DEPENDS_kubernetes-kernel-tf-gpu-py: $(KERNELSPECS_FILE)
+DEPENDS_enterprise-gateway-demo: yarn-spark
+DEPENDS_enterprise-gateway: $(KERNELSPECS_FILE)
+DEPENDS_kernel-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala DEPENDS_kernel-tf-py DEPENDS_kernel-tf-gpu-py: $(KERNELSPECS_FILE)
 
 # Extra targets for each docker image...
 TARGETS_nb2kg:
 TARGETS_yarn-spark:
-TARGETS_enterprise-gateway: kernelspecs
+TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
 	@-docker tag $(HUB_ORG)/yarn-spark:$(TAG) $(HUB_ORG)/yarn-spark:2.1.0
-TARGETS_kubernetes-enterprise-gateway: kernelspecs
+TARGETS_enterprise-gateway: kernelspecs
 	@make -C .. bdist
-TARGETS_kubernetes-kernel-py TARGETS_kubernetes-kernel-r TARGETS_kubernetes-spark-kernel-r TARGETS_kubernetes-kernel-scala TARGETS_kubernetes-kernel-tf-py TARGETS_kubernetes-kernel-tf-gpu-py: kernelspecs
+TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
 
 # Extra files for each docker image...
 FILES_nb2kg :=
 FILES_yarn-spark :=
+FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway*
+FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway*
-FILES_kubernetes-kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-spark-kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kubernetes-enterprise-gateway := ../dist/jupyter_enterprise_gateway*
 
 # Publish each publish image on $(IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE

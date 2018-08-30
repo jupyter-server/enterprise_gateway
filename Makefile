@@ -2,9 +2,9 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
-    clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway \
-    clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-spark-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py \
-    clean-kubernetes-kernel-tf-gpu-py kubernetes-publish 
+    clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-enterprise-gateway \
+    clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
+    clean-kernel-tf-gpu-py kubernetes-publish
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -90,20 +90,20 @@ release: bdist sdist ## Make a wheel + source release on PyPI
 
 # Here for doc purposes
 docker-images:  ## Build docker images
-enterprise-gateway:  ## Build elyra/enterprise-gateway:dev docker image
+enterprise-gateway-demo:  ## Build elyra/enterprise-gateway-demo:dev docker image
 yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
 nb2kg:  ## Build elyra/nb2kg:dev docker image
 kubernetes-images: ## Build kubernetes docker images
-kubernetes-enterprise-gateway: ## Build elyra/kubernetes-enterprise-gateway:dev docker image
-kubernetes-kernel-py: ## Build elyra/kubernetes-kernel-py:dev docker image
-kubernetes-kernel-r: ## Build elyra/kubernetes-kernel-r:dev docker image
-kubernetes-spark-kernel-r: ## Build elyra/kubernetes-spark-kernel-r:dev docker image
-kubernetes-kernel-scala: ## Build elyra/kubernetes-kernel-scala:dev docker image
-kubernetes-kernel-tf-py: ## Build elyra/kubernetes-kernel-tf-py:dev docker image
-kubernetes-kernel-tf-gpu-py: ## Build elyra/kubernetes-kernel-tf-gpu-py:dev docker image
+enterprise-gateway: ## Build elyra/enterprise-gateway:dev docker image
+kernel-py: ## Build elyra/kernel-py:dev docker image
+kernel-r: ## Build elyra/kernel-r:dev docker image
+kernel-spark-r: ## Build elyra/kernel-spark-r:dev docker image
+kernel-scala: ## Build elyra/kernel-scala:dev docker image
+kernel-tf-py: ## Build elyra/kernel-tf-py:dev docker image
+kernel-tf-gpu-py: ## Build elyra/kernel-tf-gpu-py:dev docker image
 
 # Actual working targets...
-docker-images enterprise-gateway yarn-spark nb2kg kubernetes-images kubernetes-enterprise-gateway kubernetes-kernel-py kubernetes-kernel-r kubernetes-spark-kernel-r kubernetes-kernel-scala kubernetes-kernel-tf-py kubernetes-kernel-tf-gpu-py:
+docker-images enterprise-gateway-demo yarn-spark nb2kg kubernetes-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 docker-image-enterprise-gateway: $(WHEEL_FILE)
@@ -112,19 +112,19 @@ docker-image-enterprise-gateway: $(WHEEL_FILE)
 
 # Here for doc purposes
 clean-docker: ## Remove docker images
-clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
+clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
 clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
 clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 clean-kubernetes: ## Remove kubernetes docker images
-clean-kubernetes-enterprise-gateway: ## Remove elyra/kubernetes-enterprise-gateway:dev docker image
-clean-kubernetes-kernel-py: ## Remove elyra/kubernetes-kernel-py:dev docker image
-clean-kubernetes-kernel-r: ## Remove elyra/kubernetes-kernel-r:dev docker image
-clean-kubernetes-spark-kernel-r: ## Remove elyra/kubernetes-spark-kernel-r:dev docker image
-clean-kubernetes-kernel-scala: ## Remove elyra/kubernetes-kernel-scala:dev docker image
-clean-kubernetes-kernel-tf-py: ## Remove elyra/kubernetes-kernel-tf-py:dev docker image
-clean-kubernetes-kernel-tf-gpu-py: ## Remove elyra/kubernetes-kernel-tf-gpu-py:dev docker image
+clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
+clean-kernel-py: ## Remove elyra/kernel-py:dev docker image
+clean-kernel-r: ## Remove elyra/kernel-r:dev docker image
+clean-kernel-spark-r: ## Remove elyra/kernel-spark-r:dev docker image
+clean-kernel-scala: ## Remove elyra/kernel-scala:dev docker image
+clean-kernel-tf-py: ## Remove elyra/kernel-tf-py:dev docker image
+clean-kernel-tf-gpu-py: ## Remove elyra/kernel-tf-gpu-py:dev docker image
 
-clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-kubernetes clean-kubernetes-enterprise-gateway clean-kubernetes-kernel-py clean-kubernetes-kernel-r clean-kubernetes-spark-kernel-r clean-kubernetes-kernel-scala clean-kubernetes-kernel-tf-py clean-kubernetes-kernel-tf-gpu-py:
+clean-docker clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kubernetes clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 kubernetes-publish: ## Push kubernetes docker images to docker hub
@@ -157,5 +157,5 @@ PREP_TIMEOUT?=60
 docker-prep: 
 	@-docker rm -f itest >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
-	@-docker run -itd -p 8888:8888 -h itest --name itest -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) --elyra
+	@-docker run -itd -p 8888:8888 -h itest --name itest -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest |grep 'Jupyter Enterprise Gateway at http'; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
