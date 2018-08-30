@@ -28,12 +28,12 @@ Entering `make` with no parameters yields the following:
 ```
 activate                       eval `make activate`
 clean-docker                   Remove docker images
+clean-enterprise-gateway-demo  Remove elyra/enterprise-gateway-demo:dev docker image
 clean-enterprise-gateway       Remove elyra/enterprise-gateway:dev docker image
-clean-kubernetes-enterprise-gateway Remove elyra/kubernetes-enterprise-gateway:dev docker image
-clean-kubernetes-kernel-py     Remove elyra/kubernetes-kernel-py:dev docker image
-clean-kubernetes-kernel-r      Remove elyra/kubernetes-kernel-r:dev docker image
-clean-kubernetes-kernel-scala  Remove elyra/kubernetes-kernel-scala:dev docker image
-clean-kubernetes-kernel-tf-py  Remove elyra/kubernetes-kernel-tf-py:dev docker image
+clean-kernel-py                Remove elyra/kernel-py:dev docker image
+clean-kernel-r                 Remove elyra/kernel-r:dev docker image
+clean-kernel-scala             Remove elyra/kernel-scala:dev docker image
+clean-kernel-tf-py             Remove elyra/kernel-tf-py:dev docker image
 clean-kubernetes               Remove kubernetes docker images
 clean-nb2kg                    Remove elyra/nb2kg:dev docker image
 clean-yarn-spark               Remove elyra/yarn-spark:2.1.0 docker image
@@ -42,17 +42,17 @@ dev                            Make a server in jupyter_websocket mode
 dist                           Make source, binary and kernelspecs distribution to dist folder
 docker-images                  Build docker images
 docs                           Make HTML documentation
-enterprise-gateway             Build elyra/enterprise-gateway:dev docker image
+enterprise-gateway-demo        Build elyra/enterprise-gateway-demo:dev docker image
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
 itest                          Run integration tests (optionally) against docker container
 kernelspecs                    Create an archive with sample kernelspecs
-kubernetes-enterprise-gateway  Build elyra/kubernetes-enterprise-gateway:dev docker image
+enterprise-gateway             Build elyra/enterprise-gateway:dev docker image
 kubernetes-images              Build kubernetes docker images
-kubernetes-kernel-py           Build elyra/kubernetes-kernel-py:dev docker image
-kubernetes-kernel-r            Build elyra/kubernetes-kernel-r:dev docker image
-kubernetes-kernel-scala        Build elyra/kubernetes-kernel-scala:dev docker image
-kubernetes-kernel-tf-py        Build elyra/kubernetes-kernel-tf-py:dev docker image
+kernel-py                      Build elyra/kernel-py:dev docker image
+kernel-r                       Build elyra/kernel-r:dev docker image
+kernel-scala                   Build elyra/kernel-scala:dev docker image
+kernel-tf-py                   Build elyra/kernel-tf-py:dev docker image
 kubernetes-publish             Push kubernetes docker images to docker hub
 nb2kg                          Build elyra/nb2kg:dev docker image
 nuke                           Make clean + remove conda env

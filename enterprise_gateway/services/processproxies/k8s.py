@@ -19,7 +19,7 @@ enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 default_kernel_service_account_name = os.environ.get('EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME', 'default')
 kernel_cluster_role = os.environ.get('EG_KERNEL_CLUSTER_ROLE', 'cluster-admin')
 shared_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
-default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kubernetes-kernel-py:dev')
+default_kernel_image = os.environ.get('EG_KUBERNETES_KERNEL_IMAGE', 'elyra/kernel-py:dev')
 
 local_ip = localinterfaces.public_ips()[0]
 
