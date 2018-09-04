@@ -117,12 +117,15 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
-    process_proxy = None
-    response_address = None
-    sigint_value = None
-    port_range = None
 
-    restarting = False  # need to track whether we're in a restart situation or not
+    def __init__(self, **kw):
+        super(KernelGatewayIOLoopKernelManager, self).__init__(**kw)
+        self.process_proxy = None
+        self.response_address = None
+        self.sigint_value = None
+        self.port_range = None
+        self.user_overrides = {}
+        self.restarting = False  # need to track whether we're in a restart situation or not
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
@@ -130,8 +133,23 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                            format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
             process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
             self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=self.kernel_spec.process_proxy_config)
+            self._capture_user_overrides(**kw)
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
+
+    def _capture_user_overrides(self, **kw):
+        """
+           Make a copy of any whitelist or KERNEL_ env values provided by user.  These will be injected
+           back into the env after the kernelspec env has been applied.  This enables defaulting behavior
+           of the kernelspec env stanza that would have otherwise overridden the user-provided values.
+        """
+        # the whitelists reside up app settings
+        # capture any current values and we'll update again just prior to launch (see _launch_kernel below)
+        env = kw.get('env',{})
+        self.user_overrides.update({key: value for key, value in env.items()
+                    if key.startswith('KERNEL_') or
+                                    key in self.parent.parent.env_process_whitelist or
+                                    key in self.parent.parent.personality.env_whitelist})
 
     def format_kernel_cmd(self, extra_arguments=None):
         """replace templated args (e.g. {response_address} or {port_range})"""
@@ -154,11 +172,17 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
     def _launch_kernel(self, kernel_cmd, **kw):
         if self.kernel_spec.process_proxy_class:
-            # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
             env = kw['env']
+
+            # Apply user_overrides to enable defaulting behavior from kernelspec.env stanza.  Note that we do this
+            # BEFORE setting KERNEL_GATEWAY and removing KG_AUTH_TOKEN so those operations cannot be overridden.
+            env.update(self.user_overrides)
+
+            # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
             env['KERNEL_GATEWAY'] = '1'
             if 'KG_AUTH_TOKEN' in env:
                 del env['KG_AUTH_TOKEN']
+
             self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
             return self.process_proxy.launch_process(kernel_cmd, **kw)
         # This statement shouldn't be reached since LocalProcessProxy is the default if non-existent, but just in case.

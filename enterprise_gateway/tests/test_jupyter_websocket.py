@@ -31,6 +31,16 @@ else:
 
 class TestJupyterWebsocket(TestGatewayAppBase):
     """Base class for jupyter-websocket mode tests that spawn kernels."""
+
+    def setup_app(self):
+        """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.
+        """
+        os.environ['JUPYTER_PATH'] = RESOURCES
+
+        # These are required for setup of test_kernel_defaults
+        os.environ['KG_ENV_PROCESS_WHITELIST'] = "PROCESS_VAR1,PROCESS_VAR2"
+        os.environ['PROCESS_VAR1'] = "process_var1_override"
+
     @coroutine
     def spawn_kernel(self, kernel_body='{}'):
         """Spawns a kernel using the gateway API and connects a websocket
@@ -521,6 +531,40 @@ class TestDefaults(TestJupyterWebsocket):
         self.assertNotIn('overridden', content['text'])
         self.assertIn('allowed', content['text'])
 
+        ws.close()
+
+    @gen_test
+    def test_kernel_defaults(self):
+        """Kernel should start with env vars defined in request overriding env vars defined in kernelspec."""
+
+        # NOTE: This test requires use of the kernels/kernel_defaults_test/kernel.json file.
+
+        self.app.personality.env_whitelist = ['OTHER_VAR1','OTHER_VAR2']
+
+        kernel_body = json.dumps({
+            'name': 'kernel_defaults_test',
+            'env': {
+                'KERNEL_VAR1': 'kernel_var1_override',   # Ensure this value overrides that in kernel.json
+                'KERNEL_VAR3': 'kernel_var3_value',      # Any KERNEL_ flows to kernel
+                'OTHER_VAR2': 'other_var2_override',     # Ensure this value overrides that in kernel.json
+                'KERNEL_GATEWAY': 'kernel_gateway_override'  # Ensure KERNEL_GATEWAY is not overridden
+            }
+        })
+        ws = yield self.spawn_kernel(kernel_body)
+        req = self.execute_request('import os; print(os.getenv("KERNEL_VAR1"), os.getenv("KERNEL_VAR2"), '
+                                   'os.getenv("KERNEL_VAR3"), os.getenv("KERNEL_GATEWAY"), os.getenv("OTHER_VAR1"), '
+                                   'os.getenv("OTHER_VAR2"), os.getenv("PROCESS_VAR1"), os.getenv("PROCESS_VAR2"))')
+        ws.write_message(json_encode(req))
+        content = yield self.await_stream(ws)
+        self.assertEqual(content['name'], 'stdout')
+        self.assertIn('kernel_var1_override', content['text'])
+        self.assertIn('kernel_var2_default', content['text'])
+        self.assertIn('kernel_var3_value', content['text'])
+        self.assertNotIn('kernel_gateway_override', content['text'])
+        self.assertIn('other_var1_default', content['text'])
+        self.assertIn('other_var2_override', content['text'])
+        self.assertIn('process_var1_override', content['text'])
+        self.assertIn('process_var2_default', content['text'])
         ws.close()
 
     @gen_test

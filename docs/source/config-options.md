@@ -351,3 +351,16 @@ access at the kernel level_.  These values apply to **all** process-proxy kernel
 * `port_range`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.port_range`.
 Any values specified in the config dictionary override the globally defined values.  These apply to all
 `RemoteProcessProxy` kernels.
+
+### Per-kernel Environment Overrides
+In some cases, it is useful to allow specific values that exist in a kernel.json `env` stanza to be
+overridden on a per-kernel basis.  For example, if the kernelspec supports resource limitations you
+may want to allow some requests to have access to more memory or GPUs than another.  Enterprise
+Gateway enables this capability by honoring environment variables provided in the json request over
+those same-named variables in the kernel.json `env` stanza.
+
+Environment variables for which this can occur are any variables prefixed with `KERNEL_`
+(with the exception of the internal `KERNEL_GATEWAY` variable) as well as any variables
+listed in the `--JupyterWebsocketPersonality.env_whitelist` command-line option (or via
+the `KG_ENV_WHITELIST` variable).  Locally defined variables listed in `KG_PROCESS_ENV_WHITELIST`
+are also honored.
