@@ -8,4 +8,8 @@ def teardown():
     As a stopgap, force a cleanup here.
     """
     ioloop.IOLoop.current().stop()
-    ioloop.IOLoop.current().close(True)
+    # Close is not necessary since process termination closes the loop.  This was causing intermittent
+    # `Event loop is closed` exceptions.  These didn't affect the test resutls, but produced output that
+    # was otherwise misleading noise.
+    # ioloop.IOLoop.current().close(True)
+

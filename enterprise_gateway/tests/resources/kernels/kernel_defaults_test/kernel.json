@@ -1,0 +1,19 @@
+{
+  "display_name": "Kernel Defaults Testing",
+  "language": "python",
+  "env": {
+    "KERNEL_VAR1": "kernel_var1_default",
+    "KERNEL_VAR2": "kernel_var2_default",
+    "OTHER_VAR1": "other_var1_default",
+    "OTHER_VAR2": "other_var2_default",
+    "PROCESS_VAR1": "process_var1_default",
+    "PROCESS_VAR2": "process_var2_default"
+  },
+  "argv": [
+    "python",
+    "-m",
+    "ipykernel_launcher",
+    "-f",
+    "{connection_file}"
+  ]
+}
