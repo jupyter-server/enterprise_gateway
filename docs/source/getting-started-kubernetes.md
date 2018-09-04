@@ -8,7 +8,7 @@ balancing and high availability functionality provided by Kubernetes (although H
 fully realized until EG supports persistent sessions).
 
 As with all kubernetes deployments, Enterprise Gateway is built into a docker image.  The
-base Enterprise Gateway image is [elyra/kubernetes-enterprise-gateway](https://hub.docker.com/r/elyra/kubernetes-enterprise-gateway/) 
+base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
 and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with
 other kubernetes-based images.  See [Kubernetes Images](docker.html#kubernetes-images) for image details.
 
@@ -91,7 +91,7 @@ spec:
           value: "60"
         - name: EG_KERNEL_WHITELIST
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
-        image: elyra/kubernetes-enterprise-gateway:dev
+        image: elyra/enterprise-gateway:dev
         name: enterprise-gateway
         args: ["--elyra"]
         ports:
@@ -314,7 +314,7 @@ for the container specification and `volumes` in the pod specification):
           value: "60"
         - name: EG_KERNEL_WHITELIST
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
-        image: elyra/kubernetes-enterprise-gateway:dev
+        image: elyra/enterprise-gateway:dev
         name: enterprise-gateway
         args: ["--elyra"]
         ports:
@@ -408,7 +408,7 @@ to a Kubernetes environment.
 Along with the `class_name:` entry, this process proxy stanza should also include a proxy 
 configuration stanza  which specifies the docker image to associate with the kernel's
 pod.  If this entry is not provided, the Enterprise Gateway implementation will use a default 
-entry of `elyra/kubernetes-kernel-py:dev`.  In either case, this value is made available to the 
+entry of `elyra/kernel-py:dev`.  In either case, this value is made available to the 
 rest of the parameters used to launch the kernel by way of an environment variable: 
 `EG_KUBERNETES_KERNEL_IMAGE`.
 
@@ -417,7 +417,7 @@ rest of the parameters used to launch the kernel by way of an environment variab
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
     "config": {
-      "image_name": "elyra/kubernetes-kernel-py:dev"
+      "image_name": "elyra/kernel-py:dev"
     }
   }
 }
@@ -475,8 +475,8 @@ Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be wo
 on the master node, pull the Enterprise Gateway and Kernel images on each worker node:
 
 ```
-docker pull elyra/kubernetes-enterprise-gateway:dev
-docker pull elyra/kubernetes-kernel-py:dev
+docker pull elyra/enterprise-gateway:dev
+docker pull elyra/kernel-py:dev
 ```
 
 **Note:** It is important to pre-seed the worker nodes with **all** kernel images, otherwise the automatic download 

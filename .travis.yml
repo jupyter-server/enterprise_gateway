@@ -19,7 +19,7 @@ before_install:
 
 install:
     - pip install --upgrade setuptools pip websocket-client
-    - make dist enterprise-gateway
+    - make dist enterprise-gateway-demo
     - pip install dist/*.whl coverage
     - pip freeze
 
