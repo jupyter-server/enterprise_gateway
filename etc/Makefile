@@ -30,7 +30,7 @@ kernelspecs: $(KERNELSPECS_FILE) ## Make a tar.gz file consisting of kernelspec 
 $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib  
 	@mkdir -p ../build/kernelspecs
 	cp -r kernelspecs ../build
-	@echo ../build/kernelspecs/*_python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
+	@echo ../build/kernelspecs/*python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
 	@echo ../build/kernelspecs/*_R_* | xargs -t -n 1 cp -r kernel-launchers/R/*
 	@echo ../build/kernelspecs/*_scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
 	@mkdir -p ../dist

@@ -1,0 +1,18 @@
+{
+ "display_name": "Python 2 (distributed)", 
+ "language": "python", 
+ "process_proxy": {
+   "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+ },
+ "argv": [
+   "python",
+   "/usr/local/share/jupyter/kernels/python_distributed/scripts/launch_ipykernel.py",
+   "{connection_file}",
+   "--RemoteProcessProxy.response-address",
+   "{response_address}",
+   "--RemoteProcessProxy.port-range",
+   "{port_range}",
+   "--RemoteProcessProxy.spark-context-initialization-mode",
+   "none"
+ ]
+}
