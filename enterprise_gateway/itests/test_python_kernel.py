@@ -111,6 +111,28 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
+class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_DISTRIBUTED_NAME", "python_distributed")
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPythonKernelDistributed, cls).setUpClass()
+        print('>>>')
+        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
+        # initialize environment
+        cls.gatewayClient = GatewayClient()
+        cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestPythonKernelDistributed, cls).tearDownClass()
+        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
+        # shutdown environment
+        cls.gatewayClient.shutdown_kernel(cls.kernel)
+
+
 class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
     KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")
 

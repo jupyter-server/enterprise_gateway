@@ -40,6 +40,8 @@ sed s/HOSTNAME/$YARN_HOST/ /usr/local/hadoop/etc/hadoop/yarn-site.xml.template >
 
 # setting spark defaults
 cp $SPARK_HOME/conf/spark-defaults.conf.template  $SPARK_HOME/conf/spark-defaults.conf
+# place metastore db and derby.log in /tmp
+echo "spark.driver.extraJavaOptions -Dderby.system.home=/tmp" >>  $SPARK_HOME/conf/spark-defaults.conf
 
 cp $SPARK_HOME/conf/metrics.properties.template $SPARK_HOME/conf/metrics.properties
 
