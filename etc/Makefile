@@ -1,7 +1,7 @@
 # Copyright (c) Juper Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help clean clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark \
+.PHONY: help clean clean-docker clean-enterprise-gateway clean-nb2kg clean-nb2kg-hub clean-yarn-spark \
     clean-kubernetes clean-py clean-tf-py clean-tf-gpu-py clean-r clean-scala toree-launcher
 
 SA:=source activate
@@ -57,7 +57,7 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 # Docker image build section ***********************************************
 #
 
-DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark
+DOCKER_IMAGES := enterprise-gateway-demo nb2kg nb2kg-hub yarn-spark
 KUBERNETES_IMAGES = enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
 
@@ -66,11 +66,12 @@ kubernetes-images: $(KUBERNETES_IMAGES)
 
 kubernetes-publish: publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
-clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kubernetes
+clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-nb2kg-hub clean-yarn-spark clean-enterprise-gateway clean-kubernetes
 clean-kubernetes: clean-enterprise-gateway clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-r clean-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
+DEPENDS_nb2kg-hub:
 DEPENDS_yarn-spark:
 DEPENDS_enterprise-gateway-demo: yarn-spark
 DEPENDS_enterprise-gateway: $(KERNELSPECS_FILE)
@@ -78,6 +79,7 @@ DEPENDS_kernel-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala D
 
 # Extra targets for each docker image...
 TARGETS_nb2kg:
+TARGETS_nb2kg-hub:
 TARGETS_yarn-spark:
 TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
@@ -88,6 +90,7 @@ TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala T
 
 # Extra files for each docker image...
 FILES_nb2kg :=
+FILES_nb2kg-hub :=
 FILES_yarn-spark :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway*
 FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
