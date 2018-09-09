@@ -1,24 +1,22 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM jupyter/minimal-notebook
+FROM jupyterhub/k8s-singleuser-sample:0.7.0
 
 # pip packages
 RUN pip install --upgrade pip
 RUN pip install setuptools --ignore-installed --upgrade
 
-# Do the pip installs as the unprivileged notebook user
-USER jovyan
+ENV NBGITPULLER_APP=lab
 
-# Install Lab and NB2KG. Enable NB2KG extension.  Lab extension is optionally enabled at runtime.
-RUN pip install --upgrade jupyter_contrib_nbextensions jupyterlab nb2kg && \
-    jupyter contrib nbextension install --sys-prefix && \
-    jupyter serverextension enable --py nb2kg --sys-prefix
-
-ADD start-nb2kg.sh /usr/local/share/jupyter/
+# Install Lab and NB2KG. Enable NB2KG extension. Lab is enabled by default
+RUN pip install --upgrade jupyterlab nb2kg && \
+    jupyter serverextension enable --py nb2kg --sys-prefix && \
+    jupyter serverextension enable --py jupyterlab --sys-prefix
 
 # Run with remote kernel managers
-ENTRYPOINT ["/usr/local/share/jupyter/start-nb2kg.sh"]
-CMD ["notebook"]
+CMD ["start-nb2kg.sh"]
 
-WORKDIR /home/jovyan/work
+# Add local files as late as possible to avoid cache busting
+ADD jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
+ADD start-nb2kg.sh /usr/local/bin/start-nb2kg.sh

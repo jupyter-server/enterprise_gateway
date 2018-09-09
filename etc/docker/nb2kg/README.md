@@ -1,13 +1,14 @@
 This image installs the Jupyter server extensions [NB2KG](https://github.com/jupyter-incubator/nb2kg) 
 and [Jupyter Lab](https://github.com/jupyterlab/jupyterlab) 
- on top of image [jupyter/minimal-notebook](https://github.com/jupyter/docker-stacks/tree/master/minimal-notebook).
+ on top of image [jupyter/base-notebook](https://github.com/jupyter/docker-stacks/tree/master/base-notebook).
 
 # What it Gives You
 This image is configured to be run against [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) 
 instances, although running against Jupyter Kernel Gateway instances should be fine.  It enables the ability to target
-either form of gateway using either `Jupyter Notebook` or `Jupyter Lab`.
+either form of gateway using either `Jupyter Notebook` or `Jupyter Lab`. It also provides necessary support to be used in a `JupyterHub`
+environment.
 
-It is built using the latest `minimal-notebook` image and includes the `Jupyter Lab` extension that can be optionally 
+It is built using the latest `base-notebook` image and includes the `Jupyter Lab` extension that can be optionally
 invoked.  The tag of the image corresponds to the `NB2KG` release that is included in the image.
 
 
@@ -32,16 +33,6 @@ You can then run multiple notebook sessions on the same host by using different 
 Here, the notebook will be available at port `9003` on the host and the `KERNEL_USERNAME` variable will be set to `bob`. Note that in this case, `-e NB_PORT` is not used since the gateway is not on the same host (in this example).
 
 ### Jupyter Lab 
-The jupyter lab extension can be utilized by adding `lab` as the last argument to the `docker run` command.
+The jupyter lab extension can be utilized by adding `/lab` on the `notebook` URL.
 
-`docker run -t --rm -p 8888:8888 -e GATEWAY_HOST=<gateway-hostname> -v <host-notebook-directory>:/home/jovyan/work elyra/nb2kg:<tag> lab`
-
-To confirm the container is running as Jupyter Lab, the log output should be prefixed with a timestamp containing 
-`LabApp` vs. `NotebookApp` for the default case.
-```
-[I 16:04:55.467 LabApp] The Jupyter Notebook is running at: http://0.0.0.0:8888/?token=209f7c7dfdfd9ebe9635ed5577a3df204b625a4040225b51
-[I 16:04:55.468 LabApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-```
-
-**Note:** the container can be launched into the bash shell by providing a command entry that is neither `lab` nor 
-`notebook` (the default).
+`docker run -t --rm -p 8888:8888 -e GATEWAY_HOST=<gateway-hostname> -v <host-notebook-directory>:/home/jovyan/work elyra/nb2kg:<tag>`
