@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
-    clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-enterprise-gateway \
+    clean-docker-nb2kg clean-docker-nb2kg-hub clean-docker-yarn-spark clean-kubernetes clean-enterprise-gateway \
     clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py kubernetes-publish
 
@@ -93,6 +93,7 @@ docker-images:  ## Build docker images
 enterprise-gateway-demo:  ## Build elyra/enterprise-gateway-demo:dev docker image
 yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
 nb2kg:  ## Build elyra/nb2kg:dev docker image
+nb2kg-hub:  ## Build elyra/nb2kg-hub:dev docker image
 kubernetes-images: ## Build kubernetes docker images
 enterprise-gateway: ## Build elyra/enterprise-gateway:dev docker image
 kernel-py: ## Build elyra/kernel-py:dev docker image
@@ -103,7 +104,7 @@ kernel-tf-py: ## Build elyra/kernel-tf-py:dev docker image
 kernel-tf-gpu-py: ## Build elyra/kernel-tf-gpu-py:dev docker image
 
 # Actual working targets...
-docker-images enterprise-gateway-demo yarn-spark nb2kg kubernetes-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
+docker-images enterprise-gateway-demo yarn-spark nb2kg nb2kg-hub kubernetes-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 docker-image-enterprise-gateway: $(WHEEL_FILE)
@@ -114,6 +115,7 @@ docker-image-enterprise-gateway: $(WHEEL_FILE)
 clean-docker: ## Remove docker images
 clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
 clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
+clean-nb2kg-hub: ## Remove elyra/nb2kg-hub:dev docker image
 clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
 clean-kubernetes: ## Remove kubernetes docker images
 clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
@@ -124,7 +126,7 @@ clean-kernel-scala: ## Remove elyra/kernel-scala:dev docker image
 clean-kernel-tf-py: ## Remove elyra/kernel-tf-py:dev docker image
 clean-kernel-tf-gpu-py: ## Remove elyra/kernel-tf-gpu-py:dev docker image
 
-clean-docker clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kubernetes clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
+clean-docker clean-enterprise-gateway-demo clean-nb2kg clean-nb2kg-hub clean-yarn-spark clean-kubernetes clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 kubernetes-publish: ## Push kubernetes docker images to docker hub

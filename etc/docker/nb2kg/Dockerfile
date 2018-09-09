@@ -15,10 +15,11 @@ RUN pip install --upgrade jupyter_contrib_nbextensions jupyterlab nb2kg && \
     jupyter contrib nbextension install --sys-prefix && \
     jupyter serverextension enable --py nb2kg --sys-prefix
 
-ADD start-nb2kg.sh /usr/local/share/jupyter/
-
 # Run with remote kernel managers
 ENTRYPOINT ["/usr/local/share/jupyter/start-nb2kg.sh"]
 CMD ["notebook"]
 
-WORKDIR /home/jovyan/work
+WORKDIR /home/jovyan
+
+# minimize multiple layers
+ADD start-nb2kg.sh /usr/local/share/jupyter/
