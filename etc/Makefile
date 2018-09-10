@@ -90,7 +90,7 @@ TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala T
 
 # Extra files for each docker image...
 FILES_nb2kg :=
-FILES_nb2kg-hub :=
+FILES_nb2kg-hub := /Users/lresende/opensource/jupyter/nb2kg*
 FILES_yarn-spark :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway*
 FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
@@ -114,7 +114,7 @@ $1: ../.image-$1
 ../.image-$1: docker/$1/* DEPENDS_$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
-	cp docker/$1/* $$(FILES_$1) ../build/docker/$1
+	cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
 	@(cd ../build/docker/$1; docker build -t $(HUB_ORG)/$1:$(TAG) . )
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
