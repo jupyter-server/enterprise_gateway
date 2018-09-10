@@ -7,6 +7,7 @@ FROM jupyterhub/k8s-singleuser-sample:0.7.0
 USER $NB_USER
 
 ADD nb2kg /opt/nb2kg-source
+ADD jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
 
 # Install NB2KG
 RUN pip install --upgrade /opt/nb2kg-source && \
