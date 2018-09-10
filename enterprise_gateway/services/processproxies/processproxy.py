@@ -584,12 +584,14 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # Check if the local proc has faulted (poll() will return non-None with a non-zero return
         # code in such cases).  If a fault was encountered, raise server error (500) with a message
         # indicating to check the EG log for more information.
-        if self.local_proc and self.local_proc.poll() > 0:
-            self.local_proc.wait()
-            error_message = "Error occurred during launch of KernelID: {}.  " \
-                            "Check Enterprise Gateway log for more information.".format(self.kernel_id)
-            self.local_proc = None
-            self.log_and_raise(http_status_code=500, reason=error_message)
+        if self.local_proc:
+            poll_result = self.local_proc.poll()
+            if poll_result and poll_result > 0:
+                self.local_proc.wait()
+                error_message = "Error occurred during launch of KernelID: {}.  " \
+                                "Check Enterprise Gateway log for more information.".format(self.kernel_id)
+                self.local_proc = None
+                self.log_and_raise(http_status_code=500, reason=error_message)
 
     def _prepare_response_socket(self):
         s = self.select_socket(local_ip)
