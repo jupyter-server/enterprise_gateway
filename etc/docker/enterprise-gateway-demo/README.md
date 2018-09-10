@@ -7,7 +7,7 @@ Built on [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/), this im
 
 # Basic Use
 
-**elyra/enterprise-gateway** can be used as a combined YARN cluster in which the kernels run locally in YARN-cluster mode, or combined with a different instance of itself or an [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) instance to more easily view that kernels are running remotely.
+**elyra/enterprise-gateway-demo** can be used as a combined YARN cluster in which the kernels run locally in YARN-cluster mode, or combined with a different instance of itself or an [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) instance to more easily view that kernels are running remotely.
 
 Prior to using either mode, we recommend you create a local docker network.  This better isolates the container(s) and avoids port collisions that might come into play if you're using [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) on the same host.  Here's a simple way to create a docker network...
 
@@ -19,38 +19,38 @@ Once created, you just add `--net jeg` to the enterprise gateway run commands.  
 
 To run the image as a combined YARN/Enterprise Gateway instance, use the following command: 
 
-`docker run -itd --rm -p 8888:8888 -p 8088:8088 -p 8042:8042 --net=jeg elyra/enterprise-gateway --elyra`
+`docker run -itd --rm -p 8888:8888 -p 8088:8088 -p 8042:8042 --net=jeg elyra/enterprise-gateway-demo --elyra`
 
 To produce a general usage statement, the following can used...
 
-`docker run --rm elyra/enterprise-gateway --help`
+`docker run --rm elyra/enterprise-gateway-demo --help`
 
-To run the enterprise-gateway container in an interactive mode, where enterprise gateway is manually started within the container, use the following...
+To run the enterprise-gateway-demo container in an interactive mode, where enterprise gateway is manually started within the container, use the following...
 
-`docker run -it --rm -p 8888:8888 -p 8088:8088 -p 8042:8042 --net=jeg elyra/enterprise-gateway /bin/bash`
+`docker run -it --rm -p 8888:8888 -p 8088:8088 -p 8042:8042 --net=jeg elyra/enterprise-gateway-demo /bin/bash`
 
-Once in the container, enterprise-gateway can be started using `sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh`
+Once in the container, enterprise-gateway-demo can be started using `sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh`
 
 ### Dual Mode
 
-To get a better idea that kernels are running remote, you can invoke elyra/enterprise-gateway to be the YARN master or use [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/).
+To get a better idea that kernels are running remote, you can invoke elyra/enterprise-gateway-demo to be the YARN master or use [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/).
 
 To invoke the YARN master using elyra/yarn-spark...
 
 `docker run -d --rm -h yarnmaster --name yarnmaster -p 8088:8088 -p 8042:8042 --net jeg elyra/yarn-spark --yarn`
 
-or using elyra/enterprise-gateway...
+or using elyra/enterprise-gateway-demo...
 
-`docker run -d --rm -h yarnmaster --name yarnmaster -p 8088:8088 -p 8042:8042 --net jeg elyra/enterprise-gateway --yarn`
+`docker run -d --rm -h yarnmaster --name yarnmaster -p 8088:8088 -p 8042:8042 --net jeg elyra/enterprise-gateway-demo --yarn`
 
-Then, invoke elyra/enterprise-gateway as purely an Enterprise Gateway host that indicates the name of its YARN master...
+Then, invoke elyra/enterprise-gateway-demo as purely an Enterprise Gateway host that indicates the name of its YARN master...
 
-`docker run -it --rm -h elyra --name elyra -p 8888:8888 --net jeg -e YARN_HOST=yarnmaster elyra/enterprise-gateway --elyra`
+`docker run -it --rm -h elyra --name elyra -p 8888:8888 --net jeg -e YARN_HOST=yarnmaster elyra/enterprise-gateway-demo --elyra`
 
 **Tip:** YARN logs can be accessed via host system's public IP on port `8042` rather than using container's `hostname:8042`, while YARN Resource manager can be accessed via container's `hostname:8088` port.
 
 #### Bring Your Own Kernels
-elyra/enterprise-gateway sets up `JUPYTER_PATH` to point to `/tmp/byok`.  This enables the ability to use docker volumes to mount your own set of kernelspec files.  The kernelspecs must reside in a `kernels` directory.  You can mount to the appropriate point in one of two ways via the docker `-v` option:
+elyra/enterprise-gateway-demo sets up `JUPYTER_PATH` to point to `/tmp/byok`.  This enables the ability to use docker volumes to mount your own set of kernelspec files.  The kernelspecs must reside in a `kernels` directory.  You can mount to the appropriate point in one of two ways via the docker `-v` option:
 
 `-v <host_directory_containing_kernels_directory>:/tmp/byok`
 
@@ -63,7 +63,7 @@ To confirm Enterprise Gateway is detecting the new kernelspecs, monitor the log 
 # Connecting a client notebook
 You can use any NB2KG-enabled notebook server to hit the running docker container.  We recommend using our [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) image. 
 
-Note: Given the size of the enterprise-gateway when combined with a YARN/Spark installation, it is recommended that you have at least 4GB of memory allocated for your docker image in order to run kernels (particularly the Toree/Scala kernel).
+Note: Given the size of the enterprise-gateway-demo when combined with a YARN/Spark installation, it is recommended that you have at least 4GB of memory allocated for your docker image in order to run kernels (particularly the Toree/Scala kernel).
 
 # Recognized Environment Variables
 The following environment variables are recognized during startup of the container and can be specified via docker's `-e` option.  These will rarely need to be modified.

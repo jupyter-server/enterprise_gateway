@@ -5,7 +5,7 @@ This image enables the use of an IPython kernel launched from [Jupyter Enterpris
 * Spark on kubernetes support from within a Jupyter Notebook
 
 # Basic Use
-Pull [elyra/kubernetes-enterprise-gateway](https://hub.docker.com/r/elyra/kubernetes-enterprise-gateway/), along with all of the elyra/kubernetes-kernel-* images to each of your kubernetes nodes.  Although manual seeding of images across the cluster is not required, it is highly recommended since kernel startup times can timeout and image downloads can seriously undermine that window.
+Pull [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/), along with all of the elyra/kernel-* images to each of your kubernetes nodes.  Although manual seeding of images across the cluster is not required, it is highly recommended since kernel startup times can timeout and image downloads can seriously undermine that window.
 
 Download the [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file and make any necessary changes for your configuration.  We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
 
