@@ -11,7 +11,7 @@ Built on [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/), this im
 
 Prior to using either mode, we recommend you create a local docker network.  This better isolates the container(s) and avoids port collisions that might come into play if you're using [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) on the same host.  Here's a simple way to create a docker network...
 
-`docker create network create -d bridge jeg`
+`docker network create -d bridge jeg`
 
 Once created, you just add `--net jeg` to the enterprise gateway run commands.  Using `--net jeg` when creating instances of [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) are not necessary.
 
