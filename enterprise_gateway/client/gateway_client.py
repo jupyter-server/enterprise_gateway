@@ -73,7 +73,7 @@ class Kernel:
 
     DEAD_MSG_ID = 'deadbeefdeadbeefdeadbeefdeadbeef'
     POST_IDLE_TIMEOUT = 0.5
-    DEFAULT_INTERRUPT_WAIT = 5
+    DEFAULT_INTERRUPT_WAIT = 1
 
     def __init__(self, http_api_endpoint, ws_api_endpoint, kernel_id, timeout=DEFAULT_TIMEOUT):
 
@@ -222,10 +222,10 @@ class Kernel:
         try:
             response = msg_queue.get(timeout=timeout)
 
-            print_str = '\n<<<<<<<<<<<<<<< POST IDLE MESSAGE >>>>>>>>>>>>>>>' if post_idle else '\n<<<<<<<<<<<<<<<'
-            print(print_str)
-            print('Pulled response from queue for kernel with msg_id: {}'.format(msg_id))
-            pprint(response)
+            #print_str = '\n<<<<<<<<<<<<<<< POST IDLE MESSAGE >>>>>>>>>>>>>>>' if post_idle else '\n<<<<<<<<<<<<<<<'
+            #print(print_str)
+            #print('Pulled response from queue for kernel with msg_id: {}'.format(msg_id))
+            #pprint(response)
 
         except queue.Empty:
             response = None
