@@ -260,7 +260,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         if self.impersonation_enabled:
             gateway_user = getpass.getuser()
             if gateway_user.lower() not in self.unauthorized_users:
-                self.log.warning("Impersonation is enabled and gateway user '{}' is NOT specified in the set of"
+                self.log.warning("Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
                                  "unauthorized users!  Kernels may execute as that user with elevated privileges.".
                                  format(gateway_user))
 
