@@ -5,6 +5,7 @@ import uuid
 import argparse
 import base64
 import random
+import logging
 from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
@@ -23,7 +24,12 @@ except ImportError:
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
 max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
+log_level = int(os.getenv('EG_LOG_LEVEL', '10'))
 
+logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
+
+logger = logging.getLogger('launch_ipykernel')
+logger.setLevel(log_level)
 
 class WaitingForSparkSessionToBeInitialized(object):
     """Wrapper object for SparkContext and other Spark session variables while the real Spark session is being
@@ -73,10 +79,11 @@ def sql(query):
 
 def prepare_gateway_socket(lower_port, upper_port):
     sock = _select_socket(lower_port, upper_port)
-    print("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
+    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
     sock.listen(1)
     sock.settimeout(5)
     return sock
+
 
 def _encrypt(connection_info, conn_file):
     # Block size for cipher obj can be 16, 24, or 32. 16 matches 128 bit.
@@ -95,7 +102,7 @@ def _encrypt(connection_info, conn_file):
     # the name of the connection file.
     bn = os.path.basename(conn_file)
     if (bn.find("kernel-") == -1):
-        print("Invalid connection file name '{}'".format(conn_file))
+        logger.error("Invalid connection file name '{}'".format(conn_file))
         raise RuntimeError("Invalid connection file name '{}'".format(conn_file))
 
     tokens = bn.split("kernel-")
@@ -109,18 +116,19 @@ def _encrypt(connection_info, conn_file):
     payload = encryptAES(cipher, connection_info)
     return payload
 
+
 def return_connection_info(connection_file, response_addr, disable_gateway_socket, lower_port, upper_port):
     gateway_sock = None
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
-        print("Invalid format for response address '{}'.  Assuming 'pull' mode...".format(response_addr))
+        logger.error("Invalid format for response address '{}'.  Assuming 'pull' mode...".format(response_addr))
         return
 
     response_ip = response_parts[0]
     try:
         response_port = int(response_parts[1])
     except ValueError:
-        print("Invalid port component found in response address '{}'.  Assuming 'pull' mode...".format(response_addr))
+        logger.error("Invalid port component found in response address '{}'.  Assuming 'pull' mode...".format(response_addr))
         return
 
     with open(connection_file) as fp:
@@ -141,9 +149,9 @@ def return_connection_info(connection_file, response_addr, disable_gateway_socke
     try:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding='utf-8')
-        print("JSON Payload '{}".format(json_content))
+        logger.debug("JSON Payload '{}".format(json_content))
         payload = _encrypt(json_content, connection_file)
-        print("Encrypted Payload '{}".format(payload))
+        logger.debug("Encrypted Payload '{}".format(payload))
         s.send(payload)
     finally:
         s.close()
@@ -158,7 +166,7 @@ def determine_connection_file(conn_file):
         basename = os.path.splitext(os.path.basename(conn_file))[0]
         fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
         os.close(fd)
-        print("Using connection file '{}' instead of '{}'".format(conn_file, prev_connection_file))
+        logger.debug("Using connection file '{}' instead of '{}'".format(conn_file, prev_connection_file))
 
     return conn_file
 
@@ -252,11 +260,13 @@ def gateway_listener(sock):
     while not shutdown:
         request = get_gateway_request(sock)
         if request:
+            logger.info("gateway_listener got request: {}".format(request))
             if request.get('signum'):
                 signum = int(request.get('signum'))
                 os.kill(os.getpid(), signum)
             elif request.get('shutdown'):
                 shutdown = bool(request.get('shutdown'))
+
 
 if __name__ == "__main__":
     """
@@ -290,7 +300,7 @@ if __name__ == "__main__":
     # if a spark context is desired, but pyspark is not present, we should probably
     # let it be known (as best we can) that they won't be getting a spark context.
     if not can_create_spark_context and init_mode != 'none':
-        print("A spark context was desired but the pyspark distribution is not present.  "
+        logger.info("A spark context was desired but the pyspark distribution is not present.  "
               "Spark context creation will not occur.")
 
     # since 'lazy' and 'eager' behave the same, just check if not none

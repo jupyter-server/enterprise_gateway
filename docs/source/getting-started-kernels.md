@@ -7,8 +7,8 @@ The following kernels have been tested with the Jupyter Enterprise Gateway:
 * Scala 2.11/Apache Spark 2.x with Apache Toree kernel
 * R/Apache Spark 2.x with IRkernel
 
-We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter-incubator/enterprise_gateway/releases)
-(e.g. [jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz](https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz))
+We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter/enterprise_gateway/releases)
+(e.g. [jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz))
 that can be extracted and modified to fit your configuration.
 
 Please find below more details on specific kernels:
@@ -39,7 +39,7 @@ we would have to copy the sample configuration folder **spark_scala_yarn_client*
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
@@ -69,7 +69,7 @@ we would have to copy the sample configuration folder **spark_python_yarn_client
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 
@@ -117,7 +117,7 @@ we would have to copy the sample configuration folder **spark_R_yarn_client** an
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter-incubator/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "spark_scala" | awk '{print $2}')"
 

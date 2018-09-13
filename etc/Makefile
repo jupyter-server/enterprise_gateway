@@ -1,8 +1,8 @@
 # Copyright (c) Juper Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help clean clean-docker clean-enterprise-gateway clean-nb2kg clean-yarn-spark \
-    clean-kubernetes clean-py clean-tf-py clean-tf-gpu-py clean-r clean-scala toree-launcher
+.PHONY: help clean clean-images clean-enterprise-gateway clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark \
+    clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -34,14 +34,16 @@ kernelspecs: $(KERNELSPECS_FILE) ## Make a tar.gz file consisting of kernelspec 
 
 $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib  
 	@mkdir -p ../build/kernelspecs
-        # Seed the build tree with initial files
+    # Seed the build tree with initial files
 	cp -r kernelspecs ../build
-        # Distribute language and config-sensitive files.
-	@echo ../build/kernelspecs/{spark_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/*
-	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/*
+    # Distribute language and config-sensitive files.
+	@echo ../build/kernelspecs/{spark_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
+	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/scripts
 	@echo ../build/kernelspecs/{spark_,}scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
-        # Perform the copy again to enable local, per-kernel, overrides
+	# Fixme - deal with spark-based docker containers...
+	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
+    # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
 	@mkdir -p ../dist
 	rm -f $(KERNELSPECS_FILE)
@@ -57,17 +59,17 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 # Docker image build section ***********************************************
 #
 
-DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark
-KUBERNETES_IMAGES = enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
-IMAGES := $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
+KERNEL_IMAGES := kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
+DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark enterprise-gateway $(KERNEL_IMAGES)
+PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 
-docker-images: $(DOCKER_IMAGES) $(KUBERNETES_IMAGES)
-kubernetes-images: $(KUBERNETES_IMAGES)
+docker-images: $(DOCKER_IMAGES)
+kernel-images: $(KERNEL_IMAGES)
 
-kubernetes-publish: publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
+publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
-clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kubernetes
-clean-kubernetes: clean-enterprise-gateway clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-r clean-kernel-scala
+clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kernel-images
+clean-kernel-images: clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
@@ -90,22 +92,22 @@ TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala T
 FILES_nb2kg :=
 FILES_yarn-spark :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway*
-FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
+FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
+FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
+FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/R/bootstrap/*
 FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs*
+FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/scala/bootstrap/*
 FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway*
 
-# Publish each publish image on $(IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
+# Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
 publish-$1:
 	@docker push $(HUB_ORG)/$1:$(TAG)
 endef
-$(foreach image,$(IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
+$(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 
-# Generate image creation targets for each entry in $(IMAGES).  Switch 'eval' to 'info' to see what is produced.
+# Generate image creation targets for each entry in $(DOCKER_IMAGES).  Switch 'eval' to 'info' to see what is produced.
 define BUILD_IMAGE
 $1: ../.image-$1
 ../.image-$1: docker/$1/* DEPENDS_$1
@@ -116,14 +118,14 @@ $1: ../.image-$1
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endef
-$(foreach image,$(IMAGES),$(eval $(call BUILD_IMAGE,$(image))))
+$(foreach image,$(DOCKER_IMAGES),$(eval $(call BUILD_IMAGE,$(image))))
 
 
-# Generate clean-xxx targets for each entry in $(IMAGES).  Switch 'eval' to 'info' to see what is produced.
+# Generate clean-xxx targets for each entry in $(DOCKER_IMAGES).  Switch 'eval' to 'info' to see what is produced.
 define CLEAN_IMAGE
 clean-$1:
 	@rm -f ../.image-$1
 	@-docker rmi -f $(HUB_ORG)/$1:$(TAG)
 endef
-$(foreach image,$(IMAGES),$(eval $(call CLEAN_IMAGE,$(image))))
+$(foreach image,$(DOCKER_IMAGES),$(eval $(call CLEAN_IMAGE,$(image))))
 

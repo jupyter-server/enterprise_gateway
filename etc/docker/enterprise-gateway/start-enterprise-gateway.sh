@@ -11,12 +11,15 @@ export KG_IP=${KG_IP:-0.0.0.0}
 export KG_PORT=${KG_PORT:-8888}
 export KG_PORT_RETRIES=${KG_PORT_RETRIES:-0}
 
-# TODO: figure out why tunneling doesn't work from non-root user.
-# To use tunneling set this variable to 'True' and run as root.
+# To use tunneling set this variable to 'True' (may need to run as root).
 export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}
 
 export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
+export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-30}
+export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-True}
+export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker']"}
+
 
 echo "Starting Jupyter Enterprise Gateway..."
 
@@ -24,7 +27,7 @@ jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
 	--KernelSpecManager.whitelist=${EG_KERNEL_WHITELIST} \
 	--MappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
-	--MappingKernelManager.cull_interval=30 \
-	--MappingKernelManager.cull_connected=True 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
+	--MappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
+	--MappingKernelManager.cull_connected=${EG_CULL_CONNECTED} 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
 
 

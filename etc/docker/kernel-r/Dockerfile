@@ -1,4 +1,7 @@
-FROM jupyter/r-notebook
+# FIXME: This image is from April 8 (https://github.com/jupyter/docker-stacks/commit/8a1b90cbcba5355e6174a9fc24fe225813befe92)
+# Attempts to use newer versions - within a couple months of 9/18/2018 - were encountering this issue:
+# https://github.com/jupyter/docker-stacks/issues/679 - r-notebook kernel crashes because of png support
+FROM jupyter/r-notebook:8a1b90cbcba5
 
 # Additional package needed by launcher
 RUN conda install --quiet --yes \

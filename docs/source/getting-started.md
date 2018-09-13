@@ -10,6 +10,7 @@ The following Resource Managers are supported with the Jupyter Enterprise Gatewa
 * YARN Resource Manager - Cluster Mode
 * IBM Spectrum Conductor - Cluster Mode
 * Kubernetes
+* Docker Swarm
 
 The following kernels have been tested with the Jupyter Enterprise Gateway:
 
@@ -101,6 +102,7 @@ the different modes of distributing your kernels:
 * [Enabling YARN Cluster Mode support](getting-started-cluster-mode.html)
 * [Enabling YARN Client Mode or Spark Standalone support](getting-started-client-mode.html)
 * [Enabling Kubernetes Support](getting-started-kubernetes.html)
+* [Enabling Docker Swarm Support](getting-started-docker.html)
 * [Enabling IBM Spectrum Conductor Support](getting-started-conductor.html)
 
 ### Starting Enterprise Gateway
@@ -137,14 +139,14 @@ fi
 
 ### Connecting a Notebook to Enterprise Gateway
 
-[NB2KG](https://github.com/jupyter-incubator/nb2kg) is used to connect a Notebook from a
+[NB2KG](https://github.com/jupyter/nb2kg) is used to connect a Notebook from a
 local desktop or laptop to the Enterprise Gateway instance on the Spark/YARN cluster. We strongly recommend
-that NB2KG [v0.1.0](https://github.com/jupyter-incubator/nb2kg/releases/tag/v0.1.0) be used as our team has 
+that NB2KG [v0.1.0](https://github.com/jupyter/nb2kg/releases/tag/v0.1.0) be used as our team has 
 provided some security enhancements to enable for conveying the notebook user (for configurations when 
 Enterprise Gateway is running behind a secured gateway) and allowing for increased request timeouts (due 
 to the longer kernel startup times when interacting with the resource manager or distribution operations). 
 
-Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter-incubator/nb2kg#run-notebook-server), 
+Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter/nb2kg#run-notebook-server), 
 one might use the following...
 
 ```bash

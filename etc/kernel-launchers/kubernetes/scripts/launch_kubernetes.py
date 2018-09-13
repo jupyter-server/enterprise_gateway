@@ -18,6 +18,9 @@ def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_
     keywords = dict()
 
     # Factory values...
+    # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
+    # value since this is used to locate the kernel launch script within the image.
+    keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     keywords['eg_response_address'] = response_addr
     keywords['kernel_connection_filename'] = connection_file
     keywords['kernel_spark_context_init_mode'] = spark_context_init_mode

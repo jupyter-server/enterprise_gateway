@@ -50,7 +50,8 @@ Jupyter Notebooks to share resources across an Apache Spark cluster.
         'pexpect>=4.2.0',
         'pycrypto>=2.6.1',
         'pyzmq>=17.0.0',
-        'kubernetes>=4.0.0'
+        'kubernetes>=4.0.0',
+        'docker>=3.5.0'
     ],
     classifiers=[
         'Intended Audience :: Developers',

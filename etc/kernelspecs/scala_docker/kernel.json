@@ -1,0 +1,21 @@
+{
+  "language": "scala",
+  "display_name": "Scala on Docker",
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.docker_pp.DockerSwarmProcessProxy",
+    "config": {
+      "image_name": "elyra/kernel-scala:dev"
+    }
+  },
+  "env": {
+  },
+  "argv": [
+    "python",
+    "/usr/local/share/jupyter/kernels/scala_docker/scripts/launch_docker.py",
+    "{connection_file}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "none"
+  ]
+}

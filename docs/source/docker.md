@@ -7,7 +7,7 @@ The project produces three docker images to make both testing and general usage 
 
 All images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their 
 docker files can be found in the github repository in the appropriate directory of 
-[etc/docker](https://github.com/jupyter-incubator/enterprise_gateway/tree/master/etc/docker).
+[etc/docker](https://github.com/jupyter/enterprise_gateway/tree/master/etc/docker).
 
 Local images can also be built via `make docker-images`.
 
@@ -49,29 +49,28 @@ the tag for this image will be `:dev`.
 
 Image [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) is a simple image built 
 on [jupyter/minimal-notebook](https://hub.docker.com/r/jupyter/minimal-notebook/) along with the latest
-release of [NB2KG](https://github.com/jupyter-incubator/nb2kg).  The image 
+release of [NB2KG](https://github.com/jupyter/nb2kg).  The image 
 also sets some of the new variables that pertain to enterprise gateway (e.g., `KG_REQUEST_TIMEOUT`, 
 `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
 
 To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the 
 tag for this image will be `:dev`.
 
-## Kubernetes Images
-The following sections describe the docker images used within Kubernetes environments - all of which can be pulled from 
+## Runtime Images
+The following sections describe the docker images used within Kubernetes and Docker Swarm environments - all of which can be pulled from 
 the [Enterprise Gateway organization](https://hub.docker.com/r/elyra/) on dockerhub.
 
 ### elyra/enterprise-gateway
-The primary image for Kubernetes support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
-contains the Enterprise Gateway server software and default kernelspec files.  Its deployment is completely a function 
-of the [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file
+The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
+contains the Enterprise Gateway server software and default kernelspec files.  For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file.  For Docker Swarm, deployment can be accomplished using [enterprise-gateway-swarm.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) although we should convert this to a docker compose yaml file at some point.
 
-We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container
+We recommend that a persistent/mounted volume be used so that the kernelspec files can be accessed outside of the container
 since we've found those to require post-deployment modifications from time to time.
 
 ### elyra/kernel-py
 Image [elyra/kernel-py](https://hub.docker.com/r/elyra/kernel-py/) contains the IPython kernel.  It is currently built on the spark-on-kubernetes image 
 (`kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0`) and can be launched 
-as a spark application or in *vanilla* mode depending on its kernelspecs attributes.  We will likely introduce separate,
+as a spark application or in *vanilla* mode depending on its kernelspecs attributes. Please note that the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.  We'll revisit this once Spark 2.4 is available. We will likely introduce separate,
 non-spark, containers based on anaconda - so each kernelspec will likely be associated with different images.
 
 ### elyra/kernel-tf-py
@@ -86,9 +85,12 @@ it can support GPUs.  As noted in the image name, its language is Python and use
 the IPython kernel within.
 
 ### elyra/kernel-scala
-Image [elyra/kernel-scala](https://hub.docker.com/r/elyra/kernel-scala/) contains the Scala (Apache Toree) kernel and is currently build on the spark-on-kubernetes image (`kubespark/spark-driver:v2.2.0-kubernetes-0.5.0`).
+Image [elyra/kernel-scala](https://hub.docker.com/r/elyra/kernel-scala/) contains the Scala (Apache Toree) kernel and is currently build on the spark-on-kubernetes image (`kubespark/spark-driver:v2.2.0-kubernetes-0.5.0`). As a result, the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.  We'll revisit this once Spark 2.4 is available.
+
 Since Toree is currently tied to Spark, creation of a *vanilla* mode Scala kernel is not high on our current set of priorities.
 
 ### elyra/kernel-r
-Image [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r/) contains the IRKernel and is currently built on the spark-on-kubernetes image (`kubespark/spark-driver-r:v2.2.0-kubernetes-0.5.0`).
-Like with `elyra/kernel-py` it can be launched in two modes depending on the need of a Spark context.
+Image [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r/) contains the IRKernel and is currently built on the [jupyter/r-notebook/](https://hub.docker.com/r/jupyter/r-notebook/) image.
+
+### elyra/kernel-spark-r
+Image [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r/) contains the IRKernel and is currently built on the spark-on-kubernetes image (`kubespark/spark-driver-r:v2.2.0-kubernetes-0.5.0`).  As a result, the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.  We'll revisit this once Spark 2.4 is available.

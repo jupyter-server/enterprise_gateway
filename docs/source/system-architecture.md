@@ -77,7 +77,7 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
 ```
 
 The `RemoteKernelSpec` class definition can be found in 
-[remotekernelspec.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
+[remotekernelspec.py](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
 
 See the [Process Proxy](#process-proxy) section for more details.
 
@@ -101,7 +101,7 @@ place of the process instance used in today's implementation.  Any interaction w
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
-[remotemanager.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
 
 ### Process Proxy
 Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
@@ -120,10 +120,14 @@ via a round-robin algorithm (that we should make pluggable someday).
 within a YARN-managed cluster.
 - `KubernetesProcessProxy` - is responsible for the discovery and management of kernels hosted
 within a Kubernetes cluster.
+- `DockerSwarmProcessProxy` - is responsible for the discovery and management of kernels hosted
+within a Docker Swarm cluster.
+- `DockerProcessProxy` - is responsible for the discovery and management of kernels hosted
+within Docker configuration.  Note: because these kernels will always run local to the corresponding Enterprise Gateway instance, these process proxies are of limited use.
 - `ConductorClusterProcessProxy` - is responsible for the discovery and management of kernels hosted
 within an IBM Spectrum Conductor cluster.
 
-You might notice that the last three process proxies do not necessarily control the *launch* of the kernel.  This is 
+You might notice that the last five process proxies do not necessarily control the *launch* of the kernel.  This is 
 because the native jupyter framework is utilized such that the script that is invoked by the framework is what 
 launches the kernel against that particular resource manager.  As a result, the *startup time* actions of these process
 proxies is more about discovering where the kernel *landed* within the cluster in order to establish a mechanism for 
@@ -135,7 +139,7 @@ string) in a remote shell since the host is determined by Enterprise Gateway, el
 its implementation.
 
 These class definitions can be found in the
-[processproxies package](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
+[processproxies package](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
 Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not 
 required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a *bring your own process proxy* model.
 
@@ -278,11 +282,20 @@ With the popularity of Kubernetes within the enterprise, Enterprise Gateway now 
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API.  Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
 cluster as a *Service* and *Deployment*.  The primary vehicle by which this is accomplished is via the
-[enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
+[enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
 file that contains the necessary metadata to define its deployment.  
 
 See 
 [Enabling Kubernetes Support](getting-started-kubernetes.html#enabling-kubernetes-support) for details.
+
+###### DockerSwarmProcessProxy
+Enterprise Gateway provides an implementation of a process proxy that communicates with the Docker Swarm resource manager via the Docker API.  When used, the kernels are launched as swarm services and can reside anywhere in the managed cluster. To leverage kernels configured in this manner, Enterprise Gateway can be deployed
+either as a Docker Swarm _service_ or a traditional Docker container.
+
+A similar `DockerProcessProxy` implementation has also been provided.  When used, the corresponding kernel will be launched as a traditional docker container that runs local to the launching Enterprise Gateway instance.  As a result, its use has limited value.
+
+See 
+[Enabling Docker Swarm Support](getting-started-docker.html#enabling-docker-swarm-support) for details.
 
 ###### ConductorClusterProcessProxy
 Enterprise Gateway also provides an implementation of a process proxy 
@@ -362,7 +375,7 @@ argument name.  However, the response address is identified by the parameter `--
 value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points 
 back to the Enterprise Gateway server - which is listening for a response on the provided port.
 
-Here's a [kernel.json](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) 
+Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) 
 file illustrating these parameters...
 
 ```json
@@ -403,9 +416,9 @@ spark context will be created.
 
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
 script as the initial arguments to the launcher 
-(see [launch_ipykernel.py](https://github.com/jupyter-incubator/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

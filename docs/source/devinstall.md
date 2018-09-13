@@ -1,6 +1,6 @@
 ## Development Workflow
 
-Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter-incubator/enterprise_gateway) 
+Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter/enterprise_gateway) 
 server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
 running tests, building docs, packaging kernelspecs, etc.
 
@@ -18,7 +18,7 @@ mkdir -p ~/projects
 cd !$
 
 # clone this repo
-git clone https://github.com/jupyter-incubator/enterprise_gateway.git
+git clone https://github.com/jupyter/enterprise_gateway.git
 ```
 ### Make
 
@@ -27,14 +27,16 @@ Entering `make` with no parameters yields the following:
 
 ```
 activate                       eval `make activate`
-clean-docker                   Remove docker images
 clean-enterprise-gateway-demo  Remove elyra/enterprise-gateway-demo:dev docker image
 clean-enterprise-gateway       Remove elyra/enterprise-gateway:dev docker image
+clean-images                   Remove docker images
+clean-kernel-images            Remove kernel-based docker images
 clean-kernel-py                Remove elyra/kernel-py:dev docker image
 clean-kernel-r                 Remove elyra/kernel-r:dev docker image
 clean-kernel-scala             Remove elyra/kernel-scala:dev docker image
+clean-kernel-spark-r           Remove elyra/kernel-spark-r:dev docker image
+clean-kernel-tf-gpu-py         Remove elyra/kernel-tf-gpu-py:dev docker image
 clean-kernel-tf-py             Remove elyra/kernel-tf-py:dev docker image
-clean-kubernetes               Remove kubernetes docker images
 clean-nb2kg                    Remove elyra/nb2kg:dev docker image
 clean-yarn-spark               Remove elyra/yarn-spark:2.1.0 docker image
 clean                          Make a clean source tree
@@ -43,19 +45,22 @@ dist                           Make source, binary and kernelspecs distribution 
 docker-images                  Build docker images
 docs                           Make HTML documentation
 enterprise-gateway-demo        Build elyra/enterprise-gateway-demo:dev docker image
+enterprise-gateway             Build elyra/enterprise-gateway:dev docker image
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
-itest                          Run integration tests (optionally) against docker container
-kernelspecs                    Create an archive with sample kernelspecs
-enterprise-gateway             Build elyra/enterprise-gateway:dev docker image
-kubernetes-images              Build kubernetes docker images
+itest-docker                   Run integration tests (optionally) against docker container
+itest-yarn                     Run integration tests (optionally) against docker demo (YARN) container 
+kernel-images                  Build kernel-based docker images
 kernel-py                      Build elyra/kernel-py:dev docker image
 kernel-r                       Build elyra/kernel-r:dev docker image
 kernel-scala                   Build elyra/kernel-scala:dev docker image
+kernel-spark-r                 Build elyra/kernel-spark-r:dev docker image
+kernel-tf-gpu-py               Build elyra/kernel-tf-gpu-py:dev docker image
 kernel-tf-py                   Build elyra/kernel-tf-py:dev docker image
-kubernetes-publish             Push kubernetes docker images to docker hub
+kernelspecs                    Create an archive with sample kernelspecs
 nb2kg                          Build elyra/nb2kg:dev docker image
 nuke                           Make clean + remove conda env
+publish-images                 Push docker images to docker hub
 release                        Make a wheel + source release on PyPI
 test                           Run unit tests
 yarn-spark                     Build elyra/yarn-spark:2.1.0 docker image
@@ -154,8 +159,7 @@ make itest
 
 ### Build the docker images
 
-The following can be used to build all docker images (including Kubernetes images) 
-used within the project.  See [docker images](docker.html) for specific details.
+The following can be used to build all docker images used within the project.  See [docker images](docker.html) for specific details.
 
 ```
 make docker-images
