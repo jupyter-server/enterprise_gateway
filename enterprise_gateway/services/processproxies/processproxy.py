@@ -6,6 +6,7 @@ import os
 import sys
 import re
 import signal
+import errno
 import abc
 import json
 import paramiko
@@ -215,7 +216,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
-            self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
+                self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
         return result
 
     def terminate(self):
