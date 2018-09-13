@@ -123,8 +123,6 @@ $(foreach image,$(IMAGES),$(eval $(call BUILD_IMAGE,$(image))))
 define CLEAN_IMAGE
 clean-$1:
 	@rm -f ../.image-$1
-	@-docker rmi -f $(HUB_ORG)/$1:$(TAG)_x
-	@-docker tag $(HUB_ORG)/$1:$(TAG) $(HUB_ORG)/$1:$(TAG)_x
 	@-docker rmi -f $(HUB_ORG)/$1:$(TAG)
 endef
 $(foreach image,$(IMAGES),$(eval $(call CLEAN_IMAGE,$(image))))
