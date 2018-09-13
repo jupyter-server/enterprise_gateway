@@ -1,10 +1,10 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs install sdist test release clean-docker clean-docker-enterprise-gateway \
-    clean-docker-nb2kg clean-docker-yarn-spark clean-kubernetes clean-enterprise-gateway \
+.PHONY: help build clean nuke dev dev-http docs install sdist test release clean-images clean-enterprise-gateway \
+    clean-nb2kg clean-yarn-spark clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
-    clean-kernel-tf-gpu-py kubernetes-publish
+    clean-kernel-tf-gpu-py publish-images
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -93,8 +93,8 @@ docker-images:  ## Build docker images
 enterprise-gateway-demo:  ## Build elyra/enterprise-gateway-demo:dev docker image
 yarn-spark:  ## Build elyra/yarn-spark:2.3.1 docker image
 nb2kg:  ## Build elyra/nb2kg:dev docker image
-kubernetes-images: ## Build kubernetes docker images
 enterprise-gateway: ## Build elyra/enterprise-gateway:dev docker image
+kernel-images: ## Build kernel-based docker images
 kernel-py: ## Build elyra/kernel-py:dev docker image
 kernel-r: ## Build elyra/kernel-r:dev docker image
 kernel-spark-r: ## Build elyra/kernel-spark-r:dev docker image
@@ -103,19 +103,16 @@ kernel-tf-py: ## Build elyra/kernel-tf-py:dev docker image
 kernel-tf-gpu-py: ## Build elyra/kernel-tf-gpu-py:dev docker image
 
 # Actual working targets...
-docker-images enterprise-gateway-demo yarn-spark nb2kg kubernetes-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
-
-docker-image-enterprise-gateway: $(WHEEL_FILE)
+docker-images enterprise-gateway-demo yarn-spark nb2kg kernel-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 # Here for doc purposes
-clean-docker: ## Remove docker images
+clean-images: ## Remove docker images
 clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
 clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
 clean-yarn-spark: ## Remove elyra/yarn-spark:2.3.1 docker image
-clean-kubernetes: ## Remove kubernetes docker images
 clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
+clean-kernel-images: ## Remove kernel-based docker images
 clean-kernel-py: ## Remove elyra/kernel-py:dev docker image
 clean-kernel-r: ## Remove elyra/kernel-r:dev docker image
 clean-kernel-spark-r: ## Remove elyra/kernel-spark-r:dev docker image
@@ -123,42 +120,71 @@ clean-kernel-scala: ## Remove elyra/kernel-scala:dev docker image
 clean-kernel-tf-py: ## Remove elyra/kernel-tf-py:dev docker image
 clean-kernel-tf-gpu-py: ## Remove elyra/kernel-tf-gpu-py:dev docker image
 
-clean-docker clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kubernetes clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
+clean-images clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-kubernetes-publish: ## Push kubernetes docker images to docker hub
+publish-images: ## Push docker images to docker hub
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-# itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway 
+ENTERPRISE_GATEWAY_TAG?=dev
+
+# itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway
+
+itest: itest-docker itest-yarn
 
 # itest configurable settings
-# indicates which host (gateway) to connect to...
-ITEST_HOST?=localhost:8888
 # indicates two things:
 # this prefix is used by itest to determine hostname to test against, in addtion,
 # if itests will be run locally with docker-prep target, this will set the hostname within that container as well
-export ITEST_HOSTNAME_PREFIX?=itest
+ITEST_HOSTNAME_PREFIX?=itest
+
 # indicates the user to emulate.  This equates to 'KERNEL_USERNAME'...
 ITEST_USER?=bob
 # indicates the other set of options to use.  At this time, only the python notebooks succeed, so we're skipping R and Scala.
 ITEST_OPTIONS?=
 
-ENTERPRISE_GATEWAY_TAG?=dev
-
 # here's an example of the options (besides host and user) with their expected values ...
 # ITEST_OPTIONS=--impersonation < True | False >
 
-PREP_DOCKER?=1
-itest: ## Run integration tests (optionally) against docker container
-ifeq (1, $(PREP_DOCKER))
-	make docker-prep
+ITEST_YARN_PORT?=8888
+ITEST_YARN_HOST?=localhost:$(ITEST_YARN_PORT)
+ITEST_YARN_TESTS?=enterprise_gateway.itests
+
+PREP_ITEST_YARN?=1
+itest-yarn: ## Run integration tests (optionally) against docker demo (YARN) container
+ifeq (1, $(PREP_ITEST_YARN))
+	make itest-yarn-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_HOST) KERNEL_USERNAME=$(ITEST_USER) nosetests -v enterprise_gateway.itests)
-	@echo "Run \`docker logs $(ITEST_HOSTNAME_PREFIX)\` to see enterprise-gateway log."
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) KERNEL_USERNAME=$(ITEST_USER) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) nosetests -v $(ITEST_YARN_TESTS))
+	@echo "Run \`docker logs itest-yarn\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
-docker-prep: 
-	@-docker rm -f $(ITEST_HOSTNAME_PREFIX) >> /dev/null
-	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
-	@-docker run -itd -p 8888:8888 -h itest --name itest -e ITEST_HOSTNAME_PREFIX -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
-	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs $(ITEST_HOSTNAME_PREFIX) |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
+itest-yarn-prep:
+	@-docker rm -f itest-yarn >> /dev/null
+	@echo "Starting enterprise-gateway container (run \`docker logs itest-yarn\` to see container log)..."
+	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
+	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest-yarn |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
+
+
+# This should get cleaned up once docker support is more mature
+ITEST_DOCKER_PORT?=8889
+ITEST_DOCKER_HOST?=localhost:$(ITEST_DOCKER_PORT)
+ITEST_DOCKER_TESTS?=enterprise_gateway.itests.test_r_kernel.TestRKernelLocal enterprise_gateway.itests.test_python_kernel.TestPythonKernelLocal enterprise_gateway.itests.test_scala_kernel.TestScalaKernelLocal
+ITEST_DOCKER_KERNELS=PYTHON_KERNEL_LOCAL_NAME=python_docker SCALA_KERNEL_LOCAL_NAME=scala_docker R_KERNEL_LOCAL_NAME=R_docker
+
+PREP_ITEST_DOCKER?=1
+itest-docker: ## Run integration tests (optionally) against docker swarm
+ifeq (1, $(PREP_ITEST_DOCKER))
+	make itest-docker-prep
+endif
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) KERNEL_USERNAME=$(ITEST_USER) $(ITEST_DOCKER_KERNELS) nosetests -v $(ITEST_DOCKER_TESTS))
+	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
+
+PREP_TIMEOUT?=60
+itest-docker-prep:
+	@-docker service rm itest-docker
+	# Check if swarm mode is active, if not attempt to create the swarm
+	@(docker info | grep -q 'Swarm: active'; if [ $$? -eq 1 ]; then docker swarm init; fi;)
+	@echo "Starting enterprise-gateway swarm service (run \`docker service logs itest-docker\` to see service log)..."
+	@KG_PORT=${ITEST_DOCKER_PORT} EG_NAME=itest-docker etc/docker/enterprise-gateway-swarm.sh
+	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker service logs itest-docker |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)

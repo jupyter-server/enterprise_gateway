@@ -94,7 +94,7 @@ YARN APIs and can also be conveyed via the command-line boolean option `Enterpri
 ##### Impersonation in Standalone or YARN Client Mode
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
 kernel launch as the target user.  This can also be configured within the 
-[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh)
+[run.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh)
 script and requires the following:
 
 1. The gateway user (i.e., the user in which Enterprise Gateway is running) must be enabled to perform sudo operations

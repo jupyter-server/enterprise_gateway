@@ -30,7 +30,7 @@ install:
 script:
     - jupyter enterprisegateway --help
     - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
-    - make itest
+    - make itest-yarn
     - pip uninstall -y jupyter_enterprise_gateway
 
 after_success:
@@ -38,7 +38,6 @@ after_success:
   - python --version
   - pip --version
   - pip list
-  - docker logs itest
   - pip install codecov
   - codecov
 
@@ -47,4 +46,4 @@ after_failure:
   - python --version
   - pip --version
   - pip list
-  - docker logs itest
+  - docker logs itest-yarn

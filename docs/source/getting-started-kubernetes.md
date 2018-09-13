@@ -10,7 +10,7 @@ fully realized until EG supports persistent sessions).
 As with all kubernetes deployments, Enterprise Gateway is built into a docker image.  The
 base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
 and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with
-other kubernetes-based images.  See [Kubernetes Images](docker.html#kubernetes-images) for image details.
+other kubernetes-based images.  See [Runtime Images](docker.html#runtime-images) for image details.
 
 When deployed within a [spark-on-kubernetes](https://github.com/apache-spark-on-k8s/spark) 
 cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across 
@@ -29,7 +29,7 @@ The service is currently configured as type `NodePort` but is intended for type
 are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`.  As
 a result, kernel creation requests will be routed to different deployment instances (see 
 deployment) thereby diminishing the need for a `LoadBalancer` type. Here's the service 
-yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml):
+yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml):
 ```yaml
 apiVersion: v1
 kind: Service
@@ -51,7 +51,7 @@ spec:
 The deployment yaml essentially houses the pod description.  By increasing the number of `replicas`
 a configuration can experience instant benefits of distributing Enterprise Gateway instances across 
 the cluster.  This implies that once session persistence is provided, we should be able to provide 
-highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
+highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
 that defines the Kubernetes deployment and pod (some items may have changed):
 ```yaml
 apiVersion: apps/v1beta2
@@ -253,7 +253,7 @@ _[Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volu
 it available to all pods within the Kubernetes cluster.
 
 As an example, we have included a stanza for creating a Persistent Volume (PV) and Persistent Volume 
-Claim (PVC), along with appropriate references to the PVC within each pod definition within [enterprise-gateway.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml).
+Claim (PVC), along with appropriate references to the PVC within each pod definition within [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml).
  By default, these references are commented out as they require
 the system administrator configure the appropriate PV type (e.g., nfs) and server IP.
 
@@ -328,7 +328,7 @@ for the container specification and `volumes` in the pod specification):
         persistentVolumeClaim:
           claimName: kernelspecs-pvc
 ```
-Note that because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), 
+Note that because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), 
 resides in the kernelspecs hierarchy, updates or modifications to kubernetes kernel instances can now 
 also take place.  (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 
@@ -343,7 +343,7 @@ pod(s) (including executor pods).  Today, both launch mechanisms, however, use t
 docker image for the pod (although that will likely change).
 
 Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the 
-`KubernetesProcessProxy` section below, this file ([kernel-pod.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml))
+`KubernetesProcessProxy` section below, this file ([kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml))
 serves as a template where each of the tags prefixed with `$` represent variables that are substituted at the 
 time of the kernel's launch.
 ```yaml
@@ -410,7 +410,7 @@ configuration stanza  which specifies the docker image to associate with the ker
 pod.  If this entry is not provided, the Enterprise Gateway implementation will use a default 
 entry of `elyra/kernel-py:dev`.  In either case, this value is made available to the 
 rest of the parameters used to launch the kernel by way of an environment variable: 
-`EG_KUBERNETES_KERNEL_IMAGE`.
+`KERNEL_IMAGE`.
 
 ```json
 {
@@ -427,7 +427,7 @@ files.  However, when launching _vanilla_ kernels in a kubernetes environment, w
 invoked isn't the kernel's launcher, but, instead, a python script that is responsible
 for using the [Kubernetes Python API](https://github.com/kubernetes-client/python) to 
 create the corresponding pod instance.  The pod is _configured_ by applying the values 
-to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml) file previously displayed. 
+to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml) file previously displayed. 
 This file resides in the same `scripts` directory as the kubernetes launch script - 
 `launch_kubernetes.py` - which is referenced by the kernel.json's `argv:` stanza:
 ```json
@@ -450,7 +450,7 @@ When the kernel is intended to target _Spark-on-kubernetes_, its launch is
 very much like kernels launched in YARN _cluster mode_, albeit with a completely different
 set of parameters.  Here's an example `SPARK_OPTS` string value which best conveys the idea:
 ```
-    "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${EG_KUBERNETES_KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.2.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
+    "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.2.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
 ```
 Note that each of the labels previously discussed are also applied to the _driver_ and _executor_ pods.
 

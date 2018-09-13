@@ -1,6 +1,8 @@
 #!/bin/bash
 
-echo kernel-bootstrap.sh: language=${KERNEL_LANGUAGE}, connection-file=${KERNEL_CONNECTION_FILENAME}, reponse-addr=${EG_RESPONSE_ADDRESS}, spark-context-init-mode=${KERNEL_SPARK_CONTEXT_INIT_MODE}
+KERNEL_SPECS_PATH=${KERNEL_SPECS_PATH:-/usr/local/share/jupyter/kernels}
+
+echo kernel-bootstrap.sh env: `env`
 
 if [[ "${KERNEL_LANGUAGE}" != "scala" ]];
 then
@@ -8,7 +10,7 @@ then
 	exit 1
 fi
 
-PROG_HOME=/usr/local/share/jupyter/kernels/scala_kubernetes
+PROG_HOME=${KERNEL_SPECS_PATH}/${KERNEL_NAME}
 KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
 TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
 if [ ! -f ${TOREE_ASSEMBLY} ]; then

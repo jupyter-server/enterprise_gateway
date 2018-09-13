@@ -29,6 +29,8 @@ spec:
       value: ${kernel_language}
     - name: KERNEL_SPARK_CONTEXT_INIT_MODE
       value: ${kernel_spark_context_init_mode}
+    - name: KERNEL_NAME
+      value: ${kernel_name}
     - name: KERNEL_USERNAME
       value: ${kernel_username}
     - name: KERNEL_ID
