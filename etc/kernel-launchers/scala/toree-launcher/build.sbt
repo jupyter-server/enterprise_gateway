@@ -7,7 +7,7 @@ name := "toree-launcher"
 
 version := sys.props.getOrElse("version", default = "1.0").replaceAll("dev[0-9]", "SNAPSHOT")
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
 resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
 resolvers += "Sonatype Repository" at "http://oss.sonatype.org/content/repositories/releases"
