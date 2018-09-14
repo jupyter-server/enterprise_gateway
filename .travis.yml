@@ -14,8 +14,8 @@ env:
     - ASYNC_TEST_TIMEOUT=30
 
 before_install:
-    - mkdir -p $HOME/.sbt/launchers/1.0.3
-    - curl -L -o $HOME/.sbt/launchers/1.0.3/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.0.3/sbt-launch-1.0.3.jar
+    - mkdir -p $HOME/.sbt/launchers/1.2.1
+    - curl -L -o $HOME/.sbt/launchers/1.2.1/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.2.1/sbt-launch-1.2.1.jar
 
 install:
     - pip install --upgrade setuptools pip websocket-client
