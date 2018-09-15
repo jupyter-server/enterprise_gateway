@@ -9,6 +9,10 @@ python:
 services:
     - docker
 
+cache:
+    directories:
+     - /home/travis/.sbt/
+
 env:
   global:
     - ASYNC_TEST_TIMEOUT=30
