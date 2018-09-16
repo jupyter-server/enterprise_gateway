@@ -141,25 +141,6 @@ but it failed with a "Kernel error" and a SSHException.**
     This should be done on the host running Enterprise Gateway as well as all the remote hosts
     on which the kernel is launched.
 
-- **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
-
-    When using user impersonation in a YARN cluster with Kerberos authentication, if Kerberos is not
-    setup properly you will usually see the following warning that will keep a notebook from connecting:
-
-    ```bash
-    WARN Client: Exception encountered while connecting to the server : javax.security.sasl.SaslException: GSS initiate failed
-    [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]
-    ```
-
-    The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
-    with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
-
-- **The Kernel keeps dying when processing jobs that require large amount of resources (e.g. large files)**
-
-   This is usually seen when you are trying to use more resources then what is available for your kernel.
-   To address this issue, increase the amount of memory available for your YARN application or another
-   Resource Manager managing the kernel.
-
 - **I'm trying to launch a (Python/Scala/R) kernel with port range but it failed with `RuntimeError: Invalid port range `.**
 
     ```
@@ -181,3 +162,42 @@ but it failed with a "Kernel error" and a SSHException.**
 
     To address this issue, make sure that the specified port range does not overlap with TCP's well-known
     port range of (0, 1024].
+
+- **I'm trying to launch a (Python/Scala/R) kernel but it times out and the YARN application status remain `ACCEPTED`.**
+
+    Enterprise Gateway log from server will look like the one below, and will complain that there are no resources:
+    `launch timeout due to: YARN resources unavailable`
+
+    ```bash
+    State: 'ACCEPTED', Host: '', KernelID: '3181db50-8bb5-4f91-8556-988895f63efa', ApplicationID: 'application_1537119233094_0001'
+    State: 'ACCEPTED', Host: '', KernelID: '3181db50-8bb5-4f91-8556-988895f63efa', ApplicationID: 'application_1537119233094_0001'
+    ...
+    ...
+    SIGKILL signal sent to pid: 19690
+    YarnClusterProcessProxy.kill, application ID: application_1537119233094_0001, kernel ID: 3181db50-8bb5-4f91-8556-988895f63efa, state: ACCEPTED
+    KernelID: '3181db50-8bb5-4f91-8556-988895f63efa' launch timeout due to: YARN resources unavailable after 61.0 seconds for app application_1537119233094_0001, launch timeout: 60.0!  Check YARN configuration.
+    ```
+
+    The most common cause for this is that YARN Resource Managers are failing to start and the cluster see no resources available.
+    Make sure YARN Resource Managerss are running ok. We have also noticed that, in Kerberized environment, sometimes there are
+    issues with directory access right that cause the YARN Resource Managers to fail to start and this can be corrected by validating
+    the existence of `/hadoop/yarn` and that it's owned by `yarn: hadoop`.
+
+- **The Kernel keeps dying when processing jobs that require large amount of resources (e.g. large files)**
+
+   This is usually seen when you are trying to use more resources then what is available for your kernel.
+   To address this issue, increase the amount of memory available for your YARN application or another
+   Resource Manager managing the kernel.
+
+- **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
+
+    When using user impersonation in a YARN cluster with Kerberos authentication, if Kerberos is not
+    setup properly you will usually see the following warning that will keep a notebook from connecting:
+
+    ```bash
+    WARN Client: Exception encountered while connecting to the server : javax.security.sasl.SaslException: GSS initiate failed
+    [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]
+    ```
+
+    The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
+    with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
