@@ -274,6 +274,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
                                  format(gateway_user))
 
         self.io_loop = ioloop.IOLoop.current()
+        
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
         signal.signal(signal.SIGTERM, self._signal_stop)
 
