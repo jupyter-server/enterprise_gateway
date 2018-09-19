@@ -18,7 +18,7 @@ dependencies:
     - yarn-api-client>=0.2.3
   # Documentation Requirements
   - sphinx_rtd_theme
-  - sphinx
+  - sphinx=1.7.9
   - recommonmark
   # Test Requirements
   - nose
