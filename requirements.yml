@@ -15,7 +15,7 @@ dependencies:
   - pyzmq>=17.0.0
   - pip
   - pip:
-    - yarn-api-client>=0.2.3
+    - yarn-api-client<0.3.0
   # Documentation Requirements
   - sphinx_rtd_theme
   - sphinx=1.7.9
