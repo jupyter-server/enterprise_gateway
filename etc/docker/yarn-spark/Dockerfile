@@ -1,5 +1,5 @@
 # Use docker image with Spark 2.1 and Hadoop 2.7 (sequenceiq/hadoop-docker:2.7.1)
-FROM aghorbani/spark:2.1.0
+FROM akchin/spark:2.3.1
 
 ENV ANACONDA_HOME=/opt/anaconda2
 ENV PATH=$ANACONDA_HOME/bin:$PATH
@@ -31,7 +31,7 @@ RUN cd /tmp && \
 	curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.2.0-incubating/toree-pip/toree-0.2.0.tar.gz && \
 	pip install --upgrade setuptools --user python && \
 	pip install /tmp/toree-0.2.0.tar.gz && \
-	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.1" --interpreters=Scala && \
+	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.3.1" --interpreters=Scala && \
 	rm -f /tmp/toree-0.2.0.tar.gz
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
@@ -74,6 +74,6 @@ ENTRYPOINT ["/etc/bootstrap-yarn-spark.sh"]
 CMD ["--help"]
 
 LABEL Hadoop.version="2.7.1"
-LABEL Spark.version="2.1.0"
+LABEL Spark.version="2.3.1"
 LABEL Anaconda.version="4.4.0"
 LABEL Anaconda.python.version="2.7.13"

@@ -28,7 +28,7 @@ class TestAuthorization(unittest.TestCase):
             self.assertEquals(result, "The cow jumped over the moon.\n")
         finally:
             if kernel:
-                kernel.shutdown()
+                self.gateway_client.shutdown_kernel(kernel)
 
     def test_unauthorized_users(self):
         kernel = None
@@ -39,7 +39,7 @@ class TestAuthorization(unittest.TestCase):
             self.assertRegexpMatches(be.args[0], "403")
         finally:
             if kernel:
-                kernel.shutdown()
+                self.gateway_client.shutdown_kernel(kernel)
 
 if __name__ == '__main__':
     unittest.main()
