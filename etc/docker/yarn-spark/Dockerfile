@@ -5,6 +5,8 @@ ENV ANACONDA_HOME=/opt/anaconda2
 ENV PATH=$ANACONDA_HOME/bin:$PATH
 ENV PYSPARK_PYTHON=$ANACONDA_HOME/bin/python
 
+RUN yum install -y gcc krb5-devel; yum clean all
+
 COPY yarn-site.xml.template /usr/local/hadoop/etc/hadoop/
 
 # Install system logging and insert into bootstrap.sh - helps in troubleshooting ssh

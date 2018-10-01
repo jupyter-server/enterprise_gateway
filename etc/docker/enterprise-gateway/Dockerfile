@@ -1,6 +1,6 @@
 FROM kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0
 
-RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev curl
+RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev curl krb5-dev
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp

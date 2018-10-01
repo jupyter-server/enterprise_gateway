@@ -46,7 +46,7 @@ Jupyter Notebooks to share resources across an Apache Spark cluster.
         'tornado>=4.2.0',
         'requests>=2.7,<3.0',
         'paramiko>=2.1.2',
-        'yarn-api-client<0.3.0',
+        'yarn-api-client>=0.3.0',
         'pexpect>=4.2.0',
         'pycrypto>=2.6.1',
         'pyzmq>=17.0.0',
