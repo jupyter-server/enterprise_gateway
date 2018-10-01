@@ -73,7 +73,7 @@ class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, '2.1')
+        self.assertRegexpMatches(result, '2.3')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('sc.getConf.get("spark.master")')
@@ -85,11 +85,11 @@ class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
 
     def test_get_host_address(self):
         result = self.kernel.execute('sc.getConf.get("spark.driver.host")')
-        self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+        self.assertRegexpMatches(result, 'itest')
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.1_scala")
+    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.3.1_scala")
 
     @classmethod
     def setUpClass(cls):

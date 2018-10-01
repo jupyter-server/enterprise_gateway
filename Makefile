@@ -91,7 +91,7 @@ release: bdist sdist ## Make a wheel + source release on PyPI
 # Here for doc purposes
 docker-images:  ## Build docker images
 enterprise-gateway-demo:  ## Build elyra/enterprise-gateway-demo:dev docker image
-yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
+yarn-spark:  ## Build elyra/yarn-spark:2.3.1 docker image
 nb2kg:  ## Build elyra/nb2kg:dev docker image
 kubernetes-images: ## Build kubernetes docker images
 enterprise-gateway: ## Build elyra/enterprise-gateway:dev docker image
@@ -114,7 +114,7 @@ docker-image-enterprise-gateway: $(WHEEL_FILE)
 clean-docker: ## Remove docker images
 clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
 clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
-clean-yarn-spark: ## Remove elyra/yarn-spark:2.1.0 docker image
+clean-yarn-spark: ## Remove elyra/yarn-spark:2.3.1 docker image
 clean-kubernetes: ## Remove kubernetes docker images
 clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
 clean-kernel-py: ## Remove elyra/kernel-py:dev docker image
