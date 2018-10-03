@@ -60,29 +60,36 @@ KERNEL_USERNAME is set to an appropriate value and retry the request.
 
 ### User Impersonation
 
-User impersonation is not performed with the Enterprise Gateway server, but is instead performed within the kernelspec
-framework.  With respect to the Enterprise Gateway sample kernels, impersonation is triggered from within the `run.sh`
-scripts.  However, the Enterprise Gateway server is what communicates the intention to perform user via two pieces of
-information: `EG_IMPERSONATION_ENABLED` and `KERNEL_USERNAME`.
+The Enterprise Gateway server leverage other technologies to implement user impersonation when launching kernels. This
+option is configured within the kernelspec via two pieces of information: `EG_IMPERSONATION_ENABLED` and
+`KERNEL_USERNAME`.
 
-`EG_IMPERSONATION_ENABLED` indicates the intention that user impersonation should be performed and is conveyed via
-the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled` (default = False).  This value is then
-set into the environment used to launch the kernel, where `run.sh` then acts on it - performing the appropriate logic
-to trigger user impersonation when True.  As a result, it is important that the contents of kernelspecs also be secure
-and trusted.
+`EG_IMPERSONATION_ENABLED` indicates the intention that user impersonation should be performed and can also be conveyed
+via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled` (default = False).  As a result,
+it is important that the contents of kernelspecs also be secure and trusted.
 
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
 
 ##### Impersonation in YARN Cluster Mode
-The recommended approach for performing user impersonation when the kernel is launched using the YARN resource manager
-is to configure the `spark-submit` command within 
-[run.sh](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
-to use the `--proxy-user ${KERNEL_USERNAME}` option.  This YARN option  requires that kerberos be configured within the
-cluster.  In addition the gateway user (`elyra` by default) needs to be set up as a `proxyuser` superuser in hadoop configs.
-Please refer to the
+In a cluster managed by the YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
+this security option as a pre-requisite for user impersonation. When user impersonation is enabled, kernels are launched
+with the `--proxy-user ${KERNEL_USERNAME}` which will tell YARN to launch the kernel in a container used by the provided
+user name.
+
+Note that, when using kerberos in a YARN managed cluster, the gateway user (`elyra` by default) needs to be set up as a
+`proxyuser` superuser in hadoop configuration. Please refer to the
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration steps.
+
+###### SPNEGO Authentication to YARN APIs
+
+When kerberos is enabled in a YARN managed cluster, the administration uis can be configured to require authentication/authorization
+via SPENEGO. When running Enterprise Gateway in a environment configured this way, we need to convey an extra configuration
+to enable the proper authorization when communicating with YARN via the YARN APIs.
+
+`YARN_ENDPOINT_SECURITY_ENABLED` indicates the requirement to use SPNEGO authentication/authorization when connecting with the
+YARN APIs.
 
 ##### Impersonation in Standalone or YARN Client Mode
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 

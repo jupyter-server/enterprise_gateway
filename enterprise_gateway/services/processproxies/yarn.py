@@ -44,7 +44,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.resource_mgr = ResourceManager(address=yarn_master, kerberos_enabled=self.yarn_endpoint_security_enabled)
         else:
             self.resource_mgr = ResourceManager(address=yarn_master)
-        self.resource_mgr.logger.setLevel('DEBUG')
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable

@@ -30,7 +30,7 @@ A snapshot of this help appears below for ease of reference on the web.
 ```
 Jupyter Enterprise Gateway
 
-Provisions Jupyter kernels and proxies HTTP/Websocket traffic to them.
+Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic to them.
 
 Options
 -------
@@ -92,7 +92,7 @@ Parameters are set from command-line arguments of the form:
 are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
 
 EnterpriseGatewayApp options
-----------------
+----------------------------
 --EnterpriseGatewayApp.allow_credentials=<Unicode>
     Default: u''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
@@ -136,6 +136,10 @@ EnterpriseGatewayApp options
     Default: None
     The full path to a certificate authority certificate for SSL/TLS client
     authentication. (KG_CLIENT_CA env var)
+--EnterpriseGatewayApp.conductor_endpoint=<Unicode>
+    Default: None
+    The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT
+    env var)
 --EnterpriseGatewayApp.config_file=<Unicode>
     Default: u''
     Full path of a config file.
@@ -145,6 +149,10 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.default_kernel_name=<Unicode>
     Default: u''
     Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)
+--EnterpriseGatewayApp.env_process_whitelist=<List>
+    Default: []
+    Environment variables allowed to be inherited from the spawning process by
+    the kernel
 --EnterpriseGatewayApp.expose_headers=<Unicode>
     Default: u''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
@@ -162,6 +170,14 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.ip=<Unicode>
     Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
+--EnterpriseGatewayApp.kernel_manager_class=<Type>
+    Default: 'enterprise_gateway.services.kernels.remotemanager.RemoteMapp...
+    The kernel manager class to use. Should be a subclass of
+    `notebook.services.kernels.MappingKernelManager`.
+--EnterpriseGatewayApp.kernel_spec_manager_class=<Type>
+    Default: 'enterprise_gateway.services.kernelspecs.remotekernelspec.Rem...
+    The kernel spec manager class to use. Should be a subclass of
+    `jupyter_client.kernelspec.KernelSpecManager`.
 --EnterpriseGatewayApp.keyfile=<Unicode>
     Default: None
     The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
@@ -196,9 +212,8 @@ EnterpriseGatewayApp options
     Specifies the lower and upper port numbers from which ports are created.
     The bounded values are separated by '..' (e.g., 33245..34245 specifies a
     range of 1000 ports to be randomly selected). A range of zero (e.g.,
-    33245..33245 or 0..0) disables port-range enforcement. If the specified
-    range overlaps with TCP's well-known port range of (0, 1024], then a
-    RuntimeError will be thrown. (EG_PORT_RANGE env var)
+    33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env
+    var)
 --EnterpriseGatewayApp.port_retries=<Integer>
     Default: 50
     Number of ports to try if the specified port is not available
@@ -216,6 +231,10 @@ EnterpriseGatewayApp options
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
+--EnterpriseGatewayApp.trust_xheaders=<CBool>
+    Default: False
+    Use x-* header values for overriding the remote-ip, useful when application
+    is behing a proxy. (KG_TRUST_XHEADERS env var)
 --EnterpriseGatewayApp.unauthorized_users=<Set>
     Default: set(['root'])
     Comma-separated list of user names (e.g., ['root','admin']) against which
@@ -226,6 +245,10 @@ EnterpriseGatewayApp options
     Default: 'http://localhost:8088/ws/v1/cluster'
     The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env
     var)
+--EnterpriseGatewayApp.yarn_endpoint_security_enabled=<Bool>
+    Default: False
+    Is YARN Kerberos/SPNEGO Security enabled (True/False).
+    (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)
 
 NotebookHTTPPersonality options
 -------------------------------
@@ -240,7 +263,7 @@ NotebookHTTPPersonality options
     'kernel_gateway.notebook_http.cell.parser' and
     'kernel_gateway.notebook_http.swagger.parser'. (KG_CELL_PARSER env var)
 --NotebookHTTPPersonality.comment_prefix=<Dict>
-    Default: {'scala': '//', None: '#'}
+    Default: {None: '#', 'scala': '//'}
     Maps kernel language to code comment syntax
 --NotebookHTTPPersonality.static_path=<Unicode>
     Default: None
