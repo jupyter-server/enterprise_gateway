@@ -83,9 +83,11 @@ class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
         result = self.kernel.execute('sc.getConf.get("spark.submit.deployMode")')
         self.assertRegexpMatches(result, '(cluster|client)')
 
-    def test_get_host_address(self):
-        result = self.kernel.execute('sc.getConf.get("spark.driver.host")')
-        self.assertRegexpMatches(result, 'itest')
+    def test_get_hostname(self):
+        result = self.kernel.execute('import java.net._; \
+                                      val localhost: InetAddress = InetAddress.getLocalHost; \
+                                      val localIpAddress: String = localhost.getHostName')
+        self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
