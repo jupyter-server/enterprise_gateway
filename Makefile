@@ -138,7 +138,7 @@ ITEST_HOST?=localhost:8888
 # indicates two things:
 # this prefix is used by itest to determine hostname to test against, in addtion,
 # if itests will be run locally with docker-prep target, this will set the hostname within that container as well
-export ITEST_HOSTNAME_PREFIX?=itest.local
+export ITEST_HOSTNAME_PREFIX?=itest
 # indicates the user to emulate.  This equates to 'KERNEL_USERNAME'...
 ITEST_USER?=bob
 # indicates the other set of options to use.  At this time, only the python notebooks succeed, so we're skipping R and Scala.
@@ -161,5 +161,5 @@ PREP_TIMEOUT?=60
 docker-prep: 
 	@-docker rm -f $(ITEST_HOSTNAME_PREFIX) >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
-	@-docker run -itd -p 8888:8888 -h $(ITEST_HOSTNAME_PREFIX) --name $(ITEST_HOSTNAME_PREFIX) -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
+	@-docker run -itd -p 8888:8888 -h itest --name itest -e ITEST_HOSTNAME_PREFIX -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs $(ITEST_HOSTNAME_PREFIX) |grep 'Jupyter Enterprise Gateway at http'; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
