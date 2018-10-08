@@ -74,7 +74,7 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, '2.1.*')
+        self.assertRegexpMatches(result, '2.3.*')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute("sc.getConf().get('spark.master')")
@@ -84,9 +84,9 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
         result = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
         self.assertRegexpMatches(result, '(cluster|client)')
 
-    def test_get_host_address(self):
-        result = self.kernel.execute("print(sc.getConf().get('spark.driver.host'))")
-        self.assertRegexpMatches(result, '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+    def test_get_hostname(self):
+        result = self.kernel.execute("import subprocess; subprocess.check_output(['hostname'])")
+        self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):

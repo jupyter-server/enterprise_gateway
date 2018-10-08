@@ -120,7 +120,7 @@ return_connection_info <- function(connection_file, response_addr){
         sendme <- read_json(connection_file)
         # Add launcher process id to returned info...
         sendme$pid <- Sys.getpid()
-        json <- toJSON(sendme, auto_unbox=TRUE)
+        json <- jsonlite::toJSON(sendme, auto_unbox=TRUE)
         message(paste("JSON Payload: ", json))
 
         fn <- basename(connection_file)

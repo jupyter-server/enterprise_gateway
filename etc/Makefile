@@ -66,7 +66,7 @@ kubernetes-images: $(KUBERNETES_IMAGES)
 
 kubernetes-publish: publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
-clean-images: clean-enterprise-gateway clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kubernetes
+clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kubernetes
 clean-kubernetes: clean-enterprise-gateway clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-r clean-kernel-scala
 
 # Extra dependencies for each docker image...

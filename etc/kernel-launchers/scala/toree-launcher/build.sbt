@@ -12,7 +12,7 @@ scalaVersion := "2.11.12"
 resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
 resolvers += "Sonatype Repository" at "http://oss.sonatype.org/content/repositories/releases"
 
-val sparkVersion = "2.1.1"
+val sparkVersion = "2.3.1"
 
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10" // Apache v2
