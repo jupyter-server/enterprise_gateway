@@ -15,7 +15,7 @@ RUN pip install --upgrade jupyterlab nb2kg && \
     jupyter serverextension enable --py jupyterlab --sys-prefix
 
 # Run with remote kernel managers
-ENTRYPOINT ["/usr/local/bin/start-nb2kg.sh"]
+CMD ["start-nb2kg.sh"]
 
 # Add local files as late as possible to avoid cache busting
 ADD jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
