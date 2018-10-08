@@ -14,26 +14,5 @@ echo "Kernel user: " ${KERNEL_USERNAME}
 
 echo "${@: -1}"
 
-# handle JupyterHub case where other parameters are passed for image initialization
-LAST_CMD="${@: -1}"
-CMD="${LAST_CMD:-notebook}"
 
-if [[ "${CMD}" == "lab" ]];
-then
-	jupyter serverextension enable --py jupyterlab --sys-prefix
-elif [[ "${CMD}" != "notebook" ]];
-then
-	echo ""
-	echo "usage: <docker run arguments> [notebook | lab]"
-	echo "Entering shell..."
-	/bin/bash
-	exit 0
-fi
-
-jupyter ${CMD} \
-  --NotebookApp.session_manager_class=nb2kg.managers.SessionManager \
-  --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager \
-  --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager \
-  --NotebookApp.port=${NB_PORT} \
-  --NotebookApp.ip=0.0.0.0 \
-  --no-browser
+exec /usr/local/bin/start-notebook.sh $*
