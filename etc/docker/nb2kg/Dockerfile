@@ -19,8 +19,6 @@ RUN pip install --upgrade jupyterlab nb2kg && \
 # Run with remote kernel managers
 ENTRYPOINT ["/usr/local/bin/start-nb2kg.sh"]
 
-WORKDIR /home/jovyan
-
 # Add local files as late as possible to avoid cache busting
 ADD jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
 ADD start-nb2kg.sh /usr/local/bin/start-nb2kg.sh
