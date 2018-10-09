@@ -59,7 +59,7 @@ class KubernetesProcessProxy(RemoteProcessProxy):
 
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
-        kw['env'].update(os.environ.copy())  # FIXME: Should probably leverage new process-whitelist in JKG #280
+        kw['env'] = dict(os.environ.copy().items() + list(kw['env'].items()))  # FIXME: Should probably leverage new process-whitelist in JKG #280
         kw['env']['KERNEL_IMAGE'] = self.kernel_image
         kw['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
         self.kernel_namespace = self._determine_kernel_namespace(**kw)  # will create namespace if not provided
