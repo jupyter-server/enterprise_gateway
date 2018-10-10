@@ -60,13 +60,12 @@ KERNEL_USERNAME is set to an appropriate value and retry the request.
 
 ### User Impersonation
 
-The Enterprise Gateway server leverage other technologies to implement user impersonation when launching kernels. This
-option is configured within the kernelspec via two pieces of information: `EG_IMPERSONATION_ENABLED` and
+The Enterprise Gateway server leverages other technologies to implement user impersonation when launching kernels. This
+option is configured via two pieces of information: `EG_IMPERSONATION_ENABLED` and
 `KERNEL_USERNAME`.
 
 `EG_IMPERSONATION_ENABLED` indicates the intention that user impersonation should be performed and can also be conveyed
-via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled` (default = False).  As a result,
-it is important that the contents of kernelspecs also be secure and trusted.
+via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled` (default = False).
 
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
@@ -89,7 +88,8 @@ via SPENEGO. When running Enterprise Gateway in a environment configured this wa
 to enable the proper authorization when communicating with YARN via the YARN APIs.
 
 `YARN_ENDPOINT_SECURITY_ENABLED` indicates the requirement to use SPNEGO authentication/authorization when connecting with the
-YARN APIs.
+YARN APIs and can also be conveyed via the command-line boolean option `EnterpriseGatewayApp.yarn_endpoint_security_enabled`
+(default = False)
 
 ##### Impersonation in Standalone or YARN Client Mode
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
