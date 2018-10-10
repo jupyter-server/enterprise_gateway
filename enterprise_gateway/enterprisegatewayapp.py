@@ -262,8 +262,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # its start() logic and just call that of JKG's superclass.
         super(KernelGatewayApp, self).start()
 
-        self.log.info('Jupyter Enterprise Gateway at http{}://{}:{}'.format(
-            's' if self.keyfile else '', self.ip, self.port
+        self.log.info('Jupyter Enterprise Gateway {} is available at http{}://{}:{}'.format(
+            EnterpriseGatewayApp.version, 's' if self.keyfile else '', self.ip, self.port
         ))
         # If impersonation is enabled, issue a warning message if the gateway user is not in unauthorized_users.
         if self.impersonation_enabled:
