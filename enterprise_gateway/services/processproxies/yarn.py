@@ -33,9 +33,17 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.application_id = None
-        self.yarn_endpoint = proxy_config.get('yarn_endpoint', kernel_manager.parent.parent.yarn_endpoint)
+        self.yarn_endpoint \
+            = proxy_config.get('yarn_endpoint',
+                               kernel_manager.parent.parent.yarn_endpoint)
+        self.yarn_endpoint_security_enabled \
+            = proxy_config.get('yarn_endpoint_security_enabled',
+                               kernel_manager.parent.parent.yarn_endpoint_security_enabled)
         yarn_master = urlparse(self.yarn_endpoint).hostname
-        self.resource_mgr = ResourceManager(address=yarn_master)
+        if self.yarn_endpoint_security_enabled is True:
+            self.resource_mgr = ResourceManager(address=yarn_master, kerberos_enabled=self.yarn_endpoint_security_enabled)
+        else:
+            self.resource_mgr = ResourceManager(address=yarn_master)
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
@@ -254,8 +262,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except Exception as e:
             self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
                              format(kernel_id, type(e), e))
-        finally:
-            self.resource_mgr.http_conn.close()
 
         if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
             for app in data['apps']['app']:
@@ -276,48 +282,35 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except Exception as e:
             self.log.warning("Query for application ID '{}' failed with exception: '{}'.  Continuing...".
                            format(app_id, e))
-        finally:
-            self.resource_mgr.http_conn.close()
         if type(data) is dict and 'app' in data:
             return data['app']
         return None
 
     def query_app_state_by_id(self, app_id):
         """Return the state of an application.
-
-        :param app_id: 
-        :return: 
+        :param app_id:
+        :return:
         """
         response = None
-        url = '%s/apps/%s/state' % (self.yarn_endpoint, app_id)
-        cmd = ['curl', '-X', 'GET', url]
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-            output, stderr = process.communicate()
-            response = json.loads(output.decode('utf-8')).get('state') if output else None
+            response = self.resource_mgr.cluster_application_state(application_id=app_id)
         except Exception as e:
-            self.log.warning("Query for application state with cmd '{}' failed with exception: '{}'.  Continuing...".
-                           format(cmd, e))
-        return response
+            self.log.warning("Query for application '{}' state failed with exception: '{}'.  Continuing...".
+                             format(app_id, e))
+
+        return response.data['state']
 
     def kill_app_by_id(self, app_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
-        TODO: extend the yarn_api_client to support cluster_application_kill with PUT, e.g.:
-            YarnProcessProxy.resource_mgr.cluster_application_kill(application_id=app_id)
-
-        :param app_id 
+        :param app_id
         :return: The JSON response of killing the application.
         """
+
         response = None
-        header = "Content-Type: application/json"
-        data = '{"state": "KILLED"}'
-        url = '%s/apps/%s/state' % (self.yarn_endpoint, app_id)
-        cmd = ['curl', '-X', 'PUT', '-H', header, '-d', data, url]
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-            output, stderr = process.communicate()
-            response = json.loads(output.decode('utf-8')) if output else None
+            response = self.resource_mgr.cluster_application_kill(application_id=app_id)
         except Exception as e:
-            self.log.warning("Termination of application with cmd '{}' failed with exception: '{}'.  Continuing...".
-                           format(cmd, e))
+            self.log.warning("Termination of application '{}' failed with exception: '{}'.  Continuing...".
+                             format(app_id, e))
+
         return response

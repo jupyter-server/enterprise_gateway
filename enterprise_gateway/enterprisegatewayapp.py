@@ -64,11 +64,20 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
     yarn_endpoint_default_value = 'http://localhost:8088/ws/v1/cluster'
     yarn_endpoint = Unicode(yarn_endpoint_default_value, config=True,
-        help="""The http url for accessing the Yarn Resource Manager. (EG_YARN_ENDPOINT env var)""")
+        help="""The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env var)""")
 
     @default('yarn_endpoint')
     def yarn_endpoint_default(self):
         return os.getenv(self.yarn_endpoint_env, self.yarn_endpoint_default_value)
+
+    yarn_endpoint_security_enabled_env = 'EG_YARN_ENDPOINT_SECURITY_ENABLED'
+    yarn_endpoint_security_enabled_default_value = False
+    yarn_endpoint_security_enabled = Bool(yarn_endpoint_security_enabled_default_value, config=True,
+        help="""Is YARN Kerberos/SPNEGO Security enabled (True/False). (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)""")
+
+    @default('yarn_endpoint_security_enabled')
+    def yarn_endpoint_security_enabled_default(self):
+        return bool(os.getenv(self.yarn_endpoint_security_enabled_env, self.yarn_endpoint_security_enabled_default_value))
 
     # Conductor endpoint
     conductor_endpoint_env = 'EG_CONDUCTOR_ENDPOINT'
