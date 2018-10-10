@@ -30,7 +30,7 @@ A snapshot of this help appears below for ease of reference on the web.
 ```
 Jupyter Enterprise Gateway
 
-Provisions Jupyter kernels and proxies HTTP/Websocket traffic to them.
+Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic to them.
 
 Options
 -------
@@ -41,48 +41,48 @@ on full configurables, see '--help-all'.
 
 --debug
     set log level to logging.DEBUG (maximize logging output)
--y
-    Answer yes to any questions instead of prompting.
 --generate-config
     generate default config file
---certfile=<Unicode> (KernelGatewayApp.certfile)
-    Default: None
-    The full path to an SSL/TLS certificate file. (KG_CERTFILE env var)
---seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
-    Default: None
-    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
-    seed by default. (KG_SEED_URI env var)
---ip=<Unicode> (KernelGatewayApp.ip)
-    Default: '127.0.0.1'
-    IP address on which to listen (KG_IP env var)
+-y
+    Answer yes to any questions instead of prompting.
 --log-level=<Enum> (Application.log_level)
     Default: 30
     Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
     Set the log level by value or name.
---port=<Integer> (KernelGatewayApp.port)
+--config=<Unicode> (JupyterApp.config_file)
+    Default: ''
+    Full path of a config file.
+--ip=<Unicode> (KernelGatewayApp.ip)
+    Default: '127.0.0.1'
+    IP address on which to listen (KG_IP env var)
+--port=<Int> (KernelGatewayApp.port)
     Default: 8888
     Port on which to listen (KG_PORT env var)
+--port_retries=<Int> (KernelGatewayApp.port_retries)
+    Default: 50
+    Number of ports to try if the specified port is not available
+    (KG_PORT_RETRIES env var)
 --api=<Unicode> (KernelGatewayApp.api)
     Default: 'kernel_gateway.jupyter_websocket'
     Controls which API to expose, that of a Jupyter notebook server, the seed
     notebook's, or one provided by another module, respectively using values
     'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
---port_retries=<Integer> (KernelGatewayApp.port_retries)
-    Default: 50
-    Number of ports to try if the specified port is not available
-    (KG_PORT_RETRIES env var)
---client-ca=<Unicode> (KernelGatewayApp.client_ca)
+--seed_uri=<Unicode> (KernelGatewayApp.seed_uri)
     Default: None
-    The full path to a certificate authority certificate for SSL/TLS client
-    authentication. (KG_CLIENT_CA env var)
---config=<Unicode> (JupyterApp.config_file)
-    Default: u''
-    Full path of a config file.
+    Runs the notebook (.ipynb) at the given URI on every kernel launched. No
+    seed by default. (KG_SEED_URI env var)
 --keyfile=<Unicode> (KernelGatewayApp.keyfile)
     Default: None
     The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
     var)
+--certfile=<Unicode> (KernelGatewayApp.certfile)
+    Default: None
+    The full path to an SSL/TLS certificate file. (KG_CERTFILE env var)
+--client-ca=<Unicode> (KernelGatewayApp.client_ca)
+    Default: None
+    The full path to a certificate authority certificate for SSL/TLS client
+    authentication. (KG_CLIENT_CA env var)
 
 Class parameters
 ----------------
@@ -92,19 +92,19 @@ Parameters are set from command-line arguments of the form:
 are allowed, e.g.:: `--C.a='range(3)'` For setting C.a=[0,1,2].
 
 EnterpriseGatewayApp options
-----------------
+----------------------------
 --EnterpriseGatewayApp.allow_credentials=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env
     var)
 --EnterpriseGatewayApp.allow_headers=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)
 --EnterpriseGatewayApp.allow_methods=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)
 --EnterpriseGatewayApp.allow_origin=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)
 --EnterpriseGatewayApp.answer_yes=<Bool>
     Default: False
@@ -116,10 +116,10 @@ EnterpriseGatewayApp options
     'kernel_gateway.jupyter_websocket', 'kernel_gateway.notebook_http', or
     another fully qualified module name (KG_API env var)
 --EnterpriseGatewayApp.auth_token=<Unicode>
-    Default: u''
+    Default: ''
     Authorization token required for all requests (KG_AUTH_TOKEN env var)
 --EnterpriseGatewayApp.authorized_users=<Set>
-    Default: set([])
+    Default: set()
     Comma-separated list of user names (e.g., ['bob','alice']) against which
     KERNEL_USERNAME will be compared.  Any match (case-sensitive) will allow the
     kernel's launch, otherwise an HTTP 403 (Forbidden) error will be raised.
@@ -136,20 +136,28 @@ EnterpriseGatewayApp options
     Default: None
     The full path to a certificate authority certificate for SSL/TLS client
     authentication. (KG_CLIENT_CA env var)
+--EnterpriseGatewayApp.conductor_endpoint=<Unicode>
+    Default: None
+    The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT
+    env var)
 --EnterpriseGatewayApp.config_file=<Unicode>
-    Default: u''
+    Default: ''
     Full path of a config file.
 --EnterpriseGatewayApp.config_file_name=<Unicode>
-    Default: u''
+    Default: ''
     Specify a config file to load.
 --EnterpriseGatewayApp.default_kernel_name=<Unicode>
-    Default: u''
+    Default: ''
     Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)
+--EnterpriseGatewayApp.env_process_whitelist=<List>
+    Default: []
+    Environment variables allowed to be inherited from the spawning process by
+    the kernel
 --EnterpriseGatewayApp.expose_headers=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)
 --EnterpriseGatewayApp.force_kernel_name=<Unicode>
-    Default: u''
+    Default: ''
     Override any kernel name specified in a notebook or request
     (KG_FORCE_KERNEL_NAME env var)
 --EnterpriseGatewayApp.generate_config=<Bool>
@@ -162,6 +170,14 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.ip=<Unicode>
     Default: '127.0.0.1'
     IP address on which to listen (KG_IP env var)
+--EnterpriseGatewayApp.kernel_manager_class=<Type>
+    Default: 'enterprise_gateway.services.kernels.remotemanager.RemoteMapp...
+    The kernel manager class to use. Should be a subclass of
+    `notebook.services.kernels.MappingKernelManager`.
+--EnterpriseGatewayApp.kernel_spec_manager_class=<Type>
+    Default: 'enterprise_gateway.services.kernelspecs.remotekernelspec.Rem...
+    The kernel spec manager class to use. Should be a subclass of
+    `jupyter_client.kernelspec.KernelSpecManager`.
 --EnterpriseGatewayApp.keyfile=<Unicode>
     Default: None
     The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env
@@ -177,18 +193,18 @@ EnterpriseGatewayApp options
     Choices: (0, 10, 20, 30, 40, 50, 'DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL')
     Set the log level by value or name.
 --EnterpriseGatewayApp.max_age=<Unicode>
-    Default: u''
+    Default: ''
     Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)
---EnterpriseGatewayApp.max_kernels=<Integer>
+--EnterpriseGatewayApp.max_kernels=<Int>
     Default: None
     Limits the number of kernel instances allowed to run by this gateway.
     Unbounded by default. (KG_MAX_KERNELS env var)
---EnterpriseGatewayApp.max_kernels_per_user=<Integer>
+--EnterpriseGatewayApp.max_kernels_per_user=<Int>
     Default: -1
     Specifies the maximum number of kernels a user can have active
     simultaneously.  A value of -1 disables enforcement.
     (EG_MAX_KERNELS_PER_USER env var)
---EnterpriseGatewayApp.port=<Integer>
+--EnterpriseGatewayApp.port=<Int>
     Default: 8888
     Port on which to listen (KG_PORT env var)
 --EnterpriseGatewayApp.port_range=<Unicode>
@@ -196,14 +212,13 @@ EnterpriseGatewayApp options
     Specifies the lower and upper port numbers from which ports are created.
     The bounded values are separated by '..' (e.g., 33245..34245 specifies a
     range of 1000 ports to be randomly selected). A range of zero (e.g.,
-    33245..33245 or 0..0) disables port-range enforcement. If the specified
-    range overlaps with TCP's well-known port range of (0, 1024], then a
-    RuntimeError will be thrown. (EG_PORT_RANGE env var)
---EnterpriseGatewayApp.port_retries=<Integer>
+    33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env
+    var)
+--EnterpriseGatewayApp.port_retries=<Int>
     Default: 50
     Number of ports to try if the specified port is not available
     (KG_PORT_RETRIES env var)
---EnterpriseGatewayApp.prespawn_count=<Integer>
+--EnterpriseGatewayApp.prespawn_count=<Int>
     Default: None
     Number of kernels to prespawn using the default language. No prespawn by
     default. (KG_PRESPAWN_COUNT env var)
@@ -216,8 +231,12 @@ EnterpriseGatewayApp options
     Default: None
     Runs the notebook (.ipynb) at the given URI on every kernel launched. No
     seed by default. (KG_SEED_URI env var)
+--EnterpriseGatewayApp.trust_xheaders=<CBool>
+    Default: False
+    Use x-* header values for overriding the remote-ip, useful when application
+    is behing a proxy. (KG_TRUST_XHEADERS env var)
 --EnterpriseGatewayApp.unauthorized_users=<Set>
-    Default: set(['root'])
+    Default: {'root'}
     Comma-separated list of user names (e.g., ['root','admin']) against which
     KERNEL_USERNAME will be compared.  Any match (case-sensitive) will prevent
     the kernel's launch and result in an HTTP 403 (Forbidden) error.
@@ -226,6 +245,10 @@ EnterpriseGatewayApp options
     Default: 'http://localhost:8088/ws/v1/cluster'
     The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env
     var)
+--EnterpriseGatewayApp.yarn_endpoint_security_enabled=<Bool>
+    Default: False
+    Is YARN Kerberos/SPNEGO Security enabled (True/False).
+    (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)
 
 NotebookHTTPPersonality options
 -------------------------------
