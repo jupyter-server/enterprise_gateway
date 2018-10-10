@@ -111,7 +111,7 @@ $1: ../.image-$1
 ../.image-$1: docker/$1/* DEPENDS_$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
-	cp docker/$1/* $$(FILES_$1) ../build/docker/$1
+	cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
 	@(cd ../build/docker/$1; docker build -t $(HUB_ORG)/$1:$(TAG) . )
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)

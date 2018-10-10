@@ -109,7 +109,6 @@ docker-images enterprise-gateway-demo yarn-spark nb2kg kubernetes-images enterpr
 docker-image-enterprise-gateway: $(WHEEL_FILE)
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-
 # Here for doc purposes
 clean-docker: ## Remove docker images
 clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
