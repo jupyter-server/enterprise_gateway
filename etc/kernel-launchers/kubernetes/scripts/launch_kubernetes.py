@@ -67,6 +67,8 @@ def launch_kubernetes_kernel(connection_file, response_addr, spark_context_init_
         if k8s_obj.get('kind'):
             if k8s_obj['kind'] == 'Pod':
                 client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
+            elif k8s_obj['kind'] == 'Secret':
+                client.CoreV1Api(client.ApiClient()).create_namespaced_secret(body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'PersistentVolumeClaim':
                 client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(
                     body=k8s_obj, namespace=kernel_namespace)
