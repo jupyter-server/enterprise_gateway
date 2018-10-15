@@ -26,44 +26,24 @@ Enterprise Gateway's build environment is centered around `make` and the corresp
 Entering `make` with no parameters yields the following:
 
 ```
-activate                       eval `make activate`
-clean-enterprise-gateway-demo  Remove elyra/enterprise-gateway-demo:dev docker image
-clean-enterprise-gateway       Remove elyra/enterprise-gateway:dev docker image
-clean-images                   Remove docker images
-clean-kernel-images            Remove kernel-based docker images
-clean-kernel-py                Remove elyra/kernel-py:dev docker image
-clean-kernel-r                 Remove elyra/kernel-r:dev docker image
-clean-kernel-scala             Remove elyra/kernel-scala:dev docker image
-clean-kernel-spark-r           Remove elyra/kernel-spark-r:dev docker image
-clean-kernel-tf-gpu-py         Remove elyra/kernel-tf-gpu-py:dev docker image
-clean-kernel-tf-py             Remove elyra/kernel-tf-py:dev docker image
-clean-nb2kg                    Remove elyra/nb2kg:dev docker image
-clean-yarn-spark               Remove elyra/yarn-spark:2.1.0 docker image
+activate                       Activate the virtualenv (default: enterprise-gateway-dev)
+clean-images                   Remove docker images (includes kernel-based images)
+clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
 dev                            Make a server in jupyter_websocket mode
 dist                           Make source, binary and kernelspecs distribution to dist folder
-docker-images                  Build docker images
+docker-images                  Build docker images (includes kernel-based images)
 docs                           Make HTML documentation
-enterprise-gateway-demo        Build elyra/enterprise-gateway-demo:dev docker image
-enterprise-gateway             Build elyra/enterprise-gateway:dev docker image
 env                            Make a dev environment
 install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
-itest-docker                   Run integration tests (optionally) against docker container
-itest-yarn                     Run integration tests (optionally) against docker demo (YARN) container 
+itest-docker                   Run integration tests (optionally) against docker swarm
+itest-yarn                     Run integration tests (optionally) against docker demo (YARN) container
 kernel-images                  Build kernel-based docker images
-kernel-py                      Build elyra/kernel-py:dev docker image
-kernel-r                       Build elyra/kernel-r:dev docker image
-kernel-scala                   Build elyra/kernel-scala:dev docker image
-kernel-spark-r                 Build elyra/kernel-spark-r:dev docker image
-kernel-tf-gpu-py               Build elyra/kernel-tf-gpu-py:dev docker image
-kernel-tf-py                   Build elyra/kernel-tf-py:dev docker image
-kernelspecs                    Create an archive with sample kernelspecs
-nb2kg                          Build elyra/nb2kg:dev docker image
+kernelspecs                    Create archives with sample kernelspecs
 nuke                           Make clean + remove conda env
 publish-images                 Push docker images to docker hub
 release                        Make a wheel + source release on PyPI
 test                           Run unit tests
-yarn-spark                     Build elyra/yarn-spark:2.1.0 docker image
 ```
 Some of the more useful commands are listed below.
 

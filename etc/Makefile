@@ -2,15 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help clean clean-images clean-enterprise-gateway clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark \
-    clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher
+    clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
+    kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker 
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
-
-KERNELSPECS_FILE:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
-KERNELSPECS_FILES:=$(shell find kernel-launchers kernelspecs -type f -name '*')
-TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
 
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
@@ -30,9 +27,20 @@ clean: ## Make a clean source tree
 # Kernelspec build section *************************************************
 #
 
-kernelspecs: $(KERNELSPECS_FILE) ## Make a tar.gz file consisting of kernelspec files
+KERNELSPECS := kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker
+kernelspecs: $(KERNELSPECS)
 
-$(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib  
+FILE_kernelspecs_all:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
+FILE_kernelspecs_yarn:=../dist/jupyter_enterprise_gateway_kernelspecs_yarn-$(VERSION).tar.gz
+FILE_kernelspecs_conductor:=../dist/jupyter_enterprise_gateway_kernelspecs_conductor-$(VERSION).tar.gz
+FILE_kernelspecs_kubernetes:=../dist/jupyter_enterprise_gateway_kernelspecs_kubernetes-$(VERSION).tar.gz
+FILE_kernelspecs_docker:=../dist/jupyter_enterprise_gateway_kernelspecs_docker-$(VERSION).tar.gz
+
+FILES_kernelspecs_all:=$(shell find kernel-launchers kernelspecs -type f -name '*')
+
+TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
+
+../build/kernelspecs: kernel-launchers/scala/lib  $(FILES_kernelspecs_all) 
 	@mkdir -p ../build/kernelspecs
     # Seed the build tree with initial files
 	cp -r kernelspecs ../build
@@ -41,13 +49,25 @@ $(KERNELSPECS_FILE): $(KERNELSPECS_FILES) kernel-launchers/scala/lib
 	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/scripts
 	@echo ../build/kernelspecs/{spark_,}scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
-	# Fixme - deal with spark-based docker containers...
+    # Fixme - deal with spark-based docker containers...
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
 	@mkdir -p ../dist
-	rm -f $(KERNELSPECS_FILE)
-	@( cd ../build/kernelspecs; tar -pvczf "../$(KERNELSPECS_FILE)" * )
+
+PATTERN_kernelspecs_all := *
+PATTERN_kernelspecs_yarn := *_yarn_*
+PATTERN_kernelspecs_conductor := *_conductor_*
+PATTERN_kernelspecs_kubernetes := *_kubernetes
+PATTERN_kernelspecs_docker := *_docker
+
+define BUILD_KERNELSPEC
+$1: $$(FILE_$1)
+$$(FILE_$1): ../build/kernelspecs
+	rm -f $$(FILE_$1)
+	@( cd ../build/kernelspecs; tar -pvczf "../$$(FILE_$1)" $$(PATTERN_$1) )
+endef
+$(foreach kernelspec,$(KERNELSPECS),$(eval $(call BUILD_KERNELSPEC,$(kernelspec))))
 
 kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	-rm -rf kernel-launchers/scala/lib

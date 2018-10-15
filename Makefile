@@ -23,7 +23,7 @@ build:
 env: ## Make a dev environment
 	-conda env create --file requirements.yml --name $(ENV)
 
-activate: ## eval `make activate`
+activate: ## Activate the virtualenv (default: enterprise-gateway-dev)
 	@echo "$(SA) $(ENV)"
 
 clean: ## Make a clean source tree
@@ -44,7 +44,8 @@ dev: ## Make a server in jupyter_websocket mode
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
-kernelspecs: ## Create an archive with sample kernelspecs
+kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker ## Create archives with sample kernelspecs
+kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker: 
 	make VERSION=$(VERSION) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
@@ -89,36 +90,16 @@ release: POST_SDIST=upload
 release: bdist sdist ## Make a wheel + source release on PyPI
 
 # Here for doc purposes
-docker-images:  ## Build docker images
-enterprise-gateway-demo:  ## Build elyra/enterprise-gateway-demo:dev docker image
-yarn-spark:  ## Build elyra/yarn-spark:2.3.1 docker image
-nb2kg:  ## Build elyra/nb2kg:dev docker image
-enterprise-gateway: ## Build elyra/enterprise-gateway:dev docker image
+docker-images:  ## Build docker images (includes kernel-based images)
 kernel-images: ## Build kernel-based docker images
-kernel-py: ## Build elyra/kernel-py:dev docker image
-kernel-r: ## Build elyra/kernel-r:dev docker image
-kernel-spark-r: ## Build elyra/kernel-spark-r:dev docker image
-kernel-scala: ## Build elyra/kernel-scala:dev docker image
-kernel-tf-py: ## Build elyra/kernel-tf-py:dev docker image
-kernel-tf-gpu-py: ## Build elyra/kernel-tf-gpu-py:dev docker image
 
 # Actual working targets...
 docker-images enterprise-gateway-demo yarn-spark nb2kg kernel-images enterprise-gateway kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 # Here for doc purposes
-clean-images: ## Remove docker images
-clean-enterprise-gateway-demo: ## Remove elyra/enterprise-gateway-demo:dev docker image
-clean-nb2kg: ## Remove elyra/nb2kg:dev docker image
-clean-yarn-spark: ## Remove elyra/yarn-spark:2.3.1 docker image
-clean-enterprise-gateway: ## Remove elyra/enterprise-gateway:dev docker image
-clean-kernel-images: ## Remove kernel-based docker images
-clean-kernel-py: ## Remove elyra/kernel-py:dev docker image
-clean-kernel-r: ## Remove elyra/kernel-r:dev docker image
-clean-kernel-spark-r: ## Remove elyra/kernel-spark-r:dev docker image
-clean-kernel-scala: ## Remove elyra/kernel-scala:dev docker image
-clean-kernel-tf-py: ## Remove elyra/kernel-tf-py:dev docker image
-clean-kernel-tf-gpu-py: ## Remove elyra/kernel-tf-gpu-py:dev docker image
+clean-images: ## Remove docker images (includes kernel-based images)
+clean-kernel-images: ## Remove kernel-based images
 
 clean-images clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
