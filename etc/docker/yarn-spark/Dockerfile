@@ -1,4 +1,4 @@
-# Use docker image with Spark 2.1 and Hadoop 2.7 (sequenceiq/hadoop-docker:2.7.1)
+# Use docker image with Spark 2.3.1 and Hadoop 2.7 (sequenceiq/hadoop-docker:2.7.1)
 FROM akchin/spark:2.3.1
 
 ENV ANACONDA_HOME=/opt/anaconda2
@@ -17,10 +17,10 @@ RUN cd /tmp && \
 
 # Update Java
 RUN cd /tmp && \
-	curl -LO 'http://download.oracle.com/otn-pub/java/jdk/8u181-b13/96a7b8442fe848ef90c96a2fad6ed6d1/jdk-8u181-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
+	curl -LO 'http://download.oracle.com/otn-pub/java/jdk/8u191-b12/2787e4a523244c269598db4e85c51e0c/jdk-8u191-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
 	rpm -e jdk-1.7.0_71-fcs.x86_64 && \
-	rpm -i /tmp/jdk-8u181-linux-x64.rpm && \
-	rm -f /tmp/jdk-8u181-linux-x64.rpm
+	rpm -i /tmp/jdk-8u191-linux-x64.rpm && \
+	rm -f /tmp/jdk-8u191-linux-x64.rpm
 
 # Install Anaconda
 RUN cd /tmp && \
