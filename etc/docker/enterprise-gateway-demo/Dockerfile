@@ -7,7 +7,7 @@ RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
     pip install --upgrade ipykernel jupyter-client notebook && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
-ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
 COPY start-enterprise-gateway.sh.template /usr/local/share/jupyter/
 
 # Massage kernelspecs to docker image env...

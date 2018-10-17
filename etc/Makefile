@@ -111,14 +111,14 @@ TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala T
 # Extra files for each docker image...
 FILES_nb2kg :=
 FILES_yarn-spark :=
-FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway*
+FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs* ../dist/jupyter_enterprise_gateway*.whl
+FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs* ../dist/jupyter_enterprise_gateway*.whl
 FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
 FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
 FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
 FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/R/bootstrap/*
 FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
 FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/scala/bootstrap/*
-FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway*
 
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
