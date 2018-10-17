@@ -62,7 +62,7 @@ rest of the parameters used to launch the kernel by way of an environment variab
 ```json
 {
   "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_pp.DockerSwarmProcessProxy",
+    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
     "config": {
       "image_name": "elyra/kernel-py:dev"
     }
@@ -95,7 +95,7 @@ separate process proxy implementations.  As a result, the kernel.json file could
 ```json
 {
   "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_pp.DockerProcessProxy",
+    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerProcessProxy",
     "config": {
       "image_name": "elyra/kernel-py:dev"
     }

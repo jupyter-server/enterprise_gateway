@@ -2,7 +2,7 @@
   "language": "R",
   "display_name": "R on Docker",
   "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_pp.DockerSwarmProcessProxy",
+    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
     "config": {
       "image_name": "elyra/kernel-r:dev"
     }
