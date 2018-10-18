@@ -10,7 +10,7 @@ SA:=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
-VERSION:=2.0.0.dev0
+export VERSION:=2.0.0.dev0
 
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
@@ -107,7 +107,7 @@ clean-images clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-ke
 publish-images: ## Push docker images to docker hub
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-ENTERPRISE_GATEWAY_TAG?=dev
+ENTERPRISE_GATEWAY_TAG?=$(VERSION)
 
 # itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway
 

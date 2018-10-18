@@ -4,8 +4,8 @@
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
     "config": {
-      "image_name": "elyra/kernel-spark-r:dev",
-      "executor_image_name": "elyra/kernel-spark-r:dev"
+      "image_name": "elyra/kernel-spark-r",
+      "executor_image_name": "elyra/kernel-spark-r"
     }
   },
   "env": {

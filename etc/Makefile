@@ -11,7 +11,7 @@ SHELL:=/bin/bash
 
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
-TAG:=dev
+TAG:=$(VERSION)
 
 NO_CACHE?=--no-cache
 
@@ -103,7 +103,6 @@ TARGETS_nb2kg:
 TARGETS_yarn-spark:
 TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
-	@-docker tag $(HUB_ORG)/yarn-spark:$(TAG) $(HUB_ORG)/yarn-spark:2.1.0
 TARGETS_enterprise-gateway: kernelspecs
 	@make -C .. bdist
 TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
@@ -123,7 +122,7 @@ FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-lau
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
 publish-$1:
-	@docker push $(HUB_ORG)/$1:$(TAG)
+	@./release.sh $(HUB_ORG) $1 $(TAG)
 endef
 $(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 
@@ -134,7 +133,7 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
-	@(cd ../build/docker/$1; docker build -t $(HUB_ORG)/$1:$(TAG) . )
+	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg VERSION=${VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endef
