@@ -4,7 +4,7 @@
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
     "config": {
-      "image_name": "elyra/kernel-tf-py:dev"
+      "image_name": "elyra/kernel-tf-py:VERSION"
     }
   },
   "env": {

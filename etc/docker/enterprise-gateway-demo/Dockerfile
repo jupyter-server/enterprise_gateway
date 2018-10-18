@@ -1,4 +1,7 @@
-FROM elyra/yarn-spark:dev
+ARG HUB_ORG
+ARG VERSION
+
+FROM $HUB_ORG/yarn-spark:$VERSION
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp

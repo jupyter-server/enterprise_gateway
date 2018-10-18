@@ -20,8 +20,7 @@ of a Hadoop (YARN) installation that includes Spark, Java, Anaconda and various 
 The tag of this image reflects the version of Spark included in the image and we don't anticipate the need to update this image regularly.
 
 The primary use of this image is to quickly build elyra/enterprise-gateway images for testing and development
-purposes.  To build a local image, run `make docker-image-yarn-spark`.  Note: the tag for this image will
-still be `:2.1.0` since `elyra/enterprise-gateway-demo` depends on this image/tag.
+purposes.  To build a local image, run `make docker-image-yarn-spark`.
 
 As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another
 instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
@@ -43,7 +42,7 @@ the image's tag reflects the corresponding release.  Over time, we may integrate
 this image on every build - where the commit hash becomes the tag.
 
 To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the
-the tag for this image will be `:dev`.
+tag for this image will be what is set as VERSION (e.g. 2.0.0.dev0) in the root Makefile.
 
 ### elyra/nb2kg
 
@@ -54,7 +53,7 @@ also sets some of the new variables that pertain to enterprise gateway (e.g., `K
 `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
 
 To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the 
-tag for this image will be `:dev`.
+tag for this image will be what VERSION (e.g. 2.0.0.dev0) is set to in the root Makefile.
 
 ## Runtime Images
 The following sections describe the docker images used within Kubernetes and Docker Swarm environments - all of which can be pulled from 

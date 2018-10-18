@@ -107,8 +107,6 @@ clean-images clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-ke
 publish-images: ## Push docker images to docker hub
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-ENTERPRISE_GATEWAY_TAG?=dev
-
 # itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway
 
 itest: itest-docker itest-yarn
@@ -143,7 +141,7 @@ PREP_TIMEOUT?=60
 itest-yarn-prep:
 	@-docker rm -f itest-yarn >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest-yarn\` to see container log)..."
-	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(ENTERPRISE_GATEWAY_TAG) --elyra
+	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(VERSION) --elyra
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest-yarn |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
 
 

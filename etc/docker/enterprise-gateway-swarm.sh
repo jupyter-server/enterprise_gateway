@@ -24,6 +24,7 @@ docker network create --label app=enterprise-gateway -d overlay ${EG_DOCKER_NETW
 # also required mode=host on any published ports. :-(
 # 3. We only use one replica since session affinity is another point of investigation in Swarm
 
+# Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
 docker service create \
 	--endpoint-mode dnsrr --network ${EG_DOCKER_NETWORK} \
 	--replicas 1 \
@@ -33,4 +34,4 @@ docker service create \
 	-u 0 --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
 	--publish published=${KG_PORT},target=${KG_PORT},mode=host \
 	--name ${EG_NAME} \
-	elyra/enterprise-gateway:dev --elyra
+	elyra/enterprise-gateway:VERSION --elyra

@@ -55,7 +55,7 @@ to a Docker Swarm environment.
 Along with the `class_name:` entry, this process proxy stanza should also include a proxy 
 configuration stanza  which specifies the docker image to associate with the kernel's
 service container.  If this entry is not provided, the Enterprise Gateway implementation will use a default 
-entry of `elyra/kernel-py:dev`.  In either case, this value is made available to the 
+entry of `elyra/kernel-py:VERSION`.  In either case, this value is made available to the 
 rest of the parameters used to launch the kernel by way of an environment variable: 
 `KERNEL_IMAGE`.
 
@@ -64,7 +64,7 @@ rest of the parameters used to launch the kernel by way of an environment variab
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
     "config": {
-      "image_name": "elyra/kernel-py:dev"
+      "image_name": "elyra/kernel-py:VERSION"
     }
   }
 }
@@ -97,7 +97,7 @@ separate process proxy implementations.  As a result, the kernel.json file could
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerProcessProxy",
     "config": {
-      "image_name": "elyra/kernel-py:dev"
+      "image_name": "elyra/kernel-py:VERSION"
     }
   },
   "argv": [
