@@ -4,8 +4,8 @@
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
     "config": {
-      "image_name": "elyra/kernel-scala:dev",
-      "executor_image_name": "elyra/kernel-scala"
+      "image_name": "elyra/kernel-scala:VERSION",
+      "executor_image_name": "elyra/kernel-scala:VERSION"
     }
   },
   "env": {

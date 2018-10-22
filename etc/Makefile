@@ -30,6 +30,10 @@ clean: ## Make a clean source tree
 KERNELSPECS := kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker
 kernelspecs: $(KERNELSPECS)
 
+# Specify which version of docker images you would like to use in your kernelspecs in IMAGE_VERSION.
+# This value will be baked into the kernelspecs
+export IMAGE_VERSION:=$(TAG)
+
 FILE_kernelspecs_all:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
 FILE_kernelspecs_yarn:=../dist/jupyter_enterprise_gateway_kernelspecs_yarn-$(VERSION).tar.gz
 FILE_kernelspecs_conductor:=../dist/jupyter_enterprise_gateway_kernelspecs_conductor-$(VERSION).tar.gz
@@ -65,7 +69,7 @@ define BUILD_KERNELSPEC
 $1: $$(FILE_$1)
 $$(FILE_$1): ../build/kernelspecs
 	rm -f $$(FILE_$1)
-	@( cd ../build/kernelspecs; tar -pvczf "../$$(FILE_$1)" $$(PATTERN_$1) )
+	@( cd ../build/kernelspecs; find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(IMAGE_VERSION)/g"; find . -name *.bak -print0 | xargs -0 rm -f; tar -pvczf "../$$(FILE_$1)" $$(PATTERN_$1) )
 endef
 $(foreach kernelspec,$(KERNELSPECS),$(eval $(call BUILD_KERNELSPEC,$(kernelspec))))
 
@@ -101,9 +105,7 @@ DEPENDS_kernel-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala D
 # Extra targets for each docker image...
 TARGETS_nb2kg:
 TARGETS_yarn-spark:
-TARGETS_enterprise-gateway-demo: kernelspecs
-	@make -C .. bdist
-TARGETS_enterprise-gateway: kernelspecs
+TARGETS_enterprise-gateway TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
 TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
 
@@ -122,7 +124,7 @@ FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-lau
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
 publish-$1:
-	@./release.sh $(HUB_ORG) $1 $(TAG)
+	@docker push $HUB_ORG/$IMAGE_NAME:$TAG
 endef
 $(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 
