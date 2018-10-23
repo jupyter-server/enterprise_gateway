@@ -11,7 +11,7 @@ SHELL:=/bin/bash
 
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
-TAG:=$(VERSION)
+TAG?=$(VERSION)
 
 NO_CACHE?=--no-cache
 
@@ -29,10 +29,6 @@ clean: ## Make a clean source tree
 
 KERNELSPECS := kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker
 kernelspecs: $(KERNELSPECS)
-
-# Specify which version of docker images you would like to use in your kernelspecs in IMAGE_VERSION.
-# This value will be baked into the kernelspecs
-export IMAGE_VERSION:=$(TAG)
 
 FILE_kernelspecs_all:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
 FILE_kernelspecs_yarn:=../dist/jupyter_enterprise_gateway_kernelspecs_yarn-$(VERSION).tar.gz
@@ -57,6 +53,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
+	find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(TAG)/g"; find . -name *.bak -print0 | xargs -0 rm -f
 	@mkdir -p ../dist
 
 PATTERN_kernelspecs_all := *
@@ -69,7 +66,7 @@ define BUILD_KERNELSPEC
 $1: $$(FILE_$1)
 $$(FILE_$1): ../build/kernelspecs
 	rm -f $$(FILE_$1)
-	@( cd ../build/kernelspecs; find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(IMAGE_VERSION)/g"; find . -name *.bak -print0 | xargs -0 rm -f; tar -pvczf "../$$(FILE_$1)" $$(PATTERN_$1) )
+	@( cd ../build/kernelspecs; tar -pvczf "../$$(FILE_$1)" $$(PATTERN_$1) )
 endef
 $(foreach kernelspec,$(KERNELSPECS),$(eval $(call BUILD_KERNELSPEC,$(kernelspec))))
 
@@ -124,7 +121,7 @@ FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-lau
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
 publish-$1:
-	@docker push $HUB_ORG/$IMAGE_NAME:$TAG
+	@docker push $HUB_ORG/$1:$TAG
 endef
 $(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 

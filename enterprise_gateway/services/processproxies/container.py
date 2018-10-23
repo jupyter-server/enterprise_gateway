@@ -11,8 +11,6 @@ from .processproxy import RemoteProcessProxy
 import urllib3
 urllib3.disable_warnings()
 
-default_kernel_image = os.environ.get('EG_KERNEL_IMAGE', 'elyra/kernel-py:dev')
-
 local_ip = localinterfaces.public_ips()[0]
 
 
@@ -28,7 +26,6 @@ class ContainerProcessProxy(RemoteProcessProxy):
             Determine which kernel images to use.  Initialize to the default, then let any defined in the process
             proxy override that.  Finally, let those provided by client be the final say.
         """
-        self.kernel_image = default_kernel_image
         if proxy_config.get('image_name'):
             self.kernel_image = proxy_config.get('image_name')
         self.kernel_image = os.environ.get('KERNEL_IMAGE', self.kernel_image)  # support BYO Image
