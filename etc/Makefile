@@ -53,7 +53,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
-	find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(TAG)/g"; find . -name *.bak -print0 | xargs -0 rm -f
+	@(cd ../build/kernelspecs; find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(TAG)/g"; find . -name *.bak -print0 | xargs -0 rm -f)
 	@mkdir -p ../dist
 
 PATTERN_kernelspecs_all := *
@@ -121,7 +121,7 @@ FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-lau
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
 publish-$1:
-	@docker push $HUB_ORG/$1:$TAG
+	@docker push $(HUB_ORG)/$1:$(TAG)
 endef
 $(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
 
