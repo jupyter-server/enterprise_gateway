@@ -11,8 +11,9 @@ RUN apk add --no-cache build-base libzmq openssl-dev python-dev && \
 # then some R things...
 RUN mkdir -p /usr/share/doc/R/html && \
     Rscript --slave --no-save --no-restore-history \
-        -e "install.packages(pkgs=c('argparser','jsonlite','uuid','stringr','repr','IRdisplay','evaluate', 'crayon', 'pbdZMQ', 'devtools', 'digest', 'base64enc'), \
+        -e "install.packages(pkgs=c('argparser','jsonlite','uuid','stringr','repr','IRdisplay','evaluate', 'crayon', 'pbdZMQ', 'digest', 'base64enc', 'versions'), \
         lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
+        -e "versions::install.versions('devtools', '1.13.6', lib='/usr/lib/R/library')" \
         -e "devtools::install_github('IRkernel/IRkernel')"
 
 # Install OOTB kernelspecs
