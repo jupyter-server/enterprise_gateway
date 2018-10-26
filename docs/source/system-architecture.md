@@ -48,16 +48,18 @@ specification, otherwise known as the *kernel spec*.  Enterprise Gateway introdu
 named `RemoteKernelSpec`.  
 
 The `RemoteKernelSpec` class provides support for a new (and optional) stanza within the kernelspec file.  This 
-stanza is named `process_proxy` and identifies the class that provides the kernel's process abstraction (while 
-allowing for future extensions).
+stanza is located in the `metadata` stanza and is named `process_proxy`.  This stanza identifies 
+the class that provides the kernel's process abstraction (while allowing for future extensions).
 
 Here's an example of a kernel specification that uses the `DistributedProcessProxy` class for its abstraction:
 ```json
 {
   "language": "scala",
   "display_name": "Spark - Scala (YARN Client Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -332,12 +334,14 @@ In such situations, one might find the following `process-proxy` stanza:
 
 ```json
 {
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy",
-    "config": {
-      "remote_hosts": "priv_host1,priv_host2",
-      "port_range": "40000..41000",
-      "authorized_users": "bob,alice"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy",
+      "config": {
+        "remote_hosts": "priv_host1,priv_host2",
+        "port_range": "40000..41000",
+        "authorized_users": "bob,alice"
+      }
     }
   }
 }
@@ -382,8 +386,10 @@ file illustrating these parameters...
 {
   "language": "python",
   "display_name": "Spark - Python (YARN Cluster Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

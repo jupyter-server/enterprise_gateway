@@ -1,11 +1,13 @@
 {
   "language": "python",
   "display_name": "Spark - Python (Kubernetes Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-py:VERSION",
-      "executor_image_name": "elyra/kernel-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-py:VERSION",
+        "executor_image_name": "elyra/kernel-py:VERSION"
+      }
     }
   },
   "env": {

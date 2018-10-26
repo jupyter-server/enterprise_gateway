@@ -45,8 +45,10 @@ After that, you should have a kernel.json that looks similar to the one below:
 {
   "language": "python",
   "display_name": "Spark - Python (YARN Cluster Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

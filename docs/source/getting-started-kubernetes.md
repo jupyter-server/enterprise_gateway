@@ -401,7 +401,7 @@ variables as noted in the `env:` section above.
 
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the
-kernel.json file must include a `process_proxy` stanza indicating a `class_name:`  of 
+kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:`  of 
 `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative
 to a Kubernetes environment.
 
@@ -414,10 +414,12 @@ rest of the parameters used to launch the kernel by way of an environment variab
 
 ```json
 {
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-py:VERSION"
+      }
     }
   }
 }

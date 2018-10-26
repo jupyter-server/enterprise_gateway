@@ -48,7 +48,7 @@ Items worth noting:
 
 ### DockerSwarmProcessProxy
 To indicate that a given kernel should be launched as a Docker Swarm service into a swarm clustr, the
-kernel.json file must include a `process_proxy` stanza indicating a `class_name:`  of 
+kernel.json file's `metadata` stanza  must include a `process_proxy` stanza indicating a `class_name:`  of 
 `DockerSwarmProcessProxy`. This ensures the appropriate lifecycle management will take place relative
 to a Docker Swarm environment.
 
@@ -61,12 +61,14 @@ rest of the parameters used to launch the kernel by way of an environment variab
 
 ```json
 {
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-py:VERSION"
+      }
     }
-  }
+  },
 }
 ```
 As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json
@@ -94,10 +96,12 @@ Running containers in Docker Swarm versus traditional Docker are different enoug
 separate process proxy implementations.  As a result, the kernel.json file could reference the `DockerProcessProxy` class and, accordingly, a traditional docker container (as opposed to a swarm _service_) will be created.  The rest of the kernel.json file, image name, argv stanza, etc. is identical.
 ```json
 {
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-py:VERSION"
+      }
     }
   },
   "argv": [

@@ -1,10 +1,12 @@
 {
   "language": "python",
   "display_name": "Python on Docker with Tensorflow",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-tf-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-tf-py:VERSION"
+      }
     }
   },
   "env": {

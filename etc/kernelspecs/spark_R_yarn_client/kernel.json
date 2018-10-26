@@ -1,8 +1,10 @@
 {
   "language": "R",
   "display_name": "Spark - R (YARN Client Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
