@@ -57,7 +57,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 if pod_status == 'Running' and self.assigned_host == '':
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
-                    self.assigned_host = pod_info.status.pod_ip
+                    self.assigned_host = self.container_name
+                    self.assigned_node_ip = pod_info.status.host_ip
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug("{}: Waiting to connect to k8s pod in namespace '{}'. "
