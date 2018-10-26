@@ -2,8 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel spec that knows about remote kernel types."""
 
+import logging
 from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
 
+#TODO - Remove this file once kernelspecs have been updated with metadata stanzas.
 
 class RemoteKernelSpecManager(KernelSpecManager):
 
@@ -17,16 +19,14 @@ class RemoteKernelSpec(KernelSpec):
     """
     def __init__(self, resource_dir, **kernel_dict):
         super(RemoteKernelSpec, self).__init__(resource_dir, **kernel_dict)
-        # defaults...
-        self.process_proxy_class = 'enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy'
-        self.process_proxy_config = {}
 
-        if 'process_proxy' in kernel_dict and kernel_dict['process_proxy']:
-            self.process_proxy_class = kernel_dict['process_proxy'].get('class_name', self.process_proxy_class)
-            self.process_proxy_config = kernel_dict['process_proxy'].get('config', self.process_proxy_config)
+        # The only thing this class does now is detect malformed kernel.json files relative to a misplaced
+        # process_proxy stanza.  If found, a warning message is printed and the stanza is moved into the
+        # metadata dictionary.
 
-    def to_dict(self):
-        d = super(RemoteKernelSpec, self).to_dict()
-        d.update({'process_proxy': {'class_name': self.process_proxy_class,
-                                    'config': self.process_proxy_config}})
-        return d
+        if 'process_proxy' in kernel_dict:
+            log = logging.getLogger('EnterpriseGatewayApp')
+            log.warning("WARNING! A top-level process_proxy stanza was detected for kernel '{0}'.  "
+                     "Update the kernel.json file and move 'process_proxy: {{}}' within a 'metadata: {{}}' stanza.".
+                     format(kernel_dict['display_name']))
+            self.metadata.update({"process_proxy": kernel_dict.pop('process_proxy')})

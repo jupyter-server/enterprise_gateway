@@ -14,6 +14,18 @@ from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes, unicode_type)
 
 
+def get_process_proxy_config(kernelspec):
+    """Checks the kernelspec's metadata dictionary for a process proxy entry.
+       If found, it is returned, else one is created relative to the LocalProcessProxy and returns.
+    """
+    if 'process_proxy' in kernelspec.metadata:
+        process_proxy = kernelspec.metadata.get('process_proxy')
+        if 'class_name' in process_proxy:  # If no class_name, return default
+                if 'config' not in process_proxy:  # if class_name, but no config stanza, add one
+                    process_proxy.update({"config":{}})
+                return process_proxy  # Return what we found (plus config stanza if necessary)
+    return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
+
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """Extends the SeedingMappingKernelManager.
 
@@ -53,14 +65,14 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         km._launch_args = launch_args
 
         # Construct a process-proxy
-        if km.kernel_spec.process_proxy_class:
-            process_proxy_class = import_item(km.kernel_spec.process_proxy_class)
-            km.process_proxy = process_proxy_class(km, proxy_config=km.kernel_spec.process_proxy_config)
-            km.process_proxy.load_process_info(process_info)
+        process_proxy = get_process_proxy_config(km.kernel_spec)
+        process_proxy_class = import_item(process_proxy.get('class_name'))
+        km.process_proxy = process_proxy_class(km, proxy_config=process_proxy.get('config'))
+        km.process_proxy.load_process_info(process_info)
 
-            # Confirm we can even poll the process.  If not, remove the persisted session.
-            if km.process_proxy.poll() is False:
-                return False
+        # Confirm we can even poll the process.  If not, remove the persisted session.
+        if km.process_proxy.poll() is False:
+            return False
 
         km.kernel = km.process_proxy
         km.start_restarter()
@@ -128,12 +140,13 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         self.restarting = False  # need to track whether we're in a restart situation or not
 
     def start_kernel(self, **kw):
-        if self.kernel_spec.process_proxy_class:
-            self.log.debug("Instantiating kernel '{}' with process proxy: {}".
-                           format(self.kernel_spec.display_name, self.kernel_spec.process_proxy_class))
-            process_proxy_class = import_item(self.kernel_spec.process_proxy_class)
-            self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=self.kernel_spec.process_proxy_config)
-            self._capture_user_overrides(**kw)
+        process_proxy = get_process_proxy_config(self.kernel_spec)
+        process_proxy_class_name = process_proxy.get('class_name')
+        self.log.debug("Instantiating kernel '{}' with process proxy: {}".
+                       format(self.kernel_spec.display_name, process_proxy_class_name))
+        process_proxy_class = import_item(process_proxy_class_name)
+        self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=process_proxy.get('config'))
+        self._capture_user_overrides(**kw)
 
         return super(RemoteKernelManager, self).start_kernel(**kw)
 
@@ -171,22 +184,23 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         return cmd
 
     def _launch_kernel(self, kernel_cmd, **kw):
-        if self.kernel_spec.process_proxy_class:
-            env = kw['env']
+        # Note: despite the under-bar prefix to this method, the jupyter_client comment says that
+        # this method should be "[overridden] in a subclass to launch kernel subprocesses differently".
+        # So that's what we've done.
 
-            # Apply user_overrides to enable defaulting behavior from kernelspec.env stanza.  Note that we do this
-            # BEFORE setting KERNEL_GATEWAY and removing KG_AUTH_TOKEN so those operations cannot be overridden.
-            env.update(self.user_overrides)
+        env = kw['env']
 
-            # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
-            env['KERNEL_GATEWAY'] = '1'
-            if 'KG_AUTH_TOKEN' in env:
-                del env['KG_AUTH_TOKEN']
+        # Apply user_overrides to enable defaulting behavior from kernelspec.env stanza.  Note that we do this
+        # BEFORE setting KERNEL_GATEWAY and removing KG_AUTH_TOKEN so those operations cannot be overridden.
+        env.update(self.user_overrides)
 
-            self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
-            return self.process_proxy.launch_process(kernel_cmd, **kw)
-        # This statement shouldn't be reached since LocalProcessProxy is the default if non-existent, but just in case.
-        return super(RemoteKernelManager, self)._launch_kernel(kernel_cmd, **kw)
+        # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
+        env['KERNEL_GATEWAY'] = '1'
+        if 'KG_AUTH_TOKEN' in env:
+            del env['KG_AUTH_TOKEN']
+
+        self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
+        return self.process_proxy.launch_process(kernel_cmd, **kw)
 
     def request_shutdown(self, restart=False):
         super(RemoteKernelManager, self).request_shutdown(restart)

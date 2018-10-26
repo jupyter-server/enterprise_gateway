@@ -1,10 +1,12 @@
 {
   "language": "python",
   "display_name": "Python on Docker with Tensorflow with GPUs",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-tf-gpu-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-tf-gpu-py:VERSION"
+      }
     }
   },
   "env": {

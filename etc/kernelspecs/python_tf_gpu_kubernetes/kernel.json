@@ -1,10 +1,12 @@
 {
   "language": "python",
   "display_name": "Python on Kubernetes with Tensorflow with GPUs",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-tf-gpu-py:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-tf-gpu-py:VERSION"
+      }
     }
   },
   "env": {

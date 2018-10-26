@@ -52,8 +52,10 @@ After that, you should have a kernel.json that looks similar to the one below:
 {
   "language": "python",
   "display_name": "Spark - Python (YARN Client Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
@@ -86,8 +88,10 @@ Please see below how a kernel.json would look like for integrating with Spark St
 {
   "language": "python",
   "display_name": "Spark - Python (YARN Client Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+    }
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",

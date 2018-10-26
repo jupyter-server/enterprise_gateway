@@ -1,11 +1,13 @@
 {
   "language": "R",
   "display_name": "Spark - R (Kubernetes Mode)",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
-    "config": {
-      "image_name": "elyra/kernel-spark-r:VERSION",
-      "executor_image_name": "elyra/kernel-spark-r:VERSION"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-spark-r:VERSION",
+        "executor_image_name": "elyra/kernel-spark-r:VERSION"
+      }
     }
   },
   "env": {

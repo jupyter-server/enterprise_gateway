@@ -1,11 +1,13 @@
 {
   "display_name": "Authorization Testing",
   "language": "python",
-  "process_proxy": {
-    "class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy",
-    "config": {
-      "authorized_users": "bob,alice,bad_guy",
-      "unauthorized_users": "bad_guy"
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy",
+      "config": {
+        "authorized_users": "bob,alice,bad_guy",
+        "unauthorized_users": "bad_guy"
+      }
     }
   },
   "env": {

@@ -18,8 +18,9 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-# Default logging level of yarn-api produces too much noise - raise to warning only.
+# Default logging level of yarn-api and underlying connectionpool produce too much noise - raise to warning only.
 logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('EG_YARN_LOG_LEVEL', logging.WARNING))
+logging.getLogger('urllib3.connectionpool').setLevel(os.environ.get('EG_YARN_LOG_LEVEL', logging.WARNING))
 
 local_ip = localinterfaces.public_ips()[0]
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
