@@ -33,7 +33,7 @@ SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2
 
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
-tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 
 ```
 
