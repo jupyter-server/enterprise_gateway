@@ -19,6 +19,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(ContainerProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.container_name = ''
+        self.assigned_node_ip = None
         self._determine_kernel_images(proxy_config)
 
     def _determine_kernel_images(self, proxy_config):
@@ -123,6 +124,15 @@ class ContainerProcessProxy(RemoteProcessProxy):
                     self.pgid = 0
             else:
                 self.detect_launch_failure()
+
+    def get_process_info(self):
+        process_info = super(ContainerProcessProxy, self).get_process_info()
+        process_info.update({'assigned_node_ip': self.assigned_node_ip,})
+        return process_info
+
+    def load_process_info(self, process_info):
+        super(ContainerProcessProxy, self).load_process_info(process_info)
+        self.assigned_node_ip = process_info['assigned_node_ip']
 
     @abc.abstractmethod
     def get_initial_states(self):
