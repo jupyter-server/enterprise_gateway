@@ -167,7 +167,7 @@ class DockerProcessProxy(ContainerProcessProxy):
                         self.log.warning("Docker network '{}' could not be located in container attributes - "
                                          "using assigned_ip '{}'.".format(docker_network, self.assigned_ip))
 
-                    self.assigned_host = self.assigned_ip
+                    self.assigned_host = self.container_name
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug("{}: Waiting to connect to docker container. "
