@@ -568,6 +568,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.start_time = None
         self.assigned_ip = None
         self.assigned_host = ''
+        self.assigned_node_ip = None
         self.comm_ip = None
         self.comm_port = 0
         self.tunneled_connect_info = None    # Contains the destination connection info when tunneling in use
@@ -960,6 +961,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         process_info = super(RemoteProcessProxy, self).get_process_info()
         process_info.update({'assigned_ip': self.assigned_ip,
                              'assigned_host': self.assigned_host,
+                             'assigned_node_ip': self.assigned_node_ip,
                              'comm_ip': self.comm_ip,
                              'comm_port': self.comm_port,
                              'tunneled_connect_info': self.tunneled_connect_info})
@@ -969,6 +971,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         super(RemoteProcessProxy, self).load_process_info(process_info)
         self.assigned_ip = process_info['assigned_ip']
         self.assigned_host = process_info['assigned_host']
+        self.assigned_node_ip = process_info['assigned_node_ip']
         self.comm_ip = process_info['comm_ip']
         self.comm_port = process_info['comm_port']
         if 'tunneled_connect_info' in process_info and process_info['tunneled_connect_info'] is not None:
