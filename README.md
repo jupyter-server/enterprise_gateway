@@ -21,6 +21,8 @@ It provides out of the box support for the following kernels:
 * R using IRkernel
 * Scala using Apache Toree kernel
 
+Full Documentation for Jupyter Enterprise Gateway can be found [here](http://jupyter-enterprise-gateway.readthedocs.io/en/latest)
+
 Jupyter Enterprise Gateway does not manage multiple Jupyter Notebook deployments, for that
 you should look for [JupyterHub](https://github.com/jupyterhub/jupyterhub).
 
