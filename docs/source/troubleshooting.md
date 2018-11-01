@@ -2,6 +2,61 @@
 This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
 instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.html) page.
 
+- **None of the scenarios on this page match or resolve my issue, what do I do next?**
+
+   If you are unable to resolve your issue, take a look at our 
+   [open issues list](https://github.com/jupyter/enterprise_gateway/issues) to see if there is an applicable scenario 
+   already reported.  If found, please add a comment to the issue so that we can get a sense of urgency (although all
+   issues are important to us).  If not found, please provide the following information if possible.
+   
+   1. Describe the issue in as much detail as possible.  This should include configuration information about your 
+   environment.
+   2. Gather and _attach_ the following files to the issue.  If possible, archiving the files first and attaching the 
+   archive is preferred.
+        1. The **complete** Enterprise Gateway log file.  If possible, please enable `DEBUG` logging that encompasses
+        the issue.  You can refer to this section of our [Getting Started](getting-started.html#starting-enterprise-gateway) 
+        page for redirection and `DEBUG` enablement.
+        2. The log file(s) produced from the corresponding kernel.  This is primarily a function of the underlying resource
+        manager.  
+            - For containerized installations like Kubernetes or Docker Swarm, kernel log output can be captured by
+            running the appropriate `logs` command against the pod or container, respectively.  The names of the 
+            corresponding pod/container can be found in the Enterprise Gateway log.
+            - For `YARN` environments, 
+            you'll need to navigate to the appropriate log directory relative the application ID associated with the kernel.
+            The application ID can be located in the Enterprise Gateway log.  If you have access to an administrative console,
+            you can usually navigate to the application logs much more easily. 
+        3. Although unlikely, the notebook log may also be helpful.  If we find that the issue is more client-side
+        related, we may ask for `DEBUG` logging here as well.
+   3. If you have altered or created new kernelspecs files, the files corresponding to the failing kernels would be 
+   helpful.  These files could also be added to the attached archive or attached separately.
+   
+   Please know that we understand that some information cannot be provided due to its senstivity.  In such cases, just
+   let us know and we'll be happy to approach resolution of your issue from a different angle.
+   
+   
+- **I just installed Enterprise Gateway but nothing happens, how do I proceed?**
+    
+    Because Enterprise Gateway is one element of a networked application, there are various _touch points_ that should
+    be validated independently.  The following items can be used as a checklist to confirm general operability.
+    1. Confirm that Enterprise Gateway is servicing general requests.  This can be accomplished using the following 
+    `curl` command, which should produce the json corresponding to the configured kernelspecs:
+        ```bash
+        curl http://<gateway_server>:<gateway_port>/api/kernelspecs
+        ```
+    2. Independently validate any resource manager you're running against.  Various resource managers usually provide 
+    examples for how to go about validating their configuration.
+    3. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place.  These
+    should be covered in our [Getting Started](getting-started.html#configuring-resource-managers) topics.
+    4. If using a Notebook as your front-end, ensure that the 
+    [NB2KG extension](getting-started.html#connecting-a-notebook-to-enterprise-gateway) is properly configured.
+    Once the notebook has started, a refresh on the tree view should issue the same `kernelspecs` request in step 1 and
+    the drop-down menu items for available kernels should reflect an entry for each kernelspec returned.
+    5. **Always** consult your Enterprise Gateway log file.  If you have not redirected `stdout` and `stderr` to a
+    file you are highly encouraged to do so.  In addition, you should enable `DEBUG` logging at least until your 
+    configuration is stable.  Please note, however, that you may be asked to produce an Enterprise Gateway log with 
+    `DEBUG` enabled when reporting issues.  An example of output redirection and `DEBUG` logging is also provided on our 
+    [Getting Started](getting-started.html#starting-enterprise-gateway) page.
+    
 - **I'm trying to launch a (Python/Scala/R) kernel in YARN Cluster Mode but it failed with 
 a "Kernel error" and State: 'FAILED'.**
 
@@ -57,15 +112,14 @@ a "Kernel error" and an `AuthenticationException`.**
     message='No authentication methods available.'.
     ```
 
-
- In general, you can look for more information in the kernel log for YARN Client 
- kernels.  The default location is /tmp with a filename of `kernel-<kernel_id>.log`.  The location 
- can be configured using the environment variable `EG_KERNEL_LOG_DIR` during Enterprise Gateway start up. 
- 
- See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an 
- example of starting the Enterprise Gateway from a script and 
- [Supported Environment Variables](config-options.html#supported-environment-variables) 
- for a list of configurable environment variables.   
+    In general, you can look for more information in the kernel log for YARN Client 
+    kernels.  The default location is /tmp with a filename of `kernel-<kernel_id>.log`.  The location 
+    can be configured using the environment variable `EG_KERNEL_LOG_DIR` during Enterprise Gateway start up. 
+    
+    See [Starting Enterprise Gateway](getting-started.html#starting-enterprise-gateway) for an 
+    example of starting the Enterprise Gateway from a script and 
+    [Supported Environment Variables](config-options.html#supported-environment-variables) 
+    for a list of configurable environment variables.   
 
 
 - **I'm trying to launch a (Python/Scala/R) kernel in YARN Client Mode with SSH tunneling enabled
