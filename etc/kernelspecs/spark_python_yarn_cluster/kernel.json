@@ -10,7 +10,7 @@
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "PYSPARK_PYTHON": "/opt/anaconda2/bin/python",
     "PYTHONPATH": "${HOME}/.local/lib/python2.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip",
-    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/yarn/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python2.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/anaconda2/bin:$PATH",
+    "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/${KERNEL_USERNAME}/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python2.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/anaconda2/bin:$PATH",
     "LAUNCH_OPTS": ""
   },
   "argv": [
