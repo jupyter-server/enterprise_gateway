@@ -80,43 +80,44 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 # Docker image build section ***********************************************
 #
 
-KERNEL_IMAGES := kernel-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
+KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark enterprise-gateway $(KERNEL_IMAGES)
 PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 
 docker-images: $(DOCKER_IMAGES)
 kernel-images: $(KERNEL_IMAGES)
 
-publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
+publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-spark-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
 clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kernel-images
-clean-kernel-images: clean-kernel-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
+clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
 DEPENDS_yarn-spark:
 DEPENDS_enterprise-gateway-demo: yarn-spark
 DEPENDS_enterprise-gateway: $(KERNELSPECS_FILE)
-DEPENDS_kernel-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala DEPENDS_kernel-tf-py DEPENDS_kernel-tf-gpu-py: $(KERNELSPECS_FILE)
+DEPENDS_kernel-py DEPENDS_kernel-spark-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala DEPENDS_kernel-tf-py DEPENDS_kernel-tf-gpu-py: $(KERNELSPECS_FILE)
 
 # Extra targets for each docker image...
 TARGETS_nb2kg:
 TARGETS_yarn-spark:
 TARGETS_enterprise-gateway TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
-TARGETS_kernel-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
+TARGETS_kernel-py TARGETS_kernel-spark-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
 
 # Extra files for each docker image...
 FILES_nb2kg :=
 FILES_yarn-spark :=
-FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs* ../dist/jupyter_enterprise_gateway*.whl
-FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs* ../dist/jupyter_enterprise_gateway*.whl
-FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
-FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
-FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/python/bootstrap/*
-FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/R/bootstrap/*
-FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernelspecs*
-FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs* kernel-launchers/scala/bootstrap/*
+FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
+FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
+FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}* kernel-launchers/python/bootstrap/*
+FILES_kernel-spark-py := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}*
+FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}* kernel-launchers/python/bootstrap/*
+FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}* kernel-launchers/python/bootstrap/*
+FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}* kernel-launchers/R/bootstrap/*
+FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}*
+FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernelspecs_{d,k}* kernel-launchers/scala/bootstrap/*
 
 # Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
 define PUBLISH_IMAGE
