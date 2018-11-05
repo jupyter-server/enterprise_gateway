@@ -1,8 +1,8 @@
-This image enables the use of an IPython kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is currently built on [kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0](https://hub.docker.com/r/kubespark/spark-driver-py/) deriving from the [apache-spark-on-k8s](https://github.com/apache-spark-on-k8s/spark) fork.  As a result, the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.  We'll revisit this once Spark 2.4 is available.
+This image enables the use of an IPython kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster.  It is built on [jupyter/scipy-notebook](https://hub.docker.com/r/jupyter/scipy-notebook/).
 
 # What it Gives You
 * IPython kernel support 
-* Spark on kubernetes support from within a Jupyter Notebook
+* [Data science libraries](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html#jupyter-scipy-notebook)
 
 # Basic Use
 Deploy [enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) per its instructions and configured to the appropriate environment.
