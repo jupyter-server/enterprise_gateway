@@ -14,7 +14,7 @@ RUN mkdir -p /usr/share/doc/R/html && \
         -e "install.packages(pkgs=c('argparser','jsonlite','uuid','stringr','repr','IRdisplay','evaluate', 'crayon', 'pbdZMQ', 'digest', 'base64enc', 'versions'), \
         lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
         -e "versions::install.versions('devtools', '1.13.6', lib='/usr/lib/R/library')" \
-        -e "devtools::install_github('IRkernel/IRkernel')"
+        -e "devtools::install_github('IRkernel/IRkernel@0.8.14')"
 
 # Install OOTB kernelspecs
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/

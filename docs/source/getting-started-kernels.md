@@ -94,12 +94,12 @@ conda install --yes --quiet -c r r-essentials r-irkernel
 Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")'
 
 
-# Create an R-script to run and install packages
+# Create an R-script to run and install packages and update IRkernel
 cat <<'EOF' > install_packages.R
 install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
                    'devtools', 'uuid', 'digest', 'RCurl', 'curl', 'argparser'),
                    repos='http://cran.rstudio.com/')
-devtools::install_github('IRkernel/IRkernel')
+devtools::install_github('IRkernel/IRkernel@0.8.14')
 IRkernel::installspec(user = FALSE)
 EOF
 

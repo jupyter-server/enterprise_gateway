@@ -3,9 +3,13 @@
 # https://github.com/jupyter/docker-stacks/issues/679 - r-notebook kernel crashes because of png support
 FROM jupyter/r-notebook:8a1b90cbcba5
 
-# Additional package needed by launcher
+# Additional package needed by launcher, update IRkernel to fix kernel shutdown.
 RUN conda install --quiet --yes \
     'r-argparser=0.4*' && \
+     Rscript --slave --no-save --no-restore-history \
+        -e "options(unzip = 'internal')" \
+        -e "Sys.setenv(TAR = '/bin/tar')" \
+        -e "devtools::install_github('IRkernel/IRkernel@0.8.14')" && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR
 
