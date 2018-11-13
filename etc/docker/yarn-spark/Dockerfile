@@ -37,8 +37,12 @@ RUN cd /tmp && \
 	rm -f /tmp/toree-0.2.0.tar.gz
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
-RUN conda install --yes --quiet -c r r-essentials r-irkernel && \
-	Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")' 
+RUN conda install --yes --quiet -c r r-essentials r-irkernel r-devtools && \
+	Rscript --slave --no-save --no-restore-history \
+        -e 'install.packages("argparser", repos="https://cran.rstudio.com")' \
+        -e "options(unzip = 'internal')" \
+        -e "Sys.setenv(TAR = '/bin/tar')" \
+        -e "devtools::install_github('IRkernel/IRkernel@0.8.14')"
 
 # Create service user 'elyra'. Pin uid/gid to 1111.
 # Grant sudo privs to elyra. Unlock passwd (for ssh).
