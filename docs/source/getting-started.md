@@ -30,7 +30,7 @@ is recommended.
 
 Jupyter Enterprise Gateway exposes the following features and functionality:
 
-* Enables the ability to launch kernels on different servers thereby distributing resource utilization 
+* Enables the ability to launch kernels on different servers thereby distributing resource utilization
 across the enterprise
 * Pluggable framework allows for support of additional resource managers
 * Secure communication from client to kernel
@@ -55,7 +55,7 @@ latest Python version (currently Python 2.7 and Python 3.6).
 * Install the version of Anaconda which you downloaded, following the instructions on the download
 page.
 
-* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/1.0.0)
+* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/)
 using `pip`(part of Anaconda) along with its dependencies.
 
 ```bash
@@ -92,12 +92,12 @@ kernels with Jupyter Enterprise Gateway:
 ### Configuring Resource Managers
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided
-deep integration with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway 
-also supports running in a pseudo-distributed mode utilizing both YARN client or Spark Standalone modes. 
-We've also recently added Kubernetes and IBM Spectrum Conductor integrations. 
+deep integration with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway
+also supports running in a pseudo-distributed mode utilizing both YARN client or Spark Standalone modes.
+We've also recently added Kubernetes and IBM Spectrum Conductor integrations.
 
 Please follow the links below to learn specific details about how to enable/configure
-the different modes of distributing your kernels: 
+the different modes of distributing your kernels:
 
 * [Enabling YARN Cluster Mode support](getting-started-cluster-mode.html)
 * [Enabling YARN Client Mode or Spark Standalone support](getting-started-client-mode.html)
@@ -106,7 +106,7 @@ the different modes of distributing your kernels:
 * [Enabling IBM Spectrum Conductor Support](getting-started-conductor.html)
 
 ### Starting Enterprise Gateway
-Very few arguments are necessary to minimally start Enterprise Gateway.  The following command 
+Very few arguments are necessary to minimally start Enterprise Gateway.  The following command
 could be considered a minimal command:
 
 ```bash
@@ -116,11 +116,11 @@ jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0
 where `--ip=0.0.0.0` exposes Enterprise Gateway on the public network and `--port_retries=0` ensures
 that a single instance will be started.
 
-We recommend starting Enterprise Gateway as a background task.  As a result, you might find it best 
+We recommend starting Enterprise Gateway as a background task.  As a result, you might find it best
 to create a start script to maintain options, file redirection, etc.
 
 The following script starts Enterprise Gateway with `DEBUG` tracing enabled (default is `INFO`) and idle
-kernel culling for any kernels idle for 12 hours where idle check intervals occur every minute.  The Enterprise Gateway log can then be monitored via `tail -F enterprise_gateway.log` and it can be 
+kernel culling for any kernels idle for 12 hours where idle check intervals occur every minute.  The Enterprise Gateway log can then be monitored via `tail -F enterprise_gateway.log` and it can be
 stopped via `kill $(cat enterprise_gateway.pid)`
 
 ```bash
@@ -141,12 +141,12 @@ fi
 
 [NB2KG](https://github.com/jupyter/nb2kg) is used to connect a Notebook from a
 local desktop or laptop to the Enterprise Gateway instance on the Spark/YARN cluster. We strongly recommend
-that NB2KG [v0.1.0](https://github.com/jupyter/nb2kg/releases/tag/v0.1.0) be used as our team has 
-provided some security enhancements to enable for conveying the notebook user (for configurations when 
-Enterprise Gateway is running behind a secured gateway) and allowing for increased request timeouts (due 
-to the longer kernel startup times when interacting with the resource manager or distribution operations). 
+that NB2KG [v0.1.0](https://github.com/jupyter/nb2kg/releases/tag/v0.1.0) be used as our team has
+provided some security enhancements to enable for conveying the notebook user (for configurations when
+Enterprise Gateway is running behind a secured gateway) and allowing for increased request timeouts (due
+to the longer kernel startup times when interacting with the resource manager or distribution operations).
 
-Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter/nb2kg#run-notebook-server), 
+Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter/nb2kg#run-notebook-server),
 one might use the following...
 
 ```bash
@@ -161,14 +161,14 @@ jupyter notebook \
   --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
 
-For your convenience, we have also built a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with 
+For your convenience, we have also built a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with
 Jupyter Notebook, Jupyter Lab and NB2KG which can be launched by the command below:
 
 ```bash
 docker run -t --rm \
   -e KG_URL='http://<master ip>:8888' \
-  -e KG_HTTP_USER=guest \ 
-  -e KG_HTTP_PASS=guest-password \ 
+  -e KG_HTTP_USER=guest \
+  -e KG_HTTP_PASS=guest-password \
   -p 8888:8888 \
   -e VALIDATE_KG_CERT='no' \
   -e LOG_LEVEL=DEBUG \
