@@ -29,14 +29,14 @@ EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3
 ### Configuring Kernels for YARN Client mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz).
+[e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz).
 
 Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on
 Yarn Client mode, we would have to copy the sample configuration folder **spark_python_yarn_client**
 to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
 

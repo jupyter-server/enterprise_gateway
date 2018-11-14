@@ -15,19 +15,19 @@ SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP di
 * EG_YARN_ENDPOINT: Must point to the YARN Resource Manager endpoint
 ```
 EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
-``` 
+```
 
 ### Configuring Kernels for YARN Cluster mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz).
+[e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz).
 
 Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
-would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed 
+would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed
 (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v1.0.0/jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz
 
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
 
@@ -35,7 +35,7 @@ KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 
 mkdir $KERNELS_FOLDER/spark_python_yarn_cluster/
 
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-1.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 
 ```
 
@@ -67,6 +67,6 @@ After that, you should have a kernel.json that looks similar to the one below:
 }
 ```
 
-After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have 
-a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents in distributed mode 
+After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have
+a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents in distributed mode
 on a Spark/Yarn Cluster.   
