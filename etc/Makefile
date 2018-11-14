@@ -11,7 +11,6 @@ SHELL:=/bin/bash
 
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
-TAG?=$(VERSION)
 
 NO_CACHE?=--no-cache
 
@@ -112,11 +111,11 @@ FILES_yarn-spark :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
 FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
 FILES_kernel-py := kernel-launchers/python/bootstrap/*
-FILES_kernel-spark-py := 
+FILES_kernel-spark-py :=
 FILES_kernel-tf-py := kernel-launchers/python/bootstrap/*
 FILES_kernel-tf-gpu-py := kernel-launchers/python/bootstrap/*
 FILES_kernel-r := kernel-launchers/R/bootstrap/*
-FILES_kernel-spark-r := 
+FILES_kernel-spark-r :=
 FILES_kernel-scala := kernel-launchers/scala/bootstrap/*
 
 # Trim out only the kernelspec files needed in each of the kernel images. Note that because kernel-based
@@ -124,7 +123,7 @@ FILES_kernel-scala := kernel-launchers/scala/bootstrap/*
 # we can use the base kernelspecs.
 LAUNCHER_FILES_nb2kg :=
 LAUNCHER_FILES_yarn-spark :=
-LAUNCHER_FILES_enterprise-gateway-demo := 
+LAUNCHER_FILES_enterprise-gateway-demo :=
 LAUNCHER_FILES_enterprise-gateway := kernel-launchers/scala
 LAUNCHER_FILES_kernel-py := kernel-launchers/python
 LAUNCHER_FILES_kernel-spark-py := kernel-launchers/python
@@ -142,7 +141,7 @@ $1: ../.image-$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
 	@(if [[ ! -z "$$(LAUNCHER_FILES_$1)" ]]; then mkdir -p ../build/docker/$1/kernel-launchers; cp -r $$(LAUNCHER_FILES_$1) ../build/docker/$1/kernel-launchers; rm -rf ../build/docker/$1/kernel-launchers/*/bootstrap; fi;)
-	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg VERSION=${VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
+	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endef

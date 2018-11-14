@@ -12,6 +12,13 @@ SHELL:=/bin/bash
 
 VERSION:=2.0.0.dev0
 
+ifeq (dev, $(findstring dev, $(VERSION)))
+    TAG:=dev
+else
+    TAG:=$(VERSION)
+endif
+
+
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
 
@@ -95,17 +102,17 @@ kernel-images: ## Build kernel-based docker images
 
 # Actual working targets...
 docker-images enterprise-gateway-demo yarn-spark nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
 
 # Here for doc purposes
 clean-images: ## Remove docker images (includes kernel-based images)
 clean-kernel-images: ## Remove kernel-based images
 
 clean-images clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
 
 publish-images: ## Push docker images to docker hub
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
 
 # itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway
 
@@ -141,7 +148,7 @@ PREP_TIMEOUT?=60
 itest-yarn-prep:
 	@-docker rm -f itest-yarn >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest-yarn\` to see container log)..."
-	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(VERSION) --elyra
+	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(TAG) --elyra
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest-yarn |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
 
 
