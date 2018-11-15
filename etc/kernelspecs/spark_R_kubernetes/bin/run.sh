@@ -22,7 +22,7 @@ if [ -z "${KERNEL_ID}" ]; then
   exit 1
 fi
 
-PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+PROG_HOME=/usr/local/share/jupyter/kernel-launchers/R
 
 set -x
 eval exec \

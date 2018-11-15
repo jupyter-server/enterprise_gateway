@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL_SPECS_PATH=${KERNEL_SPECS_PATH:-/usr/local/share/jupyter/kernels}
+KERNEL_LAUNCHERS_PATH=/usr/local/share/jupyter/kernel-launchers
 
 echo kernel-bootstrap.sh env: `env`
 
@@ -10,7 +10,7 @@ then
 	exit 1
 fi
 
-PROG_HOME=${KERNEL_SPECS_PATH}/${KERNEL_NAME}
+PROG_HOME=${KERNEL_LAUNCHERS_PATH}/scala
 KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
 TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
 if [ ! -f ${TOREE_ASSEMBLY} ]; then

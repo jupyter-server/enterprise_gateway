@@ -2,7 +2,7 @@ FROM jupyter/scipy-notebook:61d8aaedaeaf
 
 RUN pip install pycrypto
 
-ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
 COPY bootstrap-kernel.sh /etc/
 

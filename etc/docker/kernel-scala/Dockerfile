@@ -1,6 +1,6 @@
 FROM elyra/spark:v2.4.0
 
-ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
 COPY bootstrap-kernel.sh /etc/
 
