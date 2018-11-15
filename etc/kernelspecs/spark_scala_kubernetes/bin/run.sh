@@ -22,7 +22,7 @@ if [ -z "${KERNEL_ID}" ]; then
   exit 1
 fi
 
-PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+PROG_HOME=/usr/local/share/jupyter/kernel-launchers/scala
 KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
 TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
 if [ ! -f ${TOREE_ASSEMBLY} ]; then

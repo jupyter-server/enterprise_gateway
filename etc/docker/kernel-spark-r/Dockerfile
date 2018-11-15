@@ -17,7 +17,7 @@ RUN mkdir -p /usr/share/doc/R/html && \
         -e "devtools::install_github('IRkernel/IRkernel@0.8.14')"
 
 # Install OOTB kernelspecs
-ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
 RUN addgroup -S -g 620 eg-kernel && adduser -S -u 620 -G eg-kernel eg-kernel && \
 	chown -R eg-kernel.eg-kernel /usr/local/share/jupyter /opt/spark/work-dir

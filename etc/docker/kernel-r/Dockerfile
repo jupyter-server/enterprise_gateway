@@ -14,7 +14,7 @@ RUN conda install --quiet --yes \
     fix-permissions $CONDA_DIR
 
 # Install OOTB kernelspecs
-ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
+COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
 # Use our bootstrap file.  Kubernetes kernel yaml will reference this file
 # as the image's CMD in the k8s context.
