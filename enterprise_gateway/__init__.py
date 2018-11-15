@@ -3,4 +3,4 @@
 """Entrypoint for the kernel gateway package."""
 from .enterprisegatewayapp import launch_instance
 
-from ._version import version_info, __version__
+from ._version import __version__
