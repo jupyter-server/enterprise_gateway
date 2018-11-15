@@ -25,7 +25,7 @@ metadata:
     component: enterprise-gateway
 rules:
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "services", "persistentvolumnes", "persistentvolumeclaims"]
+    resources: ["pods", "namespaces", "services", "configmaps", "secrets", "persistentvolumnes", "persistentvolumeclaims"]
     verbs: ["get", "watch", "list", "create", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["rolebindings"]

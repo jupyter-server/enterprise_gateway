@@ -1,8 +1,8 @@
-FROM kubespark/spark-driver-r:v2.2.0-kubernetes-0.5.0
+FROM elyra/spark-r:v2.4.0
 
 # Install items necessary for IRKernel and launcher to run.
 # First some python things...
-RUN apk add --no-cache build-base libzmq openssl-dev python-dev && \
+RUN apk add --no-cache build-base libzmq python-dev && \
     python -m ensurepip && \
     rm -r /usr/lib/python*/ensurepip && \
     pip install --upgrade pip setuptools jupyter_client && \
@@ -19,15 +19,10 @@ RUN mkdir -p /usr/share/doc/R/html && \
 # Install OOTB kernelspecs
 ADD jupyter_enterprise_gateway*.tar.gz /usr/local/share/jupyter/kernels/
 
-COPY spark-exec.sh /etc/
-
 RUN addgroup -S -g 620 eg-kernel && adduser -S -u 620 -G eg-kernel eg-kernel && \
-    chown eg-kernel.eg-kernel /etc/spark-exec.sh && \
-	chmod 0755 /etc/spark-exec.sh && \
 	chown -R eg-kernel.eg-kernel /usr/local/share/jupyter /opt/spark/work-dir
 
 USER eg-kernel
 
 ENV R_LIBS_USER ${R_HOME}/library:${SPARK_HOME}/R/lib
 
-CMD /etc/spark-exec.sh
