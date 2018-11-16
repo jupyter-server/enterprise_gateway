@@ -43,7 +43,7 @@ Others can be configured via Enterprise Gateway's extensible framework.
 * Ability to associate profiles consisting of configuration settings to a kernel for a given user
 * Persistent kernel sessions
 
-![Deployment Diagram](https://github.com/jupyter-incubator/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
+![Deployment Diagram](https://github.com/jupyter/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
 
 ## Features
 
