@@ -7,7 +7,7 @@ from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Bool
 from jupyter_core.paths import jupyter_data_dir
 import json
-
+import getpass
 
 import threading
 kernels_lock = threading.Lock()
@@ -49,7 +49,7 @@ class KernelSessionManager(LoggingConfigurable):
         # Compose the kernel_session entry
         kernel_session = dict()
         kernel_session['kernel_id'] = kernel_id
-        kernel_session['username'] = self._get_kernel_username(kwargs.get('env',{}))
+        kernel_session['username'] = KernelSessionManager.get_kernel_username(**kwargs)
         kernel_session['kernel_name'] = km.kernel_name
 
         # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
@@ -179,5 +179,19 @@ class KernelSessionManager(LoggingConfigurable):
         return 0
 
     @staticmethod
-    def _get_kernel_username(env_dict):
-        return env_dict.get('KERNEL_USERNAME', 'unspecified')
+    def get_kernel_username(**kw):
+        """ Checks the process env for KERNEL_USERNAME.  If set, that value is returned, else KERNEL_USERNAME is
+            initialized to the current user and that value is returned.
+        :param kw:
+        :return: str
+        """
+        # Get the env
+        env_dict = kw.get('env', {})
+
+        # Ensure KERNEL_USERNAME is set
+        kernel_username = env_dict.get('KERNEL_USERNAME')
+        if kernel_username is None:
+            kernel_username = getpass.getuser()
+            env_dict['KERNEL_USERNAME'] = kernel_username
+
+        return kernel_username

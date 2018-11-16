@@ -26,6 +26,7 @@ from notebook import _tz
 from zmq.ssh import tunnel
 from enum import Enum
 from Crypto.Cipher import AES
+from ..sessions.kernelsessionmanager import KernelSessionManager
 
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
@@ -216,7 +217,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
-                self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
+                    self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
         return result
 
     def terminate(self):
@@ -356,10 +357,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.parent.parent.impersonation_enabled)
 
         # Ensure KERNEL_USERNAME is set
-        kernel_username = env_dict.get('KERNEL_USERNAME')
-        if kernel_username is None:
-            kernel_username = getpass.getuser()
-            env_dict['KERNEL_USERNAME'] = kernel_username
+        kernel_username = KernelSessionManager.get_kernel_username(**kw)
 
         # Now perform authorization checks
         if kernel_username in self.unauthorized_users:
@@ -870,6 +868,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
             sock = socket(AF_INET, SOCK_STREAM)
             try:
+                sock.settimeout(socket_timeout)
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
                 if signum > 0:  # Polling (signum == 0) is too frequent
@@ -896,12 +895,13 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
             sock = socket(AF_INET, SOCK_STREAM)
             try:
+                sock.settimeout(socket_timeout)
                 sock.connect((self.comm_ip, self.comm_port))
                 sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
             except Exception as e:
                 self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
-                                 "(using remote kill): {}".format(self.comm_ip, self.comm_port,
+                                 "(using alternate shutdown): {}".format(self.comm_ip, self.comm_port,
                                                                   self.kernel_id, str(e)))
             finally:
                 try:
