@@ -30,8 +30,9 @@ clean: ## Make a clean source tree
 	-rm -rf dist
 	-rm -rf build
 	-rm -rf *.egg-info
-	-find enterprise_gateway -name __pycache__ -exec rm -fr {} \;
-	-find enterprise_gateway -name '*.pyc' -exec rm -fr {} \;
+	-find . -name target -type d -exec rm -fr {} +
+	-find . -name __pycache__  -type d -exec rm -fr {} +
+	-find enterprise_gateway -name '*.pyc' -exec rm -fr {} +
 	-$(SA) $(ENV) && make -C docs clean
 	-$(SA) $(ENV) && make -C etc clean
 

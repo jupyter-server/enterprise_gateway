@@ -21,7 +21,6 @@ help:
 
 clean: ## Make a clean source tree
 	-rm -rf kernel-launchers/scala/lib
-	@(cd kernel-launchers/scala/toree-launcher; sbt $@)
 
 #
 # Kernelspec build section *************************************************
