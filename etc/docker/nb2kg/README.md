@@ -1,4 +1,4 @@
-This image installs the Jupyter server extensions [NB2KG](https://github.com/jupyter-incubator/nb2kg) and [Jupyter Lab](https://github.com/jupyterlab/jupyterlab) on top of image [jupyterhub/k8s-singleuser-sample](https://hub.docker.com/r/jupyterhub/k8s-singleuser-sample).
+This image installs the Jupyter server extensions [NB2KG](https://github.com/jupyter/nb2kg) and [Jupyter Lab](https://github.com/jupyterlab/jupyterlab) on top of image [jupyterhub/k8s-singleuser-sample](https://hub.docker.com/r/jupyterhub/k8s-singleuser-sample).
 
 # What it Gives You
 This image is configured to be run against [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) instances, although running against Jupyter Kernel Gateway instances should be fine.  It enables the ability to target either form of gateway using either `Jupyter Notebook` or `Jupyter Lab`. It also provides necessary support to be used in a `JupyterHub` environment.
