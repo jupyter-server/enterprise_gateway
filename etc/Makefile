@@ -73,7 +73,7 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	-rm -rf kernel-launchers/scala/lib
 	mkdir -p kernel-launchers/scala/lib
 	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) package; cp target/scala-2.11/*.jar ../lib)
-	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.2.0-incubating/toree-assembly-0.2.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.2.0-incubating.jar
+	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.3.0-incubating/toree-assembly-0.3.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.3.0-incubating.jar
 	
 #
 # Docker image build section ***********************************************

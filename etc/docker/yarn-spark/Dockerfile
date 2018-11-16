@@ -30,11 +30,11 @@ RUN cd /tmp && \
 
 # Install Toree
 RUN cd /tmp && \
-	curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.2.0-incubating/toree-pip/toree-0.2.0.tar.gz && \
+	curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.3.0-incubating/toree-pip/toree-0.3.0.tar.gz && \
 	pip install --upgrade setuptools --user python && \
-	pip install /tmp/toree-0.2.0.tar.gz && \
+	pip install /tmp/toree-0.3.0.tar.gz && \
 	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.3.1" --interpreters=Scala && \
-	rm -f /tmp/toree-0.2.0.tar.gz
+	rm -f /tmp/toree-0.3.0.tar.gz
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
 RUN conda install --yes --quiet -c r r-essentials r-irkernel r-devtools && \
