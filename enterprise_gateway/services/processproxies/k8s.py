@@ -7,6 +7,7 @@ import logging
 from socket import *
 from .container import ContainerProcessProxy
 from kubernetes import client, config
+from ..sessions.kernelsessionmanager import KernelSessionManager
 import urllib3
 urllib3.disable_warnings()
 
@@ -132,7 +133,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
                                  format(namespace))
             else:
-                namespace = self._create_kernel_namespace(self.get_kernel_username(**kw), service_account_name)
+                namespace = self._create_kernel_namespace(KernelSessionManager.get_kernel_username(**kw),
+                                                          service_account_name)
             kw['env']['KERNEL_NAMESPACE'] = namespace  # record in env since kernel needs this
         else:
             self.log.info("KERNEL_NAMESPACE provided by client: {}".format(namespace))

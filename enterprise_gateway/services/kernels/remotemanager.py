@@ -10,6 +10,7 @@ import uuid
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
+from ..sessions.kernelsessionmanager import KernelSessionManager
 from tornado import gen
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes, unicode_type)
 
@@ -26,6 +27,7 @@ def get_process_proxy_config(kernelspec):
                 return process_proxy  # Return what we found (plus config stanza if necessary)
     return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
 
+
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """Extends the SeedingMappingKernelManager.
 
@@ -37,7 +39,9 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
 
     @gen.coroutine
     def start_kernel(self, *args, **kwargs):
-        self.log.debug("RemoteMappingKernelManager.start_kernel: {}".format(kwargs['kernel_name']))
+        username = KernelSessionManager.get_kernel_username(**kwargs)
+        self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
+                       format(kernel_name=kwargs['kernel_name'], username=username))
         kernel_id = yield gen.maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         raise gen.Return(kernel_id)
