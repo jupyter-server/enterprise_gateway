@@ -1,7 +1,7 @@
 ## Docker Images
 
 The project produces three docker images to make both testing and general usage easier:
-1. elyra/yarn-spark
+1. elyra/demo-base
 1. elyra/enterprise-gateway-demo
 1. elyra/nb2kg
 
@@ -11,16 +11,16 @@ docker files can be found in the github repository in the appropriate directory 
 
 Local images can also be built via `make docker-images`.
 
-### elyra/yarn-spark
+### elyra/demo-base
 
-The [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) image is considered the base image 
+The [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) image is considered the base image 
 upon which [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is built.  It consist 
 of a Hadoop (YARN) installation that includes Spark, Java, Anaconda and various kernel installations.
 
 The tag of this image reflects the version of Spark included in the image and we don't anticipate the need to update this image regularly.
 
 The primary use of this image is to quickly build elyra/enterprise-gateway images for testing and development
-purposes.  To build a local image, run `make docker-image-yarn-spark`.
+purposes.  To build a local image, run `make docker-image-demo-base`.
 
 As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another
 instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
@@ -28,7 +28,7 @@ instance of elyra/enterprise-gateway can better demonstrate remote kernel functi
 ### elyra/enterprise-gateway-demo
 
 Image [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is the primary image 
-produced by this repository.  Built on [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/), it
+produced by this repository.  Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), it
 also includes the various example kernelspecs contained in the repository.
 
 By default, this container will start with enterprise gateway running as a service user named `elyra`.  This

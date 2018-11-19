@@ -1,7 +1,7 @@
 ARG HUB_ORG
 ARG TAG
 
-FROM $HUB_ORG/yarn-spark:$TAG
+FROM $HUB_ORG/demo-base:$TAG
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp
