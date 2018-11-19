@@ -1,13 +1,13 @@
-Built on [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/), this image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.  
+Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), this image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.  
 
 # What it Gives You
-* [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) base functionality
+* [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) base functionality
 * [Jupyter Enterprise Gateway](https://github.com/jupyter-incubator/enterprise_gateway)
 * Python/R/Toree kernels that target YARN-cluster mode
 
 # Basic Use
 
-**elyra/enterprise-gateway-demo** can be used as a combined YARN cluster in which the kernels run locally in YARN-cluster mode, or combined with a different instance of itself or an [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/) instance to more easily view that kernels are running remotely.
+**elyra/enterprise-gateway-demo** can be used as a combined YARN cluster in which the kernels run locally in YARN-cluster mode, or combined with a different instance of itself or an [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) instance to more easily view that kernels are running remotely.
 
 Prior to using either mode, we recommend you create a local docker network.  This better isolates the container(s) and avoids port collisions that might come into play if you're using [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) on the same host.  Here's a simple way to create a docker network...
 
@@ -33,11 +33,11 @@ Once in the container, enterprise-gateway-demo can be started using `sudo -u ely
 
 ### Dual Mode
 
-To get a better idea that kernels are running remote, you can invoke elyra/enterprise-gateway-demo to be the YARN master or use [elyra/yarn-spark](https://hub.docker.com/r/elyra/yarn-spark/).
+To get a better idea that kernels are running remote, you can invoke elyra/enterprise-gateway-demo to be the YARN master or use [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/).
 
-To invoke the YARN master using elyra/yarn-spark...
+To invoke the YARN master using elyra/demo-base...
 
-`docker run -d --rm -h yarnmaster --name yarnmaster -p 8088:8088 -p 8042:8042 --net jeg elyra/yarn-spark --yarn`
+`docker run -d --rm -h yarnmaster --name yarnmaster -p 8088:8088 -p 8042:8042 --net jeg elyra/demo-base --yarn`
 
 or using elyra/enterprise-gateway-demo...
 

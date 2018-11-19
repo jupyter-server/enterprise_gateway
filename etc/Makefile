@@ -1,7 +1,7 @@
 # Copyright (c) Juper Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help clean clean-images clean-enterprise-gateway clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark \
+.PHONY: help clean clean-images clean-enterprise-gateway clean-enterprise-gateway-demo clean-nb2kg clean-demo-base \
     clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
     kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker 
 
@@ -79,7 +79,7 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 #
 
 KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
-DOCKER_IMAGES := enterprise-gateway-demo nb2kg yarn-spark enterprise-gateway $(KERNEL_IMAGES)
+DOCKER_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 
 docker-images: $(DOCKER_IMAGES)
@@ -87,26 +87,26 @@ kernel-images: $(KERNEL_IMAGES)
 
 publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-spark-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
-clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-yarn-spark clean-enterprise-gateway clean-kernel-images
+clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-demo-base clean-enterprise-gateway clean-kernel-images
 clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
 
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
-DEPENDS_yarn-spark:
-DEPENDS_enterprise-gateway-demo: yarn-spark
+DEPENDS_demo-base:
+DEPENDS_enterprise-gateway-demo: demo-base
 DEPENDS_enterprise-gateway: $(FILE_kernelspecs_all)
 DEPENDS_kernel-py DEPENDS_kernel-spark-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala DEPENDS_kernel-tf-py DEPENDS_kernel-tf-gpu-py: $(FILE_kernelspecs_kubernetes) $(FILE_kernelspecs_docker)
 
 # Extra targets for each docker image...
 TARGETS_nb2kg:
-TARGETS_yarn-spark:
+TARGETS_demo-base:
 TARGETS_enterprise-gateway TARGETS_enterprise-gateway-demo: kernelspecs
 	@make -C .. bdist
 TARGETS_kernel-py TARGETS_kernel-spark-py TARGETS_kernel-r TARGETS_kernel-spark-r TARGETS_kernel-scala TARGETS_kernel-tf-py TARGETS_kernel-tf-gpu-py: kernelspecs
 
 # Extra files for each docker image...
 FILES_nb2kg :=
-FILES_yarn-spark :=
+FILES_demo-base :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
 FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
 FILES_kernel-py := kernel-launchers/python/bootstrap/*
@@ -121,7 +121,7 @@ FILES_kernel-scala := kernel-launchers/scala/bootstrap/*
 # images only require the launcher (and supporting files) and launchers are consistent across kernel types,
 # we can use the base kernelspecs.
 LAUNCHER_FILES_nb2kg :=
-LAUNCHER_FILES_yarn-spark :=
+LAUNCHER_FILES_demo-base :=
 LAUNCHER_FILES_enterprise-gateway-demo :=
 LAUNCHER_FILES_enterprise-gateway := kernel-launchers/scala
 LAUNCHER_FILES_kernel-py := kernel-launchers/python

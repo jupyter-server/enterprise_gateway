@@ -11,7 +11,7 @@ then
 	echo "usage: docker run -it[d] --rm -h <container-hostname> -p 8888:8888 [-p 8088:8088 -p 8042:8042] <docker-opts> <docker-image> <command>"
 	echo ""
 	echo "where <command> is:"
-	echo "    --elyra ... Invokes Enterprise Gateway as user 'elyra' directly.  Useful for daemon behavior."
+	echo "    --jovyan ... Invokes Enterprise Gateway as user 'jovyan' directly.  Useful for daemon behavior."
 	echo "    --yarn  ... Runs container as standalone YARN master - no Enterprise Gateway is started."
 	echo "    --help  ... Produces this message."
 	echo "    <other> ... Invokes '<other>'.  Use <other>='/bin/bash' to explore within the container."
@@ -31,12 +31,12 @@ export FROM="EG"
 sed s/HOSTNAME/$YARN_HOST/ /usr/local/share/jupyter/start-enterprise-gateway.sh.template > /usr/local/share/jupyter/start-enterprise-gateway.sh
 chmod 0755 /usr/local/share/jupyter/start-enterprise-gateway.sh
 
-if [[ "$CMD" == "--elyra" ]];
+if [[ "$CMD" == "--jovyan" ]];
 then
-    sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh
+    sudo -u jovyan /usr/local/share/jupyter/start-enterprise-gateway.sh
 else
     echo ""
-    echo "Note: Enterprise Gateway can be manually started using 'sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh'..."
+    echo "Note: Enterprise Gateway can be manually started using 'sudo -u jovyan /usr/local/share/jupyter/start-enterprise-gateway.sh'..."
     echo "      YARN application logs can be found at '/usr/local/hadoop-2.7.1/logs/userlogs'"
     "$*"
 fi
