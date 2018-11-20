@@ -21,7 +21,7 @@ ENV PYSPARK_PYTHON=$ANACONDA_HOME/bin/python
 # HADOOP ENVS
 ENV HADOOP_VER 2.7.7
 ENV HADOOP_PREFIX /usr/local/hadoop
-ENV HADOOP_CONF_DIR /usr/local/hadoop/etc/hadoop
+ENV HADOOP_CONF_DIR $HADOOP_PREFIX/etc/hadoop
 
 ENV PATH=$ANACONDA_HOME/bin:$HADOOP_PREFIX/bin:$SPARK_HOME/bin:$PATH
 
@@ -31,7 +31,7 @@ RUN mkdir -p /tmp/native && curl -Ls http://dl.bintray.com/sequenceiq/sequenceiq
 RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/local
 
 # INSTALL MINI-CONDA AND PYTHON PACKAGES
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p $ANACONDA_HOME && \
     rm ~/miniconda.sh && \
     ln -s /opt/anaconda2/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
@@ -61,7 +61,6 @@ RUN ls -la /usr/local/hadoop/etc/hadoop/*-env.sh && \
 # SETUP SPARK CONFIGS
 RUN cd /usr/local && \
     ln -s spark-${SPARK_VER}-bin-hadoop2.7 spark
-COPY yarn-remote-client $SPARK_HOME/
 
 # Install Toree
 RUN cd /tmp && \
@@ -119,8 +118,8 @@ CMD /etc/bootstrap-yarn-spark.sh
 
 LABEL Hadoop.version="2.7.7"
 LABEL Spark.version="2.3.1"
-LABEL Anaconda.version="4.4.0"
-LABEL Anaconda.python.version="2.7.13"
+LABEL Miniconda.version="4.5.11"
+LABEL Miniconda.python.version="2.7.15"
 
 # Hdfs ports
 EXPOSE 50010 50020 50070 50075 50090 8020 9000 \
