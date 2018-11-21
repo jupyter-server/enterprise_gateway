@@ -116,10 +116,8 @@ RUN chown root.root /etc/bootstrap-yarn-spark.sh && \
 
 CMD /etc/bootstrap-yarn-spark.sh
 
-LABEL Hadoop.version="2.7.7"
-LABEL Spark.version="2.3.1"
-LABEL Miniconda.version="4.5.11"
-LABEL Miniconda.python.version="2.7.15"
+LABEL Hadoop.version=$HADOOP_VER
+LABEL Spark.version=$SPARK_VER
 
 # Hdfs ports
 EXPOSE 50010 50020 50070 50075 50090 8020 9000 \

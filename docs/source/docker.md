@@ -15,12 +15,10 @@ Local images can also be built via `make docker-images`.
 
 The [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) image is considered the base image 
 upon which [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is built.  It consist 
-of a Hadoop (YARN) installation that includes Spark, Java, Anaconda and various kernel installations.
-
-The tag of this image reflects the version of Spark included in the image and we don't anticipate the need to update this image regularly.
+of a Hadoop (YARN) installation that includes Spark, Java, miniconda and various kernel installations.
 
 The primary use of this image is to quickly build elyra/enterprise-gateway images for testing and development
-purposes.  To build a local image, run `make docker-image-demo-base`.
+purposes.  To build a local image, run `make demo-base`.
 
 As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another
 instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
