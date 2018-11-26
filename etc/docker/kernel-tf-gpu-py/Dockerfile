@@ -1,15 +1,17 @@
+# Ubuntu:xenial
 FROM tensorflow/tensorflow:1.11.0-gpu-py3
 
 RUN pip install pycrypto
 
 COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
-COPY bootstrap-kernel.sh /etc/
+COPY bootstrap-kernel.sh /usr/local/bin/
 
-RUN addgroup --system --gid 620 eg-kernel && adduser --system --uid 620 --gid 620 eg-kernel && \
-    chown eg-kernel.eg-kernel /etc/bootstrap-kernel.sh && \
-	chmod 0755 /etc/bootstrap-kernel.sh && \
-	chown -R eg-kernel.eg-kernel /usr/local/share/jupyter
+USER root
 
-USER eg-kernel
+RUN adduser --system --uid 1000 --gid 100 jovyan && \
+    chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
+	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
+	chown -R jovyan:users /usr/local/share/jupyter
 
+USER jovyan

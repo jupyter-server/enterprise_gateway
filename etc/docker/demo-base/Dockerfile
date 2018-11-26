@@ -110,11 +110,11 @@ COPY ssh_config /home/jovyan/.ssh/config
 RUN chmod 600 /home/jovyan/.ssh/config && \
     chown jovyan: /home/jovyan/.ssh/config
 
-COPY bootstrap-yarn-spark.sh /etc/
-RUN chown root.root /etc/bootstrap-yarn-spark.sh && \
-	chmod 0700 /etc/bootstrap-yarn-spark.sh
+COPY bootstrap-yarn-spark.sh /usr/local/bin/
+RUN chown root.root /usr/local/bin/bootstrap-yarn-spark.sh && \
+	chmod 0700 /usr/local/bin/bootstrap-yarn-spark.sh
 
-CMD /etc/bootstrap-yarn-spark.sh
+CMD /usr/local/bin/bootstrap-yarn-spark.sh
 
 LABEL Hadoop.version=$HADOOP_VER
 LABEL Spark.version=$SPARK_VER

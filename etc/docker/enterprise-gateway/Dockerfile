@@ -11,20 +11,19 @@ RUN pip install cffi send2trash /tmp/jupyter_enterprise_gateway*.whl && \
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
 COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
-COPY start-enterprise-gateway.sh /usr/local/share/jupyter
-COPY bootstrap-enterprise-gateway.sh /etc/bootstrap-enterprise-gateway.sh
+COPY start-enterprise-gateway.sh bootstrap-enterprise-gateway.sh /usr/local/bin/
 
-RUN addgroup -S -g 619 eg-svc && adduser -S -u 619 -G eg-svc eg-svc && \
-    chown eg-svc.eg-svc /etc/bootstrap-enterprise-gateway.sh && \
-	chmod 0755 /etc/bootstrap-enterprise-gateway.sh && \
+RUN adduser -S -u 1000 -G users jovyan && \
+    chown jovyan:users /usr/local/bin/bootstrap-enterprise-gateway.sh && \
+	chmod 0755 /usr/local/bin/bootstrap-enterprise-gateway.sh && \
 	touch /usr/local/share/jupyter/enterprise-gateway.log && \
-	chown -R eg-svc.eg-svc /usr/local/share/jupyter && \
+	chown -R jovyan:users /usr/local/share/jupyter && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log
 
-USER eg-svc
+USER jovyan
 
-ENTRYPOINT ["/etc/bootstrap-enterprise-gateway.sh"]
+ENTRYPOINT ["/usr/local/bin/bootstrap-enterprise-gateway.sh"]
 
 EXPOSE 8888
 
-WORKDIR /usr/local/share/jupyter
+WORKDIR /usr/local/bin

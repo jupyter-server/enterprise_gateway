@@ -24,19 +24,21 @@ then
 	echo "   for YARN application monitoring if running standalone."
 	exit 0
 fi
+
 : ${YARN_HOST:=$HOSTNAME}
 export FROM="EG"
-/etc/bootstrap-yarn-spark.sh $*
+/usr/local/bin/bootstrap-yarn-spark.sh $*
 
-sed s/HOSTNAME/$YARN_HOST/ /usr/local/share/jupyter/start-enterprise-gateway.sh.template > /usr/local/share/jupyter/start-enterprise-gateway.sh
-chmod 0755 /usr/local/share/jupyter/start-enterprise-gateway.sh
+sed s/HOSTNAME/$YARN_HOST/ /usr/local/bin/start-enterprise-gateway.sh.template > /usr/local/bin/start-enterprise-gateway.sh
+chmod 0755 /usr/local/bin/start-enterprise-gateway.sh
 
 if [[ "$CMD" == "--jovyan" ]];
 then
-    sudo -u jovyan /usr/local/share/jupyter/start-enterprise-gateway.sh
+    sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh
 else
     echo ""
-    echo "Note: Enterprise Gateway can be manually started using 'sudo -u jovyan /usr/local/share/jupyter/start-enterprise-gateway.sh'..."
+    echo "Note: Enterprise Gateway can be manually started using 'sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh'..."
+
     echo "      YARN application logs can be found at '/usr/local/hadoop-2.7.1/logs/userlogs'"
     "$*"
 fi

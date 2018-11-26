@@ -11,7 +11,7 @@ RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
-COPY start-enterprise-gateway.sh.template /usr/local/share/jupyter/
+COPY start-enterprise-gateway.sh.template /usr/local/bin/
 
 # Massage kernelspecs to docker image env...
 # Create symbolic link to preserve hdp-related directories
@@ -28,13 +28,13 @@ RUN mkdir -p /usr/hdp/current /tmp/byok/kernels && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log
 
 # install boot script 
-COPY bootstrap-enterprise-gateway.sh /etc/bootstrap-enterprise-gateway.sh
-RUN chown root.root /etc/bootstrap-enterprise-gateway.sh && \
-	chmod 0700 /etc/bootstrap-enterprise-gateway.sh
+COPY bootstrap-enterprise-gateway.sh /usr/local/bin/bootstrap-enterprise-gateway.sh
+RUN chown root.root /usr/local/bin/bootstrap-enterprise-gateway.sh && \
+	chmod 0700 /usr/local/bin/bootstrap-enterprise-gateway.sh
 
 WORKDIR /usr/local/share/jupyter 
 
-ENTRYPOINT ["/etc/bootstrap-enterprise-gateway.sh"]
+ENTRYPOINT ["/usr/local/bin/bootstrap-enterprise-gateway.sh"]
 CMD ["--help"]
 
 EXPOSE 8888
