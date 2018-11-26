@@ -19,10 +19,9 @@ RUN mkdir -p /usr/share/doc/R/html && \
 # Install OOTB kernelspecs
 COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
 
-RUN addgroup -S -g 620 eg-kernel && adduser -S -u 620 -G eg-kernel eg-kernel && \
-	chown -R eg-kernel.eg-kernel /usr/local/share/jupyter /opt/spark/work-dir
+RUN adduser -S -u 1000 -G users jovyan && \
+	chown -R jovyan:users /usr/local/share/jupyter /opt/spark/work-dir
 
-USER eg-kernel
+USER jovyan
 
 ENV R_LIBS_USER ${R_HOME}/library:${SPARK_HOME}/R/lib
-

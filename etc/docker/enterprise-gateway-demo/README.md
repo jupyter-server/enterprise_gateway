@@ -29,7 +29,7 @@ To run the enterprise-gateway-demo container in an interactive mode, where enter
 
 `docker run -it --rm -p 8888:8888 -p 8088:8088 -p 8042:8042 --net=jeg elyra/enterprise-gateway-demo /bin/bash`
 
-Once in the container, enterprise-gateway-demo can be started using `sudo -u elyra /usr/local/share/jupyter/start-enterprise-gateway.sh`
+Once in the container, enterprise-gateway-demo can be started using `sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh`
 
 ### Dual Mode
 
