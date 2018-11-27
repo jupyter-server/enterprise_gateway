@@ -4,12 +4,19 @@ import json
 import uuid
 import signal
 import random
+import logging
 from socket import *
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from threading import Thread
 
 max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
+log_level = int(os.getenv('EG_LOG_LEVEL', '10'))
+
+logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
+
+logger = logging.getLogger('gateway_listener for R launcher')
+logger.setLevel(log_level)
 
 
 def _select_ports(count, lower_port, upper_port):
@@ -52,7 +59,7 @@ def _get_candidate_port(lower_port, upper_port):
 
 def prepare_gateway_socket(lower_port, upper_port):
     sock = _select_socket(lower_port, upper_port)
-    print("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
+    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
     sock.listen(1)
     sock.settimeout(5)
     return sock
@@ -73,7 +80,7 @@ def get_gateway_request(sock):
     except Exception as e:
         if type(e) is not timeout:
             # fabricate shutdown.
-            print("Listener encountered error '{}', shutting down...".format(e))
+            logger.error("Listener encountered error '{}', shutting down...".format(e))
             shutdown = dict() 
             shutdown['shutdown'] = 1
             request_info = shutdown
@@ -89,19 +96,20 @@ def gateway_listener(sock, parent_pid):
     while not shutdown:
         request = get_gateway_request(sock)
         if request:
-            print("Received request {}".format(request))
-            if request.get('signum'):
+            signum = -1  # prevent logging poll requests since that occurs every 3 seconds
+            if request.get('signum') is not None:
                 signum = int(request.get('signum'))
                 os.kill(int(parent_pid), signum)
-            elif request.get('shutdown'):
-                shutdown = bool(request.get('shutdown'))
-
+            elif request.get('shutdown') is not None:
+                    shutdown = bool(request.get('shutdown'))
+            if signum != 0:
+                logger.debug("gateway_listener got request: {}".format(request))
         else:  # check parent
             try:
                 os.kill(int(parent_pid), 0)
             except OSError as e:
                 shutdown = True
-                print("Listener detected parent has been shutdown.")
+                logger.info("Listener detected parent has been shutdown.")
 
 
 def setup_gateway_listener(fname, parent_pid, lower_port, upper_port):

@@ -117,8 +117,7 @@ def _encrypt(connection_info, conn_file):
     return payload
 
 
-def return_connection_info(connection_file, response_addr, disable_gateway_socket, lower_port, upper_port):
-    gateway_sock = None
+def return_connection_info(connection_file, response_addr, lower_port, upper_port):
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error("Invalid format for response address '{}'.  Assuming 'pull' mode...".format(response_addr))
@@ -141,9 +140,8 @@ def return_connection_info(connection_file, response_addr, disable_gateway_socke
     cf_json['pgid'] = str(os.getpgid(pid))
 
     # prepare socket address for handling signals
-    if not disable_gateway_socket:
-        gateway_sock = prepare_gateway_socket(lower_port, upper_port)
-        cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
+    cf_json['comm_port'] = gateway_sock.getsockname()[1]
 
     s = socket(AF_INET, SOCK_STREAM)
     try:
@@ -159,14 +157,16 @@ def return_connection_info(connection_file, response_addr, disable_gateway_socke
     return gateway_sock
 
 
-def determine_connection_file(conn_file):
+def determine_connection_file(conn_file, kid):
     # If the directory exists, use the original file, else create a temporary file.
-    if not os.path.exists(os.path.dirname(conn_file)):
-        prev_connection_file = conn_file
-        basename = os.path.splitext(os.path.basename(conn_file))[0]
+    if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
+        if kid is not None:
+            basename = 'kernel-' + kid
+        else:
+            basename = os.path.splitext(os.path.basename(conn_file))[0]
         fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
         os.close(fd)
-        logger.debug("Using connection file '{}' instead of '{}'".format(conn_file, prev_connection_file))
+        logger.debug("Using connection file '{}'.".format(conn_file))
 
     return conn_file
 
@@ -260,42 +260,50 @@ def gateway_listener(sock):
     while not shutdown:
         request = get_gateway_request(sock)
         if request:
-            logger.info("gateway_listener got request: {}".format(request))
-            if request.get('signum'):
+            signum = -1  # prevent logging poll requests since that occurs every 3 seconds
+            if request.get('signum') is not None:
                 signum = int(request.get('signum'))
                 os.kill(os.getpid(), signum)
-            elif request.get('shutdown'):
-                shutdown = bool(request.get('shutdown'))
-
+            elif request.get('shutdown') is not None:
+                    shutdown = bool(request.get('shutdown'))
+            if signum != 0:
+                logger.info("gateway_listener got request: {}".format(request))
 
 if __name__ == "__main__":
     """
         Usage: spark-submit launch_ipykernel [connection_file]
             [--RemoteProcessProxy.response-address <response_addr>]
-            [--RemoteProcessProxy.disable-gateway-socket]
+            [--RemoteProcessProxy.kernel-id <kernel_id>]
             [--RemoteProcessProxy.port-range <lowerPort>..<upperPort>]
             [--RemoteProcessProxy.spark-context-initialization-mode {lazy|eager|none}]
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('connection_file', help='Connection file to write connection info')
+    parser.add_argument('connection_file', nargs='?', help='Connection file to write connection info')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.disable-gateway-socket', dest='disable_gateway_socket',
-                        action='store_true', help='Disable use of gateway socket for extended communications',
-                        default=False)
-    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range',
+    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+                        help='Indicates the id associated with the launched kernel.')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
-    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', default='lazy',
-                        help='the initialization mode of the spark context: lazy, eager or none')
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', nargs='?',
+                        default='lazy', help='the initialization mode of the spark context: lazy, eager or none')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
-    disable_gateway_socket = arguments['disable_gateway_socket']
+    kernel_id = arguments['kernel_id']
     lower_port, upper_port = _validate_port_range(arguments['port_range'])
     init_mode = arguments['init_mode']
     ip = "0.0.0.0"
+
+    if connection_file is None and kernel_id is None:
+        raise RuntimeError("At least one of the parameters: 'connection_file' or "
+                           "'--RemoteProcessProxy.kernel-id' must be provided!")
+
+    if kernel_id is None:
+        logger.warning("Parameter 'connection_file' is deprecated.  Update kernel.json file to use "
+                       "'--RemoteProcessProxy.kernel-id {kernel_id}'")
 
     # if a spark context is desired, but pyspark is not present, we should probably
     # let it be known (as best we can) that they won't be getting a spark context.
@@ -316,17 +324,16 @@ if __name__ == "__main__":
         thread_to_initialize_spark_session = Thread(target=initialize_spark_session)
 
     # If the connection file doesn't exist, then create it.
-    if not os.path.isfile(connection_file):
+    if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         key = str_to_bytes(str(uuid.uuid4()))
-        connection_file = determine_connection_file(connection_file)
+        connection_file = determine_connection_file(connection_file, kernel_id)
 
         ports = _select_ports(5, lower_port, upper_port)
 
         write_connection_file(fname=connection_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
-            gateway_socket = return_connection_info(connection_file, response_addr, disable_gateway_socket,
-                                                    lower_port, upper_port)
+            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
             if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket,))
                 gateway_listener_thread.start()

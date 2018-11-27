@@ -14,7 +14,8 @@
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/scala_kubernetes/scripts/launch_kubernetes.py",
-    "{connection_file}",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.spark-context-initialization-mode",

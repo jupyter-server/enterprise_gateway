@@ -140,6 +140,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         self.response_address = None
         self.sigint_value = None
         self.port_range = None
+        self.kernel_id = None
         self.user_overrides = {}
         self.restarting = False  # need to track whether we're in a restart situation or not
 
@@ -169,22 +170,25 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                                     key in self.parent.parent.personality.env_whitelist})
 
     def format_kernel_cmd(self, extra_arguments=None):
-        """replace templated args (e.g. {response_address} or {port_range})"""
+        """replace templated args (e.g. {response_address}, {port_range}, or {kernel_id})"""
         cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
 
-        if self.response_address or self.port_range:
+        if self.response_address or self.port_range or self.kernel_id:
             ns = self._launch_args.copy()
             if self.response_address:
                 ns['response_address'] = self.response_address
             if self.port_range:
                 ns['port_range'] = self.port_range
+            if self.kernel_id:
+                ns['kernel_id'] = self.kernel_id
 
             pat = re.compile(r'\{([A-Za-z0-9_]+)\}')
+
             def from_ns(match):
                 """Get the key out of ns if it's there, otherwise no change."""
                 return ns.get(match.group(1), match.group())
 
-            return [ pat.sub(from_ns, arg) for arg in cmd ]
+            return [pat.sub(from_ns, arg) for arg in cmd]
         return cmd
 
     def _launch_kernel(self, kernel_cmd, **kw):
