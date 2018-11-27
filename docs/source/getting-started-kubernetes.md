@@ -370,7 +370,7 @@ spec:
       value: $spark_context_initialization_mode
     image: $docker_image
     name: $kernel_username-$kernel_id
-    command: ["/etc/bootstrap-kernel.sh"]
+    command: ["/usr/local/bin/bootstrap-kernel.sh"]
 ```
 There are a number of items worth noting:
 1. Kernel pods can be identified in three ways using `kubectl`: 

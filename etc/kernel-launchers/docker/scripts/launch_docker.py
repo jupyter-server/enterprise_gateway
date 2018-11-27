@@ -56,7 +56,7 @@ def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode
         endpoint_spec = EndpointSpec(mode='dnsrr')
         restart_policy = RestartPolicy(condition='none')
         kernel_service = client.services.create(image_name,
-                                               command='/etc/bootstrap-kernel.sh',
+                                               command='/usr/local/bin/bootstrap-kernel.sh',
                                                name=container_name,
                                                endpoint_spec=endpoint_spec,
                                                restart_policy=restart_policy,
@@ -68,7 +68,7 @@ def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode
     else:
         volumes = {'/usr/local/share/jupyter/kernels': {'bind': '/usr/local/share/jupyter/kernels', 'mode': 'ro'}}
         kernel_container = client.containers.run(image_name,
-                                                 command='/etc/bootstrap-kernel.sh',
+                                                 command='/usr/local/bin/bootstrap-kernel.sh',
                                                  name=container_name,
                                                  hostname=container_name,
                                                  environment=param_env,
