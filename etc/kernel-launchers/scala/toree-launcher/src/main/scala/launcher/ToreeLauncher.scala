@@ -26,19 +26,19 @@ object ToreeLauncher {
   val minPortRangeSize = sys.env.getOrElse("EG_MIN_PORT_RANGE_SIZE", "1000").toInt
   val kernelTempDir : String = "eg-kernel"
   var profilePath : String = _
+  var kernelId : String = _
   var portLowerBound : Int = -1
   var portUpperBound : Int = -1
   var responseAddress : String = _
   var alternateSigint : String = _
   var initMode : String = "lazy"
-  var disableGatewaySocket : Boolean = false
   var toreeArgs = ArrayBuffer[String]()
 
-  private def isPathExist(filePath : String) : Boolean = Files.exists(Paths.get(filePath))
+  private def pathExists(filePath : String) : Boolean = if (filePath == null) false else Files.exists(Paths.get(filePath))
 
   private def writeToFile(outputPath : String, content : String): Unit = {
     val file = new File(outputPath)
-    if(!isPathExist(file.getParentFile.toString)) {
+    if(!pathExists(file.getParentFile.toString)) {
       file.getParentFile.mkdirs // mkdir if not exists
     }
     val bw = new BufferedWriter(new FileWriter(file))
@@ -63,7 +63,6 @@ object ToreeLauncher {
             sys.exit(-1)
          }
       }
-
   }
 
   private def initArguments(args: Array[String]): Unit = {
@@ -105,18 +104,20 @@ object ToreeLauncher {
               toreeArgs += initMode
           }
 
-        // Port range doesn't apply to toree
+        // Port range doesn't apply to toree, consume here
         case "--RemoteProcessProxy.port-range" =>
           i += 1
           initPortRange(args(i).trim)
 
-        // Response address doesn't apply to toree
+        // Response address doesn't apply to toree, consume here
         case "--RemoteProcessProxy.response-address" =>
           i += 1
           responseAddress = args(i).trim
 
-        // Disable gateway socket doesn't apply to toree
-        case "--RemoteProcessProxy.disable-gateway-socket" => disableGatewaySocket = true
+        // kernel id doesn't apply to toree, consume here
+        case "--RemoteProcessProxy.kernel-id" =>
+          i += 1
+          kernelId = args(i).trim
 
         // All other arguments should pass-thru to toree
         case _ => toreeArgs += args(i).trim
@@ -138,27 +139,27 @@ object ToreeLauncher {
     }
   }
 
-  private def determineConnectionFile(connectionFile: String): String = {
-    // See if parent directory exists, if so use connectionFile as is, else create a temporary
-    // directory and replace the parent path with that value (preserving the filename). If
-    // creation of the temporary directory is necessary, locate the original connection
-    // file argument and replace with new value.
+  private def determineConnectionFile(connectionFile: String, kernelId: String): String = {
+    // We know the connection file does not exist, so create a temporary directory and derive the filename
+    // from kernelId, if not null.  If kernelId is null, then use the filename in the connectionFile.
 
-    var newConnectionFile = connectionFile
-    val file = new File(connectionFile)
-    if(!isPathExist(file.getParentFile.toString)) {
-      // Directory does not exist, so create temp directory instead.
-      val tmpPath = Files.createTempDirectory(kernelTempDir)
-      // tmpPath.toFile.deleteOnExit() doesn't appear to work, use system hook
-      sys.addShutdownHook{
-        deleteDirRecur(tmpPath.toFile)
-      }
-      val fileName = Paths.get(connectionFile).getFileName.toString
-      val newPath = Paths.get(tmpPath.toString, fileName)
-      newConnectionFile = newPath.toString
-      // Locate --profile and replace next element with new name
-      toreeArgs(toreeArgs.indexOf("--profile") + 1) = newConnectionFile
+    val tmpPath = Files.createTempDirectory(kernelTempDir)
+    // tmpPath.toFile.deleteOnExit() doesn't appear to work, use system hook
+    sys.addShutdownHook{
+      deleteDirRecur(tmpPath.toFile)
     }
+    val fileName = if (kernelId != null) "kernel-" + kernelId + ".json" else Paths.get(connectionFile).getFileName.toString
+    val newPath = Paths.get(tmpPath.toString, fileName)
+    val newConnectionFile = newPath.toString
+    // Locate --profile and replace next element with new name.  If it doesn't exist, add both.
+    val profileIndex = toreeArgs.indexOf("--profile")
+    if (profileIndex >= 0)
+        toreeArgs(profileIndex + 1) = newConnectionFile
+    else {
+        toreeArgs += "--profile"
+        toreeArgs += newConnectionFile
+    }
+
     newConnectionFile
   }
 
@@ -173,21 +174,24 @@ object ToreeLauncher {
 
     initArguments(args)
 
-    if(profilePath == null){
-      println("Invalid --profile argument, now exit")
+    if (profilePath == null && kernelId == null){
+      println("At least one of '--profile' or '--RemoteProcessProxy.kernel_id' must be provided - exiting!")
       sys.exit(-1)
     }
+    if (kernelId == null){
+      println("WARNING: Parameter 'connection_file' is deprecated.  Update kernel.json file to use " +
+            "'--RemoteProcessProxy.kernel-id {kernel_id}'")
+    }
 
-
-    if (!isPathExist(profilePath)) {
-      profilePath = determineConnectionFile(profilePath)
+    if (!pathExists(profilePath)) {
+      profilePath = determineConnectionFile(profilePath, kernelId)
 
       println("The profile %s doesn't exist, now creating it...".format(profilePath))
 
       val content = KernelProfile.createJsonProfile(this.portLowerBound, this.portUpperBound)
       writeToFile(profilePath, content)
 
-      if (isPathExist(profilePath)) {
+      if (pathExists(profilePath)) {
         println("%s saved".format(profilePath))
       } else {
         println("Failed to create: %s".format(profilePath))
@@ -199,18 +203,11 @@ object ToreeLauncher {
 
       val pidJson = connectionJson.as[JsObject] ++ Json.obj("pid" -> getPID)
 
-      var jsonContent : String = null
-
-      if (!disableGatewaySocket) {
-        // Enterprise Gateway wants to establish socket communication. Create socket and
-        // convey port number back to gateway.
-        gatewaySocket = SocketUtils.findSocket(this.portLowerBound, this.portUpperBound)
-        val gsJson = pidJson ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
-        jsonContent = Json.toJson(gsJson).toString()
-      }
-      else {
-        jsonContent = Json.toJson(pidJson).toString()
-      }
+      // Enterprise Gateway wants to establish socket communication. Create socket and
+      // convey port number back to gateway.
+      gatewaySocket = SocketUtils.findSocket(this.portLowerBound, this.portUpperBound)
+      val gsJson = pidJson ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
+      val jsonContent = Json.toJson(gsJson).toString()
 
       if (responseAddress != null){
         println("JSON Payload: '%s'".format(jsonContent))
@@ -269,8 +266,8 @@ object ToreeLauncher {
           // If sigNum anything but 0 (for poll), use Signal.raise(signal) to signal the kernel.
           val sigName = getReconciledSignalName(sigNum)
           val sigToRaise = new Signal(sigName)
-          println("Gateway listener raising signal: '%s' %d".
-                   format(sigToRaise.getName, sigToRaise.getNumber))
+          println("Gateway listener raising signal: '%s' (%d) for signum: %d".
+                   format(sigToRaise.getName, sigToRaise.getNumber, sigNum))
           Signal.raise(sigToRaise)
         }
       }

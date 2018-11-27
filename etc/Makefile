@@ -39,7 +39,8 @@ FILES_kernelspecs_all:=$(shell find kernel-launchers kernelspecs -type f -name '
 TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -type f -name '*')
 
 ../build/kernelspecs: kernel-launchers/scala/lib  $(FILES_kernelspecs_all) 
-	@mkdir -p ../build/kernelspecs
+	@rm -rf ../build/kernelspecs
+	@mkdir ../build/kernelspecs
     # Seed the build tree with initial files
 	cp -r kernelspecs ../build
     # Distribute language and config-sensitive files.

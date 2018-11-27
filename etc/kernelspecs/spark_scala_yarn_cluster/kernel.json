@@ -15,8 +15,8 @@
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_scala_yarn_cluster/bin/run.sh",
-    "--profile",
-    "{connection_file}",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.port-range",

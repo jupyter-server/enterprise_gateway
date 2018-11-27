@@ -104,8 +104,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_manager.ip = '0.0.0.0'
         self.log = kernel_manager.log
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
-        self.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
+        self.kernel_manager.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
             replace('kernel-', '').replace('.json', '')
+        self.kernel_id = self.kernel_manager.kernel_id
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.lower_port = 0
         self.upper_port = 0
@@ -331,16 +332,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if result == 0:
             return None
         return False
-
-    def get_connection_filename(self):
-        """
-            Although we're just using the same connection file (location) on the remote system, go ahead and 
-            keep this method in case we want the remote connection file to be in a different location.  Should
-            we decide to keep the current code, we should probably force the local location by requiring that
-            either JUPYTER_DATA_DIR or JUPYTER_RUNTIME_DIR envs be set and issue a warning if not - which could
-            also be done from this method.
-        """
-        return self.kernel_manager.connection_file
 
     def _enforce_authorization(self, **kw):
         """
