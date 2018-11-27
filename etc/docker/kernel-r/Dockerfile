@@ -25,7 +25,7 @@ COPY bootstrap-kernel.sh /usr/local/bin/
 USER root
 
 RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
-	chmod 0755 //usr/local/bin/bootstrap-kernel.sh && \
+	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
 	chown -R jovyan:users /usr/local/share/jupyter
 
 USER jovyan
