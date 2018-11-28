@@ -12,7 +12,7 @@ remove_container = bool(os.getenv('EG_REMOVE_CONTAINER', 'True').lower() == 'tru
 swarm_mode = bool(os.getenv('EG_DOCKER_MODE', 'swarm').lower() == 'swarm')
 
 
-def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode):
+def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
     # Launches a containerized kernel.
 
     # Can't proceed if no image was specified.
@@ -21,7 +21,6 @@ def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode
         sys.exit("ERROR - KERNEL_IMAGE not found in environment - kernel launch terminating!")
 
     # Container name is composed of KERNEL_USERNAME and KERNEL_ID
-    kernel_id = os.environ['KERNEL_ID']
     container_name = os.environ.get('KERNEL_USERNAME', '') + '-' + kernel_id
 
     # Determine network. If EG_DOCKER_NETWORK has not been propagated, fall back to 'bridge'...
@@ -39,7 +38,6 @@ def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode
     # value since this is used to locate the kernel launch script within the image.
     param_env['KERNEL_NAME'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     param_env['EG_RESPONSE_ADDRESS'] = response_addr
-    param_env['KERNEL_CONNECTION_FILENAME'] = connection_file
     param_env['KERNEL_SPARK_CONTEXT_INIT_MODE'] = spark_context_init_mode
 
     # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and ENV_WHITELIST)
@@ -81,21 +79,24 @@ def launch_docker_kernel(connection_file, response_addr, spark_context_init_mode
 
 if __name__ == '__main__':
     """
-        Usage: launch_docker_kernel [connection_file] [--RemoteProcessProxy.response-address <response_addr>]
+        Usage: launch_docker_kernel 
+                    [--RemoteProcessProxy.kernel-id <kernel_id>]
+                    [--RemoteProcessProxy.response-address <response_addr>]
                     [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('connection_file', help='Connection file to write connection info')
+    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+                        help='Indicates the id associated with the launched kernel.')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
-                        help='Indicates whether or how a spark context should be created',
+                        nargs='?', help='Indicates whether or how a spark context should be created',
                         default='lazy')
 
     arguments = vars(parser.parse_args())
-    connection_file = arguments['connection_file']
+    kernel_id = arguments['kernel_id']
     response_addr = arguments['response_address']
     spark_context_init_mode = arguments['spark_context_init_mode']
 
-    launch_docker_kernel(connection_file, response_addr, spark_context_init_mode)
+    launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode)

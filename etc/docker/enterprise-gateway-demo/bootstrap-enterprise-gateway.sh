@@ -5,13 +5,12 @@
 
 
 CMD=${1:-"--help"}
-if [[ "$CMD" == "--help" ]];
-then
+if [[ "$CMD" == "--help" ]]; then
 	echo ""
 	echo "usage: docker run -it[d] --rm -h <container-hostname> -p 8888:8888 [-p 8088:8088 -p 8042:8042] <docker-opts> <docker-image> <command>"
 	echo ""
 	echo "where <command> is:"
-	echo "    --jovyan ... Invokes Enterprise Gateway as user 'jovyan' directly.  Useful for daemon behavior."
+	echo "    --gateway ... Invokes Enterprise Gateway as user 'jovyan' directly.  Useful for daemon behavior."
 	echo "    --yarn  ... Runs container as standalone YARN master - no Enterprise Gateway is started."
 	echo "    --help  ... Produces this message."
 	echo "    <other> ... Invokes '<other>'.  Use <other>='/bin/bash' to explore within the container."
@@ -23,24 +22,23 @@ then
 	echo "   required to be '8888'.  Mapping of ports '8088' and '8042' is also strongly recommended"
 	echo "   for YARN application monitoring if running standalone."
 	exit 0
+elif [[ "$CMD" != "--gateway" && "$CMD" != "--yarn" ]]; then  # invoke <other> w/o starting YARN
+    "$*"
+    exit 0
 fi
 
 : ${YARN_HOST:=$HOSTNAME}
 export FROM="EG"
 /usr/local/bin/bootstrap-yarn-spark.sh $*
 
-sed s/HOSTNAME/$YARN_HOST/ /usr/local/bin/start-enterprise-gateway.sh.template > /usr/local/bin/start-enterprise-gateway.sh
-chmod 0755 /usr/local/bin/start-enterprise-gateway.sh
+# Note that '--yarn' functionality is a subset of '--gateway' functionality
 
-if [[ "$CMD" == "--jovyan" ]];
+if [[ "$CMD" == "--gateway" ]];
 then
-    sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh
-else
-    echo ""
-    echo "Note: Enterprise Gateway can be manually started using 'sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh'..."
+    sed s/HOSTNAME/$YARN_HOST/ /usr/local/bin/start-enterprise-gateway.sh.template > /usr/local/bin/start-enterprise-gateway.sh
+    chmod 0755 /usr/local/bin/start-enterprise-gateway.sh
 
-    echo "      YARN application logs can be found at '/usr/local/hadoop-2.7.1/logs/userlogs'"
-    "$*"
+    sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh
 fi
 
 exit 0

@@ -29,4 +29,4 @@ docker run -d -it \
 	-u 0 -v /var/run/docker.sock:/var/run/docker.sock \
 	-p ${KG_PORT}:${KG_PORT} \
 	--name ${EG_NAME} \
-	elyra/enterprise-gateway:VERSION --elyra
+	elyra/enterprise-gateway:VERSION --gateway
