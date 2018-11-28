@@ -110,13 +110,13 @@ FILES_nb2kg :=
 FILES_demo-base :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
 FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
-FILES_kernel-py := kernel-launchers/python/bootstrap/*
+FILES_kernel-py := kernel-launchers/bootstrap/*
 FILES_kernel-spark-py :=
-FILES_kernel-tf-py := kernel-launchers/python/bootstrap/*
-FILES_kernel-tf-gpu-py := kernel-launchers/python/bootstrap/*
-FILES_kernel-r := kernel-launchers/R/bootstrap/*
+FILES_kernel-tf-py := kernel-launchers/bootstrap/*
+FILES_kernel-tf-gpu-py := kernel-launchers/bootstrap/*
+FILES_kernel-r := kernel-launchers/bootstrap/*
 FILES_kernel-spark-r :=
-FILES_kernel-scala := kernel-launchers/scala/bootstrap/*
+FILES_kernel-scala := kernel-launchers/bootstrap/*
 
 # Trim out only the kernelspec files needed in each of the kernel images. Note that because kernel-based
 # images only require the launcher (and supporting files) and launchers are consistent across kernel types,
@@ -140,7 +140,7 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
-	@(if [[ ! -z "$$(LAUNCHER_FILES_$1)" ]]; then mkdir -p ../build/docker/$1/kernel-launchers; cp -r $$(LAUNCHER_FILES_$1) ../build/docker/$1/kernel-launchers; rm -rf ../build/docker/$1/kernel-launchers/*/bootstrap; fi;)
+	@(if [[ ! -z "$$(LAUNCHER_FILES_$1)" ]]; then mkdir -p ../build/docker/$1/kernel-launchers; cp -r $$(LAUNCHER_FILES_$1) ../build/docker/$1/kernel-launchers; fi;)
 	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)

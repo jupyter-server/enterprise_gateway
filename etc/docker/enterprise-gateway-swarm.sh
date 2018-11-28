@@ -34,4 +34,4 @@ docker service create \
 	-u 0 --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
 	--publish published=${KG_PORT},target=${KG_PORT},mode=host \
 	--name ${EG_NAME} \
-	elyra/enterprise-gateway:VERSION --elyra
+	elyra/enterprise-gateway:VERSION --gateway

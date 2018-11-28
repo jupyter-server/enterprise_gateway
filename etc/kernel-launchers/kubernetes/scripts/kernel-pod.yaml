@@ -23,8 +23,6 @@ spec:
   - env:
     - name: EG_RESPONSE_ADDRESS
       value: ${eg_response_address}
-    - name: KERNEL_CONNECTION_FILENAME
-      value: ${kernel_connection_filename}
     - name: KERNEL_LANGUAGE
       value: ${kernel_language}
     - name: KERNEL_SPARK_CONTEXT_INIT_MODE

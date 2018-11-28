@@ -54,7 +54,7 @@ docs: ## Make HTML documentation
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker ## Create archives with sample kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker: 
-	make VERSION=$(VERSION) -C  etc $@
+	make VERSION=$(VERSION) TAG=$(TAG) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
@@ -103,17 +103,17 @@ kernel-images: ## Build kernel-based docker images
 
 # Actual working targets...
 docker-images enterprise-gateway-demo demo-base nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py:
-	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
 # Here for doc purposes
 clean-images: ## Remove docker images (includes kernel-based images)
 clean-kernel-images: ## Remove kernel-based images
 
 clean-images clean-enterprise-gateway-demo clean-nb2kg clean-demo-base clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py:
-	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
 publish-images: ## Push docker images to docker hub
-	make WHEEL_FILE=$(WHEEL_FILE) TAG=$(TAG) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
 # itest should have these targets up to date: bdist kernelspecs docker-enterprise-gateway
 
@@ -149,7 +149,7 @@ PREP_TIMEOUT?=60
 itest-yarn-prep:
 	@-docker rm -f itest-yarn >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest-yarn\` to see container log)..."
-	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -p 8088:8088 -p 8042:8042 -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(TAG) --jovyan
+	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -p 8088:8088 -p 8042:8042 -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:$(TAG) --gateway
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest-yarn |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
 
 
