@@ -28,7 +28,6 @@ from notebook.services.kernels.kernelmanager import MappingKernelManager
 from kernel_gateway.services.sessions.sessionmanager import SessionManager
 from .services.sessions.kernelsessionmanager import KernelSessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
-from .services.kernelspecs.remotekernelspec import RemoteKernelSpecManager
 
 
 class EnterpriseGatewayApp(KernelGatewayApp):
@@ -156,11 +155,10 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def max_kernels_per_user_default(self):
         return int(os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value))
 
-    kernel_spec_manager = Instance(RemoteKernelSpecManager, allow_none=True)
+    kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(
-        klass=KernelSpecManager,
-        default_value=RemoteKernelSpecManager,
+        default_value=KernelSpecManager,
         config=True,
         help="""
         The kernel spec manager class to use. Should be a subclass
@@ -188,7 +186,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         Optionally, loads a notebook and prespawns the configured number of
         kernels.
         """
-        self.kernel_spec_manager = RemoteKernelSpecManager(parent=self)
+        self.kernel_spec_manager = KernelSpecManager(parent=self)
 
         self.seed_notebook = None
         if self.seed_uri is not None:
