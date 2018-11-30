@@ -24,8 +24,6 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
     @gen.coroutine
-    def start_kernel(self, kernel_id=None, *args, **kwargs):
-        self.log.debug("RemoteMappingKernelManager.start_kernel: {}".format(kwargs['kernel_name']))
     def start_kernel(self, *args, **kwargs):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
