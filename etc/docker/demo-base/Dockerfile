@@ -5,7 +5,7 @@ MAINTAINER akchinSTC
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
 RUN yum update -y && \
     yum install -y which tar bzip2 wget curl sudo openssh-server openssh-clients java-1.8.0-openjdk.x86_64 less \
-                   unzip gcc krb5-devel && \
+                   unzip gcc krb5-devel file libunwind && \
     yum clean all
 
 # SYSTEM ENVS
@@ -37,12 +37,11 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86
     ln -s /opt/anaconda2/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
     echo ". /opt/anaconda2/etc/profile.d/conda.sh" >> ~/.bashrc && \
     echo "conda activate base" >> ~/.bashrc
-RUN conda install -v --yes --quiet pip jupyter r-irkernel r-devtools && \
-	Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")' \
-            -e 'devtools::install_github("apache/spark@v2.3.1", subdir="R/pkg")' \
-            -e "options(unzip = 'internal')" \
-            -e "Sys.setenv(TAR = '/bin/tar')" \
-            -e "devtools::install_github('IRkernel/IRkernel@0.8.14')"
+RUN conda install -v --yes --quiet pip jupyter r-devtools r-stringr
+RUN Rscript -e 'install.packages("argparser", repos="http://cran.cnr.berkeley.edu")' \
+	        -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/anaconda2/lib/R/library")' \
+	        -e 'IRkernel::installspec(prefix = "/usr/local")' \
+            -e 'devtools::install_github("apache/spark@v2.3.1", subdir="R/pkg")'
 
 # SETUP HADOOP CONFIGS
 RUN cd /usr/local && ln -s ./hadoop-$HADOOP_VER hadoop

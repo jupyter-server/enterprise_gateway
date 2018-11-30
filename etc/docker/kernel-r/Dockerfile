@@ -8,9 +8,7 @@ FROM jupyter/r-notebook:8a1b90cbcba5
 RUN conda install --quiet --yes \
     'r-argparser=0.4*' && \
      Rscript --slave --no-save --no-restore-history \
-        -e "options(unzip = 'internal')" \
-        -e "Sys.setenv(TAR = '/bin/tar')" \
-        -e "devtools::install_github('IRkernel/IRkernel@0.8.14')" && \
+        -e "install.packages('IRkernel', repos='http://cran.cnr.berkeley.edu/')" && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR
 
