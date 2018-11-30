@@ -222,11 +222,11 @@ object ToreeLauncher {
     gatewaySocket
   }
 
-  private def getGatewayRequest(gatewaySocket : ServerSocket): JsObject = {
+  private def getGatewayRequest(gatewaySocket : ServerSocket): String = {
     val s = gatewaySocket.accept()
     val data = new BufferedSource(s.getInputStream).getLines.mkString
     s.close()
-    Json.parse(data).as[JsObject]
+    data
   }
 
   private def getReconciledSignalName(sigNum: Int): String = {
@@ -256,15 +256,18 @@ object ToreeLauncher {
   private def gatewayListener(gatewaySocket : ServerSocket): Unit = {
     var stop = false
     while (!stop) {
-      val requestJson = getGatewayRequest(gatewaySocket)
+      val requestData = getGatewayRequest(gatewaySocket)
+
       // Handle each of the requests.  Note that we do not make an assumption that these are
       // mutually exclusive - although that will probably be the case for now.  Over time,
       // this should probably get refactored into a) better scala and b) token/classes for
       // each request.
 
+      val requestJson = Json.parse(requestData).as[JsObject].value
+
       // Signal the kernel...
-      if ( requestJson.keys.contains("signum")) {
-        val sigNum = (requestJson \ "signum").as[Int]
+      if ( requestJson.contains("signum")) {
+        val sigNum = requestJson("signum").asInstanceOf[JsNumber].value.toInt
         if ( sigNum > 0 ) {
           // If sigNum anything but 0 (for poll), use Signal.raise(signal) to signal the kernel.
           val sigName = getReconciledSignalName(sigNum)
@@ -275,8 +278,9 @@ object ToreeLauncher {
         }
       }
       // Stop the listener...
-      if ( requestJson.keys.contains("shutdown")) {
-        if ( (requestJson \ "shutdown").as[Int] == 1 ) {
+      if ( requestJson.contains("shutdown")) {
+        val shutdown = requestJson("shutdown").asInstanceOf[JsNumber].value.toInt
+        if ( shutdown == 1 ) {
           // Enterprise gateway has been instructed to shutdown the kernel, so let's stop
           // the listener so that it doesn't interfere with poll() calls.
           println("Stopping gateway listener.")
