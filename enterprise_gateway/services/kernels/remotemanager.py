@@ -88,12 +88,15 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
-    process_proxy = None
-    response_address = None
-    sigint_value = None
-    port_range = None
 
-    restarting = False  # need to track whether we're in a restart situation or not
+    def __init__(self, **kw):
+        super(KernelGatewayIOLoopKernelManager, self).__init__(**kw)
+        self.process_proxy = None
+        self.response_address = None
+        self.sigint_value = None
+        self.port_range = None
+
+        self.restarting = False  # need to track whether we're in a restart situation or not
 
     def start_kernel(self, **kw):
         if self.kernel_spec.process_proxy_class:
@@ -157,6 +160,12 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 self.parent.shutdown_kernel(kernel_id, now=now)
                 return
         super(RemoteKernelManager, self).restart_kernel(now, **kw)
+        if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
+            # Re-establish activity watching...
+            if self._activity_stream:
+                self._activity_stream.close()
+                self._activity_stream = None
+            self.parent.start_watching_activity(kernel_id)
         # Refresh persisted state.
         self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
         self.restarting = False
