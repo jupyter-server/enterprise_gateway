@@ -73,7 +73,7 @@ class RKernelBaseYarnTestCase(RKernelBaseTestCase):
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sparkR.version()")
-        self.assertRegexpMatches(result, '2.3')
+        self.assertRegexpMatches(result, '2.4')
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
