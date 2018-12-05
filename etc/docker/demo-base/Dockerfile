@@ -14,7 +14,7 @@ ENV PATH $PATH:$JAVA_HOME/bin
 ENV ANACONDA_HOME=/opt/anaconda2/
 
 # SPARK ENVS
-ENV SPARK_VER 2.3.1
+ENV SPARK_VER 2.4.0
 ENV SPARK_HOME /usr/local/spark
 ENV PYSPARK_PYTHON=$ANACONDA_HOME/bin/python
 
@@ -41,7 +41,7 @@ RUN conda install -v --yes --quiet pip jupyter r-devtools r-stringr
 RUN Rscript -e 'install.packages("argparser", repos="http://cran.cnr.berkeley.edu")' \
 	        -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/anaconda2/lib/R/library")' \
 	        -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'devtools::install_github("apache/spark@v2.3.1", subdir="R/pkg")'
+            -e 'devtools::install_github("apache/spark@v$SPARK_VER", subdir="R/pkg")'
 
 # SETUP HADOOP CONFIGS
 RUN cd /usr/local && ln -s ./hadoop-$HADOOP_VER hadoop
@@ -66,7 +66,7 @@ RUN cd /tmp && \
 	curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.3.0-incubating/toree-pip/toree-0.3.0.tar.gz && \
 	pip install --upgrade setuptools --user python && \
 	pip install /tmp/toree-0.3.0.tar.gz && \
-	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.3.1" --interpreters=Scala && \
+	jupyter toree install --spark_home=/usr/local/spark --kernel_name="Spark 2.4.0" --interpreters=Scala && \
 	rm -f /tmp/toree-0.3.0.tar.gz
 
 # SETUP HADOOP NATIVE SUPPORT - not sure if this works with 2.7.7
