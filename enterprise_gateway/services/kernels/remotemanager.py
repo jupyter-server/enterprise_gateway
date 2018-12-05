@@ -232,6 +232,12 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 self.parent.shutdown_kernel(kernel_id, now=now)
                 return
         super(RemoteKernelManager, self).restart_kernel(now, **kw)
+        if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
+            # Re-establish activity watching...
+            if self._activity_stream:
+                self._activity_stream.close()
+                self._activity_stream = None
+            self.parent.start_watching_activity(kernel_id)
         # Refresh persisted state.
         self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
         self.restarting = False

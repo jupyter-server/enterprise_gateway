@@ -178,6 +178,17 @@ class Kernel:
         else:
             raise RuntimeError('Unexpected response restarting kernel {}: {}'.format(self.kernel_id, response.content))
 
+    def get_state(self):
+        url = "{}".format(self.kernel_http_api_endpoint)
+        response = requests.get(url)
+        if response.status_code == 200:
+            json = response.json()
+            print('Kernel {} state: {}'.format(self.kernel_id, json))
+            return json['execution_state']
+        else:
+            raise RuntimeError('Unexpected response retrieving state for kernel {}: {}'.
+                               format(self.kernel_id, response.content))
+
     def start_interrupt_thread(self, wait_time=DEFAULT_INTERRUPT_WAIT):
         self.interrupt_thread = Thread(target=self.perform_interrupt, args=(wait_time,))
         self.interrupt_thread.start()
