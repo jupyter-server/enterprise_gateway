@@ -26,7 +26,7 @@ clean: ## Make a clean source tree
 #
 
 KERNELSPECS := kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker
-kernelspecs: $(KERNELSPECS)
+kernelspecs: $(KERNELSPECS) kernel_image_files
 
 FILE_kernelspecs_all:=../dist/jupyter_enterprise_gateway_kernelspecs-$(VERSION).tar.gz
 FILE_kernelspecs_yarn:=../dist/jupyter_enterprise_gateway_kernelspecs_yarn-$(VERSION).tar.gz
@@ -40,15 +40,18 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 
 ../build/kernelspecs: kernel-launchers/scala/lib  $(FILES_kernelspecs_all) 
 	@rm -rf ../build/kernelspecs
-	@mkdir ../build/kernelspecs
+	@mkdir -p ../build/kernelspecs
     # Seed the build tree with initial files
 	cp -r kernelspecs ../build
     # Distribute language and config-sensitive files.
-	@echo ../build/kernelspecs/{spark_,dask_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
-	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/scripts
-	@echo ../build/kernelspecs/{spark_,}scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
+    # On-prem kernelspecs get launcher files in the kernelspec hierarchy
+	@echo ../build/kernelspecs/python_distributed | xargs -t -n 1 cp -r kernel-launchers/python/scripts
+	@echo ../build/kernelspecs/dask_python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
+	@echo ../build/kernelspecs/spark_python_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/python/scripts
+	@echo ../build/kernelspecs/spark_R_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/R/scripts
+	@echo ../build/kernelspecs/spark_scala_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/scala/lib
+	# Container-based kernelspecs just get the container launchers
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
-    # Fixme - deal with spark-based docker containers...
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
@@ -74,7 +77,19 @@ kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	mkdir -p kernel-launchers/scala/lib
 	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) package; cp target/scala-2.11/*.jar ../lib)
 	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.3.0-incubating/toree-assembly-0.3.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.3.0-incubating.jar
-	
+
+KERNEL_IMAGE_FILE:=../dist/jupyter_enterprise_gateway_kernel_image_files-$(VERSION).tar.gz
+kernel_image_files: ../build/kernel_image_files
+	rm -f $(KERNEL_IMAGE_FILE)
+	@( cd ../build/kernel_image_files; tar -pvczf "../$(KERNEL_IMAGE_FILE)" . )
+
+../build/kernel_image_files: kernel-launchers/scala/lib kernel-launchers/bootstrap/bootstrap-kernel.sh
+	@rm -rf ../build/kernel_image_files
+	@mkdir -p ../build/kernel_image_files/kernel-launchers
+	cp kernel-launchers/bootstrap/* ../build/kernel_image_files
+	cp -r kernel-launchers/{python,R,scala} ../build/kernel_image_files/kernel-launchers
+	rm -rf ../build/kernel_image_files/kernel-launchers/scala/{\.*DS*,toree-launcher}  # leave only lib
+
 #
 # Docker image build section ***********************************************
 #
@@ -109,29 +124,14 @@ TARGETS_kernel-py TARGETS_kernel-spark-py TARGETS_kernel-r TARGETS_kernel-spark-
 FILES_nb2kg :=
 FILES_demo-base :=
 FILES_enterprise-gateway-demo := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
-FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
-FILES_kernel-py := kernel-launchers/bootstrap/*
-FILES_kernel-spark-py :=
-FILES_kernel-tf-py := kernel-launchers/bootstrap/*
-FILES_kernel-tf-gpu-py := kernel-launchers/bootstrap/*
-FILES_kernel-r := kernel-launchers/bootstrap/*
-FILES_kernel-spark-r :=
-FILES_kernel-scala := kernel-launchers/bootstrap/*
-
-# Trim out only the kernelspec files needed in each of the kernel images. Note that because kernel-based
-# images only require the launcher (and supporting files) and launchers are consistent across kernel types,
-# we can use the base kernelspecs.
-LAUNCHER_FILES_nb2kg :=
-LAUNCHER_FILES_demo-base :=
-LAUNCHER_FILES_enterprise-gateway-demo :=
-LAUNCHER_FILES_enterprise-gateway := kernel-launchers/scala
-LAUNCHER_FILES_kernel-py := kernel-launchers/python
-LAUNCHER_FILES_kernel-spark-py := kernel-launchers/python
-LAUNCHER_FILES_kernel-tf-py := kernel-launchers/python
-LAUNCHER_FILES_kernel-tf-gpu-py := kernel-launchers/python
-LAUNCHER_FILES_kernel-r := kernel-launchers/R
-LAUNCHER_FILES_kernel-spark-r := kernel-launchers/R
-LAUNCHER_FILES_kernel-scala := kernel-launchers/scala
+FILES_enterprise-gateway := ../dist/jupyter_enterprise_gateway_kernel_image_files* ../dist/jupyter_enterprise_gateway_kernelspecs-* ../dist/jupyter_enterprise_gateway*.whl
+FILES_kernel-py := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-spark-py := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-tf-py := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-tf-gpu-py := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernel_image_files*
+FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernel_image_files*
 
 # Generate image creation targets for each entry in $(DOCKER_IMAGES).  Switch 'eval' to 'info' to see what is produced.
 define BUILD_IMAGE
@@ -140,7 +140,6 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
-	@(if [[ ! -z "$$(LAUNCHER_FILES_$1)" ]]; then mkdir -p ../build/docker/$1/kernel-launchers; cp -r $$(LAUNCHER_FILES_$1) ../build/docker/$1/kernel-launchers; fi;)
 	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)

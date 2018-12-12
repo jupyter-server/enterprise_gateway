@@ -328,7 +328,7 @@ if __name__ == "__main__":
     parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', nargs='?',
-                        default='lazy', help='the initialization mode of the spark context: lazy, eager or none')
+                        default='none', help='the initialization mode of the spark context: lazy, eager or none')
     parser.add_argument('--RemoteProcessProxy.cluster-type', dest='cluster_type', nargs='?',
                         default='spark', help='the kind of cluster to initialize: spark, dask, or none')
 

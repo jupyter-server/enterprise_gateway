@@ -22,7 +22,8 @@ if [ -z "${KERNEL_ID}" ]; then
   exit 1
 fi
 
-PROG_HOME=/usr/local/share/jupyter/kernel-launchers/R
+KERNEL_LAUNCHERS_DIR=${KERNEL_LAUNCHERS_DIR:-/usr/local/bin/kernel-launchers}
+PROG_HOME=${KERNEL_LAUNCHERS_DIR}/R
 
 set -x
 eval exec \

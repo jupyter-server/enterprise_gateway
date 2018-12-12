@@ -1,6 +1,7 @@
 #!/bin/bash
 
-KERNEL_LAUNCHERS_PATH=/usr/local/share/jupyter/kernel-launchers
+KERNEL_LAUNCHERS_DIR=${KERNEL_LAUNCHERS_DIR:-/usr/local/bin/kernel-launchers}
+KERNEL_SPARK_CONTEXT_INIT_MODE=${KERNEL_SPARK_CONTEXT_INIT_MODE:-none}
 
 echo $0 env: `env`
 
@@ -11,7 +12,7 @@ launch_python_kernel() {
     export JPY_PARENT_PID=$$  # Force reset of parent pid since we're detached
 
 	set -x
-	python ${KERNEL_LAUNCHERS_PATH}/python/scripts/launch_ipykernel.py --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
+	python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
 	{ set +x; } 2>/dev/null
 }
 
@@ -20,7 +21,7 @@ launch_R_kernel() {
     # and shutdown requests from Enterprise Gateway.
 
 	set -x
-	Rscript ${KERNEL_LAUNCHERS_PATH}/R/scripts/launch_IRkernel.R --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
+	Rscript ${KERNEL_LAUNCHERS_DIR}/R/scripts/launch_IRkernel.R --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
 	{ set +x; } 2>/dev/null
 }
 
@@ -29,7 +30,7 @@ launch_scala_kernel() {
     # and shutdown requests from Enterprise Gateway.  This kernel is currenly always launched using
     # spark-submit, so additional setup is required.
 
-    PROG_HOME=${KERNEL_LAUNCHERS_PATH}/scala
+    PROG_HOME=${KERNEL_LAUNCHERS_DIR}/scala
     KERNEL_ASSEMBLY=`(cd "${PROG_HOME}/lib"; ls -1 toree-assembly-*.jar;)`
     TOREE_ASSEMBLY="${PROG_HOME}/lib/${KERNEL_ASSEMBLY}"
     if [ ! -f ${TOREE_ASSEMBLY} ]; then
@@ -62,15 +63,27 @@ launch_scala_kernel() {
     { set +x; } 2>/dev/null
 }
 
-# Invoke appropriate launcher based on KERNEL_LANGUAGE
+# Ensure that required envs are present, check language before the dynamic values
+if [ -z "${KERNEL_LANGUAGE+x}" ]
+then
+    echo "KERNEL_LANGUAGE is required.  Set this value in the image or when starting container." 
+    exit 1
+fi
+if [ -z "${KERNEL_ID+x}" ] || [ -z "${EG_RESPONSE_ADDRESS+x}" ]
+then
+    echo "Both environment variables, KERNEL_ID and EG_RESPONSE_ADDRESS, are required.  Ensure this container is started by Enterprise Gateway."
+    exit 1
+fi
 
-if [[ "${KERNEL_LANGUAGE}" == "python" ]]
+# Invoke appropriate launcher based on KERNEL_LANGUAGE (case-insensitive)
+
+if [[ "${KERNEL_LANGUAGE,,}" == "python" ]]
 then
     launch_python_kernel
-elif [[ "${KERNEL_LANGUAGE}" == "scala" ]]
+elif [[ "${KERNEL_LANGUAGE,,}" == "scala" ]]
 then
     launch_scala_kernel
-elif [[ "${KERNEL_LANGUAGE}" == "r" ]]
+elif [[ "${KERNEL_LANGUAGE,,}" == "r" ]]
 then
     launch_R_kernel
 else

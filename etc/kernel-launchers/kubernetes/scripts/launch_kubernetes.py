@@ -100,7 +100,7 @@ if __name__ == '__main__':
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
                         nargs='?', help='Indicates whether or how a spark context should be created',
-                        default='lazy')
+                        default='none')
 
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
