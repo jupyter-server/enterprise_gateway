@@ -10,19 +10,15 @@ RUN Rscript --slave --no-save --no-restore-history \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR
 
-# Install OOTB kernelspecs
-COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
+ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
 
-# Use our bootstrap file.  Kubernetes kernel yaml will reference this file
-# as the image's CMD in the k8s context.
-COPY bootstrap-kernel.sh /usr/local/bin/
-
-# Switch back to root to create the kernel user
 USER root
 
 RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
-	chown -R jovyan:users /usr/local/share/jupyter
+	chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 USER jovyan
+ENV KERNEL_LANGUAGE R
+CMD /usr/local/bin/bootstrap-kernel.sh
 

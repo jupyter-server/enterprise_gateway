@@ -16,12 +16,11 @@ RUN mkdir -p /usr/share/doc/R/html && \
                                     lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
         -e "versions::install.versions('devtools', '1.13.6', lib='/usr/lib/R/library')"
 
-# Install OOTB kernelspecs
-COPY kernel-launchers /usr/local/share/jupyter/kernel-launchers/
+ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
 
 RUN adduser -S -u 1000 -G users jovyan && \
-	chown -R jovyan:users /usr/local/share/jupyter /opt/spark/work-dir
+    chown -R jovyan:users /usr/local/bin/kernel-launchers /opt/spark/work-dir
 
 USER jovyan
 
-ENV R_LIBS_USER ${R_HOME}/library:${SPARK_HOME}/R/lib
+ENV KERNEL_LANGUAGE=R R_LIBS_USER=${R_HOME}/library:${SPARK_HOME}/R/lib

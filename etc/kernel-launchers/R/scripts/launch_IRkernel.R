@@ -240,13 +240,15 @@ if (!is.na(argv$RemoteProcessProxy.response_address)){
 }
 
 # If spark context creation is desired go ahead and initialize the session/context
-# Otherwise, skip spark context creation if set to none
-if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
-    # Add custom application name (spark.app.name) spark config if available
-    if (!is.na(argv$customAppName)){
-        sparkConfigList[['spark.app.name']] <- argv$customAppName
+# Otherwise, skip spark context creation if set to none or not provided
+if (!is.na(argv$RemoteProcessProxy.spark_context_initialization_mode)){
+    if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+        # Add custom application name (spark.app.name) spark config if available
+        if (!is.na(argv$customAppName)){
+            sparkConfigList[['spark.app.name']] <- argv$customAppName
+        }
+        initialize_spark_session(argv$RemoteProcessProxy.spark_context_initialization_mode)
     }
-    initialize_spark_session(argv$RemoteProcessProxy.spark_context_initialization_mode)
 }
 
 # Start the kernel

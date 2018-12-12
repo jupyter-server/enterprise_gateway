@@ -17,8 +17,6 @@
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}",
-    "--RemoteProcessProxy.spark-context-initialization-mode",
-    "none"
+    "{response_address}"
   ]
 }

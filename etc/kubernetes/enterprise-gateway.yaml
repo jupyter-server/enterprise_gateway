@@ -132,10 +132,10 @@ spec:
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
-        # k8s will only pull :latest all the time.  
-        # the following line will make sure that :dev is always pulled
-        # You should remove this if you want to pin EG to a release tag
-        imagePullPolicy: Always
+	# Use IfNotPresent policy so that dev-based systems don't automatically
+	# update. This provides more control.  Since formal tags will be release-specific
+	# this policy should be sufficient for them as well.
+        imagePullPolicy: IfNotPresent
         name: enterprise-gateway
         args: ["--gateway"]
         ports:

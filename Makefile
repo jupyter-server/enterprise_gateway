@@ -52,8 +52,8 @@ dev: ## Make a server in jupyter_websocket mode
 docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
-kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker ## Create archives with sample kernelspecs
-kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker: 
+kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
+kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files: 
 	make VERSION=$(VERSION) TAG=$(TAG) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed

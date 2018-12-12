@@ -37,4 +37,3 @@ spec:
       value: ${kernel_namespace}
     image: ${kernel_image}
     name: ${kernel_username}-${kernel_id}
-    command: ["/usr/local/bin/bootstrap-kernel.sh"]

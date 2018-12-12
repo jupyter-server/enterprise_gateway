@@ -54,7 +54,6 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
         endpoint_spec = EndpointSpec(mode='dnsrr')
         restart_policy = RestartPolicy(condition='none')
         kernel_service = client.services.create(image_name,
-                                               command='/usr/local/bin/bootstrap-kernel.sh',
                                                name=container_name,
                                                endpoint_spec=endpoint_spec,
                                                restart_policy=restart_policy,
@@ -66,7 +65,6 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
     else:
         volumes = {'/usr/local/share/jupyter/kernels': {'bind': '/usr/local/share/jupyter/kernels', 'mode': 'ro'}}
         kernel_container = client.containers.run(image_name,
-                                                 command='/usr/local/bin/bootstrap-kernel.sh',
                                                  name=container_name,
                                                  hostname=container_name,
                                                  environment=param_env,
@@ -92,7 +90,7 @@ if __name__ == '__main__':
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
                         nargs='?', help='Indicates whether or how a spark context should be created',
-                        default='lazy')
+                        default='none')
 
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
