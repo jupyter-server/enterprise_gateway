@@ -2,14 +2,17 @@
 # Distributed under the terms of the Modified BSD License.
 """Session manager that keeps all its metadata in memory."""
 
-import os
-from traitlets.config.configurable import LoggingConfigurable
-from traitlets import Bool
-from jupyter_core.paths import jupyter_data_dir
-import json
+import copy
 import getpass
-
+import json
+import os
 import threading
+
+from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
+from jupyter_core.paths import jupyter_data_dir
+from traitlets import Bool
+from traitlets.config.configurable import LoggingConfigurable
+
 kernels_lock = threading.Lock()
 kernel_session_location = os.getenv('EG_KERNEL_SESSION_LOCATION', jupyter_data_dir())
 
@@ -96,7 +99,7 @@ class KernelSessionManager(LoggingConfigurable):
             if os.path.exists(self.kernel_session_file):
                 self.log.debug("Loading saved sessions from {}".format(self.kernel_session_file))
                 with open(self.kernel_session_file) as fp:
-                    self._sessions = json.load(fp)
+                    self._sessions = self._post_load_transformation(json.load(fp))
                     fp.close()
 
     def start_sessions(self):
@@ -160,8 +163,32 @@ class KernelSessionManager(LoggingConfigurable):
         if self.enable_persistence:
             # Commits the sessions dictionary to persistent store.  Caller is responsible for single-threading call.
             with open(self.kernel_session_file, 'w') as fp:
-                json.dump(self._sessions, fp)
+                json.dump(self._pre_save_transformation(self._sessions), fp)
                 fp.close()
+
+    @staticmethod
+    def _pre_save_transformation(sessions):
+        sessionscopy = copy.deepcopy(sessions)
+        for kernel_id, session in sessionscopy.items():
+            if session.get('connection_info'):
+                info = session['connection_info']
+                key = info.get('key')
+                if key:
+                    info['key'] = bytes_to_str(key)
+
+        return sessionscopy
+
+    @staticmethod
+    def _post_load_transformation(sessions):
+        sessionscopy = copy.deepcopy(sessions)
+        for kernel_id, session in sessionscopy.items():
+            if session.get('connection_info'):
+                info = session['connection_info']
+                key = info.get('key')
+                if key:
+                    info['key'] = str_to_bytes(key)
+
+        return sessionscopy
 
     def _get_sessions_loc(self):
         path = os.path.join(kernel_session_location, 'sessions')
