@@ -287,21 +287,6 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             self.process_proxy = None
         return super(RemoteKernelManager, self).cleanup(connection_file)
 
-    def get_connection_info(self, session=False):
-        info = super(RemoteKernelManager, self).get_connection_info(session)
-        # Convert bytes to string for persistence.  Will reverse operation in load_connection_info
-        info_key = info.get('key')
-        if info_key:
-            info['key'] = bytes_to_str(info_key)
-        return info
-
-    def load_connection_info(self, info):
-        # get the key back to bytes...
-        info_key = info.get('key')
-        if info_key:
-            info['key'] = str_to_bytes(info_key)
-        return super(RemoteKernelManager, self).load_connection_info(info)
-
     def write_connection_file(self):
         # If this is a remote kernel that's using a response address or we're restarting, we should skip the
         # write_connection_file since it will create 5 useless ports that would not adhere to port-range
