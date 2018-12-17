@@ -44,7 +44,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
     # Seed the build tree with initial files
 	cp -r kernelspecs ../build
     # Distribute language and config-sensitive files.
-	@echo ../build/kernelspecs/{spark_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
+	@echo ../build/kernelspecs/{spark_,dask_,}python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
 	@echo ../build/kernelspecs/{spark_,}R_* | xargs -t -n 1 cp -r kernel-launchers/R/scripts
 	@echo ../build/kernelspecs/{spark_,}scala_* | xargs -t -n 1 cp -r kernel-launchers/scala/lib
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
