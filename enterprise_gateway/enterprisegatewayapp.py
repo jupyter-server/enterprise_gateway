@@ -176,6 +176,16 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         """
     )
 
+    kernel_session_manager_class = Type(
+        klass=KernelSessionManager,
+        default_value=KernelSessionManager,
+        config=True,
+        help="""
+        The kernel session manager class to use. Should be a subclass
+        of `enterprise_gateway.services.sessions.KernelSessionManager`.
+        """
+    )
+
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and personality.
@@ -222,12 +232,14 @@ class EnterpriseGatewayApp(KernelGatewayApp):
             kernel_manager=self.kernel_manager
         )
 
-        self.kernel_session_manager = KernelSessionManager(
+        self.kernel_session_manager = self.kernel_session_manager_class(
+            parent=self,
             log=self.log,
             kernel_manager=self.kernel_manager,
             config=self.config, # required to get command-line options visible
             **kwargs
         )
+
         # Attempt to start persisted sessions
         self.kernel_session_manager.start_sessions()
 
