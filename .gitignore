@@ -67,5 +67,10 @@ target/
 # Build-related
 .image-*
 
+# Jekyll
+_site/
+.sass-cache/
+
+
 # Debug-related
 .kube/
