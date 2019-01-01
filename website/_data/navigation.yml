@@ -1,0 +1,19 @@
+topnav:
+
+- title: Enterprise Gateway
+  subcategories:
+  - title: What is it?
+    url: /#about
+  - title: Features
+    url: /#features
+  - title: Supported Platforms
+    url: /#platforms
+  - title: Contact
+    url: /#contact
+
+
+- title: Documentation
+  url: https://jupyter-enterprise-gateway.readthedocs.io/en/latest/
+
+- title: GitHub
+  url: https://github.com/jupyter/enterprise_gateway
