@@ -59,44 +59,6 @@ roleRef:
   kind: ClusterRole
   name: enterprise-gateway-controller
   apiGroup: rbac.authorization.k8s.io
-#---
-## Kernelspecs can be exposed via a PersistentVolume (and corresponding PersistentVolumeClaim).  Below
-## is an example of such a PV relative to NFS.  It requires that all nodes within the Kubernetes cluster
-## are mounting the NFS directory from the specified server.  To enable this functionality, uncomment the
-## corresponding stanzas for PersistentVolume, PersistentVolumeClaim, and the volumeMounts and volumes
-## stanzas in the Enterprise-Gateway deployment.
-##
-#kind: PersistentVolume
-#apiVersion: v1
-#metadata:
-#  name: kernelspecs-pv
-#  labels:
-#    app: enterprise-gateway
-#spec:
-#  capacity:
-#    storage: 10Mi
-#  accessModes:
-#    - ReadOnlyMany
-#  nfs:
-#    server: <nfs-server-IP>
-#    path: /usr/local/share/jupyter/kernels
-#---
-#kind: PersistentVolumeClaim
-#apiVersion: v1
-#metadata:
-#  name: kernelspecs-pvc
-#  namespace: enterprise-gateway
-#  labels:
-#    app: enterprise-gateway
-#spec:
-#  accessModes:
-#    - ReadOnlyMany
-#  resources:
-#    requests:
-#      storage: 10Mi
-#  selector:
-#    matchLabels:
-#      app: enterprise-gateway
 ---
 apiVersion: v1
 kind: Service
@@ -178,11 +140,12 @@ spec:
         args: ["--gateway"]
         ports:
         - containerPort: 8888
-## Uncomment to enable PV for kernelspecs
+## Uncomment to enable NFS-mounted kernelspecs
 #        volumeMounts:
-#        - mountPath: /usr/local/share/jupyter/kernels
-#          name: kernelspecs
+#        - name: kernelspecs
+#          mountPath: "/usr/local/share/jupyter/kernels"
 #      volumes:
 #      - name: kernelspecs
-#        persistentVolumeClaim:
-#          claimName: kernelspecs-pvc
+#        nfs:
+#          server: <internal-ip-of-nfs-server>
+#          path: "/usr/local/share/jupyter/kernels"

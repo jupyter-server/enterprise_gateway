@@ -1,37 +1,25 @@
 ## Enabling Docker Swarm Support
-This page describes the approach taken for integrating Enterprise Gateway into an existing
-Docker Swarm cluster.
+This page describes the approach taken for integrating Enterprise Gateway into an existing Docker Swarm cluster.
 
-In this solution, Enterprise Gateway is, itself, provisioned as a Docker Swarm _service_.  In this way, Enterprise Gateway can leverage load 
-balancing and high availability functionality provided by Swarm (although HA cannot be
-fully realized until EG supports persistent sessions).
+In this solution, Enterprise Gateway is, itself, provisioned as a Docker Swarm _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Swarm (although HA cannot be fully realized until EG supports persistent sessions).
 
-The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
-and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with
-other images.  See [Runtime Images](docker.html#runtime-images) for image details.
+The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with other images.  See [Runtime Images](docker.html#runtime-images) for image details.
 
 ### Enterprise Gateway Deployment
-Enterprise Gateway manifests itself as a Docker Swarm service.  It is identified by the name `enterprise-gateway` within the cluster. 
-In addition, all objects related to Enterprise Gateway, including kernel instances, have 
-a label of `app=enterprise-gateway` applied.
+Enterprise Gateway manifests itself as a Docker Swarm service.  It is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have a label of `app=enterprise-gateway` applied.
 
 The current deployment script, [enterprise-gateway-swarm.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) creates an overlay network intended for use solely by Enterprise Gateway and any kernel-based services it launches.
 
-Since Swarm's support for session-based affinity has not been investigated at this time, the deployment script  configures a single replica.  Once session affinity is available, the number of replicas can be increased.
+Since Swarm's support for session-based affinity has not been investigated at this time, the deployment script configures a single replica.  Once session affinity is available, the number of replicas can be increased.
 
 An alternative deployment of Enterprise Gateway in docker environments is to deploy Enterprise Gateway as a traditional docker container.  This can be accomplished via the [enterprise-gateway-docker.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-docker.sh) script.  However, keep in mind that in choosing this deployment approach, one loses leveraging swarm's monitoring/restart capabilities.  That said, choosing this approach does not preclude one from leveraging swarm's scheduling capabilities for launching kernels.  As noted below, kernel instances, and how they manifest as docker-based entities (i.e., a swarm service or a docker container), is purely a function of the process proxy class to which they're associated.
 
 ##### Kernelspec Modifications
-One of the more common areas of customization we see occur within the kernelspec files located
-in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions,
-the kernels directory can be exposed as a mounted volume thereby making 
-it available to all containers within the swarm cluster.
+One of the more common areas of customization we see occur within the kernelspec files located in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions, the kernels directory can be exposed as a mounted volume thereby making it available to all containers within the swarm cluster.
 
 As an example, we have included the necessary commands to mount these volumes, both in the deployment script and in the [launch_docker.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py) file used to launch docker-based kernels.  By default, these references are commented out as they require the system administrator to ensure the directories are available throughout the cluster.
 
-Note that because the kernel launch script, [launch_docker.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py), 
-resides in the kernelspecs hierarchy, updates or modifications to docker-based kernel instances can now 
-also take place.  (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
+Note that because the kernel launch script, [launch_docker.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py), resides in the kernelspecs hierarchy, updates or modifications to docker-based kernel instances can now also take place.  (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 
 ### Docker Swarm Kernel Instances
 Enterprise Gateway currently supports launching of _vanilla_ (i.e., non-spark) kernels within a Docker Swarm cluster.  When kernels are launched, Enterprise Gateway is responsible for creating the appropriate entity.  The kind of entity created is a function of the corresponding process proxy class.  
@@ -47,17 +35,11 @@ Items worth noting:
 
 
 ### DockerSwarmProcessProxy
-To indicate that a given kernel should be launched as a Docker Swarm service into a swarm clustr, the
-kernel.json file's `metadata` stanza  must include a `process_proxy` stanza indicating a `class_name:`  of 
-`DockerSwarmProcessProxy`. This ensures the appropriate lifecycle management will take place relative
-to a Docker Swarm environment.
+To indicate that a given kernel should be launched as a Docker Swarm service into a swarm cluster, the kernel.json file's `metadata` stanza  must include a `process_proxy` stanza indicating a `class_name:`  of `DockerSwarmProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Docker Swarm environment.
 
-Along with the `class_name:` entry, this process proxy stanza should also include a proxy 
-configuration stanza  which specifies the docker image to associate with the kernel's
-service container.  If this entry is not provided, the Enterprise Gateway implementation will use a default 
-entry of `elyra/kernel-py:VERSION`.  In either case, this value is made available to the 
-rest of the parameters used to launch the kernel by way of an environment variable: 
-`KERNEL_IMAGE`.
+Along with the `class_name:` entry, this process proxy stanza should also include a proxy configuration stanza  which specifies the docker image to associate with the kernel's service container.  If this entry is not provided, the Enterprise Gateway implementation will use a default entry of `elyra/kernel-py:VERSION`.  In either case, this value is made available to the rest of the parameters used to launch the kernel by way of an environment variable: `KERNEL_IMAGE`.
+
+_(Please note that the use of `VERSION` in docker image tags is a placeholder for the appropriate version-related image tag.  When kernelspecs are built via the Enterprise Gateway Makefile, `VERSION` is replaced with the appropriate version denoting the target release.  A full list of available image tags can be found in the dockerhub repository corresponding to each image.)_
 
 ```json
 {
@@ -71,18 +53,15 @@ rest of the parameters used to launch the kernel by way of an environment variab
   },
 }
 ```
-As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json
-files.  However, when launching kernels in a docker environment, what gets
-invoked isn't the kernel's launcher, but, instead, a python script that is responsible
-for using the [Docker Python API](https://docker-py.readthedocs.io/en/stable/) to 
-create the corresponding instance.  
+As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json files.  However, when launching kernels in a docker environment, what gets invoked isn't the kernel's launcher, but, instead, a python script that is responsible for using the [Docker Python API](https://docker-py.readthedocs.io/en/stable/) to create the corresponding instance.  
 
 ```json
 {
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_docker/scripts/launch_docker.py",
-    "{connection_file}",
+     "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.spark-context-initialization-mode",
@@ -92,8 +71,8 @@ create the corresponding instance.
 ```
 
 ### DockerProcessProxy
-Running containers in Docker Swarm versus traditional Docker are different enough to warrant having
-separate process proxy implementations.  As a result, the kernel.json file could reference the `DockerProcessProxy` class and, accordingly, a traditional docker container (as opposed to a swarm _service_) will be created.  The rest of the kernel.json file, image name, argv stanza, etc. is identical.
+Running containers in Docker Swarm versus traditional Docker are different enough to warrant having separate process proxy implementations.  As a result, the kernel.json file could reference the `DockerProcessProxy` class and, accordingly, a traditional docker container (as opposed to a swarm _service_) will be created.  The rest of the kernel.json file, image name, argv stanza, etc. is identical.
+
 ```json
 {
   "metadata": {
@@ -107,7 +86,8 @@ separate process proxy implementations.  As a result, the kernel.json file could
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_docker/scripts/launch_docker.py",
-    "{connection_file}",
+     "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.spark-context-initialization-mode",

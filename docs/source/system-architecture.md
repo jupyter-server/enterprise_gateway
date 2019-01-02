@@ -1,20 +1,12 @@
 ## System Architecture
 
-Below are sections presenting details of the Enterprise Gateway internals and other related items. While we will attempt 
-to maintain its consistency, the ultimate answers are in the code itself.
+Below are sections presenting details of the Enterprise Gateway internals and other related items. While we will attempt to maintain its consistency, the ultimate answers are in the code itself.
 
 ### Enterprise Gateway Process Proxy Extensions
-Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support 
-remote kernel sessions on behalf of multiple users within resource managed frameworks such as 
-[Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) or 
-[Kubernetes](https://kubernetes.io/).  Enterprise 
-Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager`, 
-`MultiKernelManager` and `KernelSpec` classes, along with an additional abstraction known as a 
-*process proxy*.
+Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support remote kernel sessions on behalf of multiple users within resource managed frameworks such as [Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) or [Kubernetes](https://kubernetes.io/).  Enterprise Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager` and `MultiKernelManager` classes, along with an additional abstraction known as a *process proxy*.
 
 #### Overview
-At its basic level, a running kernel consists of two components for its communication - a set of 
-ports and a process.
+At its basic level, a running kernel consists of two components for its communication - a set of ports and a process.
 
 ##### Kernel Ports
 The first component is a set of five zero-MQ ports used to convey the Jupyter protocol between the Notebook 
@@ -70,8 +62,8 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_scala_yarn_client/bin/run.sh",
-    "--profile",
-    "{connection_file}",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
@@ -86,9 +78,7 @@ See the [Process Proxy](#process-proxy) section for more details.
 ### Remote Mapping Kernel Manager
 `RemoteMappingKernelManager` is a subclass of JKG's existing `SeedingMappingKernelManager` and provides two functions.
 1. It provides the vehicle for making the `RemoteKernelManager` class known and available.
-2. It overrides `start_kernel` to look at the target kernel's kernel spec to see if it contains a remote process 
-proxy class entry.  If so, it records the name of the class in its member variable to be made avaiable to the 
-kernel start logic.
+2. It overrides `start_kernel` to look at the target kernel's kernel spec to see if it contains a remote process proxy class entry.  If so, it records the name of the class in its member variable to be made avaiable to the kernel start logic.
 
 ### Remote Kernel Manager
 `RemoteKernelManager` is a subclass of JKG's existing `KernelGatewayIOLoopKernelManager` class and provides the 
@@ -206,9 +196,7 @@ This method returns `None` if the process is still running, `False` otherwise.
 ```python
 def kill(self):
 ```
-The `kill()` method is used by the Jupyter framework to terminate the kernel process.  This method is only necessary 
-when the request to shutdown the kernel - sent via the control port of the zero-MQ ports - does not respond in 
-an appropriate amount of time.
+The `kill()` method is used by the Jupyter framework to terminate the kernel process.  This method is only necessary when the request to shutdown the kernel - sent via the control port of the zero-MQ ports - does not respond in an appropriate amount of time.
 
 This method returns `None` if the process is killed successfully, `False` otherwise.
 
@@ -224,9 +212,7 @@ where
 artifact of the kernel manager `_launch_kernel()` method.  
 * `**kw` is a set key-word arguments. 
 
-`confirm_remote_startup()` is responsible for detecting that the remote kernel has been appropriately launched and is 
-ready to receive requests.  This can include gather application status from the remote resource manager but is really 
-a function of having received the connection information from the remote kernel launcher.  (See [Launchers](#launchers))
+`confirm_remote_startup()` is responsible for detecting that the remote kernel has been appropriately launched and is ready to receive requests.  This can include gather application status from the remote resource manager but is really a function of having received the connection information from the remote kernel launcher.  (See [Kernel Launchers](#kernel-launchers))
 
 ```python
 @abstractmethod
@@ -354,33 +340,24 @@ launch such kernels (provided neither appear in the global set of `unauthorized_
 For a current enumeration of which system-level configuration values can be overridden or amended on a per-kernel basis
 see [Per-kernel Configuration Overrides](config-options.html#per-kernel-configuration-overrides).
 
-### Launchers
-As noted above a kernel is considered started once the `launch_process()` method has conveyed its connection information 
-back to the Enterprise Gateway server process. Conveyance of connection information from a remote kernel is the 
-responsibility of the remote kernel _launcher_.
+### Kernel Launchers
+As noted above a kernel is considered started once the `launch_process()` method has conveyed its connection information back to the Enterprise Gateway server process. Conveyance of connection information from a remote kernel is the responsibility of the remote kernel _launcher_.
 
-Launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications.  
-Besides providing a location where connection file creation can occur, they also provide a 'hook' 
-for other kinds of behaviors - like establishing virtual environments or sandboxes, providing 
-collaboration behavior, adhering to port range restrictions, etc.
+Kernel launchers provide a means of normalizing behaviors across kernels while avoiding kernel modifications. Besides providing a location where connection file creation can occur, they also provide a 'hook' for other kinds of behaviors - like establishing virtual environments or sandboxes, providing collaboration behavior, adhering to port range restrictions, etc.
 
-There are three primary tasks of a launcher:
-1. Creation of the connection file on the remote (target) system
-2. Conveyance of the connection information back to the Enterprise Gateway process
+There are four primary tasks of a kernel launcher:
+1. Creation of the connection file and ZMQ ports on the remote (target) system along with a _gateway listener_ socket
+2. Conveyance of the connection (and listener socket) information back to the Enterprise Gateway process
 3. Invocation of the target kernel
+4. Listen for interrupt and shutdown requests from Enterprise Gateway and carry out the action when appropriate
 
-Launchers are minimally invoked with two parameters (both of which are conveyed by the `argv` stanza of the 
-corresponding kernel.json file) - a path to the **_non-existent_** connection file represented by the 
-placeholder `{connection_file}` and a response address consisting of the Enterprise Gateway server IP and port on which 
-to return the connection information similarly represented by the placeholder `{response_address}`.  
+Kernel launchers are minimally invoked with two parameters (both of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}` and a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`.  
 
-Depending on the target kernel, the connection file parameter may or may not be identified by an 
-argument name.  However, the response address is identified by the parameter `--RemoteProcessProxy.response_address`.  Its 
-value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points 
-back to the Enterprise Gateway server - which is listening for a response on the provided port.
+The kernel's id is identified by the parameter `--RemoteProcessProxy.kernel-id`.  Its value (`{kernel_id}`) is essentially used to build a connection file to pass to the to-be-launched kernel, along with any other things - like log files, etc. 
 
-Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) 
-file illustrating these parameters...
+The response address is identified by the parameter `--RemoteProcessProxy.response-address`.  Its value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points back to the Enterprise Gateway server - which is listening for a response on the provided port.
+
+Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
 ```json
 {
@@ -398,18 +375,16 @@ file illustrating these parameters...
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_yarn_cluster/bin/run.sh",
-    "{connection_file}",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
 }
 ```
 Other options supported by launchers include: 
-* `--RemoteProcessProxy.port-range {port_range}`  - passes configured port-range to launcher where launcher applies 
-that range to kernel ports.  The port-range may be configured globally or on a per-kernelspec basis, as previously
-described.
-* `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]`  - indicates the *timeframe* in which the
-spark context will be created.  
+* `--RemoteProcessProxy.port-range {port_range}`  - passes configured port-range to launcher where launcher applies that range to kernel ports.  The port-range may be configured globally or on a per-kernelspec basis, as previously described.
+* `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]`  - indicates the *timeframe* in which the spark context will be created.  
     - `lazy` (default) attempts to defer initialization as late as possible - although can vary depending on the 
     underlying kernel and launcher implementation.
     - `eager` attempts to create the spark context as soon as possible.

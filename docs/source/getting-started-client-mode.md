@@ -1,26 +1,17 @@
 ## Enabling YARN Client Mode or Spark Standalone Support
 
-Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by
-installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will
-have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
+Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
 
-Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway,
-client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode,
-where kernels are started in different nodes of the cluster utilizing a round-robin algorithm.
-In this case, you can still experience bottlenecks on a given node that receives requests to start
-"large" kernels, but otherwise, you will be better off compared to when all kernels are started
-on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
+Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 
-The pseudo-distributed capabilities are currently supported in YARN Client mode or using vanilla Spark Standalone and 
-require the following environment variables to be set:
+The pseudo-distributed capabilities are currently supported in YARN Client mode or using vanilla Spark Standalone and require the following environment variables to be set:
 
 * SPARK_HOME: Must point to the Apache Spark installation path
 ```
 SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP distribution
 ```
 
-* EG_REMOTE_HOSTS must be set to a comma-separated set of FQDN hosts indicating the hosts available for running kernels.
-(This can be specified via the command line as well: --EnterpriseGatewayApp.remote_hosts)
+* EG_REMOTE_HOSTS must be set to a comma-separated set of FQDN hosts indicating the hosts available for running kernels. (This can be specified via the command line as well: `--EnterpriseGatewayApp.remote_hosts`)
 
 ```
 EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3.fyre.ibm.com,elyra-node-4.fyre.ibm.com,elyra-node-5.fyre.ibm.com
@@ -67,15 +58,15 @@ After that, you should have a kernel.json that looks similar to the one below:
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_yarn_client/bin/run.sh",
-    "{connection_file}",
+     "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
 }
 ```
 
-After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have 
-a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents.
+After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents.
 
 ### Configuring Kernels for Spark Standalone mode
 
@@ -103,7 +94,8 @@ Please see below how a kernel.json would look like for integrating with Spark St
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_yarn_client/bin/run.sh",
-    "{connection_file}",
+     "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
