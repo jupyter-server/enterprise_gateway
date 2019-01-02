@@ -1,11 +1,8 @@
 ## Enabling YARN Cluster Mode Support
 
-To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to
-provide additional configuration options in a cluster deployment.
+To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide additional configuration options in a cluster deployment.
 
-The distributed capabilities are currently based on an Apache Spark cluster utilizing YARN as the
-Resource Manager and thus require the following environment variables to be set to facilitate the
-integration between Apache Spark and YARN components:
+The distributed capabilities are currently based on an Apache Spark cluster utilizing YARN as the Resource Manager and thus require the following environment variables to be set to facilitate the integration between Apache Spark and YARN components:
 
 * SPARK_HOME: Must point to the Apache Spark installation path
 ```
@@ -19,12 +16,9 @@ EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common
 
 ### Configuring Kernels for YARN Cluster mode
 
-For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz).
+For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release [e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz).
 
-Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we
-would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed
-(e.g. jupyter kernelspec list)
+Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
 wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0.dev0/jupyter_enterprise_gateway_kernelspecs-2.0.0.dev0.tar.gz
@@ -60,13 +54,12 @@ After that, you should have a kernel.json that looks similar to the one below:
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_yarn_cluster/bin/run.sh",
-    "{connection_file}",
+     "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
 }
 ```
 
-After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have
-a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents in distributed mode
-on a Spark/Yarn Cluster.   
+After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents in distributed mode on a Spark/Yarn Cluster.   
