@@ -3,13 +3,13 @@ topnav:
 - title: Enterprise Gateway
   subcategories:
   - title: What is it?
-    url: /#about
+    url: /enterprise_gateway/#about
   - title: Features
-    url: /#features
+    url: /enterprise_gateway/#features
   - title: Supported Platforms
-    url: /#platforms
+    url: /enterprise_gateway/#platforms
   - title: Contact
-    url: /#contact
+    url: /enterprise_gateway/#contact
 
 
 - title: Documentation
