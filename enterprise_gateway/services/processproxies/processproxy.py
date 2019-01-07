@@ -40,6 +40,7 @@ poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'true')
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
+advertised_host = os.getenv('EG_ADVERTISED_HOST_LISTENER', None)
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -593,7 +594,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.log.debug("Response socket launched on {}, port: {} using {}s timeout".format(local_ip, port, socket_timeout))
         s.listen(1)
         s.settimeout(socket_timeout)
-        self.kernel_manager.response_address = local_ip + ':' + str(port)
+        self.kernel_manager.response_address = (local_ip if advertised_host is None else advertised_host) + ':' + str(port)
         self.response_socket = s
 
     def _tunnel_to_kernel(self, connection_info, server, port=ssh_port, key=None):
