@@ -1,11 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel managers that operate against a remote process."""
+"""Code related to managing kernels running in docker-based containers."""
 
 import os
 import logging
+
 from docker.client import DockerClient
 from docker.errors import NotFound
+
 from .container import ContainerProcessProxy
 
 # Debug logging level of docker produces too much noise - raise to info by default.
@@ -17,17 +19,19 @@ client = DockerClient.from_env()
 
 
 class DockerSwarmProcessProxy(ContainerProcessProxy):
-
+    """Kernel lifecycle management for kernels in Docker Swarm."""
     def __init__(self, kernel_manager, proxy_config):
         super(DockerSwarmProcessProxy, self).__init__(kernel_manager, proxy_config)
 
-    def launch_process(self, kernel_cmd, **kw):
+    def launch_process(self, kernel_cmd, **kwargs):
+        """Launches the specified process within a Docker Swarm environment."""
         # Convey the network to the docker launch script
-        kw['env']['EG_DOCKER_NETWORK'] = docker_network
-        kw['env']['EG_DOCKER_MODE'] = 'swarm'
-        return super(DockerSwarmProcessProxy, self).launch_process(kernel_cmd, **kw)
+        kwargs['env']['EG_DOCKER_NETWORK'] = docker_network
+        kwargs['env']['EG_DOCKER_MODE'] = 'swarm'
+        return super(DockerSwarmProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self):
+        """Return list of states indicating container is starting (includes running)."""
         return {'preparing', 'starting', 'running'}
 
     def _get_service(self):
@@ -62,6 +66,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         return task
 
     def get_container_status(self, iteration):
+        """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the status indicates an initial state we
         # should be able to get at the NetworksAttachments and determine the associated container's IP address.
         task_state = None
@@ -88,6 +93,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         return task_state
 
     def terminate_container_resources(self):
+        """Terminate any artifacts created on behalf of the container's lifetime."""
         # Remove the docker service.
 
         result = True  # We'll be optimistic
@@ -115,17 +121,19 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
 
 
 class DockerProcessProxy(ContainerProcessProxy):
-
+    """Kernel lifecycle management for Docker kernels (non-Swarm)."""
     def __init__(self, kernel_manager, proxy_config):
         super(DockerProcessProxy, self).__init__(kernel_manager, proxy_config)
 
-    def launch_process(self, kernel_cmd, **kw):
+    def launch_process(self, kernel_cmd, **kwargs):
+        """Launches the specified process within a Docker environment."""
         # Convey the network to the docker launch script
-        kw['env']['EG_DOCKER_NETWORK'] = docker_network
-        kw['env']['EG_DOCKER_MODE'] = 'docker'
-        return super(DockerProcessProxy, self).launch_process(kernel_cmd, **kw)
+        kwargs['env']['EG_DOCKER_NETWORK'] = docker_network
+        kwargs['env']['EG_DOCKER_MODE'] = 'docker'
+        return super(DockerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self):
+        """Return list of states indicating container is starting (includes running)."""
         return {'created', 'running'}
 
     def _get_container(self):
@@ -144,6 +152,7 @@ class DockerProcessProxy(ContainerProcessProxy):
         return container
 
     def get_container_status(self, iteration):
+        """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.  Only used when docker mode == regular (non swarm)
         container_status = None
@@ -177,6 +186,7 @@ class DockerProcessProxy(ContainerProcessProxy):
         return container_status
 
     def terminate_container_resources(self):
+        """Terminate any artifacts created on behalf of the container's lifetime."""
         # Remove the container
 
         result = True  # Since we run containers with remove=True, we'll be optimistic
