@@ -18,8 +18,9 @@ kernel_session_location = os.getenv('EG_KERNEL_SESSION_LOCATION', jupyter_data_d
 
 
 class KernelSessionManager(LoggingConfigurable):
-    """
-        KernelSessionManager is used to manage kernel sessions.  It loads the complete set of persisted kernel
+    """KernelSessionManager is persist and load kernel sessions from persistent storage.
+
+        KernelSessionManager provides the basis for an HA solution.  It loads the complete set of persisted kernel
         sessions during construction.  Following construction the parent object calls start_sessions to allow
         Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive' 
         are marked for deletion and the in-memory dictionary is updated - and the entire collection is written 
@@ -30,11 +31,10 @@ class KernelSessionManager(LoggingConfigurable):
     """
 
     enable_persistence = Bool(default_value=False, config=True,
-        help="""Enable kernel session persistence.  Default = False"""
-    )
+        help="""Enable kernel session persistence.  Default = False""")
 
-    def __init__(self, kernel_manager, *args, **kwargs):
-        super(KernelSessionManager, self).__init__(*args, **kwargs)
+    def __init__(self, kernel_manager, **kwargs):
+        super(KernelSessionManager, self).__init__(**kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = dict()
         self._sessionsByUser = dict()
@@ -43,9 +43,18 @@ class KernelSessionManager(LoggingConfigurable):
             self._load_sessions()
 
     def create_session(self, kernel_id, **kwargs):
-        """
-            Creates a session associated with this kernel.  User and KernelName, along with connection information
-            are tracked and saved to persistent store.
+        """Creates a session associated with this kernel.
+
+        All items associated with the active kernel's state are saved.
+
+        Parameters
+        ----------
+        kernel_id : str
+            The uuid string associated with the active kernel
+
+        **kwargs : optional
+            Information used for the launch of the kernel
+
         """
         km = self.kernel_manager.get_kernel(kernel_id)
 
@@ -61,10 +70,8 @@ class KernelSessionManager(LoggingConfigurable):
         kernel_session['process_info'] = km.process_proxy.get_process_info() if km.process_proxy else {}
         self._save_session(kernel_id, kernel_session)
 
-    def refresh_session(self, kernel_id, **kwargs):
-        """
-            Refreshes the session from its persisted state. Called on kernel restarts.
-        """
+    def refresh_session(self, kernel_id):
+        """Refreshes the session from its persisted state. Called on kernel restarts."""
         self.log.debug("Refreshing kernel session for id: {}".format(kernel_id))
         km = self.kernel_manager.get_kernel(kernel_id)
 
@@ -103,8 +110,10 @@ class KernelSessionManager(LoggingConfigurable):
                     fp.close()
 
     def start_sessions(self):
-        """
-            Attempt to start persisted sessions.  Track and delete the restart attempts that failed...
+        """ Attempt to start persisted sessions.
+
+        Determines if session startup was successful.  If unsuccessful, the session is removed
+        from persistent storage.
         """
         if self.enable_persistence:
             sessions_to_remove = []
@@ -135,9 +144,7 @@ class KernelSessionManager(LoggingConfigurable):
         return True
 
     def delete_session(self, kernel_id):
-        """
-            Removes saved session associated with kernel_id from dictionary and persisted store
-        """
+        """Removes saved session associated with kernel_id from dictionary and persisted storage."""
         self._delete_sessions([kernel_id])
 
         if self.enable_persistence:
@@ -168,27 +175,27 @@ class KernelSessionManager(LoggingConfigurable):
 
     @staticmethod
     def _pre_save_transformation(sessions):
-        sessionscopy = copy.deepcopy(sessions)
-        for kernel_id, session in sessionscopy.items():
+        sessions_copy = copy.deepcopy(sessions)
+        for kernel_id, session in sessions_copy.items():
             if session.get('connection_info'):
                 info = session['connection_info']
                 key = info.get('key')
                 if key:
                     info['key'] = bytes_to_str(key)
 
-        return sessionscopy
+        return sessions_copy
 
     @staticmethod
     def _post_load_transformation(sessions):
-        sessionscopy = copy.deepcopy(sessions)
-        for kernel_id, session in sessionscopy.items():
+        sessions_copy = copy.deepcopy(sessions)
+        for kernel_id, session in sessions_copy.items():
             if session.get('connection_info'):
                 info = session['connection_info']
                 key = info.get('key')
                 if key:
                     info['key'] = str_to_bytes(key)
 
-        return sessionscopy
+        return sessions_copy
 
     def _get_sessions_loc(self):
         path = os.path.join(kernel_session_location, 'sessions')
@@ -198,22 +205,38 @@ class KernelSessionManager(LoggingConfigurable):
         return path
 
     def active_sessions(self, username):
-        """
-            Returns the number (int) of active sessions for the given username.
+        """ Returns the number of active sessions for the given username.
+
+        Parameters
+        ----------
+        username : str
+            The username associated with the active session
+
+        Returns
+        -------
+        int corresponding to the number of active sessions associated with given user
         """
         if username in self._sessionsByUser:
             return len(self._sessionsByUser[username])
         return 0
 
     @staticmethod
-    def get_kernel_username(**kw):
-        """ Checks the process env for KERNEL_USERNAME.  If set, that value is returned, else KERNEL_USERNAME is
-            initialized to the current user and that value is returned.
-        :param kw:
-        :return: str
+    def get_kernel_username(**kwargs):
+        """ Returns the kernel's logical username from env dict.
+
+        Checks the process env for KERNEL_USERNAME.  If set, that value is returned, else KERNEL_USERNAME is
+        initialized to the current user and that value is returned.
+
+        Parameters
+        ----------
+        kwargs : dict from which request env is accessed.
+
+        Returns
+        -------
+        str indicating kernel username
         """
         # Get the env
-        env_dict = kw.get('env', {})
+        env_dict = kwargs.get('env', {})
 
         # Ensure KERNEL_USERNAME is set
         kernel_username = env_dict.get('KERNEL_USERNAME')

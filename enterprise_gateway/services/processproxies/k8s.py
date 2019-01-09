@@ -1,14 +1,16 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel managers that operate against a remote process."""
+"""Code related to managing kernels running in Kubernetes clusters."""
 
 import os
 import logging
-from socket import *
-from .container import ContainerProcessProxy
-from kubernetes import client, config
-from ..sessions.kernelsessionmanager import KernelSessionManager
+
 import urllib3
+from kubernetes import client, config
+
+from .container import ContainerProcessProxy
+from ..sessions.kernelsessionmanager import KernelSessionManager
+
 urllib3.disable_warnings()
 
 # Default logging level of kubernetes produces too much noise - raise to warning only.
@@ -23,33 +25,35 @@ config.load_incluster_config()
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
-
+    """Kernel lifecycle management for Kubernetes kernels."""
     def __init__(self, kernel_manager, proxy_config):
         super(KubernetesProcessProxy, self).__init__(kernel_manager, proxy_config)
 
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
-    def launch_process(self, kernel_cmd, **kw):
-
+    def launch_process(self, kernel_cmd, **kwargs):
+        """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
 
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
-        kw['env'] = dict(os.environ, **kw['env'])  # FIXME: Should probably leverage new process-whitelist in JKG #280
-        self.kernel_namespace = self._determine_kernel_namespace(**kw)  # will create namespace if not provided
+        kwargs['env'] = dict(os.environ, **kwargs['env'])  # FIXME: Should probably use process-whitelist in JKG #280
+        self.kernel_namespace = self._determine_kernel_namespace(**kwargs)  # will create namespace if not provided
 
-        return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kw)
+        return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self):
+        """Return list of states indicating container is starting (includes running)."""
         return {'Pending', 'Running'}
 
     def get_container_status(self, iteration):
+        """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
         pod_status = None
         ret = client.CoreV1Api().list_namespaced_pod(namespace=self.kernel_namespace,
-                                                                       label_selector="kernel_id=" + self.kernel_id)
+                                                     label_selector="kernel_id=" + self.kernel_id)
         if ret and ret.items:
             pod_info = ret.items[0]
             self.container_name = pod_info.metadata.name
@@ -70,6 +74,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return pod_status
 
     def terminate_container_resources(self):
+        """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # or pod associated with the kernel.  If we created the namespace, then that's our target,
         # else just delete the pod.
@@ -93,7 +98,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 v1_status = client.CoreV1Api().delete_namespace(name=self.kernel_namespace, body=body)
             else:
                 v1_status = client.CoreV1Api().delete_namespaced_pod(namespace=self.kernel_namespace,
-                                                                                   body=body, name=self.container_name)
+                                                                     body=body, name=self.container_name)
             if v1_status and v1_status.status:
                 termination_stati = ['Succeeded', 'Failed', 'Terminating']
                 if any(status in v1_status.status for status in termination_stati):
@@ -117,15 +122,15 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                              "not been terminated.".format(self.kernel_namespace, self.container_name, self.kernel_id))
         return result
 
-    def _determine_kernel_namespace(self, **kw):
+    def _determine_kernel_namespace(self, **kwargs):
 
         # Since we need the service account name regardless of whether we're creating the namespace or not,
         # get it now.
-        service_account_name = KubernetesProcessProxy._determine_kernel_service_account_name(**kw)
+        service_account_name = KubernetesProcessProxy._determine_kernel_service_account_name(**kwargs)
 
         # If KERNEL_NAMESPACE was provided, then we assume it already exists.  If not provided, then we'll
         # create the namespace and record that we'll want to delete it as well.
-        namespace = kw['env'].get('KERNEL_NAMESPACE')
+        namespace = kwargs['env'].get('KERNEL_NAMESPACE')
         if namespace is None:
             # check if shared namespace is configured...
             if shared_namespace:  # if so, set to EG namespace
@@ -133,20 +138,20 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
                                  format(namespace))
             else:
-                namespace = self._create_kernel_namespace(KernelSessionManager.get_kernel_username(**kw),
+                namespace = self._create_kernel_namespace(KernelSessionManager.get_kernel_username(**kwargs),
                                                           service_account_name)
-            kw['env']['KERNEL_NAMESPACE'] = namespace  # record in env since kernel needs this
+            kwargs['env']['KERNEL_NAMESPACE'] = namespace  # record in env since kernel needs this
         else:
             self.log.info("KERNEL_NAMESPACE provided by client: {}".format(namespace))
 
         return namespace
 
     @staticmethod
-    def _determine_kernel_service_account_name(**kw):
+    def _determine_kernel_service_account_name(**kwargs):
         # Check if an account name was provided.  If not, set to the default name (which can be set
         # from the EG env as well).  Finally, ensure the env value is set.
-        service_account_name = kw['env'].get('KERNEL_SERVICE_ACCOUNT_NAME', default_kernel_service_account_name)
-        kw['env']['KERNEL_SERVICE_ACCOUNT_NAME'] = service_account_name
+        service_account_name = kwargs['env'].get('KERNEL_SERVICE_ACCOUNT_NAME', default_kernel_service_account_name)
+        kwargs['env']['KERNEL_SERVICE_ACCOUNT_NAME'] = service_account_name
         return service_account_name
 
     def _create_kernel_namespace(self, kernel_username, service_account_name):
@@ -210,11 +215,13 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                       format(role_binding_name, namespace, service_account_name))
 
     def get_process_info(self):
+        """Captures the base information necessary for kernel persistence relative to kubernetes."""
         process_info = super(KubernetesProcessProxy, self).get_process_info()
         process_info.update({'kernel_ns': self.kernel_namespace, 'delete_ns': self.delete_kernel_namespace})
         return process_info
 
     def load_process_info(self, process_info):
+        """Loads the base information necessary for kernel persistence relative to kubernetes."""
         super(KubernetesProcessProxy, self).load_process_info(process_info)
         self.kernel_namespace = process_info['kernel_ns']
         self.delete_kernel_namespace = process_info['delete_ns']

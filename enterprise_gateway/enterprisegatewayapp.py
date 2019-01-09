@@ -6,26 +6,20 @@ import os
 import signal
 import getpass
 
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-
-from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
-
-from kernel_gateway.gatewayapp import KernelGatewayApp
-
 # Install the pyzmq ioloop. This has to be done before anything else from
 # tornado is imported.
 from zmq.eventloop import ioloop
 ioloop.install()
-
 from tornado.log import LogFormatter
 
-from ._version import __version__
+
+from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
 from jupyter_client.kernelspec import KernelSpecManager
 from notebook.services.kernels.kernelmanager import MappingKernelManager
+from kernel_gateway.gatewayapp import KernelGatewayApp
 from kernel_gateway.services.sessions.sessionmanager import SessionManager
+
+from ._version import __version__
 from .services.sessions.kernelsessionmanager import KernelSessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
 
@@ -76,7 +70,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
     @default('yarn_endpoint_security_enabled')
     def yarn_endpoint_security_enabled_default(self):
-        return bool(os.getenv(self.yarn_endpoint_security_enabled_env, self.yarn_endpoint_security_enabled_default_value))
+        return bool(os.getenv(self.yarn_endpoint_security_enabled_env,
+                              self.yarn_endpoint_security_enabled_default_value))
 
     # Conductor endpoint
     conductor_endpoint_env = 'EG_CONDUCTOR_ENDPOINT'
@@ -193,7 +188,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         Any kernel pool configured by the personality will be its responsibility
         to shut down.
 
-        Optionally, loads a notebook and prespawns the configured number of
+        Optionally, loads a notebook and pre-spawns the configured number of
         kernels.
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
@@ -210,7 +205,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
             kwargs['default_kernel_name'] = self.default_kernel_name
 
         self.kernel_spec_manager = self.kernel_spec_manager_class(
-            parent = self,
+            parent=self,
         )
 
         self.kernel_manager = self.kernel_manager_class(
@@ -243,7 +238,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # Attempt to start persisted sessions
         self.kernel_session_manager.start_sessions()
 
-        self.contents_manager = None
+        self.contents_manager = None  # Gateways don't use contents manager
 
         if self.prespawn_count:
             if self.max_kernels and self.prespawn_count > self.max_kernels:
@@ -258,6 +253,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         self.personality.init_configurables()
 
     def init_webapp(self):
+        """Initializes Tornado web application (via superclass) with uri handlers and enables remote access. """
         super(EnterpriseGatewayApp, self).init_webapp()
 
         # As of Notebook 5.6, remote kernels are prevented: https://github.com/jupyter/notebook/pull/3714/ unless

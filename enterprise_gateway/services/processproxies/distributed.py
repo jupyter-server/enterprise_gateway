@@ -1,13 +1,16 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel managers that operate against a remote process."""
+"""Code used for the generic distribution of kernels across a set of hosts."""
 
 import os
 import json
 import time
+
 from subprocess import STDOUT
-from socket import *
+from socket import gethostbyname
+
 from jupyter_client import launch_kernel
+
 from .processproxy import RemoteProcessProxy, BaseProcessProxyABC
 
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
@@ -15,6 +18,7 @@ kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
+    """Manages the lifecycle of kernels distributed across a set of hosts."""
     host_index = 0
 
     def __init__(self, kernel_manager, proxy_config):
@@ -25,15 +29,16 @@ class DistributedProcessProxy(RemoteProcessProxy):
         else:
             self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
 
-    def launch_process(self, kernel_cmd, **kw):
-        super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kw)
+    def launch_process(self, kernel_cmd, **kwargs):
+        """Launches a kernel process on a selected host."""
+        super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.assigned_host = self._determine_next_host()
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
         self.assigned_ip = self.ip
 
         try:
-            result_pid = self._launch_remote_process(kernel_cmd, **kw)
+            result_pid = self._launch_remote_process(kernel_cmd, **kwargs)
             self.pid = int(result_pid)
         except Exception as e:
             error_message = "Failure occurred starting kernel on '{}'.  Returned result: {}".\
@@ -41,24 +46,25 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.log_and_raise(http_status_code=500, reason=error_message)
 
         self.log.info("Kernel launched on '{}', pid: {}, ID: {}, Log file: {}:{}, Command: '{}'.  ".
-                      format(self.assigned_host, self.pid, self.kernel_id, self.assigned_host, self.kernel_log, kernel_cmd))
-        self.confirm_remote_startup(kernel_cmd, **kw)
+                      format(self.assigned_host, self.pid, self.kernel_id, self.assigned_host,
+                             self.kernel_log, kernel_cmd))
+        self.confirm_remote_startup()
 
         return self
 
-    def _launch_remote_process(self, kernel_cmd, **kw):
+    def _launch_remote_process(self, kernel_cmd, **kwargs):
         """
             Launch the kernel as indicated by the argv stanza in the kernelspec.  Note that this method
             will bypass use of ssh if the remote host is also the local machine.
         """
 
-        cmd = self._build_startup_command(kernel_cmd, **kw)
+        cmd = self._build_startup_command(kernel_cmd, **kwargs)
         self.log.debug("Invoking cmd: '{}' on host: {}".format(cmd, self.assigned_host))
         result_pid = 'bad_pid'  # purposely initialize to bad int value
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
-            self.local_proc = launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kw)
+            self.local_proc = launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kwargs)
             result_pid = str(self.local_proc.pid)
         else:
             # launch remote command via ssh
@@ -68,7 +74,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         return result_pid
 
-    def _build_startup_command(self, argv_cmd, **kw):
+    def _build_startup_command(self, argv_cmd, **kwargs):
         """
         Builds the command to invoke by concatenating envs from kernelspec followed by the kernel argvs.
 
@@ -79,7 +85,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         """
 
         # Optimized case needs to also redirect the kernel output, so unconditionally compose kernel_log
-        env_dict = kw['env']
+        env_dict = kwargs['env']
         kid = env_dict.get('KERNEL_ID')
         self.kernel_log = os.path.join(kernel_log_dir, "kernel-{}.log".format(kid))
 
@@ -110,14 +116,13 @@ class DistributedProcessProxy(RemoteProcessProxy):
         return cmd
 
     def _determine_next_host(self):
+        """Simple round-robin index into list of hosts."""
         next_host = self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
         DistributedProcessProxy.host_index += 1
         return next_host
 
-    def confirm_remote_startup(self, kernel_cmd, **kw):
-        """ Confirms the remote application has started by obtaining connection information from the remote
-            host based on the connection file mode.
-        """
+    def confirm_remote_startup(self):
+        """ Confirms the remote kernel has started by obtaining connection information from the remote host."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
@@ -132,6 +137,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                 ready_to_connect = self.receive_connection_info()
 
     def handle_timeout(self):
+        """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
         time.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
