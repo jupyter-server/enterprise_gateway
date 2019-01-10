@@ -47,7 +47,12 @@ def initialize_namespace(cluster_type='spark'):
         def initialize_spark_session():
             """Initialize Spark session and replace global variable
             placeholders with real Spark session object references."""
+            global spark, sc, sql, sqlContext, sqlCtx
             spark = SparkSession.builder.getOrCreate()
+            sc = spark.sparkContext
+            sql = spark.sql
+            sqlContext = spark._wrapped
+            sqlCtx = sqlContext
 
             # Stop the spark session on exit
             atexit.register(lambda: spark.stop())
