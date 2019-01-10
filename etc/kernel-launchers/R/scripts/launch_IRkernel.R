@@ -1,4 +1,4 @@
-library(argparser)
+library(argparse)
 library(jsonlite)
 
 require("SparkR")
@@ -172,20 +172,19 @@ validate_port_range <- function(port_range){
 }
 
 # Check arguments
-parser <- arg_parser('R-kernel-launcher')
-parser <- add_argument(parser, "--RemoteProcessProxy.kernel-id",
+parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
+parser$add_argument("--RemoteProcessProxy.kernel-id",
        help="the id associated with the launched kernel")
-parser <- add_argument(parser, "--RemoteProcessProxy.port-range",
+parser$add_argument("--RemoteProcessProxy.port-range",
        help="the range of ports impose for kernel ports")
-parser <- add_argument(parser, "--RemoteProcessProxy.response-address",
+parser$add_argument("--RemoteProcessProxy.response-address",
        help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
-parser <- add_argument(parser, "--RemoteProcessProxy.spark-context-initialization-mode",
+parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode",
        help="the initialization mode of the spark context: lazy, eager or none")
-parser <- add_argument(parser, "--customAppName",
+parser$add_argument("--customAppName", default="",
        help="the custom application name to be set")
 
-
-argv <- parse_args(parser)
+argv <- parser$parse_args()
 
 # Require '--RemoteProcessProxy.kernel-id'
 if (is.na(argv$RemoteProcessProxy.kernel_id)){
