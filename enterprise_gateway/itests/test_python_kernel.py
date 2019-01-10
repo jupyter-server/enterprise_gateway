@@ -1,6 +1,5 @@
 import unittest
 import os
-from time import sleep
 from enterprise_gateway.client.gateway_client import GatewayClient
 
 
