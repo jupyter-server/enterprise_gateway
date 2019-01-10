@@ -71,16 +71,8 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
     """
 
     def test_get_application_id(self):
-        result = self.kernel.execute("print(sc.applicationId)")
-        self.assertRegexpMatches(result, 'application_')
-
-    def test_get_spark_version(self):
-        result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, '2.4.*')
-
-    def test_get_resource_manager(self):
-        result = self.kernel.execute("sc.getConf().get('spark.master')")
-        self.assertRegexpMatches(result, 'yarn.*')
+        result = self.kernel.execute("sc.getConf().get('spark.app.id')")
+        self.assertRegexpMatches(result, 'application_*')
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
@@ -89,6 +81,14 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
     def test_get_hostname(self):
         result = self.kernel.execute("import subprocess; subprocess.check_output(['hostname'])")
         self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
+
+    def test_get_resource_manager(self):
+        result = self.kernel.execute("sc.getConf().get('spark.master')")
+        self.assertRegexpMatches(result, 'yarn.*')
+
+    def test_get_spark_version(self):
+        result = self.kernel.execute("sc.version")
+        self.assertRegexpMatches(result, '2.4.*')
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
@@ -134,7 +134,6 @@ class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
-
 class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
     KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")
 
@@ -147,6 +146,7 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
         # initialize environment
         cls.gatewayClient = GatewayClient()
         cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
+
 
     @classmethod
     def tearDownClass(cls):

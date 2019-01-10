@@ -3,8 +3,4 @@
         <name>dfs.replication</name>
         <value>1</value>
     </property>
-    <property>
-        <name>dfs.namenode.name.dir</name>
-        <value>namenode-default</value>
-    </property>
 </configuration>
