@@ -3,21 +3,6 @@
 # Allow for mounts of kernelspecs to /tmp/byok/kernels
 export JUPYTER_PATH=${JUPYTER_PATH:-/tmp/byok}
 
-export ANACONDA_HOME=${ANACONDA_HOME:-/opt/anaconda2}
-export JAVA_HOME=${JAVA_HOME:-/usr/java/default}
-export SPARK_HOME=${SPARK_HOME:-/usr/local/spark}
-
-export HADOOP_PREFIX=${HADOOP_PREFIX:-/usr/local/hadoop}
-export HADOOP_HDFS_HOME=${HADOOP_PREFIX}
-export HADOOP_COMMON_HOME=${HADOOP_PREFIX}
-export HADOOP_YARN_HOME=${HADOOP_PREFIX}
-export HADOOP_MAPRED_HOME={HADOOP_PREFIX}
-export HADOOP_CONF_DIR=${HADOOP_PREFIX}/etc/hadoop
-export YARN_CONF_DIR={HADOOP_PREFIX}/etc/hadoop
-
-export PYSPARK_PYTHON=${ANACONDA_HOME}/bin/python
-export PATH=${ANACONDA_HOME}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${JAVA_HOME}/bin:${SPARK_HOME}/bin:${HADOOP_PREFIX}/bin
-
 # Enterprise Gateway variables
 export EG_REMOTE_HOSTS=${EG_REMOTE_HOSTS:-HOSTNAME}
 export EG_YARN_ENDPOINT=${EG_YARN_ENDPOINT:-http://HOSTNAME:8088/ws/v1/cluster}

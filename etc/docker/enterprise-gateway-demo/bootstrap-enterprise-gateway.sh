@@ -35,10 +35,8 @@ export FROM="EG"
 
 if [[ "$CMD" == "--gateway" ]];
 then
-    sed s/HOSTNAME/$YARN_HOST/ /usr/local/bin/start-enterprise-gateway.sh.template > /usr/local/bin/start-enterprise-gateway.sh
-    chmod 0755 /usr/local/bin/start-enterprise-gateway.sh
-
-    sudo -u jovyan /usr/local/bin/start-enterprise-gateway.sh
+    sudo sed -i "s/HOSTNAME/$YARN_HOST/" /usr/local/bin/start-enterprise-gateway.sh
+    /usr/local/bin/start-enterprise-gateway.sh
 fi
 
 exit 0
