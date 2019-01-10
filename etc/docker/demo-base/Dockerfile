@@ -104,14 +104,14 @@ RUN conda install --yes --quiet \
     'pip' \
     'jupyter' \
     'r-devtools' \
-    'r-stringr' && \
+    'r-stringr' \
+    'r-argparse' && \
     conda clean -tipsy && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
-RUN Rscript -e 'install.packages("argparser", repos="http://cran.cnr.berkeley.edu")' \
-            -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/anaconda2/lib/R/library")' \
-            -e 'IRkernel::installspec(prefix = "/usr/local/")' \
+RUN Rscript -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/anaconda2/lib/R/library")' \
+            -e 'IRkernel::installspec(prefix = "/usr/local")' \
             -e 'devtools::install_github("apache/spark@v2.4.0", subdir="R/pkg")' && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER

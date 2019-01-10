@@ -90,14 +90,14 @@ For more information about the IPython kernel, please visit the [IPython kernel]
 Perform the following steps on Jupyter Enterprise Gateway hosting system as well as all YARN workers
 
 ```Bash
-conda install --yes --quiet -c r r-essentials r-irkernel
-Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")'
+conda install --yes --quiet -c r r-essentials r-irkernel r-argparse
+
 
 
 # Create an R-script to run and install packages and update IRkernel
 cat <<'EOF' > install_packages.R
 install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
-                   'devtools', 'uuid', 'digest', 'RCurl', 'curl', 'argparser'),
+                   'devtools', 'uuid', 'digest', 'RCurl', 'curl', 'argparse'),
                    repos='http://cran.rstudio.com/')
 devtools::install_github('IRkernel/IRkernel@0.8.14')
 IRkernel::installspec(user = FALSE)
