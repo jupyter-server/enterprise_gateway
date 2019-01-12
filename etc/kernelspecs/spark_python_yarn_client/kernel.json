@@ -9,7 +9,7 @@
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
     "PYSPARK_PYTHON": "/opt/anaconda2/bin/python",
-    "PYTHONPATH": "${HOME}/.local/lib/python2.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.4-src.zip",
+    "PYTHONPATH": "${HOME}/.local/lib/python2.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
     "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
     "LAUNCH_OPTS": ""
   },
