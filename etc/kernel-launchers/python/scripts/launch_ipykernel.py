@@ -4,10 +4,10 @@ import base64
 import json
 import logging
 import os
-import random
 import socket
 import tempfile
 import uuid
+from random import random
 from threading import Thread
 
 from Crypto.Cipher import AES
