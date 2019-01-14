@@ -1,6 +1,6 @@
 # What this image Gives You
-* CentOS base image : latest
-* Hadoop 2.7.7 with 64-bit native libraries
+* Ubuntu base image : bionic
+* Hadoop 2.7.7 
 * Apache Spark 2.4.0
 * Java 1.8 runtime
 * Mini-conda 4.5.11 (python 2.7.15) with R packages
