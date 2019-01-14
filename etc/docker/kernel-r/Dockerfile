@@ -6,7 +6,7 @@ FROM jupyter/r-notebook:8a1b90cbcba5
 
 # Additional package needed by launcher, update IRkernel to fix kernel shutdown.
 RUN Rscript --slave --no-save --no-restore-history \
-        -e "install.packages('IRkernel', repos='http://cran.cnr.berkeley.edu/')" && \
+        -e "install.packages(pkgs=c('argparse','IRkernel'), repos='http://cran.cnr.berkeley.edu/')" && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR
 

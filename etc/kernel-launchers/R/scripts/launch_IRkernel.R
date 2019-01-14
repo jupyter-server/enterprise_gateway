@@ -173,23 +173,22 @@ validate_port_range <- function(port_range){
 
 # Check arguments
 parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
-parser$add_argument("--RemoteProcessProxy.kernel-id",
+parser$add_argument("--RemoteProcessProxy.kernel-id", required=TRUE,
        help="the id associated with the launched kernel")
-parser$add_argument("--RemoteProcessProxy.port-range",
+parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
        help="the range of ports impose for kernel ports")
-parser$add_argument("--RemoteProcessProxy.response-address",
-       help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
-parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode",
-       help="the initialization mode of the spark context: lazy, eager or none")
-parser$add_argument("--customAppName", default="",
+parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar='<ip>:<port>',
+      help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
+parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
+      help="the initialization mode of the spark context: lazy, eager or none")
+parser$add_argument("--customAppName", nargs='?', default="SparkR",
        help="the custom application name to be set")
 
 argv <- parser$parse_args()
 
-# Require '--RemoteProcessProxy.kernel-id'
-if (is.na(argv$RemoteProcessProxy.kernel_id)){
-    message("Parameter '--RemoteProcessProxy.kernel-id' must be provided - exiting!")
-    return(NA)
+#If port range argument is passed from kernel json with no value
+if (is.null(argv$RemoteProcessProxy.port_range)){
+    argv$RemoteProcessProxy.port_range <- NA
 }
 
 #  If there is a response address, use pull socket mode
