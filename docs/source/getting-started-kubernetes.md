@@ -264,32 +264,41 @@ There are essentially two kinds of kernels (independent of language) launched wi
 
 When _vanilla_ kernels are launched, Enterprise Gateway is responsible for creating the corresponding pod. On the other hand, _spark-on-kubernetes_ kernels are launched via `spark-submit` with a specific `master` URI - which then creates the corresponding pod(s) (including executor pods).  Images can be launched using both forms provided they have the appropriate support for Spark installed.
 
-Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml)) serves as a template where each of the tags prefixed with `$` represent variables that are substituted at the time of the kernel's launch.
+Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml)) serves as a template where each of the tags surrounded with `${}` represent variables that are substituted at the time of the kernel's launch.  All `${kernel_xxx}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: $kernel_username-$kernel_id
-  namespace: $namespace
+  name: ${kernel_username}-${kernel_id}
+  namespace: ${kernel_namespace}
   labels:
-    kernel_id: $kernel_id
+    kernel_id: ${kernel_id}
     app: enterprise-gateway
+    component: kernel
 spec:
   restartPolicy: Never
-  serviceAccountName: $service_account
+  serviceAccountName: ${kernel_service_account_name}
+  securityContext:
+    runAsUser: ${kernel_uid}
+    runAsGroup: ${kernel_gid}
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS
-      value: $response_address
-    - name: KERNEL_CONNECTION_FILENAME
-      value: $connection_filename
+      value: ${eg_response_address}
     - name: KERNEL_LANGUAGE
-      value: $language
-    - name: SPARK_CONTEXT_INITIALIZATION_MODE
-      value: $spark_context_initialization_mode
-    image: $docker_image
-    name: $kernel_username-$kernel_id
-    command: ["/usr/local/bin/bootstrap-kernel.sh"]
+      value: ${kernel_language}
+    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
+      value: ${kernel_spark_context_init_mode}
+    - name: KERNEL_NAME
+      value: ${kernel_name}
+    - name: KERNEL_USERNAME
+      value: ${kernel_username}
+    - name: KERNEL_ID
+      value: ${kernel_id}
+    - name: KERNEL_NAMESPACE
+      value: ${kernel_namespace}
+    image: ${kernel_image}
+    name: ${kernel_username}-${kernel_id}
 ```
 There are a number of items worth noting:
 1. Kernel pods can be identified in three ways using `kubectl`: 
@@ -299,7 +308,8 @@ There are a number of items worth noting:
     
     Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces.  To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`).  This identifier also applies to those kernels launched within `spark-on-kubernetes`.
-1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml` as `$namespace` and `$service_account`, respectively.
+1. Kernel pods use the specified `securityContext`.  If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used.  Similarly for `KERNEL_GID`, whose default is `100` (the users group).  In addition, Enterprise Gateway enforces a blacklist for each of the UID and GID values.  By default, this list is initialized to the 0 (root) UID and GID.  Administrators can configure the `EG_UID_BLACKLIST` and `EG_GID_BLACKLIST` environment variables via the enterprise-gateway.yaml file with comma-separated values to alter the set of user and group ids to be prevented.
+1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml` as `${kernel_namespace}` and `${kernel_service_account_name}`, respectively.
 1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
 
