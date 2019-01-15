@@ -283,28 +283,35 @@ JupyterWebsocketPersonality options
 ```
 
 ### Addtional supported environment variables
-```
+```text
   EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME=default
-    Kubernetes only.  This value indicates the default service account name to use for kernel
-    namespaces when the Enterprise Gateway needs to create the kernel's namespace and
-    KERNEL_SERVICE_ACCOUNT_NAME has not been provided.
+    Kubernetes only.  This value indicates the default service account name to use for
+    kernel namespaces when the Enterprise Gateway needs to create the kernel's namespace
+    and KERNEL_SERVICE_ACCOUNT_NAME has not been provided.
 
   EG_DOCKER_NETWORK=enterprise-gateway or bridge
-    Docker only. Used by the docker deployment and launch scripts, this indicates the name of the
-    docker network docker network to use.  The start scripts default this value to 'enterprise-gateway'
-    because they create the network.  The docker kernel launcher (launch_docker.py) defaults
-    this value to 'bridge' only in cases where it wasn't previously set by the deployment script.
+    Docker only. Used by the docker deployment and launch scripts, this indicates the
+    name of the docker network docker network to use.  The start scripts default this
+    value to 'enterprise-gateway' because they create the network.  The docker kernel
+    launcher (launch_docker.py) defaults this value to 'bridge' only in cases where it
+    wasn't previously set by the deployment script.
 
   EG_ENABLE_TUNNELING=False
     Indicates whether tunneling (via ssh) of the kernel and communication ports
     is enabled (True) or not (False).
 
+  EG_GID_BLACKLIST=0
+    Containers only.  A comma-separated list of group ids (GID) whose values are not
+    allowed to be referenced by KERNEL_GID.  This defaults to the root group id (0).
+    Attempts to launch a kernel where KERNEL_GID's value is in this list will result
+    in an exception indicating error 403 (Forbidden).  See also EG_UID_BLACKLIST.
+
   EG_KERNEL_CLUSTER_ROLE=kernel-controller or cluster-admin
-    Kubernetes only.  The role to use when binding with the kernel service account.  The
-    enterprise-gateway.yaml script creates the cluster role 'kernel-controller' and conveys that
-    name via EG_KERNEL_CLUSTER_ROLE.  Should the deployment script not set this valuem, Enterprise
-    Gateway will then use 'cluster-admin'.  It is recommended this value be set to something other
-    than 'cluster-admin'.
+    Kubernetes only.  The role to use when binding with the kernel service account.
+    The enterprise-gateway.yaml script creates the cluster role 'kernel-controller'
+    and conveys that name via EG_KERNEL_CLUSTER_ROLE.  Should the deployment script
+    not set this valuem, Enterprise Gateway will then use 'cluster-admin'.  It is
+    recommended this value be set to something other than 'cluster-admin'.
               
   EG_KERNEL_LAUNCH_TIMEOUT=30 
     The time (in seconds) Enterprise Gateway will wait for a kernel's startup
@@ -341,30 +348,38 @@ JupyterWebsocketPersonality options
     kernel (since port-range can be specified within individual kernel specifications).
       
   EG_NAMESPACE=enterprise-gateway or default
-    Kubernetes only.  Used during Kubernetes deployment, this indicates the name of the
-    namespace in which the Enterprise Gateway service is deployed.  The enterprise-gateway.yaml
-    file creates this namespace, then sets EG_NAMESPACE dring deployment.
-    This value is then used within Enterprise Gateway to coordinate kernel configurations.
-    Should this value not be set during deployment, Enterprise Gateway will default its
-    value to namespace 'default'.
+    Kubernetes only.  Used during Kubernetes deployment, this indicates the name of
+    the namespace in which the Enterprise Gateway service is deployed.  The
+    enterprise-gateway.yaml file creates this namespace, then sets EG_NAMESPACE dring
+    deployment. This value is then used within Enterprise Gateway to coordinate kernel
+    configurations. Should this value not be set during deployment, Enterprise Gateway
+    will default its value to namespace 'default'.
       
   EG_SHARED_NAMESPACE=False
-    Kubernetes only. This value indicates whether (True) or not (False) all kernel pods should
-    reside in the same namespace as Enterprise Gateway.  This is not a recommended configuration.
+    Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
+    should reside in the same namespace as Enterprise Gateway.  This is not a recommended
+    configuration.
 
   EG_SSH_PORT=22
     The port number used for ssh operations for installations choosing to
     configure the ssh server on a port other than the default 22.
+
+  EG_UID_BLACKLIST=0
+    Containers only.  A comma-separated list of user ids (UID) whose values are not
+    allowed to be referenced by KERNEL_UID.  This defaults to the root user id (0).
+    Attempts to launch a kernel where KERNEL_UID's value is in this list will result
+    in an exception indicating error 403 (Forbidden).  See also EG_GID_BLACKLIST.
 ```
 The following environment variables may be useful for troubleshooting:
-```
+```text
   EG_DOCKER_LOG_LEVEL=WARNING
     By default, the docker client library is too verbose for its logging.  This
     value can be adjusted in situations where docker troubleshooting may be warranted.
 
   EG_KUBERNETES_LOG_LEVEL=WARNING
     By default, the kubernetes client library is too verbose for its logging.  This
-    value can be adjusted in situations where kubernetes troubleshooting may be warranted.
+    value can be adjusted in situations where kubernetes troubleshooting may be
+    warranted.
 
   EG_LOG_LEVEL=10
     Used by remote launchers and gateway listeners (where the kernel runs), this
@@ -390,7 +405,8 @@ The following environment variables may be useful for troubleshooting:
   EG_SOCKET_TIMEOUT=5.0 
     The time (in seconds) the enterprise gateway will wait on its connection
     file socket waiting on return from a remote kernel launcher.  Upon timeout, the 
-    operation will be retried immediately, until the overall time limit has been exceeded.   
+    operation will be retried immediately, until the overall time limit has been
+    exceeded.
 
   EG_SSH_LOG_LEVEL=WARNING
     By default, the paramiko ssh library is too verbose for its logging.  This
@@ -402,17 +418,19 @@ The following environment variables may be useful for troubleshooting:
 ```
 
 The following environment variables are managed by Enterprise Gateway and listed here for completeness.  Warning: Setting these variables manually could adversely affect operations.
-```
+```text
   EG_DOCKER_MODE
-    Docker only.  Used by launch_docker.py to determine if the kernel container should be created
-    using the swarm service API or the regular docker container API.  Enterprise Gateway sets this
-    value depending on whether the kernel is using the DockerSwarmProcessProxy or DockerProcessProxy.
+    Docker only.  Used by launch_docker.py to determine if the kernel container
+    should be created using the swarm service API or the regular docker container
+    API.  Enterprise Gateway sets this value depending on whether the kernel is
+    using the DockerSwarmProcessProxy or DockerProcessProxy.
 
   EG_RESPONSE_ADDRESS
-    This value is set during each kernel launch and resides in the environment of the kernel launch process.
-    Its value represents the address to which the remote kernel's connection information should be
-    sent.  Enterprise Gateway is listening on that socket and will close the socket once the remote
-    kernel launcher has conveyed the appropriate information.
+    This value is set during each kernel launch and resides in the environment of
+    the kernel launch process. Its value represents the address to which the remote
+    kernel's connection information should be sent.  Enterprise Gateway is listening
+    on that socket and will close the socket once the remote kernel launcher has
+    conveyed the appropriate information.
 ```
 
 ### Per-kernel Configuration Overrides
@@ -455,66 +473,98 @@ the `KG_ENV_WHITELIST` variable).  Locally defined variables listed in `KG_PROCE
 are also honored.
 
 The following kernel-specific environment variables are used by Enterprise Gateway.  As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's json body will be available to the kernel for its launch.
-```
+```text
+  KERNEL_GID=<from user> or 100
+    Containers only. This value represents the group id in which the container will run.
+    The default value is 100 representing the users group - which is how all kernel images
+    produced by Enterprise Gateway are built.  See also KERNEL_UID.
+    Kubernetes: Warning - If KERNEL_GID is set it is strongly recommened that feature-gate
+    RunAsGroup be enabled, otherwise, this value will be ignored and the pod will run as
+    the root group id.  As a result, the setting of this value into the Security Context
+    of the kernel pod is commented out in the kernel-pod.yaml file and must be enabled
+    by the administrator.
+    Docker: Warning - This value is only added to the supplemental group ids.  As a result,
+    if used with KERNEL_UID, the resulting container will run as the root group with this
+    value listed in its supplemental groups.
+
   KERNEL_EXECUTOR_IMAGE=<from kernel.json process-proxy stanza> or KERNEL_IMAGE
-    Kubernetees Spark only. This indicates the image that Spark on Kubernetes will use for the its
-    executors.  Although this value could come from the user, its strongly recommended that the
-    process-proxy stanza of the corresponding kernel's kernelspec (kernel.json) file be updated
-    to include the image name.  If no image name is provided, the value of KERNEL_IMAGE will be used.
+    Kubernetees Spark only. This indicates the image that Spark on Kubernetes will use
+    for the its executors.  Although this value could come from the user, its strongly
+    recommended that the process-proxy stanza of the corresponding kernel's kernelspec
+    (kernel.json) file be updated to include the image name.  If no image name is
+    provided, the value of KERNEL_IMAGE will be used.
 
   KERNEL_ID=<from user> or <system generated>
-    This value represents the identifier used by the Jupyter framework to identify the kernel.  Although
-    this value could be provided by the user, it is recommended that it be generated by the system.
+    This value represents the identifier used by the Jupyter framework to identify
+    the kernel.  Although this value could be provided by the user, it is recommended
+    that it be generated by the system.
 
   KERNEL_IMAGE=<from user> or <from kernel.json process-proxy stanza>
-    Containers only. This indicates the image to use for the kernel in containerized environments -
-    Kubernetes or Docker.  Although it can be provided by the user, it is strongly recommended that
-    the process-proxy stanza of the corresponding kernel's kernelspec (kernel.json) file be updated
-    to include the image name.
+    Containers only. This indicates the image to use for the kernel in containerized
+    environments - Kubernetes or Docker.  Although it can be provided by the user, it
+    is strongly recommended that the process-proxy stanza of the corresponding kernel's
+    kernelspec (kernel.json) file be updated to include the image name.
 
   KERNEL_LAUNCH_TIMEOUT=<from user> or EG_KERNEL_LAUNCH_TIMEOUT
-    Indicates the time (in seconds) to allow for a kernel's launch.  This value should be submitted
-    in the kernel startup if that particular kernel's startup time is expected to exceed that of
-    the EG_KERNEL_LAUNCH_TIMEOUT set when Enterprise Gateway starts.
+    Indicates the time (in seconds) to allow for a kernel's launch.  This value should
+    be submitted in the kernel startup if that particular kernel's startup time is
+    expected to exceed that of the EG_KERNEL_LAUNCH_TIMEOUT set when Enterprise
+    Gateway starts.
 
   KERNEL_NAMESPACE=<from user> or KERNEL_USERNAME-KERNEL_ID or EG_NAMESPACE
-    Kubernetes only.  This indicates the name of the namespace to use or create on Kubernetes in
-    which the kernel pod will be located.  For users wishing to use a pre-created namespace, this
-    value should be submitted in the kernel startup request.  In such cases, the user must also
-    provide KERNEL_SERVICE_ACCOUNT_NAME.  If not provided, Enterprise Gateway will create a new
-    namespace for the kernel whose value is derived from KERNEL_USERNAME and KERNEL_ID separated
-    by a hyphen ('-').  In rare cases where EG_SHARED_NAMESPACE is True, this value will be set
+    Kubernetes only.  This indicates the name of the namespace to use or create on
+    Kubernetes in which the kernel pod will be located.  For users wishing to use a
+    pre-created namespace, this value should be submitted in the kernel startup
+    request.  In such cases, the user must also provide KERNEL_SERVICE_ACCOUNT_NAME.
+    If not provided, Enterprise Gateway will create a new namespace for the kernel
+    whose value is derived from KERNEL_USERNAME and KERNEL_ID separated by a hyphen
+    ('-').  In rare cases where EG_SHARED_NAMESPACE is True, this value will be set
     to the value of EG_NAMESPACE.
 
-    Note that if the namespace is created by Enterprise Gateway, it will be removed upon the
-    kernel's termination.  Otherwise, the Enterprise Gateway will not remove the namespace.
+    Note that if the namespace is created by Enterprise Gateway, it will be removed
+    upon the kernel's termination.  Otherwise, the Enterprise Gateway will not
+    remove the namespace.
 
   KERNEL_SERVICE_ACCOUNT_NAME=<from user> or EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
-    Kubernetes only.  This value represents the name of the service account that Enterprise Gateway
-    should equate with the kernel pod.  If Enterprise Gateway creates the kernel's namespace, it
-    will be associated with the cluster role identified by EG_KERNEL_CLUSTER_ROLE.  If not provided,
-    it will be derived from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
+    Kubernetes only.  This value represents the name of the service account that
+    Enterprise Gateway should equate with the kernel pod.  If Enterprise Gateway
+    creates the kernel's namespace, it will be associated with the cluster role
+    identified by EG_KERNEL_CLUSTER_ROLE.  If not provided, it will be derived
+    from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
+
+  KERNEL_UID=<from user> or 1000
+    Containers only. This value represents the user id in which the container will run.
+    The default value is 1000 representing the jovyan user - which is how all kernel images
+    produced by Enterprise Gateway are built.  See also KERNEL_GID.
+    Kubernetes: Warning - If KERNEL_UID is set it is strongly recommened that feature-gate
+    RunAsGroup be enabled and KERNEL_GID also be set, otherwise, the pod will run as
+    the root group id. As a result, the setting of this value into the Security Context
+    of the kernel pod is commented out in the kernel-pod.yaml file and must be enabled
+    by the administrator.
 
   KERNEL_USERNAME=<from user> or <enterprise-gateway-user>
-    This value represents the logical name of the user submitted the request to start the kernel.
-    Of all the KERNEL_ variables, KERNEL_USERNAME is the one that should be submitted in the
-    request. In environments in which impersonation is used it represents the target of the
-    impersonation.
+    This value represents the logical name of the user submitted the request to
+    start the kernel. Of all the KERNEL_ variables, KERNEL_USERNAME is the one that
+    should be submitted in the request. In environments in which impersonation is
+    used it represents the target of the impersonation.
 ```
 
 The following kernel-specific environment variables are managed within Enterprise Gateway, but there's nothing preventing them from being set by the client.  As a result, caution should be used if setting these variables manually.
-```
+```text
   KERNEL_LANGUAGE=<from language entry of kernel.json>
-    This indicates the language of the kernel.  It comes from the language entry of the corresponding
-    kernel.json file.  This value is used within the start script of the kernel containers, in conjunction
-    with KERNEL_LAUNCHERS_DIR, in order to determine which launcher and kernel to start when the container
-    is started.
+    This indicates the language of the kernel.  It comes from the language entry
+    of the corresponding kernel.json file.  This value is used within the start
+    script of the kernel containers, in conjunction with KERNEL_LAUNCHERS_DIR, in
+    order to determine which launcher and kernel to start when the container is
+    started.
 
   KERNEL_LAUNCHERS_DIR=/usr/local/bin
-    Containers only.  This value is used within the start script of the kernel containers, in conjunction
-    with KERNEL_LANGUAGE, to determine where the appropriate kernel launcher is located.
+    Containers only.  This value is used within the start script of the kernel
+    containers, in conjunction with KERNEL_LANGUAGE, to determine where the
+    appropriate kernel launcher is located.
 
   KERNEL_SPARK_CONTEXT_INIT_MODE=<from argv stanza of kernel.json> or none
-    Spark containers only.  This variables exists to convey to the kernel container's launch script the
-    mode of Spark context intiatilization it should apply when starting the spark-based kernel container.
+    Spark containers only.  This variables exists to convey to the kernel container's
+    launch script the mode of Spark context intiatilization it should apply when
+    starting the spark-based kernel container.
 ```

@@ -16,6 +16,15 @@ urllib3.disable_warnings()
 
 local_ip = localinterfaces.public_ips()[0]
 
+default_kernel_uid = '1000'  # jovyan user is the default
+default_kernel_gid = '100'  # users group is the default
+
+# These could be enforced via a PodSecurityPolicy, but those affect
+# all pods so the cluster admin would need to configure those for
+# all applications.
+uid_blacklist = os.getenv("EG_UID_BLACKLIST", "0").split(',')
+gid_blacklist = os.getenv("EG_GID_BLACKLIST", "0").split(',')
+
 
 class ContainerProcessProxy(RemoteProcessProxy):
     """Kernel lifecycle management for container-based kernels."""
@@ -47,6 +56,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kwargs['env']['KERNEL_IMAGE'] = self.kernel_image
         kwargs['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
 
+        self._enforce_uid_gid_blacklists(**kwargs)
+
         super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.local_proc = launch_kernel(kernel_cmd, **kwargs)
@@ -59,6 +70,24 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.confirm_remote_startup()
 
         return self
+
+    def _enforce_uid_gid_blacklists(self, **kwargs):
+        """Determine UID and GID with which to launch container and ensure they do not appear in blacklist."""
+        kernel_uid = kwargs['env'].get('KERNEL_UID', default_kernel_uid)
+        kernel_gid = kwargs['env'].get('KERNEL_GID', default_kernel_gid)
+
+        if kernel_uid in uid_blacklist:
+            http_status_code = 403
+            error_message = "Kernel's UID value of '{}' has been denied via EG_UID_BLACKLIST!".format(kernel_uid)
+            self.log_and_raise(http_status_code=http_status_code, reason=error_message)
+        elif kernel_gid in gid_blacklist:
+            http_status_code = 403
+            error_message = "Kernel's GID value of '{}' has been denied via EG_GID_BLACKLIST!".format(kernel_gid)
+            self.log_and_raise(http_status_code=http_status_code, reason=error_message)
+
+        # Ensure the kernel's env has what it needs in case they came from defaults
+        kwargs['env']['KERNEL_UID'] = kernel_uid
+        kwargs['env']['KERNEL_GID'] = kernel_gid
 
     def poll(self):
         """Determines if container is still active.
