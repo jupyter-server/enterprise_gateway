@@ -175,7 +175,7 @@ validate_port_range <- function(port_range){
 parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
 parser$add_argument("--RemoteProcessProxy.kernel-id", required=TRUE,
        help="the id associated with the launched kernel")
-parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>', default='NA',
+parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
        help="the range of ports impose for kernel ports")
 parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar='<ip>:<port>',
       help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
@@ -188,7 +188,7 @@ argv <- parser$parse_args()
 
 #If port range argument is passed from kernel json with no value
 if (is.null(argv$RemoteProcessProxy.port_range)){
-    argv$RemoteProcessProxy.port_range = 'NA'
+    argv$RemoteProcessProxy.port_range <- NA
 }
 
 #  If there is a response address, use pull socket mode
