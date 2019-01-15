@@ -18,8 +18,9 @@ setup_args = dict(
     url='http://github.com/jupyter-incubator/enterprise_gateway',
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
-Jupyter Enterprise Gateway is a lightweight, multi-tenant, scalable and secure gateway that enables 
-Jupyter Notebooks to share resources across an Apache Spark cluster.
+A lightweight, multi-tenant, scalable and secure gateway that enables
+Jupyter Notebooks to share resources across distributed clusters such as
+Apache Spark, Kubernetes and others..
 ''',
     version=version_ns['__version__'],
     license='BSD',
