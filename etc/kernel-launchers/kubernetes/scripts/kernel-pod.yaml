@@ -19,6 +19,19 @@ metadata:
 spec:
   restartPolicy: Never
   serviceAccountName: ${kernel_service_account_name}
+  # Uncomment the following if you want to run the kernel pod as a different user and group
+  # NOTE: that using runAsGroup requires that feature-gate RunAsGroup be enabled.
+  # WARNING: Only using runAsUser w/o runAsGroup or NOT enabling the RunAsGroup feature-gate
+  # will result in the new kernel pod's effective group of 0 (root)! although the user will
+  # correspond to the runAsUser value.  As a result, BOTH should be uncommented AND the feature-gate
+  # should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
+  # that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
+  # ${kernel_uid} and ${kernel_gid} values.
+  #
+#  securityContext:
+#    runAsUser: ${kernel_uid}
+#    runAsGroup: ${kernel_gid}
+#    fsGroup: 100
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS

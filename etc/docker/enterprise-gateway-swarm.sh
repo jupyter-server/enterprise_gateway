@@ -16,7 +16,7 @@ MOUNT_KERNELSPECS=
 #MOUNT_KERNELSPECS="--mount type=bind,src=/usr/local/share/jupyter/kernels,dst=/usr/local/share/jupyter/kernels"
 
 # Create the overlay network
-docker network create --label app=enterprise-gateway -d overlay ${EG_DOCKER_NETWORK}
+docker network create --label app=enterprise-gateway -d overlay --attachable ${EG_DOCKER_NETWORK}
 
 # Notes (FIXMEs):
 # 1. We need to address the need to run as UID 0 (root).  This appears to be required inorder to create containers/services from within.

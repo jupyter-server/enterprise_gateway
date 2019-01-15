@@ -42,6 +42,9 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
     param_env.update(os.environ)
     param_env.pop('PATH')  # Let the image PATH be used.  Since this is relative to images, we're probably safe.
 
+    user = param_env.get('KERNEL_UID')
+    group = param_env.get('KERNEL_GID')
+
     client = DockerClient.from_env()
     if swarm_mode:
         networks = list()
@@ -58,7 +61,9 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
                                                container_labels=labels,
                                                labels=labels,
                                                #mounts=mounts,   # Enable if necessary
-                                               networks=networks)
+                                               networks=networks,
+                                               user=user,
+                                               groups=[group, '100'])
     else:
         volumes = {'/usr/local/share/jupyter/kernels': {'bind': '/usr/local/share/jupyter/kernels', 'mode': 'ro'}}
         kernel_container = client.containers.run(image_name,
@@ -69,7 +74,9 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
                                                  remove=remove_container,
                                                  network=docker_network,
                                                  #volumes=volumes,  # Enable if necessary
-                                                 detach=True)
+                                                 detach=True,
+                                                 user=user,
+                                                 group_add_list=[group, '100'])
 
 
 if __name__ == '__main__':

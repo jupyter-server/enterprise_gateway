@@ -24,7 +24,7 @@ class PythonKernelBaseTestCase(object):
 
         self.assertTrue(self.kernel.restart())
 
-        self.assertEquals(self.kernel.get_state(), "idle")
+        self.assertRegexpMatches(self.kernel.get_state(), '(idle|starting)')
 
         error_result = self.kernel.execute("y = x + 1")
         self.assertRegexpMatches(error_result, 'NameError')
