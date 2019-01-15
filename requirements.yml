@@ -20,7 +20,7 @@ dependencies:
 
   # Documentation Requirements
   - sphinx_rtd_theme
-  - sphinx=1.7.9
+  - sphinx=1.8.3
   - recommonmark
   # Test Requirements
   - nose
