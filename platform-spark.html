@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Jupyter Enterprise Gateway</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+
+    <!-- Custom Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
+
+    <!-- Plugin CSS -->
+    <link rel="stylesheet" href="css/animate.min.css" type="text/css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/main.css" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+
+<body id="page-top">
+  <nav id="mainNav" class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand page-scroll" href="/index.html">Jupyter Enterprise Gateway</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <nav class="navbar-collapse collapse" role="navigation">
+          <ul class="nav navbar-nav navbar-right">
+            
+            <li id="enterprise-gateway">
+              
+              <a href="#" data-toggle="dropdown" class="dropdown-toggle">Enterprise Gateway<b class="caret"></b></a>
+                <ul class="dropdown-menu dropdown-left">
+                
+                  
+                  <li><a href="/#about" target="_self">What is it?</a></li>
+                
+                  
+                  <li><a href="/#features" target="_self">Features</a></li>
+                
+                  
+                  <li><a href="/#platforms" target="_self">Supported Platforms</a></li>
+                
+                  
+                  <li><a href="/#contact" target="_self">Contact</a></li>
+                
+                </ul>
+              
+            </li>
+            
+            <li id="documentation">
+              
+                
+                <a href="https://jupyter-enterprise-gateway.readthedocs.io/en/latest/" target="_blank">Documentation</a>
+              
+            </li>
+            
+            <li id="github">
+              
+                
+                <a href="https://github.com/jupyter/enterprise_gateway" target="_blank">GitHub</a>
+              
+            </li>
+            
+          </ul>
+        </nav><!--/.navbar-collapse -->
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container-fluid -->
+</nav>
+
+
+  <div style="padding: 50px"></div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <p>The Big Data Analytics use cases require processing large data sets which are not containable by
+the resources available on a single machine.</p>
+
+<p>Jupyter Enterprise Gateway extends the Jupyter Notebook platform and enables Jupyter Notebook 
+kernels to run as Apache Spark applications in YARN cluster mode.</p>
+
+<p>By leveraging the functionality 
+of the underlying resource management applications like Hadoop YARN, etc., Jupyter Enterprise Gateway 
+distributes kernels across the compute cluster, dramatically increasing the number of simultaneously 
+active notebooks/kernels.</p>
+
+<p><br /></p>
+
+<h3 id="deployment">Deployment</h3>
+
+<p><br /></p>
+
+<p>Jupyter Enterprise Gateway can easily be incorporated into your Analytics Platform.</p>
+
+<p>If you are using a distribution like HDP, the gateway can be installed in an edge node 
+(optionally secured by Knox). Jupyter Notebooks can then connect via the gateway and
+have access to run the Notebook kernels in the Spark/YARN nodes. If you have Kerberos
+security enable on the cluster, then each notebook kernel will be running as the userid 
+from the users that requested the notebook kernel, thus leveraging all configured ACLs
+when accessing HDFS, and other secured resources.</p>
+
+<div align="center">
+  <img src="./img/platform-spark-hdp.png" height="50%" width="50%" />
+</div>
+
+<p>Note that the use of a distribution is not a requirement, and we also support running
+Jupyter Enterprise Gateway in a vanilla deployment of Spark and YARN.</p>
+
+<div align="center">
+  <img src="./img/platform-spark-yarn.png" height="50%" width="50%" />
+</div>
+
+<h4 id="deployment-scripts">Deployment Scripts</h4>
+
+<p><br /></p>
+
+<p>The Jupyter Enterprise Gateway development team uses some Ansible scripts for provisioning 
+test environments, these scripts might be useful for users trying to get started with the gateway.</p>
+
+<ul>
+  <li>Ansible Deployment scripts : <a href="https://github.com/lresende/ansible-spark-cluster">ansible-spark-cluster</a></li>
+</ul>
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery -->
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+
+<!-- Plugin JavaScript -->
+<script src="js/jquery.easing.min.js"></script>
+<script src="js/jquery.fittext.js"></script>
+<script src="js/wow.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="js/creative.js"></script>
+
+</body>
+
+</html>
