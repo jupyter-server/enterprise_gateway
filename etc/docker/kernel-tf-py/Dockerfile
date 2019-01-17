@@ -1,5 +1,5 @@
 # Ubuntu:xenial
-FROM tensorflow/tensorflow:1.11.0-py3
+FROM tensorflow/tensorflow:1.12.0-py3
 
 RUN pip install pycrypto
 
