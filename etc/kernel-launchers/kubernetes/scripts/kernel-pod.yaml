@@ -10,7 +10,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ${kernel_username}-${kernel_id}
+  name: ${kernel_pod_name}
   namespace: ${kernel_namespace}
   labels:
     kernel_id: ${kernel_id}

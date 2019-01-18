@@ -4,6 +4,7 @@
 
 import os
 import logging
+import re
 
 import urllib3
 from kubernetes import client, config
@@ -29,6 +30,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(KubernetesProcessProxy, self).__init__(kernel_manager, proxy_config)
 
+        self.kernel_pod_name = None
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
@@ -39,6 +41,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
         kwargs['env'] = dict(os.environ, **kwargs['env'])  # FIXME: Should probably use process-whitelist in JKG #280
+        self.kernel_pod_name = self._determine_kernel_pod_name(**kwargs)
         self.kernel_namespace = self._determine_kernel_namespace(**kwargs)  # will create namespace if not provided
 
         return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
@@ -122,6 +125,22 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                              "not been terminated.".format(self.kernel_namespace, self.container_name, self.kernel_id))
         return result
 
+    def _determine_kernel_pod_name(self, **kwargs):
+        pod_name = kwargs['env'].get('KERNEL_POD_NAME')
+        if pod_name is None:
+            pod_name = KernelSessionManager.get_kernel_username(**kwargs) + '-' + self.kernel_id
+
+        # Rewrite pod_name to be compatible with DNS name convention
+        # And put back into env since kernel needs this
+        pod_name = re.sub('[^0-9a-z]+', '-', pod_name.lower())
+        while pod_name.startswith('-'):
+            pod_name = pod_name[1:]
+        while pod_name.endswith('-'):
+            pod_name = pod_name[:-1]
+        kwargs['env']['KERNEL_POD_NAME'] = pod_name
+
+        return pod_name
+
     def _determine_kernel_namespace(self, **kwargs):
 
         # Since we need the service account name regardless of whether we're creating the namespace or not,
@@ -138,8 +157,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
                                  format(namespace))
             else:
-                namespace = self._create_kernel_namespace(KernelSessionManager.get_kernel_username(**kwargs),
-                                                          service_account_name)
+                namespace = self._create_kernel_namespace(service_account_name)
             kwargs['env']['KERNEL_NAMESPACE'] = namespace  # record in env since kernel needs this
         else:
             self.log.info("KERNEL_NAMESPACE provided by client: {}".format(namespace))
@@ -154,14 +172,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         kwargs['env']['KERNEL_SERVICE_ACCOUNT_NAME'] = service_account_name
         return service_account_name
 
-    def _create_kernel_namespace(self, kernel_username, service_account_name):
+    def _create_kernel_namespace(self, service_account_name):
         # Creates the namespace for the kernel based on the kernel username and kernel id.  Since we're creating
         # the namespace, we'll also note that it should be deleted as well.  In addition, the kernel pod may need
         # to list/create other pods (true for spark-on-k8s), so we'll also create a RoleBinding associated with
         # the namespace's default ServiceAccount.  Since this is always done when creating a namespace, we can
         # delete the RoleBinding when deleting the namespace (no need to record that via another member variable).
 
-        namespace = kernel_username + '-' + self.kernel_id
+        namespace = self.kernel_pod_name
 
         # create the namespace ...
         labels = {'app': 'enterprise-gateway', 'component': 'kernel', 'kernel_id': self.kernel_id}
