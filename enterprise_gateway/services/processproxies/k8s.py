@@ -161,7 +161,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # the namespace's default ServiceAccount.  Since this is always done when creating a namespace, we can
         # delete the RoleBinding when deleting the namespace (no need to record that via another member variable).
 
-        namespace = kernel_username + '-' + self.kernel_id
+        namespace = re.sub('[^0-9a-z]+', '-', kernel_username).lower() + '-' + self.kernel_id
 
         # create the namespace ...
         labels = {'app': 'enterprise-gateway', 'component': 'kernel', 'kernel_id': self.kernel_id}
