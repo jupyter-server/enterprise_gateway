@@ -1,16 +1,40 @@
-FROM elyra/spark-py:v2.4.0
+ARG HUB_ORG
+ARG TAG
 
-RUN apk del python3 && \
-    apk add --no-cache build-base libffi-dev openssl-dev python-dev python3-dev && \
-    pip3 install cffi ipykernel ipython jupyter_client pycrypto && \
-    pip install cffi ipykernel ipython jupyter_client pycrypto && \
-    rm -r /root/.cache
+# Ubuntu 18.04.1 LTS Bionic
+FROM $HUB_ORG/kernel-py:$TAG
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+ENV SPARK_VER 2.4.0
+ENV SPARK_HOME /opt/spark
+ENV KERNEL_LANGUAGE python
+ENV R_LIBS_USER $R_LIBS_USER:${SPARK_HOME}/R/lib
+ENV PATH $PATH:$SPARK_HOME/bin
 
-RUN adduser -S -u 1000 -G users jovyan && \
-    chown -R jovyan:users /usr/local/bin/kernel-launchers /opt/spark/work-dir
+USER root
+
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends \
+    openjdk-8-jdk \
+    less \
+    curl \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+# Download and install Spark
+RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
+    tar -xz -C /opt
+RUN ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME
+
+COPY entrypoint.sh /opt/
+RUN chmod a+x /opt/entrypoint.sh
+
+WORKDIR $SPARK_HOME/work-dir
+RUN chmod g+w $SPARK_HOME/work-dir
+
+ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 USER jovyan
 
-ENV KERNEL_LANGUAGE python
+
