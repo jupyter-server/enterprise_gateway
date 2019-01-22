@@ -3,6 +3,7 @@ This image enables the use of an IPython kernel launched from [Jupyter Enterpris
 # What it Gives You
 * IPython kernel support 
 * Spark on kubernetes support from within a Jupyter Notebook
+* [Data science libraries](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html#jupyter-scipy-notebook)
 
 # Basic Use
 Deploy [enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) per its instructions and configured to the appropriate environment.

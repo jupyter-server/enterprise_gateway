@@ -3,7 +3,7 @@ FROM tensorflow/tensorflow:1.12.0-gpu-py3
 
 RUN pip install pycrypto
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
 USER root
 

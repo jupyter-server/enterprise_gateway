@@ -1,26 +1,34 @@
-FROM elyra/spark-r:v2.4.0
+ARG HUB_ORG
+ARG TAG
 
-# Install items necessary for IRKernel and launcher to run.
-# First some python things...
-RUN apk add --no-cache build-base libzmq python-dev && \
-    python -m ensurepip && \
-    rm -r /usr/lib/python*/ensurepip && \
-    pip install --upgrade pip setuptools jupyter_client && \
-    rm -r /root/.cache
+FROM $HUB_ORG/kernel-r:$TAG
 
-# then some R things...
-RUN mkdir -p /usr/share/doc/R/html && \
-    Rscript --slave --no-save --no-restore-history \
-        -e "install.packages(pkgs=c('argparse','jsonlite','uuid','stringr','repr','IRkernel','IRdisplay', \
-                                    'evaluate', 'crayon', 'pbdZMQ', 'digest', 'base64enc','versions'), \
-                                    lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
-        -e "versions::install.versions('devtools', '1.13.6', lib='/usr/lib/R/library')"
+USER root
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+ENV SPARK_VER 2.4.0
+ENV SPARK_HOME /opt/spark
+ENV KERNEL_LANGUAGE=R
+ENV R_LIBS_USER $R_LIBS_USER:${R_HOME}/library:${SPARK_HOME}/R/lib
+ENV PATH $PATH:$SPARK_HOME/bin
 
-RUN adduser -S -u 1000 -G users jovyan && \
-    chown -R jovyan:users /usr/local/bin/kernel-launchers /opt/spark/work-dir
+RUN apt-get update && apt-get install -y \
+    openjdk-8-jdk \
+    libssl-dev
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+# Download and install Spark
+RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
+    tar -xz -C /opt
+RUN ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME
+
+COPY entrypoint.sh /opt/
+RUN chmod a+x /opt/entrypoint.sh
+
+WORKDIR $SPARK_HOME/work-dir
+RUN chmod g+w $SPARK_HOME/work-dir
+
+ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 USER jovyan
 
-ENV KERNEL_LANGUAGE=R R_LIBS_USER=${R_HOME}/library:${SPARK_HOME}/R/lib
