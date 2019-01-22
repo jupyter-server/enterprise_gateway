@@ -1,4 +1,4 @@
-FROM elyra/spark-py:v2.4.0
+FROM elyra/spark-py:v3.0.0.4c1cd80
 
 RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev curl krb5-dev
 

@@ -119,7 +119,8 @@ spec:
           # must be provided or one will be created for each kernel.
         - name: EG_SHARED_NAMESPACE
           value: "False"
-
+        - name: EG_POD_TEMPLATE_DIR
+          value: "/tmp"
         - name: EG_TUNNELING_ENABLED
           value: "False"
         - name: EG_CULL_IDLE_TIMEOUT

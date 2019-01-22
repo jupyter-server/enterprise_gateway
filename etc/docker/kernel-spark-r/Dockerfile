@@ -1,4 +1,4 @@
-FROM elyra/spark-r:v2.4.0
+FROM elyra/spark-r:v3.0.0.4c1cd80
 
 # Install items necessary for IRKernel and launcher to run.
 # First some python things...

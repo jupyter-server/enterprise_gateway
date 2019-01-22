@@ -9,10 +9,13 @@ import urllib3
 urllib3.disable_warnings()
 
 
-def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
+def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode, pod_template_file):
     # Launches a containerized kernel as a kubernetes pod.
 
-    config.load_incluster_config()
+    if os.getenv('KUBERNETES_SERVICE_HOST'):
+        config.load_incluster_config()
+    else:
+        config.load_kube_config()
 
     # Capture keywords and their values.
     keywords = dict()
@@ -64,19 +67,25 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     # https://github.com/kubernetes-client/python for API signatures.  Other examples can be found in
     # https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
     #
+    pod_template = None
     kernel_namespace = keywords['kernel_namespace']
     k8s_objs = yaml.load_all(k8s_yaml)
     for k8s_obj in k8s_objs:
         if k8s_obj.get('kind'):
             if k8s_obj['kind'] == 'Pod':
-                client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
+                pod_template = k8s_obj
+                if pod_template_file is None:
+                    client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'Secret':
-                client.CoreV1Api(client.ApiClient()).create_namespaced_secret(body=k8s_obj, namespace=kernel_namespace)
+                if pod_template_file is None:
+                    client.CoreV1Api(client.ApiClient()).create_namespaced_secret(body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'PersistentVolumeClaim':
-                client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(
-                    body=k8s_obj, namespace=kernel_namespace)
+                if pod_template_file is None:
+                    client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(
+                        body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'PersistentVolume':
-                client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
+                if pod_template_file is None:
+                    client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
             else:
                 sys.exit("ERROR - Unhandled Kubernetes object kind '{}' found in yaml file - kernel launch terminating!".
                       format(k8s_obj['kind']))
@@ -84,15 +93,15 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
             sys.exit("ERROR - Unknown Kubernetes object '{}' found in yaml file - kernel launch terminating!".
                       format(k8s_obj))
 
+    if pod_template_file:
+        # TODO - construct other --conf options for things like mounts, etc.
+        # write yaml to file...
+        stream = open(pod_template_file, 'w')
+        yaml.dump(pod_template, stream)
+        print("--conf spark.kubernetes.driver.podTemplateFile={pod_template_file} --conf spark.kubernetes.executor.podTemplateFile={pod_template_file}".format(pod_template_file=pod_template_file))
+
 
 if __name__ == '__main__':
-    """
-        Usage: launch_kubernetes_kernel 
-                    [--RemoteProcessProxy.kernel-id <kernel_id>]
-                    [--RemoteProcessProxy.response-address <response_addr>]
-                    [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
-    """
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
@@ -101,10 +110,13 @@ if __name__ == '__main__':
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
                         nargs='?', help='Indicates whether or how a spark context should be created',
                         default='none')
+    parser.add_argument('--pod-template', dest='pod_template_file', nargs='?',
+                        metavar='template filename', help='When present, yaml is written to file, no launch performed.')
 
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
     response_addr = arguments['response_address']
     spark_context_init_mode = arguments['spark_context_init_mode']
+    pod_template_file = arguments['pod_template_file']
 
-    launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode)
+    launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode, pod_template_file)

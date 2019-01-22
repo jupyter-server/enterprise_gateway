@@ -25,6 +25,12 @@ fi
 KERNEL_LAUNCHERS_DIR=${KERNEL_LAUNCHERS_DIR:-/usr/local/bin/kernel-launchers}
 PROG_HOME=${KERNEL_LAUNCHERS_DIR}/R
 
+EG_POD_TEMPLATE_DIR=${EG_POD_TEMPLATE_DIR:-/tmp}
+SCRIPTS_HOME="$(cd "`dirname "$0"`"/../scripts; pwd)"
+pod_template_file=${EG_POD_TEMPLATE_DIR}/kpt_${KERNEL_ID}
+additional_spark_opts=`python ${SCRIPTS_HOME}/launch_kubernetes.py --pod-template=${pod_template_file} $@`
+SPARK_OPTS="${SPARK_OPTS} ${additional_spark_opts}"
+
 set -x
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

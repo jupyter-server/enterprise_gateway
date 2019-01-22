@@ -1,4 +1,4 @@
-FROM elyra/spark:v2.4.0
+FROM elyra/spark:v3.0.0.4c1cd80
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
 

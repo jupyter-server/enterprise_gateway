@@ -51,6 +51,12 @@ if [ ! -f ${LAUNCHER_APP} ]; then
     exit 1
 fi
 
+EG_POD_TEMPLATE_DIR=${EG_POD_TEMPLATE_DIR:-/tmp}
+SCRIPTS_HOME="$(cd "`dirname "$0"`"/../scripts; pwd)"
+pod_template_file=${EG_POD_TEMPLATE_DIR}/kpt_${KERNEL_ID}
+additional_spark_opts=`python ${SCRIPTS_HOME}/launch_kubernetes.py --pod-template=${pod_template_file} $@`
+SPARK_OPTS="${SPARK_OPTS} ${additional_spark_opts}"
+
 set -x
 eval exec "${IMPERSONATION_OPTS}" \
      "${SPARK_HOME}/bin/spark-submit" \

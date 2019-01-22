@@ -52,6 +52,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@echo ../build/kernelspecs/spark_scala_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/scala/lib
 	# Container-based kernelspecs just get the container launchers
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
+	@echo ../build/kernelspecs/spark_{python,R,scala}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
