@@ -936,8 +936,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
-            self.response_socket.shutdown(SHUT_RDWR)
-            self.response_socket.close()
+            try:
+                self.response_socket.shutdown(SHUT_RDWR)
+                self.response_socket.close()
+            except OSError:
+                pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
