@@ -32,11 +32,8 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
     labels['component'] = 'kernel'
     labels['app'] = 'enterprise-gateway'
 
-    # Capture env parameters - including the parameters to the actual kernel launcher in the image...
+    # Capture env parameters...
     param_env = dict()
-    # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
-    # value since this is used to locate the kernel launch script within the image.
-    param_env['KERNEL_NAME'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     param_env['EG_RESPONSE_ADDRESS'] = response_addr
     param_env['KERNEL_SPARK_CONTEXT_INIT_MODE'] = spark_context_init_mode
 
