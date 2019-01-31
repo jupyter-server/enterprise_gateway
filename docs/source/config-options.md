@@ -494,6 +494,19 @@ The following kernel-specific environment variables are used by Enterprise Gatew
     (kernel.json) file be updated to include the image name.  If no image name is
     provided, the value of KERNEL_IMAGE will be used.
 
+  KERNEL_EXTRA_SPARK_OPTS=<from user>
+    Spark only. This variable allows users to add additional spark options to the 
+    current set of options specified in the corresponding kernel.json file.  This
+    variable is purely optional with no default value.  In addition, it is the
+    responsibility of the the user setting this value to ensure the options passed
+    are appropriate relative to the target environment.  Because this variable contains
+    space-separate values, it requires appropriate quotation.  For example, to use with
+    the elyra/nb2kg docker image, the environment variable would look something like
+    this:
+
+    docker run ... -e KERNEL_EXTRA_SPARK_OPTS=\"--conf spark.driver.memory=2g
+    --conf spark.executor.memory=2g\" ... elyra/nb2kg
+
   KERNEL_ID=<from user> or <system generated>
     This value represents the identifier used by the Jupyter framework to identify
     the kernel.  Although this value could be provided by the user, it is recommended

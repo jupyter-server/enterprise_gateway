@@ -7,7 +7,7 @@
     }
   },
   "env": {
-    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
     "__TOREE_OPTS__": "--alternate-sigint USR2 --spark-context-initialization-mode eager",
     "LAUNCH_OPTS": "",
     "DEFAULT_INTERPRETER": "Scala"

@@ -7,7 +7,7 @@
     }
   },
   "env": {
-    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
     "LAUNCH_OPTS": "--customAppName ${KERNEL_ID}"
   },
   "argv": [
