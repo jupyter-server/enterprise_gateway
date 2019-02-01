@@ -249,10 +249,10 @@ EnterpriseGatewayApp options
     Default: False
     Is YARN Kerberos/SPNEGO Security enabled (True/False).
     (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)
---EnterpriseGatewayApp.KernelSessionManager.enable_persistence=<Bool>
+--KernelSessionManager.enable_persistence=<Bool>
     Default: False
     Enable kernel session persistence (True or False).  
-    (EG_SESSION_PERSISTENCE env var)
+    (EG_KERNEL_SESSION_PERSISTENCE env var)
 
 NotebookHTTPPersonality options
 -------------------------------
