@@ -34,7 +34,7 @@ class KernelSessionManager(LoggingConfigurable):
     session_persistence_env = 'EG_KERNEL_SESSION_PERSISTENCE'
     session_persistence_default_value = False
     enable_persistence = Bool(session_persistence_default_value, config=True,
-                              help="""Enable kernel session persistence (True or False).  Default = False (EG_SESSION_PERSISTENCE env var)""")
+                              help="""Enable kernel session persistence (True or False).  Default = False (EG_KERNEL_SESSION_PERSISTENCE env var)""")
 
     @default('enable_persistence')
     def session_persistence_default(self):
