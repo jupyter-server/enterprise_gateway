@@ -8,9 +8,9 @@ import json
 import os
 import threading
 
-from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
+from ipython_genutils.py3compat import (unicode_to_str, str_to_unicode)
 from jupyter_core.paths import jupyter_data_dir
-from traitlets import Bool
+from traitlets import Bool, default
 from traitlets.config.configurable import LoggingConfigurable
 
 kernels_lock = threading.Lock()
@@ -22,16 +22,23 @@ class KernelSessionManager(LoggingConfigurable):
 
         KernelSessionManager provides the basis for an HA solution.  It loads the complete set of persisted kernel
         sessions during construction.  Following construction the parent object calls start_sessions to allow
-        Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive' 
-        are marked for deletion and the in-memory dictionary is updated - and the entire collection is written 
+        Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive'
+        are marked for deletion and the in-memory dictionary is updated - and the entire collection is written
         to store (file or database).
-        
+
         As kernels are created and destroyed, the KernelSessionManager is called upon to keep kernel session
         state consistent.
     """
 
-    enable_persistence = Bool(default_value=False, config=True,
-        help="""Enable kernel session persistence.  Default = False""")
+    # Session Persistence
+    session_persistence_env = 'EG_KERNEL_SESSION_PERSISTENCE'
+    session_persistence_default_value = False
+    enable_persistence = Bool(session_persistence_default_value, config=True,
+        help="""Enable kernel session persistence (True or False).  Default = False (EG_KERNEL_SESSION_PERSISTENCE env var)""")
+
+    @default('enable_persistence')
+    def session_persistence_default(self):
+        return bool(os.getenv(self.session_persistence_env, self.session_persistence_default_value).lower() == 'true')
 
     def __init__(self, kernel_manager, **kwargs):
         super(KernelSessionManager, self).__init__(**kwargs)
@@ -134,10 +141,10 @@ class KernelSessionManager(LoggingConfigurable):
         # else delete session
         kernel_id = kernel_session['kernel_id']
         kernel_started = self.kernel_manager.start_kernel_from_session(kernel_id=kernel_id,
-                                                                kernel_name=kernel_session['kernel_name'],
-                                                                connection_info=kernel_session['connection_info'],
-                                                                process_info=kernel_session['process_info'],
-                                                                launch_args=kernel_session['launch_args'])
+                                                                       kernel_name=kernel_session['kernel_name'],
+                                                                       connection_info=kernel_session['connection_info'],
+                                                                       process_info=kernel_session['process_info'],
+                                                                       launch_args=kernel_session['launch_args'])
         if not kernel_started:
             return False
 
@@ -181,7 +188,7 @@ class KernelSessionManager(LoggingConfigurable):
                 info = session['connection_info']
                 key = info.get('key')
                 if key:
-                    info['key'] = bytes_to_str(key)
+                    info['key'] = unicode_to_str(key)
 
         return sessions_copy
 
@@ -193,7 +200,7 @@ class KernelSessionManager(LoggingConfigurable):
                 info = session['connection_info']
                 key = info.get('key')
                 if key:
-                    info['key'] = str_to_bytes(key)
+                    info['key'] = str_to_unicode(key)
 
         return sessions_copy
 
