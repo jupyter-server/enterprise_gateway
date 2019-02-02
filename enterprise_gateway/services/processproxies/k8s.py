@@ -41,7 +41,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
         kwargs['env'] = dict(os.environ, **kwargs['env'])  # FIXME: Should probably use process-whitelist in JKG #280
-        self.kernel_pod_name = self._determine_POD_name(**kwargs)
+        self.kernel_pod_name = self._determine_pod_name(**kwargs)
         self.kernel_namespace = self._determine_kernel_namespace(**kwargs)  # will create namespace if not provided
 
         return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
@@ -126,13 +126,17 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return result
 
     def _determine_kernel_pod_name(self, **kwargs):
-       pod_name = kwargs['env'].get('KERNEL_POD_NAME')
+        pod_name = kwargs['env'].get('KERNEL_POD_NAME')
         if pod_name is None:
-            kernel_username = KernelSessionManager.get_kernel_username(**kwargs)
-            pod_name = re.sub('[^0-9a-z]+', '-', kernel_username.lower()) + '-' + self.kernel_id
-            while pod_name.startswith('-'):
-                pod_name = pod_name[1:]
-            kwargs['env']['KERNEL_POD_NAME'] = pod_name  # record in env since kernel needs this
+            pod_name = KernelSessionManager.get_kernel_username(**kwargs) + '-' + self.kernel_id
+
+        # Rewrite pod_name to be compatible with DNS name convention
+        # And put back into env since kernel needs this
+        pod_name = re.sub('[^0-9a-z]+', '-', pod_name.lower())
+        while pod_name.startswith('-'):
+            pod_name = pod_name[1:]
+        kwargs['env']['KERNEL_POD_NAME'] = pod_name
+
         return pod_name
 
     def _determine_kernel_namespace(self, **kwargs):
