@@ -38,7 +38,7 @@ class KernelSessionManager(LoggingConfigurable):
 
     @default('enable_persistence')
     def session_persistence_default(self):
-        return bool(os.getenv(self.session_persistence_env, self.session_persistence_default_value).lower() == 'true')
+        return bool(os.getenv(self.session_persistence_env, str(self.session_persistence_default_value)).lower() == 'true')
 
     def __init__(self, kernel_manager, **kwargs):
         super(KernelSessionManager, self).__init__(**kwargs)
