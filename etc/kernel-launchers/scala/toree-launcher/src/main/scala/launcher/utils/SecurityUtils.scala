@@ -12,11 +12,13 @@ import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
-object SecurityUtils {
+import org.apache.toree.utils.LogLike
+
+object SecurityUtils extends LogLike {
 
   def encrypt(profilePath: String, value: String): String = {
     if (profilePath.indexOf("kernel-") == -1) {
-      println("Invalid connection file name '%s', now exit.".format(profilePath)) // scalastyle:off
+      logger.error("Invalid connection file name '%s', now exit.".format(profilePath)) // scalastyle:off
       sys.exit(-1)
     }
 
@@ -28,8 +30,8 @@ object SecurityUtils {
     val key = tokens(1).substring(0, 16)
     val aesKey: Key = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES")
 
-    println("Raw Payload: '%s'".format(clearText))
-    // println("AES Key: '%s'".format(key))
+    logger.info("Raw Payload: '%s'".format(clearText))
+    // logger.info("AES Key: '%s'".format(key))
     cipher.init(Cipher.ENCRYPT_MODE, aesKey)
     Base64.getEncoder.encodeToString(cipher.doFinal(clearText.getBytes(StandardCharsets.UTF_8)))
   }
