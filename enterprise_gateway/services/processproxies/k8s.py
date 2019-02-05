@@ -135,6 +135,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         pod_name = re.sub('[^0-9a-z]+', '-', pod_name.lower())
         while pod_name.startswith('-'):
             pod_name = pod_name[1:]
+        while pod_name.endswith('-'):
+            pod_name = pod_name[:-1]
         kwargs['env']['KERNEL_POD_NAME'] = pod_name
 
         return pod_name
