@@ -25,6 +25,8 @@ default_kernel_gid = '100'  # users group is the default
 uid_blacklist = os.getenv("EG_UID_BLACKLIST", "0").split(',')
 gid_blacklist = os.getenv("EG_GID_BLACKLIST", "0").split(',')
 
+mirror_working_dirs = bool((os.getenv('EG_MIRROR_WORKING_DIRS', 'false').lower() == 'true'))
+
 
 class ContainerProcessProxy(RemoteProcessProxy):
     """Kernel lifecycle management for container-based kernels."""
@@ -55,6 +57,10 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         kwargs['env']['KERNEL_IMAGE'] = self.kernel_image
         kwargs['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
+
+        if not mirror_working_dirs:  # If mirroring is not enabled, remove working directory if present
+            if 'KERNEL_WORKING_DIR' in kwargs['env']:
+                del kwargs['env']['KERNEL_WORKING_DIR']
 
         self._enforce_uid_gid_blacklists(**kwargs)
 

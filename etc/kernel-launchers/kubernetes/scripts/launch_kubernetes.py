@@ -69,6 +69,11 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     for k8s_obj in k8s_objs:
         if k8s_obj.get('kind'):
             if k8s_obj['kind'] == 'Pod':
+                #print("{}".format(k8s_obj))  # useful for debug
+                # If workingDir is not in the yaml and kernel_working_dir exists, use that as the workingDir
+                if 'workingDir' not in k8s_obj['spec']['containers'][0] and 'kernel_working_dir' in keywords:
+                    k8s_obj['spec']['containers'][0]['workingDir'] = keywords['kernel_working_dir']
+
                 client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'Secret':
                 client.CoreV1Api(client.ApiClient()).create_namespaced_secret(body=k8s_obj, namespace=kernel_namespace)
