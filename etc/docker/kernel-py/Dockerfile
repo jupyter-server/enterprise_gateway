@@ -3,7 +3,15 @@ FROM jupyter/scipy-notebook
 
 ENV PATH=$PATH:$CONDA_DIR/bin
 
-RUN pip install cffi ipykernel ipython jupyter_client pycrypto
+RUN conda install --quiet --yes \
+    cffi \
+    ipykernel \
+    ipython \
+    jupyter_client \
+    pycrypto && \
+    conda clean -tipsy && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
