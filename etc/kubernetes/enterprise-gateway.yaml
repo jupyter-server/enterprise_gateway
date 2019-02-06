@@ -25,7 +25,7 @@ metadata:
     component: enterprise-gateway
 rules:
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "services", "configmaps", "secrets", "persistentvolumnes", "persistentvolumeclaims"]
+    resources: ["pods", "namespaces", "services", "configmaps", "secrets", "persistentvolumes", "persistentvolumeclaims"]
     verbs: ["get", "watch", "list", "create", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["rolebindings"]
@@ -120,16 +120,23 @@ spec:
         - name: EG_SHARED_NAMESPACE
           value: "False"
 
-        - name: EG_TUNNELING_ENABLED
+          # NOTE: This requires appropriate volume mounts to make notebook dir accessible
+        - name: EG_MIRROR_WORKING_DIRS
           value: "False"
+
+          # Current idle timeout is 1 hour.
         - name: EG_CULL_IDLE_TIMEOUT
-          value: "600"
+          value: "3600"
+
         - name: EG_LOG_LEVEL
           value: "DEBUG"
+
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
+
         - name: EG_KERNEL_WHITELIST
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
         # Use IfNotPresent policy so that dev-based systems don't automatically

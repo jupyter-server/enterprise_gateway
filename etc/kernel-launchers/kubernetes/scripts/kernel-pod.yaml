@@ -49,4 +49,4 @@ spec:
     - name: KERNEL_NAMESPACE
       value: ${kernel_namespace}
     image: ${kernel_image}
-    name: ${kernel_username}-${kernel_id}
+    name: ${kernel_pod_name}

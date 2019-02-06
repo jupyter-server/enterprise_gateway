@@ -45,6 +45,12 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
     user = param_env.get('KERNEL_UID')
     group = param_env.get('KERNEL_GID')
 
+    # setup common args
+    kwargs = dict()
+    kwargs['name'] = container_name
+    kwargs['user'] = user
+    kwargs['labels'] = labels
+
     client = DockerClient.from_env()
     if swarm_mode:
         networks = list()
@@ -53,30 +59,34 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
         mounts.append("/usr/local/share/jupyter/kernels:/usr/local/share/jupyter/kernels:ro")
         endpoint_spec = EndpointSpec(mode='dnsrr')
         restart_policy = RestartPolicy(condition='none')
-        kernel_service = client.services.create(image_name,
-                                               name=container_name,
-                                               endpoint_spec=endpoint_spec,
-                                               restart_policy=restart_policy,
-                                               env=param_env,
-                                               container_labels=labels,
-                                               labels=labels,
-                                               #mounts=mounts,   # Enable if necessary
-                                               networks=networks,
-                                               user=user,
-                                               groups=[group, '100'])
+
+        # finish args setup
+        kwargs['env'] = param_env
+        kwargs['endpoint_spec'] = endpoint_spec
+        kwargs['restart_policy'] = restart_policy
+        kwargs['container_labels'] = labels
+        kwargs['networks'] = networks
+        kwargs['groups'] = [group, '100']
+        if param_env.get('KERNEL_WORKING_DIR'):
+            kwargs['workdir'] = param_env.get('KERNEL_WORKING_DIR')
+        # kwargs['mounts'] = mounts   # Enable if necessary
+        # print("service args: {}".format(kwargs))  # useful for debug
+        kernel_service = client.services.create(image_name, **kwargs)
     else:
         volumes = {'/usr/local/share/jupyter/kernels': {'bind': '/usr/local/share/jupyter/kernels', 'mode': 'ro'}}
-        kernel_container = client.containers.run(image_name,
-                                                 name=container_name,
-                                                 hostname=container_name,
-                                                 environment=param_env,
-                                                 labels=labels,
-                                                 remove=remove_container,
-                                                 network=docker_network,
-                                                 #volumes=volumes,  # Enable if necessary
-                                                 detach=True,
-                                                 user=user,
-                                                 group_add_list=[group, '100'])
+
+        # finish args setup
+        kwargs['hostname'] = container_name
+        kwargs['environment'] = param_env
+        kwargs['remove'] = remove_container
+        kwargs['network'] = docker_network
+        kwargs['group_add_list'] = [group, '100']
+        kwargs['detach'] = True
+        if param_env.get('KERNEL_WORKING_DIR'):
+            kwargs['working_dir'] = param_env.get('KERNEL_WORKING_DIR')
+        # kwargs['volumes'] = volumes   # Enable if necessary
+        # print("container args: {}".format(kwargs))  # useful for debug
+        kernel_container = client.containers.run(image_name, **kwargs)
 
 
 if __name__ == '__main__':

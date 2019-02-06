@@ -9,6 +9,8 @@ export KG_PORT=${KG_PORT:-8888}
 export EG_DOCKER_NETWORK=${EG_DOCKER_NETWORK:-enterprise-gateway}
 export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','python_tf_docker','python_tf_gpu_docker','scala_docker']"}
 export EG_NAME=${EG_NAME:-enterprise-gateway}
+# NOTE: This requires appropriate volume mounts to make notebook dir accessible
+export EG_MIRROR_WORKING_DIRS=False
 
 # It's often helpful to mount the kernelspec files from the host into the container.  Since this is a swarm,
 # it is recommended that these be mounted on an NFS volume available to all nodes of the cluster.
@@ -28,10 +30,16 @@ docker network create --label app=enterprise-gateway -d overlay --attachable ${E
 docker service create \
 	--endpoint-mode dnsrr --network ${EG_DOCKER_NETWORK} \
 	--replicas 1 \
-	-l app=enterprise-gateway -l component=enterprise-gateway \
-	-e EG_DOCKER_NETWORK=${EG_DOCKER_NETWORK} -e EG_KERNEL_LAUNCH_TIMEOUT=60 -e EG_CULL_IDLE_TIMEOUT=180 -e EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST} -e KG_PORT=${KG_PORT} \
+	-l app=enterprise-gateway \
+	-l component=enterprise-gateway \
 	${MOUNT_KERNELSPECS} \
 	-u 0 --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
 	--publish published=${KG_PORT},target=${KG_PORT},mode=host \
+	-e EG_DOCKER_NETWORK=${EG_DOCKER_NETWORK} \
+	-e EG_KERNEL_LAUNCH_TIMEOUT=60 \
+	-e EG_CULL_IDLE_TIMEOUT=3600 \
+	-e EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST} \
+	-e EG_MIRROR_WORKING_DIRS=${EG_MIRROR_WORKING_DIRS} \
+	-e KG_PORT=${KG_PORT} \
 	--name ${EG_NAME} \
 	elyra/enterprise-gateway:VERSION --gateway

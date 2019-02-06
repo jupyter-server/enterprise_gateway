@@ -16,8 +16,8 @@ export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}
 
 export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
-export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-30}
-export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-True}
+export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-60}
+export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-False}
 export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker']"}
 
 

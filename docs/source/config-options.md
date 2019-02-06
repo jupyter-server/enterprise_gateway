@@ -327,9 +327,17 @@ JupyterWebsocketPersonality options
     The directory used during remote kernel launches of DistributedProcessProxy
     kernels.  Files in this directory will be of the form kernel-<kernel_id>.log.
 
+  EG_KERNEL_SESSION_PERSISTENCE=False
+    **Experimental** Enables kernel session persistence.  Currently, this is purely
+    experiemental and writes kernel session information to a local file.  Should
+    Enterprise Gateway terminate with running kernels, a subsequent restart of
+    Enterprise Gateway will attempt to reconnect to the persisted kernels.  See
+    also EG_KERNEL_SESSION_LOCATION and --KernelSessionManager.enable_persistence.
+
   EG_KERNEL_SESSION_LOCATION=<JupyterDataDir>
-    EXPERIMENTAL - The location in which the kernel session information is persisted.
-    By default, this is located in the configured JupyterDataDir.
+    **Experimental** The location in which the kernel session information is persisted.
+    By default, this is located in the configured JupyterDataDir.  See also
+    EG_KERNEL_SESSION_PERSISTENCE.
 
   EG_LOCAL_IP_BLACKLIST=''
     A comma-separated list of local IPv4 addresses (or regular expressions) that
@@ -350,7 +358,12 @@ JupyterWebsocketPersonality options
     (or EG_PORT_RANGE) is specified or is in use for the given kernel.  Port ranges
     reflecting smaller sizes will result in a failure to launch the corresponding
     kernel (since port-range can be specified within individual kernel specifications).
-      
+
+  EG_MIRROR_WORKING_DIRS=False
+    Containers only.  If True, kernel creation requests that specify KERNEL_WORKING_DIR
+    will set the kernel container's working directory to that value.  See also
+    KERNEL_WORKING_DIR.
+
   EG_NAMESPACE=enterprise-gateway or default
     Kubernetes only.  Used during Kubernetes deployment, this indicates the name of
     the namespace in which the Enterprise Gateway service is deployed.  The
@@ -528,19 +541,27 @@ The following kernel-specific environment variables are used by Enterprise Gatew
     expected to exceed that of the EG_KERNEL_LAUNCH_TIMEOUT set when Enterprise
     Gateway starts.
 
-  KERNEL_NAMESPACE=<from user> or KERNEL_USERNAME-KERNEL_ID or EG_NAMESPACE
+  KERNEL_NAMESPACE=<from user> or KERNEL_POD_NAME or EG_NAMESPACE
     Kubernetes only.  This indicates the name of the namespace to use or create on
     Kubernetes in which the kernel pod will be located.  For users wishing to use a
     pre-created namespace, this value should be submitted in the kernel startup
     request.  In such cases, the user must also provide KERNEL_SERVICE_ACCOUNT_NAME.
     If not provided, Enterprise Gateway will create a new namespace for the kernel
-    whose value is derived from KERNEL_USERNAME and KERNEL_ID separated by a hyphen
-    ('-').  In rare cases where EG_SHARED_NAMESPACE is True, this value will be set
-    to the value of EG_NAMESPACE.
+    whose value is derived from KERNEL_POD_NAME.  In rare cases where
+    EG_SHARED_NAMESPACE is True, this value will be set to the value of EG_NAMESPACE.
 
     Note that if the namespace is created by Enterprise Gateway, it will be removed
     upon the kernel's termination.  Otherwise, the Enterprise Gateway will not
     remove the namespace.
+
+  KERNEL_POD_NAME=<from user> or KERNEL_USERNAME-KERNEL_ID
+    Kubernetes only. By default, Enterprise Gateway will use a kernel pod name whose
+    value is derived from KERNEL_USERNAME and KERNEL_ID separated by a hyphen
+    ('-').  This variable is typically NOT provided by the user, but, in such
+    cases, Enterprise Gateway will honor that value.  However, when provided,
+    it is the user's responsibility that KERNEL_POD_NAME is unique relative to
+    any pods in the target namespace.  In addition, the pod must NOT exist -
+    unlike the case if KERNEL_NAMESPACE is provided.
 
   KERNEL_SERVICE_ACCOUNT_NAME=<from user> or EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
     Kubernetes only.  This value represents the name of the service account that
@@ -564,6 +585,18 @@ The following kernel-specific environment variables are used by Enterprise Gatew
     start the kernel. Of all the KERNEL_ variables, KERNEL_USERNAME is the one that
     should be submitted in the request. In environments in which impersonation is
     used it represents the target of the impersonation.
+
+  KERNEL_WORKING_DIR=<from user> or None
+    Containers only.  This value should model the directory in which the active
+    notebook file is running.  NB2KG versions >= 0.4.0 will automatically pass this
+    value.  It is intended to be used in conjunction with appropriate volume
+    mounts in the kernel container such that the user's notebook filesystem exists
+    in the container and enables the sharing of resources used within the notebook.
+    As a result, the primary use case for this is for Jupyter Hub users running in
+    Kubernetes.  When a value is provided and EG_MIRROR_WORKING_DIRS=True, Enterprise
+    Gateway will set the container's working directory to the value specified in
+    KERNEL_WORKING_DIR.  If EG_MIRROR_WORKING_DIRS is False, KERNEL_WORKING_DIR will
+    not be available for use during the kernel's launch.  See also EG_MIRROR_WORKING_DIRS.
 ```
 
 The following kernel-specific environment variables are managed within Enterprise Gateway, but there's nothing preventing them from being set by the client.  As a result, caution should be used if setting these variables manually.
