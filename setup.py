@@ -7,6 +7,12 @@ from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+v = sys.version_info
+if v[:2] < (3, 5):
+    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.5 or above."
+    print(error, file=sys.stderr)
+    sys.exit(1)
+
 version_ns = {}
 with open(os.path.join(here, 'enterprise_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
@@ -53,13 +59,13 @@ Apache Spark, Kubernetes and others..
         'traitlets>=4.2.0',
         'yarn-api-client>=0.3.0',
     ],
+    python_requires='>=3.5',
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3'
     ],
     include_package_data=True,
