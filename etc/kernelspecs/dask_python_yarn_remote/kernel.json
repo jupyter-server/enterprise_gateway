@@ -8,7 +8,7 @@
   },
   "env": {
     "DASK_YARN_EXE": "/home/testuser/miniconda/envs/dask-env/bin/dask-yarn",
-    "DASK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --environment python:///opt/anaconda2/bin/python --temporary-security-credentials --deploy-mode remote",
+    "DASK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --environment python:///opt/conda/bin/python --temporary-security-credentials --deploy-mode remote",
     "LAUNCH_OPTS": ""
   },
   "argv": [

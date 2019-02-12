@@ -9,7 +9,7 @@ ARG NB_GID="100"
 USER root
 
 ENV HADOOP_PREFIX=/usr/hdp/current/hadoop \
-    ANACONDA_HOME=/opt/anaconda2
+    ANACONDA_HOME=/opt/conda
 
 ENV SHELL=/bin/bash \
     NB_USER=$NB_USER \
@@ -92,7 +92,7 @@ RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER
 RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-${SPARK_VER}-bin-hadoop2.7 spark2-client
 
 # INSTALL MINI-CONDA AND PYTHON PACKAGES
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -f -b -p $ANACONDA_HOME && \
     rm ~/miniconda.sh && \
     conda clean -tipsy && \
@@ -110,7 +110,7 @@ RUN conda install --yes --quiet \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
-RUN Rscript -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/anaconda2/lib/R/library")' \
+RUN Rscript -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
             -e 'devtools::install_github("apache/spark@v2.4.0", subdir="R/pkg")' && \
     fix-permissions $ANACONDA_HOME && \
@@ -131,7 +131,7 @@ RUN ls -la /usr/hdp/current/hadoop/etc/hadoop/*-env.sh && \
 # Install Toree
 RUN cd /tmp && \
     curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.3.0-incubating/toree-pip/toree-0.3.0.tar.gz && \
-    pip install --upgrade setuptools --user python && \
+    pip install --upgrade setuptools --user && \
     pip install /tmp/toree-0.3.0.tar.gz && \
     jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark 2.4.0" --interpreters=Scala && \
     rm -f /tmp/toree-0.3.0.tar.gz && \

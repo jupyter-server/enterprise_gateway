@@ -159,20 +159,20 @@ but it failed with a "Kernel error" and a SSHException.**
 
     ```
     Traceback (most recent call last):
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1512, in _execute
+      File "/opt/conda/lib/python3.7/site-packages/tornado/web.py", line 1512, in _execute
         result = yield result
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+      File "/opt/conda/lib/python3.7/site-packages/tornado/gen.py", line 1055, in run
         value = future.result()
       ....
       ....
       ....
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/kernels/remotemanager.py", line 125, in _launch_kernel
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/kernels/remotemanager.py", line 125, in _launch_kernel
         return self.process_proxy.launch_process(kernel_cmd, **kw)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 63, in launch_process
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 63, in launch_process
         self.confirm_remote_startup(kernel_cmd, **kw)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 174, in confirm_remote_startup
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 174, in confirm_remote_startup
         ready_to_connect = self.receive_connection_info()
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 565, in receive_connection_info
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 565, in receive_connection_info
         raise e
     TypeError: Incorrect padding
     ```
@@ -199,17 +199,17 @@ but it failed with a "Kernel error" and a SSHException.**
 
     ```
     Traceback (most recent call last):
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1511, in _execute
+      File "/opt/conda/lib/python3.7/site-packages/tornado/web.py", line 1511, in _execute
         result = yield result
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+      File "/opt/conda/lib/python3.7/site-packages/tornado/gen.py", line 1055, in run
         value = future.result()
       ....
       ....
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 478, in __init__
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 478, in __init__
         super(RemoteProcessProxy, self).__init__(kernel_manager, proxy_config)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 87, in __init__
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 87, in __init__
         self._validate_port_range(proxy_config)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 407, in _validate_port_range
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 407, in _validate_port_range
         "port numbers is (1024, 65535).".format(self.lower_port))
     RuntimeError: Invalid port range '1000..2000' specified. Range for valid port numbers is (1024, 65535).
     ```

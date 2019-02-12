@@ -3,7 +3,7 @@
 * Hadoop 2.7.7 
 * Apache Spark 2.4.0
 * Java 1.8 runtime
-* Mini-conda 4.5.11 (python 2.7.15) with R packages
+* Mini-conda latest (python 3.7) with R packages
 * Toree 0.3.0-incubating
 * `jovyan` service user, with system users `elyra`, `bob`, and `alice`.  The jovyan uid is `1000` to match other jupyter
  images.
