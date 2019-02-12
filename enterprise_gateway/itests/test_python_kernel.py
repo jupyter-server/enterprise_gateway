@@ -107,7 +107,7 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_LOCAL_NAME", "python2")  # python_kubernetes for k8s
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_LOCAL_NAME", "python3")
 
     @classmethod
     def setUpClass(cls):

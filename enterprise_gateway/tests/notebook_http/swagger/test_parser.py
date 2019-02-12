@@ -3,7 +3,6 @@
 """Tests for notebook cell parsing."""
 
 import unittest
-import sys
 from kernel_gateway.notebook_http.swagger.parser import SwaggerCellParser
 
 
@@ -153,51 +152,48 @@ class TestSwaggerAPICellParser(unittest.TestCase):
                          '# ResponseInfo operationId: get\n')
 
     def test_undeclared_operations(self):
-        if sys.version_info[:2] >= (3, 4):
-            """Parser should warn about operations that aren't documented in the
-            swagger cell
-            """
-            source_cells = [
-                {"source": '```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'}, # noqa
-                {"source": '# operationId: get'},
-                {"source": '# operationId: postbar '},
-                {"source": '# operationId: putbar'},
-                {"source": '# operationId: extraOperation'},
-            ]
-            with self.assertLogs(level='WARNING') as warnings:
-                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
-                for output in warnings.output:
-                    self.assertRegex(output, 'extraOperation')
+        """Parser should warn about operations that aren't documented in the
+        swagger cell
+        """
+        source_cells = [
+            {"source":'```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},# noqa
+            {"source": '# operationId: get'},
+            {"source": '# operationId: postbar '},
+            {"source": '# operationId: putbar'},
+            {"source": '# operationId: extraOperation'},
+        ]
+        with self.assertLogs(level='WARNING') as warnings:
+            SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
+            for output in warnings.output:
+                self.assertRegex(output, 'extraOperation')
 
     def test_undeclared_operations_reversed(self):
-        if sys.version_info[:2] >= (3, 4):
-            """Parser should warn about operations that aren't documented in the
-            swagger cell
-            """
-            source_cells = [
-                {"source": '# operationId: get'},
-                {"source": '# operationId: postbar '},
-                {"source": '# operationId: putbar'},
-                {"source": '# operationId: extraOperation'},
-                {"source": '```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'}, # noqa
-            ]
-            with self.assertLogs(level='WARNING') as warnings:
-                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
-                for output in warnings.output:
-                    self.assertRegex(output, 'extraOperation')
+        """Parser should warn about operations that aren't documented in the
+        swagger cell
+        """
+        source_cells = [
+            {"source": '# operationId: get'},
+            {"source": '# operationId: postbar '},
+            {"source": '# operationId: putbar'},
+            {"source": '# operationId: extraOperation'},
+            {"source":'```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},# noqa
+        ]
+        with self.assertLogs(level='WARNING') as warnings:
+            SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
+            for output in warnings.output:
+                self.assertRegex(output, 'extraOperation')
 
     def test_unreferenced_operations(self):
-        if sys.version_info[:2] >= (3, 4):
-            """Parser should warn about documented operations that aren't referenced
-            in a cell
-            """
-            source_cells = [
-                {"source": '```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'}, # noqa
-                {"source": '# operationId: get'},
-                {"source": '# operationId: putbar'},
-                {"source": '# operationId: putbar '}
-            ]
-            with self.assertLogs(level='WARNING') as warnings:
-                SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
-                for output in warnings.output:
-                    self.assertRegex(output, 'postbar')
+        """Parser should warn about documented operations that aren't referenced
+        in a cell
+        """
+        source_cells = [
+            {"source": '```\n{"swagger":"2.0", "paths": {"/foo": {"put": {"operationId":"putbar","parameters": [{"name": "bar"}]},"post":{"operationId":"postbar"},"get": {"operationId":"get","parameters": [{"name": "bar"}]}}}}\n```\n'},# noqa
+            {"source": '# operationId: get'},
+            {"source": '# operationId: putbar'},
+            {"source": '# operationId: putbar '}
+        ]
+        with self.assertLogs(level='WARNING') as warnings:
+            SwaggerCellParser(comment_prefix='#', notebook_cells=source_cells)
+            for output in warnings.output:
+                self.assertRegex(output, 'postbar')

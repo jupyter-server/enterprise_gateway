@@ -8,7 +8,7 @@
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.sparkr.r.command=/opt/anaconda2/lib/R/bin/Rscript ${KERNEL_EXTRA_SPARK_OPTS}",
+    "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.sparkr.r.command=/opt/conda/lib/R/bin/Rscript ${KERNEL_EXTRA_SPARK_OPTS}",
     "LAUNCH_OPTS": ""
   },
   "argv": [
