@@ -8,17 +8,19 @@ package launcher.utils
 import java.io.PrintStream
 import java.net.{InetAddress, ServerSocket, Socket}
 
+import org.apache.toree.utils.LogLike
+
 import scala.util.Random
 
 
-object SocketUtils {
+object SocketUtils extends LogLike {
 
   val random: Random = new Random (System.currentTimeMillis)
 
   def writeToSocket(socketAddress : String, content : String): Unit = {
     val ipPort = socketAddress.split(":")
     if (ipPort.length == 2) {
-      println("Sending connection info to gateway at %s\n%s".format(socketAddress, content)) // scalastyle:off
+      logger.info("Sending connection info to gateway at %s\n%s".format(socketAddress, content)) // scalastyle:off
       val ip = ipPort(0)
       val port = ipPort(1).toInt
       val s = new Socket(InetAddress.getByName(ip), port)
@@ -30,7 +32,7 @@ object SocketUtils {
         s.close()
       }
     } else {
-      println("Invalid format for response address '%s'!".format(socketAddress)) // scalastyle:off
+      logger.error("Invalid format for response address '%s'!".format(socketAddress)) // scalastyle:off
     }
   }
 
@@ -38,11 +40,12 @@ object SocketUtils {
 
     val socket = findSocket(portLowerBound, portUpperBound)
     val port = socket.getLocalPort
-    println("port %s is available".format(port)) // scalastyle:off
+    logger.info("port %s is available".format(port)) // scalastyle:off
 
     // now Close the socket/port
     socket.close()
-    println("Port %s closed...".format(port)) // scalastyle:off
+
+    logger.info("Port %s closed...".format(port)) // scalastyle:off
 
     port
   }
@@ -58,14 +61,14 @@ object SocketUtils {
 
       // try candidatePort - only display 'Trying...' if in range
       if ( candidatePort > 0 )
-        println("Trying port %s ...".format(candidatePort)) // scalastyle:off
+        logger.info("Trying port %s ...".format(candidatePort)) // scalastyle:off
 
       try {
         socket = new ServerSocket(candidatePort)
         // return the socket to be used
         foundAvailable = true
       } catch {
-        case _ : Throwable => println("port %s is in use".format(candidatePort)) // scalastyle:off
+        case _ : Throwable => logger.info("port %s is in use".format(candidatePort)) // scalastyle:off
         socket = null
       }
     }

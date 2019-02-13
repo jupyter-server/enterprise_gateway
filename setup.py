@@ -38,20 +38,20 @@ Apache Spark, Kubernetes and others..
         'scripts/jupyter-enterprisegateway'
     ],
     install_requires=[
-        'jupyter_core>=4.4.0',
+        'docker>=3.5.0'
         'jupyter_client>=5.2.0',
-        'notebook>=5.3.0,<6.0',
+        'jupyter_core>=4.4.0',
         'jupyter_kernel_gateway>=2.1.0',
-        'traitlets>=4.2.0',
-        'tornado>=4.2.0',
-        'requests>=2.7,<3.0',
+        'kubernetes>=4.0.0',
+        'notebook>=5.3.0,<6.0',
         'paramiko>=2.1.2',
-        'yarn-api-client>=0.3.0',
         'pexpect>=4.2.0',
         'pycrypto>=2.6.1',
         'pyzmq>=17.0.0',
-        'kubernetes>=4.0.0',
-        'docker>=3.5.0'
+        'requests>=2.7,<3.0',
+        'tornado>=4.2.0',
+        'traitlets>=4.2.0',
+        'yarn-api-client>=0.3.0',
     ],
     classifiers=[
         'Intended Audience :: Developers',
