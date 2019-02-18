@@ -1,12 +1,17 @@
 import unittest
 import os
+from .test_base import TestBase
 from enterprise_gateway.client.gateway_client import GatewayClient
 
 
-class PythonKernelBaseTestCase(object):
+class PythonKernelBaseTestCase(TestBase):
     """
     Python related test cases common to vanilla IPython kernels
     """
+
+    def test_get_hostname(self):
+        result = self.kernel.execute("import subprocess; subprocess.check_output(['hostname'])")
+        self.assertRegexpMatches(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute("print('Hello World')")
@@ -65,30 +70,26 @@ class PythonKernelBaseTestCase(object):
         self.assertEquals(interrupted_value, 124)
 
 
-class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
+class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     """
     Python related tests cases common to Spark on Yarn
     """
 
     def test_get_application_id(self):
         result = self.kernel.execute("sc.getConf().get('spark.app.id')")
-        self.assertRegexpMatches(result, 'application_*')
+        self.assertRegexpMatches(result, self.get_expected_application_id())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
-        self.assertRegexpMatches(result, '(cluster|client)')
-
-    def test_get_hostname(self):
-        result = self.kernel.execute("import subprocess; subprocess.check_output(['hostname'])")
-        self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
+        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute("sc.getConf().get('spark.master')")
-        self.assertRegexpMatches(result, 'yarn.*')
+        self.assertRegexpMatches(result, self.get_expected_spark_master())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, '2.4.*')
+        self.assertRegexpMatches(result, self.get_expected_spark_version())
 
     def test_run_pi_example(self):
         # Build the example code...
@@ -106,8 +107,9 @@ class PythonKernelBaseYarnTestCase(PythonKernelBaseTestCase):
         result = self.kernel.execute(pi_code)
         self.assertRegexpMatches(result, 'Pi is roughly 3.14*')
 
+
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_LOCAL_NAME", "python2")
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_LOCAL_NAME", "python2")  # python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -129,7 +131,7 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
 
 
 class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_DISTRIBUTED_NAME", "python_distributed")
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_DISTRIBUTED_NAME", "python_distributed")  # python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -149,8 +151,9 @@ class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
-class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")
+
+class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")  # spark_python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -162,7 +165,6 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
         cls.gatewayClient = GatewayClient()
         cls.kernel = cls.gatewayClient.start_kernel(cls.KERNELSPEC)
 
-
     @classmethod
     def tearDownClass(cls):
         super(TestPythonKernelClient, cls).tearDownClass()
@@ -172,8 +174,8 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseYarnTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLUSTER_NAME", "spark_python_yarn_cluster")
+class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLUSTER_NAME", "spark_python_yarn_cluster")  # spark_python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):

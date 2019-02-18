@@ -1,12 +1,19 @@
 import unittest
 import os
+from .test_base import TestBase
 from enterprise_gateway.client.gateway_client import GatewayClient
 
 
-class ScalaKernelBaseTestCase(object):
+class ScalaKernelBaseTestCase(TestBase):
     """
     Scala related test cases common to vanilla Scala kernels
     """
+
+    def test_get_hostname(self):
+        result = self.kernel.execute('import java.net._; \
+                                      val localhost: InetAddress = InetAddress.getLocalHost; \
+                                      val localIpAddress: String = localhost.getHostName')
+        self.assertRegexpMatches(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute('println("Hello World")')
@@ -23,6 +30,8 @@ class ScalaKernelBaseTestCase(object):
         self.assertEquals(original_value, 123)
 
         self.assertTrue(self.kernel.restart())
+
+        self.assertRegexpMatches(self.kernel.get_state(), '(idle|starting)')
 
         error_result = self.kernel.execute("var y = x + 1")
         self.assertRegexpMatches(error_result, 'Compile Error')
@@ -62,36 +71,30 @@ class ScalaKernelBaseTestCase(object):
         self.assertEquals(interrupted_value, 124)
 
 
-class ScalaKernelBaseYarnTestCase(ScalaKernelBaseTestCase):
+class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
     """
-    Scala related tests cases common to Spark on Yarn
+    Scala related tests cases common to Spark (with Yarn the default RM)
     """
 
     def test_get_application_id(self):
         result = self.kernel.execute('sc.applicationId')
-        self.assertRegexpMatches(result, 'application_')
+        self.assertRegexpMatches(result, self.get_expected_application_id())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, '2.4')
+        self.assertRegexpMatches(result, self.get_expected_spark_version())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('sc.getConf.get("spark.master")')
-        self.assertRegexpMatches(result, 'yarn')
+        self.assertRegexpMatches(result, self.get_expected_spark_master())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('sc.getConf.get("spark.submit.deployMode")')
-        self.assertRegexpMatches(result, '(cluster|client)')
-
-    def test_get_hostname(self):
-        result = self.kernel.execute('import java.net._; \
-                                      val localhost: InetAddress = InetAddress.getLocalHost; \
-                                      val localIpAddress: String = localhost.getHostName')
-        self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
+        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.4.0_scala")
+    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.4.0_scala")  # scala_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -111,9 +114,8 @@ class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-
-class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_CLIENT_NAME", "spark_scala_yarn_client")
+class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("SCALA_KERNEL_CLIENT_NAME", "spark_scala_yarn_client")  # spark_scala_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -133,8 +135,8 @@ class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseYarnTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_CLUSTER_NAME", "spark_scala_yarn_cluster")
+class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("SCALA_KERNEL_CLUSTER_NAME", "spark_scala_yarn_cluster")  # spark_scala_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):

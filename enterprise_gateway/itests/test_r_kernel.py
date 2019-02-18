@@ -1,12 +1,17 @@
 import unittest
 import os
+from .test_base import TestBase
 from enterprise_gateway.client.gateway_client import GatewayClient
 
 
-class RKernelBaseTestCase(object):
+class RKernelBaseTestCase(TestBase):
     """
     R related test cases common to vanilla IRKernel kernels
     """
+
+    def test_get_hostname(self):
+        result = self.kernel.execute('system("hostname", intern=TRUE)')
+        self.assertRegexpMatches(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute('print("Hello World", quote = FALSE)')
@@ -23,6 +28,8 @@ class RKernelBaseTestCase(object):
         self.assertEquals(original_value, 123)
 
         self.assertTrue(self.kernel.restart())
+
+        self.assertRegexpMatches(self.kernel.get_state(), '(idle|starting)')
 
         error_result = self.kernel.execute("y = x + 1")
         self.assertRegexpMatches(error_result, 'Error in eval')
@@ -62,34 +69,30 @@ class RKernelBaseTestCase(object):
         self.assertEquals(interrupted_value, 124)
 
 
-class RKernelBaseYarnTestCase(RKernelBaseTestCase):
+class RKernelBaseSparkTestCase(RKernelBaseTestCase):
     """
     R related tests cases common to Spark on Yarn
     """
 
     def test_get_application_id(self):
         result = self.kernel.execute('SparkR:::callJMethod(SparkR:::callJMethod(sc, "sc"), "applicationId")')
-        self.assertRegexpMatches(result, 'application_')
+        self.assertRegexpMatches(result, self.get_expected_application_id())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sparkR.version()")
-        self.assertRegexpMatches(result, '2.4')
+        self.assertRegexpMatches(result, self.get_expected_spark_version())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
-        self.assertRegexpMatches(result, 'yarn')
+        self.assertRegexpMatches(result, self.get_expected_spark_master())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.submit.deployMode"))')
-        self.assertRegexpMatches(result, '(cluster|client)')
-
-    def test_get_hostname(self):
-        result = self.kernel.execute('system("hostname", intern=TRUE)')
-        self.assertRegexpMatches(result, os.environ['ITEST_HOSTNAME_PREFIX'] + "*")
+        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
 
 
 class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
-    KERNELSPEC = os.getenv("R_KERNEL_LOCAL_NAME", "ir")
+    KERNELSPEC = os.getenv("R_KERNEL_LOCAL_NAME", "ir")  # R_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -109,8 +112,8 @@ class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-class TestRKernelClient(unittest.TestCase, RKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("R_KERNEL_CLIENT_NAME", "spark_R_yarn_client")
+class TestRKernelClient(unittest.TestCase, RKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("R_KERNEL_CLIENT_NAME", "spark_R_yarn_client")  # spark_R_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
@@ -130,8 +133,8 @@ class TestRKernelClient(unittest.TestCase, RKernelBaseYarnTestCase):
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-class TestRKernelCluster(unittest.TestCase, RKernelBaseYarnTestCase):
-    KERNELSPEC = os.getenv("R_KERNEL_CLUSTER_NAME", "spark_R_yarn_cluster")
+class TestRKernelCluster(unittest.TestCase, RKernelBaseSparkTestCase):
+    KERNELSPEC = os.getenv("R_KERNEL_CLUSTER_NAME", "spark_R_yarn_cluster")  # spark_R_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
