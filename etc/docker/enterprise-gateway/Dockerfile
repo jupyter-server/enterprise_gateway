@@ -1,6 +1,6 @@
 FROM elyra/spark-py:v2.4.0
 
-RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev curl krb5-dev
+RUN apk add --no-cache build-base libffi-dev openssl-dev python-dev curl krb5-dev linux-headers zeromq-dev
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp
