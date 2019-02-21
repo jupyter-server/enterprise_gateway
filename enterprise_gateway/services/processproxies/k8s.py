@@ -79,13 +79,13 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     def terminate_container_resources(self):
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
-        # or pod associated with the kernel.  If we created the namespace, then that's our target,
-        # else just delete the pod.
+        # or pod associated with the kernel.  If we created the namespace and we're not in the
+        # the process of restarting the kernel, then that's our target, else just delete the pod.
 
         result = False
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
 
-        if self.delete_kernel_namespace:
+        if self.delete_kernel_namespace and not self.kernel_manager.restarting:
             object_name = 'namespace'
         else:
             object_name = 'pod'
@@ -93,11 +93,11 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Delete the namespace or pod...
         try:
             # What gets returned from this call is a 'V1Status'.  It looks a bit like JSON but appears to be
-            # intentionally obsfucated.  Attempts to load the status field fail due to malformed json.  As a
+            # intentionally obfuscated.  Attempts to load the status field fail due to malformed json.  As a
             # result, we'll see if the status field contains either 'Succeeded' or 'Failed' - since that should
             # indicate the phase value.
 
-            if self.delete_kernel_namespace:
+            if self.delete_kernel_namespace and not self.kernel_manager.restarting:
                 v1_status = client.CoreV1Api().delete_namespace(name=self.kernel_namespace, body=body)
             else:
                 v1_status = client.CoreV1Api().delete_namespaced_pod(namespace=self.kernel_namespace,
@@ -197,15 +197,19 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             # creating a role each time.
             self._create_role_binding(namespace, service_account_name)
         except Exception as err:
-            if self.delete_kernel_namespace:
-                reason = "Error occurred creating role binding for namespace '{}': {}".format(namespace, err)
-                # delete the namespace since we'll be using the EG namespace...
-                body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
-                client.CoreV1Api().delete_namespace(name=namespace, body=body)
-                self.log.warning("Deleted kernel namespace: {}".format(namespace))
+            if isinstance(err, client.rest.ApiException) and err.status == 409 and self.kernel_manager.restarting:
+                self.delete_kernel_namespace = True  # okay if ns already exists and restarting, still mark for delete
+                self.log.info("Re-using kernel namespace: {}".format(namespace))
             else:
-                reason = "Error occurred creating namespace '{}': {}".format(namespace, err)
-            self.log_and_raise(http_status_code=500, reason=reason)
+                if self.delete_kernel_namespace:
+                    reason = "Error occurred creating role binding for namespace '{}': {}".format(namespace, err)
+                    # delete the namespace since we'll be using the EG namespace...
+                    body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
+                    client.CoreV1Api().delete_namespace(name=namespace, body=body)
+                    self.log.warning("Deleted kernel namespace: {}".format(namespace))
+                else:
+                    reason = "Error occurred creating namespace '{}': {}".format(namespace, err)
+                self.log_and_raise(http_status_code=500, reason=reason)
 
         return namespace
 
