@@ -90,7 +90,7 @@ object ToreeLauncher extends LogLike {
           i += 1
           profilePath = args(i).trim
           toreeArgs += arg
-          toreeArgs += profilePath  // This will be replaced in determineConnectionFile()
+          toreeArgs += profilePath
 
         // Alternate sigint is a straight pass-thru to toree
         case "--alternate-sigint" =>
@@ -187,10 +187,6 @@ object ToreeLauncher extends LogLike {
       logger.error("At least one of '--profile' or '--RemoteProcessProxy.kernel_id' " +
         "must be provided - exiting!")
       sys.exit(-1)
-    }
-    if (kernelId == null){
-      logger.warn("Parameter 'connection_file' is deprecated.  " +
-        "Update kernel.json file to use '--RemoteProcessProxy.kernel-id {kernel_id}'")
     }
 
     if (!pathExists(profilePath)) {
