@@ -173,7 +173,8 @@ validate_port_range <- function(port_range){
 
 # Check arguments
 parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
-parser$add_argument("--RemoteProcessProxy.kernel-id", required=TRUE,
+parser$add_argument("connection_file", nargs='?', help='Connection file to write connection info')
+parser$add_argument("--RemoteProcessProxy.kernel-id", nargs='?',
        help="the id associated with the launched kernel")
 parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
        help="the range of ports impose for kernel ports")
@@ -186,56 +187,66 @@ parser$add_argument("--customAppName", nargs='?', default="SparkR",
 
 argv <- parser$parse_args()
 
-#If port range argument is passed from kernel json with no value
-if (is.null(argv$RemoteProcessProxy.port_range)){
-    argv$RemoteProcessProxy.port_range <- NA
+if (is.null(argv$connection_file) && is.null(argv$RemoteProcessProxy.kernel_id)){
+    message("At least one of the parameters: 'connection_file' or '--RemoteProcessProxy.kernel-id' must be provided!")
+    return(NA)
 }
 
-#  If there is a response address, use pull socket mode
-connection_file <- determine_connection_file(argv$RemoteProcessProxy.kernel_id)
+# if we have a response address, then deal with items relative to remote support (ports, gateway-socket, etc.)
+if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$RemoteProcessProxy.response_address) > 0){
 
-# if port-range was provided, validate the range and determine bounds
-lower_port = 0
-upper_port = 0
-if (!is.na(argv$RemoteProcessProxy.port_range)){
-    range <- validate_port_range(argv$RemoteProcessProxy.port_range)
-    if (length(range) > 1){
-        lower_port = range$lower_port
-        upper_port = range$upper_port
+    #If port range argument is passed from kernel json with no value
+    if (is.null(argv$RemoteProcessProxy.port_range)){
+        argv$RemoteProcessProxy.port_range <- NA
     }
-}
 
-# Get the pid of the launcher so the listener thread (process) can detect its
-# presence to know when to shutdown.
-pid <- Sys.getpid()
+    #  If there is a response address, use pull socket mode
+    connection_file <- determine_connection_file(argv$RemoteProcessProxy.kernel_id)
 
-# Hoop to jump through to get the directory this script resides in so that we can
-# load the co-located python gateway_listener.py file.  This code will not work if
-# called directly from within RStudio.
-# https://stackoverflow.com/questions/1815606/rscript-determine-path-of-the-executing-script
-launch_args <- commandArgs(trailingOnly = FALSE)
-file_option <- "--file="
-script_path <- sub(file_option, "", launch_args[grep(file_option, launch_args)])
-listener_file <- paste(sep="/", dirname(script_path), "gateway_listener.py")
+    # if port-range was provided, validate the range and determine bounds
+    lower_port = 0
+    upper_port = 0
+    if (!is.na(argv$RemoteProcessProxy.port_range)){
+        range <- validate_port_range(argv$RemoteProcessProxy.port_range)
+        if (length(range) > 1){
+            lower_port = range$lower_port
+            upper_port = range$upper_port
+        }
+    }
 
-# Launch the gateway listener logic in an async manner and poll for the existence of
-# the connection file before continuing.  Should there be an issue, Enterprise Gateway
-# will terminate the launcher, so there's no need for a timeout.
-python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
+    # Get the pid of the launcher so the listener thread (process) can detect its
+    # presence to know when to shutdown.
+    pid <- Sys.getpid()
 
-gw_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
-            paste(python_cmd,"-c \"import os, sys, imp;
-            gl = imp.load_source('setup_gateway_listener', '${listener_file}');
-            gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port},
-                upper_port=${upper_port})\"")))
-system(gw_listener_cmd, wait=FALSE)
+    # Hoop to jump through to get the directory this script resides in so that we can
+    # load the co-located python gateway_listener.py file.  This code will not work if
+    # called directly from within RStudio.
+    # https://stackoverflow.com/questions/1815606/rscript-determine-path-of-the-executing-script
+    launch_args <- commandArgs(trailingOnly = FALSE)
+    file_option <- "--file="
+    script_path <- sub(file_option, "", launch_args[grep(file_option, launch_args)])
+    listener_file <- paste(sep="/", dirname(script_path), "gateway_listener.py")
 
-while (!file.exists(connection_file)) {
-    Sys.sleep(0.5)
-}
+    # Launch the gateway listener logic in an async manner and poll for the existence of
+    # the connection file before continuing.  Should there be an issue, Enterprise Gateway
+    # will terminate the launcher, so there's no need for a timeout.
+    python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
 
-if (!is.na(argv$RemoteProcessProxy.response_address)){
-  return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
+    gw_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
+                paste(python_cmd,"-c \"import os, sys, imp;
+                gl = imp.load_source('setup_gateway_listener', '${listener_file}');
+                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port},
+                    upper_port=${upper_port})\"")))
+    system(gw_listener_cmd, wait=FALSE)
+
+    while (!file.exists(connection_file)) {
+        Sys.sleep(0.5)
+    }
+
+    return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
+} else {
+    # already provided
+    connection_file = argv$connection_file
 }
 
 # If spark context creation is desired go ahead and initialize the session/context
@@ -253,7 +264,10 @@ if (!is.na(argv$RemoteProcessProxy.spark_context_initialization_mode)){
 # Start the kernel
 IRkernel::main(connection_file)
 
-unlink(connection_file)
+# Only unlink the connection file if we're launched for remote behavior.
+if (!is.na(argv$RemoteProcessProxy.response_address)){
+    unlink(connection_file)
+}
 
 # Stop the context and exit
 if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){

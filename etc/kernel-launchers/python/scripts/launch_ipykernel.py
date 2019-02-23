@@ -345,10 +345,6 @@ if __name__ == "__main__":
         raise RuntimeError("At least one of the parameters: 'connection_file' or "
                            "'--RemoteProcessProxy.kernel-id' must be provided!")
 
-    if kernel_id is None:
-        logger.warning("Parameter 'connection_file' is deprecated.  Update kernel.json file to use "
-                       "'--RemoteProcessProxy.kernel-id {kernel_id}'")
-
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         key = str_to_bytes(str(uuid.uuid4()))
