@@ -31,8 +31,6 @@ class ScalaKernelBaseTestCase(TestBase):
 
         self.assertTrue(self.kernel.restart())
 
-        self.assertRegexpMatches(self.kernel.get_state(), '(idle|starting)')
-
         error_result = self.kernel.execute("var y = x + 1")
         self.assertRegexpMatches(error_result, 'Compile Error')
 
