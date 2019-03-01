@@ -1,4 +1,4 @@
-This image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster.  It is currently built on [kubespark/spark-driver-py:v2.2.0-kubernetes-0.5.0]() deriving from the [apache-spark-on-k8s](https://github.com/apache-spark-on-k8s/spark) fork.  As a result, the ability to issue `spark-submit` calls (used to launch spark-based kernels) within a Docker Swarm configuration probably won't yield the expected results.  We'll revisit this once Spark 2.4 is available.
+This image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster.  It is currently built on jupyter/minimal-notebook as a base with Apache Spark 2.4.0 installed on top.
 
 **Note: If you're looking for the YARN-based image of this name, it has been moved to [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/).**
 
