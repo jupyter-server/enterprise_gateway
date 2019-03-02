@@ -1,4 +1,4 @@
-This image enables the use of an IRKernel kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is built on [elyra/spark-r:v2.4.0](https://hub.docker.com/r/elyra/spark-r/) deriving from the [Apache Spark 2.4.0 release](https://spark.apache.org/docs/2.4.0/).  Note: The ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.
+This image enables the use of an IRKernel kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is built on the base image [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r/), and adds [Apache Spark 2.4.0](https://spark.apache.org/docs/2.4.0/).  Note: The ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.
 
 # What it Gives You
 * IRkernel kernel support 
