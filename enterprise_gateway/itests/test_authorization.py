@@ -41,5 +41,6 @@ class TestAuthorization(unittest.TestCase):
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)
 
+
 if __name__ == '__main__':
     unittest.main()

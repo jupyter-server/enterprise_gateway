@@ -63,7 +63,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         """ Dynamically assemble the spark-submit configuration passed from NB2KG."""
         if any(arg.endswith('.sh') for arg in kernel_cmd):
             self.log.debug("kernel_cmd contains execution script")
-        else: 
+        else:
             kernel_dir = self.kernel_manager.kernel_spec_manager._find_spec_directory(self.kernel_manager.kernel_name)
             cmd = pjoin(kernel_dir, 'bin/run.sh')
             kernel_cmd.insert(0, cmd)
@@ -90,7 +90,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in SUBMITTED/WAITING/RUNNING state.
 
-        :return: None if the application's ID is available and state is SUBMITTED/WAITING/RUNNING. Otherwise False. 
+        :return: None if the application's ID is available and state is SUBMITTED/WAITING/RUNNING. Otherwise False.
         """
         result = False
 
@@ -104,7 +104,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         """Currently only support 0 as poll and other as kill.
 
         :param signum
-        :return: 
+        :return:
         """
         self.log.debug("ConductorClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
@@ -116,7 +116,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
     def kill(self):
         """Kill a kernel.
-        :return: None if the application existed and is not in RUNNING state, False otherwise. 
+        :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
         state = None
         result = False
@@ -163,7 +163,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         """
         if submission_response:
             self.log.debug("Submission Response: {}\n".format(submission_response))
-            matched_lines = [line for line in submission_response.split('\n') if "submissionId" in line] 
+            matched_lines = [line for line in submission_response.split('\n') if "submissionId" in line]
             if matched_lines and len(matched_lines) > 0:
                 driver_info = matched_lines[0]
                 self.log.debug("Driver Info: {}".format(driver_info))
@@ -194,8 +194,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 app_state = self._get_application_state()
 
                 if app_state in ConductorClusterProcessProxy.final_states:
-                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in " \
-                                                     "state '{}' during kernel startup!".\
+                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in state '{}' " \
+                                    "during kernel startup!".\
                                     format(self.kernel_id, self.application_id, app_state)
                     self.log_and_raise(http_status_code=500, reason=error_message)
 
@@ -300,7 +300,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         url = '%s/v1/applications?driverid=%s' % (self.conductor_endpoint, driver_id)
         cmd = ['curl', '-v', '-b', cookie_jar, '-X', 'GET', '-H', header, '-H', authorization, url]
         cmd[2:2] = sslconf
-        
+
         # Perform REST call
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
@@ -312,9 +312,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 response = response['applist']
         except Exception as e:
             self.log.warning("Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".
-                           format(cmd, e))
+                             format(cmd, e))
         return response
-    
+
     def _query_app_by_id(self, app_id):
         """Retrieve an application by application ID.
 
@@ -342,18 +342,18 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 response = response['applist']
         except Exception as e:
             self.log.warning("Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".
-                           format(cmd, e))
+                             format(cmd, e))
         return response
-    
+
     def _query_app_state_by_driver_id(self, driver_id):
         """Return the state of an application.
 
         :param driver_id:
-        :return: 
+        :return:
         """
         response = None
         apps = self._query_app_by_driver_id(driver_id)
-        if apps: 
+        if apps:
             for app in apps:
                 if 'state' in app:
                     response = app['state']
@@ -375,7 +375,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         else:
             self.log.warning("Application id does not exist")
         return response
-    
+
     def _kill_app_by_driver_id(self, driver_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
 
@@ -385,7 +385,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.log.debug("Kill driver: {}".format(driver_id))
         if driver_id is None:
             if self.application_id is None:
-                return None 
+                return None
             self.log.debug("Driver does not exist, retrieving DriverID with ApplicationID: {}".
                            format(self.application_id))
             driver_info = self._get_driver_by_app_id(self.application_id)
@@ -412,6 +412,6 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = json.loads(output) if output else None
         except Exception as e:
             self.log.warning("Termination of application with cmd '{}' failed with exception: '{}'.  Continuing...".
-                           format(cmd, e))
+                             format(cmd, e))
         self.log.debug("Kill response: {}".format(response))
         return response

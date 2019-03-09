@@ -3,7 +3,6 @@
 """Tests for notebook cell parsing."""
 
 import unittest
-import sys
 from kernel_gateway.notebook_http.cell.parser import APICellParser
 
 
@@ -42,7 +41,6 @@ class TestAPICellParser(unittest.TestCase):
         ]
 
         def custom_sort_fun(endpoint):
-            index = sys.maxsize
             if endpoint.find('1') >= 0:
                 return 0
             elif endpoint.find('a') >= 0:
@@ -111,5 +109,7 @@ class TestAPICellParser(unittest.TestCase):
         self.assertEqual(len(endpoints['/foo']), 1)
         self.assertEqual(len(endpoints['/foo/:bar']), 2)
         self.assertEqual(endpoints['/foo']['POST'], '# ResponseInfo POST /foo\n')
-        self.assertEqual(endpoints['/foo/:bar']['POST'], '# ResponseInfo POST /foo/:bar\n# ResponseInfo POST /foo/:bar\n')
-        self.assertEqual(endpoints['/foo/:bar']['GET'], '# ResponseInfo GET /foo/:bar\n')
+        self.assertEqual(endpoints['/foo/:bar']['POST'],
+                         '# ResponseInfo POST /foo/:bar\n# ResponseInfo POST /foo/:bar\n')
+        self.assertEqual(endpoints['/foo/:bar']['GET'],
+                         '# ResponseInfo GET /foo/:bar\n')

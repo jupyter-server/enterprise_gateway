@@ -2,7 +2,6 @@
 # Distributed under the terms of the Modified BSD License.
 """Tests for jupyter-enterprise-gateway."""
 
-import logging
 from tornado.testing import gen_test
 from tornado.escape import json_decode, url_escape
 from .test_jupyter_websocket import TestJupyterWebsocket
@@ -13,8 +12,8 @@ class TestEnterpriseGateway(TestJupyterWebsocket):
     def setUp(self):
         super(TestJupyterWebsocket, self).setUp()
         # Enable debug logging if necessary
-        #app = self.get_app()
-        #app.settings['kernel_manager'].log.level = logging.DEBUG
+        # app = self.get_app()
+        # app.settings['kernel_manager'].log.level = logging.DEBUG
 
     @gen_test
     def test_max_kernels_per_user(self):

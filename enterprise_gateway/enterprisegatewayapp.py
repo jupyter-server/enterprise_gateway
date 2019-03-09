@@ -46,8 +46,9 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     remote_hosts_env = 'EG_REMOTE_HOSTS'
     remote_hosts_default_value = 'localhost'
     remote_hosts = List(default_value=[remote_hosts_default_value], config=True,
-        help="""Bracketed comma-separated list of hosts on which DistributedProcessProxy kernels will be launched
-          e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var - non-bracketed, just comma-separated)""")
+                        help="""Bracketed comma-separated list of hosts on which DistributedProcessProxy
+                        kernels will be launched e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var
+                        - non-bracketed, just comma-separated)""")
 
     @default('remote_hosts')
     def remote_hosts_default(self):
@@ -57,7 +58,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
     yarn_endpoint_default_value = 'http://localhost:8088/ws/v1/cluster'
     yarn_endpoint = Unicode(yarn_endpoint_default_value, config=True,
-        help="""The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env var)""")
+                            help="""The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env var)""")
 
     @default('yarn_endpoint')
     def yarn_endpoint_default(self):
@@ -66,7 +67,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     yarn_endpoint_security_enabled_env = 'EG_YARN_ENDPOINT_SECURITY_ENABLED'
     yarn_endpoint_security_enabled_default_value = False
     yarn_endpoint_security_enabled = Bool(yarn_endpoint_security_enabled_default_value, config=True,
-        help="""Is YARN Kerberos/SPNEGO Security enabled (True/False). (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)""")
+                                          help="""Is YARN Kerberos/SPNEGO Security enabled (True/False).
+                                          (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)""")
 
     @default('yarn_endpoint_security_enabled')
     def yarn_endpoint_security_enabled_default(self):
@@ -77,7 +79,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     conductor_endpoint_env = 'EG_CONDUCTOR_ENDPOINT'
     conductor_endpoint_default_value = None
     conductor_endpoint = Unicode(conductor_endpoint_default_value, config=True,
-        help="""The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT env var)""")
+                                 help="""The http url for accessing the Conductor REST API.
+                                 (EG_CONDUCTOR_ENDPOINT env var)""")
 
     @default('conductor_endpoint')
     def conductor_endpoint_default(self):
@@ -93,8 +96,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     # Impersonation enabled
     impersonation_enabled_env = 'EG_IMPERSONATION_ENABLED'
     impersonation_enabled = Bool(False, config=True,
-        help="""Indicates whether impersonation will be performed during kernel launch. 
-        (EG_IMPERSONATION_ENABLED env var)""")
+                                 help="""Indicates whether impersonation will be performed during kernel launch.
+                                 (EG_IMPERSONATION_ENABLED env var)""")
 
     @default('impersonation_enabled')
     def impersonation_enabled_default(self):
@@ -104,10 +107,10 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     unauthorized_users_env = 'EG_UNAUTHORIZED_USERS'
     unauthorized_users_default_value = 'root'
     unauthorized_users = Set(default_value={unauthorized_users_default_value}, config=True,
-        help="""Comma-separated list of user names (e.g., ['root','admin']) against which KERNEL_USERNAME
-        will be compared.  Any match (case-sensitive) will prevent the kernel's launch
-        and result in an HTTP 403 (Forbidden) error. (EG_UNAUTHORIZED_USERS env var - non-bracketed, just
-        comma-separated)""")
+                             help="""Comma-separated list of user names (e.g., ['root','admin']) against which
+                             KERNEL_USERNAME will be compared.  Any match (case-sensitive) will prevent the
+                             kernel's launch and result in an HTTP 403 (Forbidden) error.
+                             (EG_UNAUTHORIZED_USERS env var - non-bracketed, just comma-separated)""")
 
     @default('unauthorized_users')
     def unauthorized_users_default(self):
@@ -116,11 +119,12 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     # Authorized users
     authorized_users_env = 'EG_AUTHORIZED_USERS'
     authorized_users = Set(config=True,
-        help="""Comma-separated list of user names (e.g., ['bob','alice']) against which KERNEL_USERNAME
-        will be compared.  Any match (case-sensitive) will allow the kernel's launch, otherwise an HTTP 403
-        (Forbidden) error will be raised.  The set of unauthorized users takes precedence. This option should
-        be used carefully as it can dramatically limit who can launch kernels.  (EG_AUTHORIZED_USERS
-        env var - non-bracketed, just comma-separated)""")
+                           help="""Comma-separated list of user names (e.g., ['bob','alice']) against which
+                           KERNEL_USERNAME will be compared.  Any match (case-sensitive) will allow the kernel's
+                           launch, otherwise an HTTP 403 (Forbidden) error will be raised.  The set of unauthorized
+                           users takes precedence. This option should be used carefully as it can dramatically limit
+                           who can launch kernels.  (EG_AUTHORIZED_USERS env var - non-bracketed,
+                           just comma-separated)""")
 
     @default('authorized_users')
     def authorized_users_default(self):
@@ -131,9 +135,10 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     port_range_env = 'EG_PORT_RANGE'
     port_range_default_value = "0..0"
     port_range = Unicode(port_range_default_value, config=True,
-        help="""Specifies the lower and upper port numbers from which ports are created.  The bounded values
-        are separated by '..' (e.g., 33245..34245 specifies a range of 1000 ports to be randomly selected).
-        A range of zero (e.g., 33245..33245 or 0..0) disables port-range enforcement.  (EG_PORT_RANGE env var)""")
+                         help="""Specifies the lower and upper port numbers from which ports are created.
+                         The bounded values are separated by '..' (e.g., 33245..34245 specifies a range of 1000 ports
+                         to be randomly selected). A range of zero (e.g., 33245..33245 or 0..0) disables port-range
+                         enforcement.  (EG_PORT_RANGE env var)""")
 
     @default('port_range')
     def port_range_default(self):
@@ -143,8 +148,9 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     max_kernels_per_user_env = 'EG_MAX_KERNELS_PER_USER'
     max_kernels_per_user_default_value = -1
     max_kernels_per_user = Integer(max_kernels_per_user_default_value, config=True,
-        help="""Specifies the maximum number of kernels a user can have active simultaneously.  A value of -1 disables
-        enforcement.  (EG_MAX_KERNELS_PER_USER env var)""")
+                                   help="""Specifies the maximum number of kernels a user can have active
+                                   simultaneously.  A value of -1 disables enforcement.
+                                   (EG_MAX_KERNELS_PER_USER env var)""")
 
     @default('max_kernels_per_user')
     def max_kernels_per_user_default(self):
@@ -231,7 +237,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
             parent=self,
             log=self.log,
             kernel_manager=self.kernel_manager,
-            config=self.config, # required to get command-line options visible
+            config=self.config,  # required to get command-line options visible
             **kwargs
         )
 
@@ -280,7 +286,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
                                  format(gateway_user))
 
         self.io_loop = ioloop.IOLoop.current()
-        
+
         signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
         signal.signal(signal.SIGTERM, self._signal_stop)
@@ -306,5 +312,6 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def _signal_stop(self, sig, frame):
         self.log.info("Received signal to terminate Enterprise Gateway.")
         self.io_loop.stop()
+
 
 launch_instance = EnterpriseGatewayApp.launch_instance

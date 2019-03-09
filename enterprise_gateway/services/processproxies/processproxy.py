@@ -502,8 +502,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             if port_range_size != 0:
                 if port_range_size < min_port_range_size:
                     self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
-                        "Range size must be at least {} as specified by env EG_MIN_PORT_RANGE_SIZE".
-                        format(port_range, min_port_range_size))
+                                       "Range size must be at least {} as specified by env EG_MIN_PORT_RANGE_SIZE".
+                                       format(port_range, min_port_range_size))
 
                 # According to RFC 793, port is a 16-bit unsigned int. Which means the port
                 # numbers must be in the range (0, 65535). However, within that range,
@@ -528,16 +528,16 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 # admins use dedicated hosts for individual services.
                 if self.lower_port < 1024 or self.lower_port > 65535:
                     self.log_and_raise(http_status_code=500, reason="Invalid port range '{}' specified. "
-                                    "Range for valid port numbers is (1024, 65535).".format(port_range))
+                                       "Range for valid port numbers is (1024, 65535).".format(port_range))
                 if self.upper_port < 1024 or self.upper_port > 65535:
                     self.log_and_raise(http_status_code=500, reason="Invalid port range '{}' specified. "
-                                    "Range for valid port numbers is (1024, 65535).".format(port_range))
+                                       "Range for valid port numbers is (1024, 65535).".format(port_range))
         except ValueError as ve:
             self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
-                            "Error was: {}".format(port_range, ve))
+                               "Error was: {}".format(port_range, ve))
         except IndexError as ie:
             self.log_and_raise(http_status_code=500, reason="Port range validation failed for range: '{}'.  "
-                            "Error was: {}".format(port_range, ie))
+                               "Error was: {}".format(port_range, ie))
 
         self.kernel_manager.port_range = port_range
 
@@ -585,8 +585,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             except Exception:
                 retries = retries + 1
                 if retries > max_port_range_retries:
-                    self.log_and_raise(http_status_code=500, reason="Failed to locate port within range {} "
-                            "after {} retries!".format(self.kernel_manager.port_range, max_port_range_retries))
+                    self.log_and_raise(http_status_code=500, reason="Failed to locate port within range {} after {} "
+                                       "retries!".format(self.kernel_manager.port_range, max_port_range_retries))
         return sock
 
     def _get_candidate_port(self):
@@ -736,7 +736,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         if not tunnel.try_passwordless_ssh(server + ":" + str(port), key):
             self.log_and_raise(http_status_code=403, reason="Must use password-less scheme by setting up the "
-                            "SSH public key on the cluster nodes")
+                               "SSH public key on the cluster nodes")
 
         for lp, rp, kc in zip(lports, rports, channels):
             self._create_ssh_tunnel(kc, lp, rp, remote_ip, server, port, key)
@@ -762,7 +762,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.tunnel_processes[channel_name] = process
         except Exception as e:
             self.log_and_raise(http_status_code=500, reason="Could not open SSH tunnel for port {}. Exception: '{}'"
-                        .format(channel_name, e))
+                               .format(channel_name, e))
 
     def _spawn_ssh_tunnel(self, kernel_channel, local_port, remote_port, remote_ip, server, port=ssh_port, key=None):
         """ This method spawns a child process to create an SSH tunnel and returns the spawned process.
@@ -1042,8 +1042,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
             except Exception as e:
                 self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
-                                 "(using alternate shutdown): {}".format(self.comm_ip, self.comm_port,
-                                                                  self.kernel_id, str(e)))
+                                 "(using alternate shutdown): {}"
+                                 .format(self.comm_ip, self.comm_port, self.kernel_id, str(e)))
             finally:
                 try:
                     sock.shutdown(SHUT_WR)
