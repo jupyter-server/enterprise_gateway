@@ -18,6 +18,9 @@ dependencies:
   - docker-py>=3.5.0
   - pip
 
+  # Code Style
+  - flake8
+  
   # Documentation Requirements
   - sphinx_rtd_theme
   - sphinx=1.8.3
