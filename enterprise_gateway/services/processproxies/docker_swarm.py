@@ -88,8 +88,9 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug("{}: Waiting to connect to docker container. "
-                    "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}', TaskID: '{}'".
-                    format(iteration, self.container_name, task_state, self.assigned_ip, self.kernel_id, task_id))
+                           "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}', TaskID: '{}'".
+                           format(iteration, self.container_name, task_state,
+                                  self.assigned_ip, self.kernel_id, task_id))
         return task_state
 
     def terminate_container_resources(self):

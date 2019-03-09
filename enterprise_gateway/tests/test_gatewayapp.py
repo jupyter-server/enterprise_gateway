@@ -11,6 +11,7 @@ from tornado.testing import AsyncHTTPTestCase, ExpectLog
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 
+
 class TestGatewayAppConfig(unittest.TestCase):
     """Tests configuration of the gateway app."""
     def setUp(self):
@@ -65,6 +66,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.keyfile, '/test/fake.key')
         self.assertEqual(app.certfile, '/test/fake.crt')
         self.assertEqual(app.client_ca, '/test/fake_ca.crt')
+
 
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     """Base class for integration style tests using HTTP/Websockets against an

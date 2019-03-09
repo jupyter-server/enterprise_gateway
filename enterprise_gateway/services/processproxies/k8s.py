@@ -70,9 +70,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug("{}: Waiting to connect to k8s pod in namespace '{}'. "
-                        "Name: '{}', Status: '{}', Pod IP: '{}', KernelID: '{}'".
-                        format(iteration, self.kernel_namespace, self.container_name,
-                            pod_status, self.assigned_ip, self.kernel_id))
+                           "Name: '{}', Status: '{}', Pod IP: '{}', KernelID: '{}'".
+                           format(iteration, self.kernel_namespace, self.container_name, pod_status,
+                                  self.assigned_ip, self.kernel_id))
 
         return pod_status
 

@@ -11,7 +11,7 @@ from .test_gatewayapp import TestGatewayAppBase, RESOURCES
 from kernel_gateway.gatewayapp import KernelGatewayApp
 from jupyter_client.kernelspec import NoSuchKernel
 
-from tornado.gen import coroutine, Return, sleep
+from tornado.gen import coroutine, Return
 from tornado.websocket import websocket_connect
 from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
@@ -25,9 +25,10 @@ if PY3:
 else:
     # On python 2, prefer unittest2 when available.
     try:
-        import unittest2 as unittest  # type: ignore
+        import unittest2 as unittest  # type: ignore # noqa
     except ImportError:
-        import unittest  # type: ignore
+        import unittest  # type: ignore # noqa
+
 
 class TestJupyterWebsocket(TestGatewayAppBase):
     """Base class for jupyter-websocket mode tests that spawn kernels."""
@@ -101,7 +102,7 @@ class TestJupyterWebsocket(TestGatewayAppBase):
                 'code': code,
                 'silent': False,
                 'store_history': False,
-                'user_expressions' : {}
+                'user_expressions': {}
             },
             'metadata': {},
             'buffers': {}
@@ -131,14 +132,11 @@ class TestDefaults(TestJupyterWebsocket):
     @gen_test
     def test_headless(self):
         """Other notebook resources should not exist."""
-        response = yield self.http_client.fetch(self.get_url('/api/contents'),
-            raise_error=False)
+        response = yield self.http_client.fetch(self.get_url('/api/contents'), raise_error=False)
         self.assertEqual(response.code, 404)
-        response = yield self.http_client.fetch(self.get_url('/'),
-            raise_error=False)
+        response = yield self.http_client.fetch(self.get_url('/'), raise_error=False)
         self.assertEqual(response.code, 404)
-        response = yield self.http_client.fetch(self.get_url('/tree'),
-            raise_error=False)
+        response = yield self.http_client.fetch(self.get_url('/tree'), raise_error=False)
         self.assertEqual(response.code, 404)
 
     @gen_test
@@ -233,7 +231,7 @@ class TestDefaults(TestJupyterWebsocket):
         kernel = json_decode(response.body)
         # Request kernel info without the token
         response = yield self.http_client.fetch(
-            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            self.get_url('/api/kernels/' + url_escape(kernel['id'])),
             method='GET',
             raise_error=False
         )
@@ -241,7 +239,7 @@ class TestDefaults(TestJupyterWebsocket):
 
         # Now with it
         response = yield self.http_client.fetch(
-            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            self.get_url('/api/kernels/' + url_escape(kernel['id'])),
             method='GET',
             headers={'Authorization': 'token fake-token'},
             raise_error=False
@@ -262,9 +260,7 @@ class TestDefaults(TestJupyterWebsocket):
             self.assert_(False, 'no exception raised')
 
         # Now request the websocket with the token
-        ws_req = HTTPRequest(ws_url,
-            headers={'Authorization': 'token fake-token'}
-        )
+        ws_req = HTTPRequest(ws_url, headers={'Authorization': 'token fake-token'})
         ws = yield websocket_connect(ws_req)
         ws.close()
 
@@ -320,7 +316,7 @@ class TestDefaults(TestJupyterWebsocket):
         # Shut down the kernel
         kernel = json_decode(response.body)
         response = yield self.http_client.fetch(
-            self.get_url('/api/kernels/'+url_escape(kernel['id'])),
+            self.get_url('/api/kernels/' + url_escape(kernel['id'])),
             method='DELETE'
         )
         self.assertEqual(response.code, 204)
@@ -463,7 +459,7 @@ class TestDefaults(TestJupyterWebsocket):
 
         # Delete the session
         response = yield self.http_client.fetch(
-            self.get_url('/api/sessions/'+session['id']),
+            self.get_url('/api/sessions/' + session['id']),
             method='DELETE'
         )
         self.assertEqual(response.code, 204)
@@ -522,7 +518,11 @@ class TestDefaults(TestJupyterWebsocket):
             }
         })
         ws = yield self.spawn_kernel(kernel_body)
-        req = self.execute_request('import os; print(os.getenv("KERNEL_FOO"), os.getenv("NOT_KERNEL"), os.getenv("KERNEL_GATEWAY"), os.getenv("TEST_VAR"))')
+        req = self.execute_request('import os; '
+                                   'print(os.getenv("KERNEL_FOO"), '
+                                   'os.getenv("NOT_KERNEL"), '
+                                   'os.getenv("KERNEL_GATEWAY"), '
+                                   'os.getenv("TEST_VAR"))')
         ws.write_message(json_encode(req))
         content = yield self.await_stream(ws)
         self.assertEqual(content['name'], 'stdout')
@@ -539,7 +539,7 @@ class TestDefaults(TestJupyterWebsocket):
 
         # NOTE: This test requires use of the kernels/kernel_defaults_test/kernel.json file.
 
-        self.app.personality.env_whitelist = ['OTHER_VAR1','OTHER_VAR2']
+        self.app.personality.env_whitelist = ['OTHER_VAR1', 'OTHER_VAR2']
 
         kernel_body = json.dumps({
             'name': 'kernel_defaults_test',
@@ -618,8 +618,7 @@ class TestForceKernel(TestJupyterWebsocket):
     """Tests gateway behavior when forcing a kernelspec."""
     def setup_app(self):
         self.app.prespawn_count = 2
-        self.app.seed_uri = os.path.join(RESOURCES,
-            'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.seed_uri = os.path.join(RESOURCES, 'zen{}.ipynb'.format(sys.version_info.major))
         self.app.force_kernel_name = 'python{}'.format(sys.version_info.major)
 
     @gen_test
@@ -653,6 +652,7 @@ class TestEnableDiscovery(TestJupyterWebsocket):
         )
         self.assertEqual(response.code, 200)
         self.assertTrue('[]' in str(response.body))
+
 
 class TestPrespawnKernels(TestJupyterWebsocket):
     """Tests gateway behavior when kernels are spawned at startup."""
@@ -733,8 +733,7 @@ class TestSeedURI(TestJupyterWebsocket):
     """Tests gateway behavior when a seeding kernel memory with code from a
     notebook."""
     def setup_app(self):
-        self.app.seed_uri = os.path.join(RESOURCES,
-            'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.seed_uri = os.path.join(RESOURCES, 'zen{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed(self):
@@ -758,7 +757,8 @@ class TestRemoteSeedURI(TestSeedURI):
     """
     def setup_app(self):
         """Sets the seed notebook to a remote notebook."""
-        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'.format(sys.version_info.major)
+        self.app.seed_uri = 'https://gist.githubusercontent.com/parente/ccd36bd7db2f617d58ce/raw/zen{}.ipynb'\
+            .format(sys.version_info.major)
 
 
 class TestBadSeedURI(TestJupyterWebsocket):
@@ -767,8 +767,7 @@ class TestBadSeedURI(TestJupyterWebsocket):
     """
     def setup_app(self):
         """Sets the seed notebook to one of the test resources."""
-        self.app.seed_uri = os.path.join(RESOURCES,
-            'failing_code{}.ipynb'.format(sys.version_info.major))
+        self.app.seed_uri = os.path.join(RESOURCES, 'failing_code{}.ipynb'.format(sys.version_info.major))
 
     @gen_test
     def test_seed_error(self):
@@ -811,15 +810,14 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
         test notebooks.
         """
         self.app.prespawn_count = 1
-        self.app.seed_uri = os.path.join(RESOURCES,
-            'zen{}.ipynb'.format(sys.version_info.major))
+        self.app.seed_uri = os.path.join(RESOURCES, 'zen{}.ipynb'.format(sys.version_info.major))
 
     @coroutine
     def spawn_kernel(self):
         """Override the base class spawn utility method to set the Python kernel
         version number when spawning.
         """
-        kernel_body = json.dumps({"name":"python{}".format(sys.version_info.major)})
+        kernel_body = json.dumps({"name": "python{}".format(sys.version_info.major)})
         ws = yield super(TestKernelLanguageSupport, self).spawn_kernel(kernel_body)
         raise Return(ws)
 
@@ -842,4 +840,3 @@ class TestKernelLanguageSupport(TestJupyterWebsocket):
         self.assertIn('Gur Mra bs Clguba', content['text'])
 
         ws.close()
-

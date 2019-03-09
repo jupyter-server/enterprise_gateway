@@ -11,6 +11,7 @@ from .test_gatewayapp import TestGatewayAppBase, RESOURCES
 from kernel_gateway.notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import gen_test
 
+
 class TestDefaults(TestGatewayAppBase):
     """Tests gateway behavior."""
     def setup_app(self):
@@ -115,7 +116,8 @@ class TestDefaults(TestGatewayAppBase):
             raise_error=False,
         )
         self.assertEqual(response.code, 200, 'DELETE endpoint did not return 200.')
-        self.assertEqual(response.body, b'["Rick", "Maggie", "Carol", "Daryl"]\n', 'Unexpected body in response to DELETE.')
+        self.assertEqual(response.body, b'["Rick", "Maggie", "Carol", "Daryl"]\n',
+                         'Unexpected body in response to DELETE.')
 
     @gen_test
     def test_api_error_endpoint(self):
@@ -146,7 +148,8 @@ class TestDefaults(TestGatewayAppBase):
             method='DELETE',
             raise_error=False
         )
-        self.assertEqual(response.code, 405, 'Endpoint which exists, but does not support DELETE, did not return 405 status code.')
+        self.assertEqual(response.code, 405,
+                         'Endpoint which exists, but does not support DELETE, did not return 405 status code.')
 
     @gen_test
     def test_api_undefined(self):
@@ -173,12 +176,13 @@ class TestDefaults(TestGatewayAppBase):
                 headers={'Content-Type': content_type}
             )
             self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
-            self.assertEqual(response.body.decode(encoding='UTF-8'), '{}\n'.format(content_type), 'Unexpected value in response')
+            self.assertEqual(response.body.decode(encoding='UTF-8'), '{}\n'.format(content_type),
+                             'Unexpected value in response')
 
     @gen_test
     def test_format_request_code_escaped_integration(self):
         """Quotes should be properly escaped in request headers."""
-        #Test query with escaping of arguements and headers with multiple escaped quotes
+        # Test query with escaping of arguements and headers with multiple escaped quotes
         response = yield self.http_client.fetch(
             self.get_url('/hello/person?person=governor'),
             method='GET',
@@ -245,11 +249,12 @@ class TestDefaults(TestGatewayAppBase):
         self.assertEqual(response.code, 200, 'GET endpoint did not return 200.')
         self.assertEqual(response.body, b'KERNEL_GATEWAY is 1\n', 'Unexpected body in response to GET.')
 
+
 class TestPublicStatic(TestGatewayAppBase):
     """Tests gateway behavior when public static assets are enabled."""
     def setup_app(self):
         """Sets the notebook-http mode and points to a local test notebook as
-        the basis for the API. 
+        the basis for the API.
         """
         self.app.api = 'kernel_gateway.notebook_http'
         self.app.seed_uri = os.path.join(RESOURCES,
@@ -269,6 +274,7 @@ class TestPublicStatic(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 200)
         self.assertEqual(response.headers.get('Content-Type'), 'text/html')
+
 
 class TestSourceDownload(TestGatewayAppBase):
     """Tests gateway behavior when notebook download is allowed."""
@@ -293,6 +299,7 @@ class TestSourceDownload(TestGatewayAppBase):
         )
         self.assertEqual(response.code, 200, "/_api/source did not correctly return the downloaded notebook")
 
+
 class TestCustomResponse(TestGatewayAppBase):
     """Tests gateway behavior when the notebook contains ResponseInfo cells."""
     def setup_app(self):
@@ -313,8 +320,9 @@ class TestCustomResponse(TestGatewayAppBase):
         )
         result = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 200, 'Response status was not 200')
-        self.assertEqual(response.headers['Content-Type'], 'application/json', 'Incorrect mime type was set on response')
-        self.assertEqual(result, {'hello' : 'world'}, 'Incorrect response value.')
+        self.assertEqual(response.headers['Content-Type'], 'application/json',
+                         'Incorrect mime type was set on response')
+        self.assertEqual(result, {'hello': 'world'}, 'Incorrect response value.')
 
     @gen_test
     def test_setting_response_status_code(self):
@@ -337,9 +345,11 @@ class TestCustomResponse(TestGatewayAppBase):
         )
         result = json.loads(response.body.decode('UTF-8'))
         self.assertEqual(response.code, 200, 'Response status was not 200')
-        self.assertEqual(response.headers['Content-Type'], 'application/json', 'Incorrect mime type was set on response')
-        self.assertEqual(result, {'hello' : 'world'}, 'Incorrect response value.')
+        self.assertEqual(response.headers['Content-Type'], 'application/json',
+                         'Incorrect mime type was set on response')
+        self.assertEqual(result, {'hello': 'world'}, 'Incorrect response value.')
         self.assertEqual(response.headers['Etag'], '1234567890', 'Incorrect Etag header value.')
+
 
 class TestKernelPool(TestGatewayAppBase):
     """Tests gateway behavior with more than one kernel in the kernel pool."""
@@ -370,10 +380,13 @@ class TestKernelPool(TestGatewayAppBase):
                 raise_error=False
             )
 
-            if i != self.app.prespawn_count-1:
-                self.assertEqual(response.body, b'hello {}\n', 'Unexpected body in response to GET after performing PUT.')
+            if i != self.app.prespawn_count - 1:
+                self.assertEqual(response.body, b'hello {}\n',
+                                 'Unexpected body in response to GET after performing PUT.')
             else:
-                self.assertEqual(response.body, b'hola {}\n', 'Unexpected body in response to GET after performing PUT.')
+                self.assertEqual(response.body, b'hola {}\n',
+                                 'Unexpected body in response to GET after performing PUT.')
+
     @gen_test
     def test_concurrent_request_should_not_be_blocked(self):
         """Concurrent requests should not be blocked"""
@@ -395,14 +408,15 @@ class TestKernelPool(TestGatewayAppBase):
             self.assertTrue(response_long_running.running(), 'Long HTTP Request is not running')
         else:
             self.assertFalse(response_long_running.done(), 'Long HTTP Request is not running')
-        self.assertEqual(response_short_running.code, 200, 'Short HTTP Request did not return proper status code of 200')
+        self.assertEqual(response_short_running.code, 200,
+                         'Short HTTP Request did not return proper status code of 200')
 
     @gen_test
     def test_locking_semaphore_of_kernel_resources(self):
         """Kernel pool should prevent more than one request from running on a kernel at a time.
         """
         futures = []
-        for _ in range(self.app.prespawn_count*2+1):
+        for _ in range(self.app.prespawn_count * 2 + 1):
             futures.append(self.http_client.fetch(
                 self.get_url('/sleep/1'),
                 method='GET',
@@ -415,6 +429,7 @@ class TestKernelPool(TestGatewayAppBase):
             count += 1
             if count >= self.app.prespawn_count + 1:
                 break
+
 
 class TestSwaggerSpec(TestGatewayAppBase):
     """Tests gateway behavior when generating a  custom base URL is configured."""
@@ -452,6 +467,7 @@ class TestSwaggerSpec(TestGatewayAppBase):
         self.assertEqual(response.code, 200, "Swagger spec endpoint did not return the correct status code")
         self.assertEqual(result, expected_response, "Swagger spec endpoint did not return the correct value")
         self.assertIsNotNone(SwaggerSpecHandler.output, "Swagger spec output wasn't cached for later requests")
+
 
 class TestBaseURL(TestGatewayAppBase):
     """Tests gateway behavior when a custom base URL is configured."""

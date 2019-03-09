@@ -6,6 +6,7 @@ expected_spark_version = os.getenv("EXPECTED_SPARK_VERSION", "2.4.*")  # use '2.
 expected_spark_master = os.getenv("EXPECTED_SPARK_MASTER", "yarn")  # use 'k8s:*' on k8s
 expected_deploy_mode = os.getenv("EXPECTED_DEPLOY_MODE", "(cluster|client)")  # use 'client' on k8s
 
+
 class TestBase(object):
 
     def get_expected_application_id(self):

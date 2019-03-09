@@ -4,13 +4,19 @@
 
 import unittest
 import json
-from kernel_gateway.notebook_http.request_utils import (format_request,
-    parse_body, parameterize_path, headers_to_dict, parse_args)
+from kernel_gateway.notebook_http.request_utils import (
+    format_request,
+    headers_to_dict,
+    parameterize_path,
+    parse_args,
+    parse_body)
+
 
 class MockRequest(dict):
     def __init__(self, *args, **kwargs):
         super(MockRequest, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
 
 class MockHeaders(object):
     def __init__(self, headers, **kwargs):
@@ -19,6 +25,7 @@ class MockHeaders(object):
     def get_all(self):
         return self.headers
 
+
 class TestRequestUtils(unittest.TestCase):
     """Unit tests the request utility helper functions."""
     def test_parse_body_text(self):
@@ -26,7 +33,7 @@ class TestRequestUtils(unittest.TestCase):
         request = MockRequest()
         request.body = b'test value'
         request.headers = {
-            'Content-Type' : 'text/plain'
+            'Content-Type': 'text/plain'
         }
         result = parse_body(request)
         self.assertEqual(result, "test value", 'Did not properly parse text body.')
@@ -36,17 +43,17 @@ class TestRequestUtils(unittest.TestCase):
         request = MockRequest()
         request.body = b'{ "foo" : "bar" }'
         request.headers = {
-            'Content-Type' : 'application/json'
+            'Content-Type': 'application/json'
         }
         result = parse_body(request)
-        self.assertEqual(result, { 'foo' : 'bar' }, 'Did not properly parse json body.')
+        self.assertEqual(result, {'foo': 'bar'}, 'Did not properly parse json body.')
 
     def test_parse_body_bad_json(self):
         """Should parse the body from an invalid JSON byte stream to a string."""
         request = MockRequest()
         request.body = b'{ "foo" "bar" }'
         request.headers = {
-            'Content-Type' : 'application/json'
+            'Content-Type': 'application/json'
         }
         result = parse_body(request)
         self.assertEqual(result, '{ "foo" "bar" }', 'Did not properly parse json body.')
@@ -55,23 +62,23 @@ class TestRequestUtils(unittest.TestCase):
         """Should parse body arguments from multipart form data to a dict."""
         request = MockRequest()
         request.body = None
-        request.body_arguments = { 'foo' : [b'bar']}
+        request.body_arguments = {'foo': [b'bar']}
         request.headers = {
-            'Content-Type' : 'multipart/form-data'
+            'Content-Type': 'multipart/form-data'
         }
         result = parse_body(request)
-        self.assertEqual(result, { 'foo' : ['bar']}, 'Did not properly parse json body.')
+        self.assertEqual(result, {'foo': ['bar']}, 'Did not properly parse json body.')
 
     def test_parse_body_url_encoded_form(self):
         """Should parse body arguments from urlencoded form data to a dict."""
         request = MockRequest()
         request.body = None
-        request.body_arguments = { 'foo' : [b'bar']}
+        request.body_arguments = {'foo': [b'bar']}
         request.headers = {
-            'Content-Type' : 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
         result = parse_body(request)
-        self.assertEqual(result, { 'foo' : ['bar']}, 'Did not properly parse json body.')
+        self.assertEqual(result, {'foo': ['bar']}, 'Did not properly parse json body.')
 
     def test_parse_body_empty(self):
         """Should parse an empty body to an empty string."""
@@ -91,10 +98,10 @@ class TestRequestUtils(unittest.TestCase):
 
     def test_parse_args(self):
         """Should parse URL argument byte streams to strings."""
-        result = parse_args({'arga': [ b'1234', b'4566'], 'argb' : [b'hello']})
+        result = parse_args({'arga': [b'1234', b'4566'], 'argb': [b'hello']})
         self.assertEqual(
             result,
-            {'arga': ['1234', '4566'], 'argb' : ['hello']},
+            {'arga': ['1234', '4566'], 'argb': ['hello']},
             'Did not properly convert query parameters.'
         )
 
@@ -114,14 +121,16 @@ class TestRequestUtils(unittest.TestCase):
 
     def test_headers_to_dict(self):
         """Should parse headers into a dictionary."""
-        result = headers_to_dict(MockHeaders([('Content-Type', 'application/json'), ('Set-Cookie', 'A=B'), ('Set-Cookie', 'C=D')]))
-        self.assertEqual(result['Content-Type'], 'application/json','Single value for header was not assigned correctly')
-        self.assertEqual(result['Set-Cookie'], ['A=B','C=D'],'Single value for header was not assigned correctly')
+        result = headers_to_dict(
+            MockHeaders([('Content-Type', 'application/json'), ('Set-Cookie', 'A=B'), ('Set-Cookie', 'C=D')]))
+        self.assertEqual(
+            result['Content-Type'], 'application/json', 'Single value for header was not assigned correctly')
+        self.assertEqual(result['Set-Cookie'], ['A=B', 'C=D'], 'Single value for header was not assigned correctly')
 
     def test_headers_to_dict_with_no_headers(self):
         """Should parse empty headers into an empty dictionary."""
         result = headers_to_dict(MockHeaders([]))
-        self.assertEqual(result, {},'Empty headers handled incorrectly and did not make empty dict')
+        self.assertEqual(result, {}, 'Empty headers handled incorrectly and did not make empty dict')
 
     def test_format_request_code_not_escaped(self):
         """Should handle quotes in headers."""
@@ -129,9 +138,10 @@ class TestRequestUtils(unittest.TestCase):
                         "If-None-Match": "9a28a9262f954494a8de7442c63d6d0715ce0998",
                         "Accept-Encoding": "gzip, deflate, sdch"}, "args": {}, "path": {}}''')
         request_code = format_request(test_request)
-        #Get the value of REQUEST = "{ to test for equality
+        # Get the value of REQUEST = "{ to test for equality
         test_request_js_value = request_code[request_code.index("\"{"):]
-        self.assertEqual(test_request, json.loads(test_request_js_value), "Request code without escaped quotes was not formatted correctly")
+        self.assertEqual(test_request, json.loads(test_request_js_value),
+                         "Request code without escaped quotes was not formatted correctly")
 
     def test_format_request_code_escaped(self):
         """Should handle backslash escaped characeters in headers."""
@@ -139,6 +149,7 @@ class TestRequestUtils(unittest.TestCase):
                         "If-None-Match": "\"\"9a28a9262f954494a8de7442c63d6d0715ce0998\"\"",
                         "Accept-Encoding": "gzip, deflate, sdch"}, "args": {}, "path": {}}''')
         request_code = format_request(test_request)
-        #Get the value of REQUEST = "{ to test for equality
+        # Get the value of REQUEST = "{ to test for equality
         test_request_js_value = request_code[request_code.index("\"{"):]
-        self.assertEqual(test_request, json.loads(test_request_js_value), "Escaped Request code was not formatted correctly")
+        self.assertEqual(test_request, json.loads(test_request_js_value),
+                         "Escaped Request code was not formatted correctly")

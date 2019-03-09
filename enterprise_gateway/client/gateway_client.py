@@ -2,9 +2,7 @@
 import os
 import requests
 import time
-import re
 from uuid import uuid4
-from pprint import pprint
 from tornado.escape import json_encode, json_decode, utf8
 from threading import Thread
 import websocket
@@ -39,7 +37,7 @@ class GatewayClient:
 
         json_data = {'name': kernelspec_name,
                      'env': {'KERNEL_USERNAME': username,
-                             'KERNEL_LAUNCH_TIMEOUT': GatewayClient.KERNEL_LAUNCH_TIMEOUT} }
+                             'KERNEL_LAUNCH_TIMEOUT': GatewayClient.KERNEL_LAUNCH_TIMEOUT}}
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
@@ -233,10 +231,10 @@ class Kernel:
         try:
             response = msg_queue.get(timeout=timeout)
 
-            #print_str = '\n<<<<<<<<<<<<<<< POST IDLE MESSAGE >>>>>>>>>>>>>>>' if post_idle else '\n<<<<<<<<<<<<<<<'
-            #print(print_str)
-            #print('Pulled response from queue for kernel with msg_id: {}'.format(msg_id))
-            #pprint(response)
+            # print_str = '\n<<<<<<<<<<<<<<< POST IDLE MESSAGE >>>>>>>>>>>>>>>' if post_idle else '\n<<<<<<<<<<<<<<<'
+            # print(print_str)
+            # print('Pulled response from queue for kernel with msg_id: {}'.format(msg_id))
+            # pprint(response)
 
         except queue.Empty:
             response = None

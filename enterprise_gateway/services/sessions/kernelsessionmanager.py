@@ -34,11 +34,13 @@ class KernelSessionManager(LoggingConfigurable):
     session_persistence_env = 'EG_KERNEL_SESSION_PERSISTENCE'
     session_persistence_default_value = False
     enable_persistence = Bool(session_persistence_default_value, config=True,
-        help="""Enable kernel session persistence (True or False).  Default = False (EG_KERNEL_SESSION_PERSISTENCE env var)""")
+                              help="""Enable kernel session persistence (True or False). Default = False
+                              (EG_KERNEL_SESSION_PERSISTENCE env var)""")
 
     @default('enable_persistence')
     def session_persistence_default(self):
-        return bool(os.getenv(self.session_persistence_env, str(self.session_persistence_default_value)).lower() == 'true')
+        return bool(os.getenv(self.session_persistence_env,
+                              str(self.session_persistence_default_value)).lower() == 'true')
 
     def __init__(self, kernel_manager, **kwargs):
         super(KernelSessionManager, self).__init__(**kwargs)
@@ -140,11 +142,12 @@ class KernelSessionManager(LoggingConfigurable):
         # Attempt to start kernel from persisted state.  if started, record kernel_session in dictionary
         # else delete session
         kernel_id = kernel_session['kernel_id']
-        kernel_started = self.kernel_manager.start_kernel_from_session(kernel_id=kernel_id,
-                                                                       kernel_name=kernel_session['kernel_name'],
-                                                                       connection_info=kernel_session['connection_info'],
-                                                                       process_info=kernel_session['process_info'],
-                                                                       launch_args=kernel_session['launch_args'])
+        kernel_started = self.kernel_manager.start_kernel_from_session(
+            kernel_id=kernel_id,
+            kernel_name=kernel_session['kernel_name'],
+            connection_info=kernel_session['connection_info'],
+            process_info=kernel_session['process_info'],
+            launch_args=kernel_session['launch_args'])
         if not kernel_started:
             return False
 

@@ -69,7 +69,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
 
-        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
+        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False.
         """
         result = False
 
@@ -87,7 +87,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """Currently only support 0 as poll and other as kill.
 
         :param signum
-        :return: 
+        :return:
         """
         self.log.debug("YarnClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
@@ -102,7 +102,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def kill(self):
         """Kill a kernel.
-        :return: None if the application existed and is not in RUNNING state, False otherwise. 
+        :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
         state = None
         result = False
@@ -163,9 +163,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 app_state = self._get_application_state()
 
                 if app_state in YarnClusterProcessProxy.final_states:
-                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in " \
-                                                     "state '{}' during kernel startup!".\
-                                    format(self.kernel_id, self.application_id, app_state)
+                    error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in state '{}'" \
+                                    " during kernel startup!".format(self.kernel_id, self.application_id, app_state)
                     self.log_and_raise(http_status_code=500, reason=error_message)
 
                 self.log.debug("{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".
@@ -262,7 +261,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except socket.error as sock_err:
             if sock_err.errno == errno.ECONNREFUSED:
                 self.log.warning("YARN end-point: '{}' refused the connection.  Is the resource manager running?".
-                               format(self.yarn_endpoint))
+                                 format(self.yarn_endpoint))
             else:
                 self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
                                  format(kernel_id, type(sock_err), sock_err))
@@ -288,7 +287,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             data = self.resource_mgr.cluster_application(application_id=app_id).data
         except Exception as e:
             self.log.warning("Query for application ID '{}' failed with exception: '{}'.  Continuing...".
-                           format(app_id, e))
+                             format(app_id, e))
         if type(data) is dict and 'app' in data:
             return data['app']
         return None
@@ -296,8 +295,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def _query_app_state_by_id(self, app_id):
         """Return the state of an application.
 
-        :param app_id: 
-        :return: 
+        :param app_id:
+        :return:
         """
         response = None
         try:

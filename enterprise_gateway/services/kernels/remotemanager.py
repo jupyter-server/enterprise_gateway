@@ -37,9 +37,9 @@ def get_process_proxy_config(kernelspec):
     if 'process_proxy' in kernelspec.metadata:
         process_proxy = kernelspec.metadata.get('process_proxy')
         if 'class_name' in process_proxy:  # If no class_name, return default
-                if 'config' not in process_proxy:  # if class_name, but no config stanza, add one
-                    process_proxy.update({"config": {}})
-                return process_proxy  # Return what we found (plus config stanza if necessary)
+            if 'config' not in process_proxy:  # if class_name, but no config stanza, add one
+                process_proxy.update({"config": {}})
+            return process_proxy  # Return what we found (plus config stanza if necessary)
     return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
 
 
@@ -232,7 +232,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         """
         env = kwargs.get('env', {})
         self.user_overrides.update({key: value for key, value in env.items()
-                    if key.startswith('KERNEL_') or
+                                   if key.startswith('KERNEL_') or
                                     key in self.parent.parent.env_process_whitelist or
                                     key in self.parent.parent.personality.env_whitelist})
 
