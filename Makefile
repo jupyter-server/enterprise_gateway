@@ -43,6 +43,9 @@ clean: ## Make a clean source tree
 	-$(SA) $(ENV) && make -C docs clean
 	-$(SA) $(ENV) && make -C etc clean
 
+lint: ## Check code style
+	$(SA) $(ENV) && flake8 enterprise_gateway
+
 nuke: ## Make clean + remove conda env
 	-conda env remove -n $(ENV) -y
 
