@@ -5,6 +5,7 @@
 import os
 import sys
 import json
+import unittest
 
 from .test_gatewayapp import TestGatewayAppBase, RESOURCES
 
@@ -17,17 +18,6 @@ from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
 from tornado.escape import json_encode, json_decode, url_escape
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    # On python 3, mixing unittest2 and unittest (including doctest)
-    # doesn't seem to work, so always use unittest.
-    import unittest
-else:
-    # On python 2, prefer unittest2 when available.
-    try:
-        import unittest2 as unittest  # type: ignore
-    except ImportError:
-        import unittest  # type: ignore
 
 class TestJupyterWebsocket(TestGatewayAppBase):
     """Base class for jupyter-websocket mode tests that spawn kernels."""
