@@ -17,3 +17,6 @@ topnav:
 
 - title: GitHub
   url: https://github.com/jupyter/enterprise_gateway
+
+- title: Privacy
+  url: /enterprise_gateway/privacy-policy
