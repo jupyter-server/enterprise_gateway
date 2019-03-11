@@ -22,13 +22,14 @@ before_install:
     - curl -L -o $HOME/.sbt/launchers/1.2.1/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.2.1/sbt-launch-1.2.1.jar
 
 install:
-    - pip install --upgrade setuptools pip websocket-client
+    - pip install --upgrade setuptools pip websocket-client flake8
     - make dist enterprise-gateway-demo
     - pip install dist/*.whl coverage
     - pip freeze
 
 script:
     - jupyter enterprisegateway --help
+    - flake8 enterprise_gateway
     - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
     - make itest-yarn
     - pip uninstall -y jupyter_enterprise_gateway
