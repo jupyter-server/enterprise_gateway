@@ -1,3 +1,4 @@
+**[Website](https://jupyter.org/enterprise_gateway/)** |
 **[Technical Overview](#technical-overview)** |
 **[Features](#features)** |
 **[Installation](#installation)** |
@@ -6,7 +7,7 @@
 
 # Jupyter Enterprise Gateway
 
-[![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway) 
+[![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway)
 [![Build Status](https://travis-ci.org/jupyter/enterprise_gateway.svg?branch=master)](https://travis-ci.org/jupyter/enterprise_gateway)
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
 [![Coverage Status](https://codecov.io/github/jupyter/enterprise_gateway/coverage.svg?branch=master)](https://codecov.io/github/jupyter/enterprise_gateway?branch=master)
