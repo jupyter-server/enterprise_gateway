@@ -440,12 +440,11 @@ class EnterpriseGatewayApp(JupyterApp):
     )
 
     kernel_manager_class = Type(
-        klass=MappingKernelManager,
         default_value=RemoteMappingKernelManager,
         config=True,
         help="""
         The kernel manager class to use. Must be a subclass
-        of `notebook.services.kernels.MappingKernelManager`.
+        of `enterprise_gateway.services.kernels.RemoteMappingKernelManager`.
         """
     )
 
