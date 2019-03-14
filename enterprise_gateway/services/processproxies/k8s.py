@@ -9,6 +9,8 @@ import re
 import urllib3
 from kubernetes import client, config
 
+from tornado import gen
+
 from .container import ContainerProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
@@ -34,6 +36,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
@@ -44,7 +47,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_pod_name = self._determine_kernel_pod_name(**kwargs)
         self.kernel_namespace = self._determine_kernel_namespace(**kwargs)  # will create namespace if not provided
 
-        return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        yield super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        raise gen.Return(self)
 
     def get_initial_states(self):
         """Return list of states indicating container is starting (includes running)."""

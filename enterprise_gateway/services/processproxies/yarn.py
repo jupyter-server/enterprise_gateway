@@ -9,6 +9,7 @@ import logging
 import errno
 import socket
 
+from tornado import gen
 from jupyter_client import launch_kernel, localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 
@@ -53,9 +54,10 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.resource_mgr = ResourceManager(address=yarn_master,
                                                 port=yarn_port)
 
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a YARN cluster environment."""
-        super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        yield super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh - which is configured for yarn-cluster...
         self.local_proc = launch_kernel(kernel_cmd, **kwargs)
@@ -64,9 +66,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         self.log.debug("Yarn cluster kernel launched using YARN endpoint: {}, pid: {}, Kernel ID: {}, cmd: '{}'"
                        .format(self.yarn_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
-        self.confirm_remote_startup()
-
-        return self
+        yield self.confirm_remote_startup()
+        raise gen.Return(self)
 
     def poll(self):
         """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
@@ -109,7 +110,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
         state = None
-        result = False
         if self._get_application_id():
             resp = self._kill_app_by_id(self.application_id)
             self.log.debug(
@@ -123,10 +123,10 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 state = self._query_app_state_by_id(self.application_id)
                 i = i + 1
 
-            if state in YarnClusterProcessProxy.final_states:
-                result = None
-
-        super(YarnClusterProcessProxy, self).kill()
+        if state in YarnClusterProcessProxy.final_states:
+            result = None
+        else:
+            result = super(YarnClusterProcessProxy, self).kill()
 
         self.log.debug("YarnClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
@@ -150,6 +150,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # for cleanup, we should call the superclass last
         super(YarnClusterProcessProxy, self).cleanup()
 
+    @gen.coroutine
     def confirm_remote_startup(self):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
             unexpectedly encountered (FINISHED, KILLED) then we must throw, otherwise the rest of the gateway will
@@ -160,7 +161,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
-            self.handle_timeout()
+            yield self.handle_timeout()
 
             if self._get_application_id(True):
                 # Once we have an application ID, start monitoring state, obtain assigned host and get connection info
@@ -175,7 +176,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                                format(i, app_state, self.assigned_host, self.kernel_id, self.application_id))
 
                 if self.assigned_host != '':
-                    ready_to_connect = self.receive_connection_info()
+                    ready_to_connect = yield self.receive_connection_info()
             else:
                 self.detect_launch_failure()
 
@@ -194,9 +195,10 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 self.assigned_ip = socket.gethostbyname(self.assigned_host)
         return app_state
 
+    @gen.coroutine
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        yield gen.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:

@@ -10,7 +10,8 @@ import uuid
 from tornado import gen
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
-from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
+from notebook.services.kernels.kernelmanager import AsyncMappingKernelManager
+from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
@@ -43,7 +44,7 @@ def get_process_proxy_config(kernelspec):
     return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
 
 
-class RemoteMappingKernelManager(SeedingMappingKernelManager):
+class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """Extends the SeedingMappingKernelManager with support for managing remote kernels via the process-proxy. """
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
@@ -61,7 +62,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-        kernel_id = yield gen.maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
+        kernel_id = yield super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         raise gen.Return(kernel_id)
 
@@ -185,8 +186,8 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         return kernel_id
 
 
-class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
-    """Extends the KernelGatewayIOLoopKernelManager used by the RemoteMappingKernelManager.
+class RemoteKernelManager(AsyncIOLoopKernelManager):
+    """Extends the AsyncIOLoopKernelManager used by the RemoteMappingKernelManager.
 
     This class is responsible for detecting that a remote kernel is desired, then launching the
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
@@ -194,7 +195,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     """
 
     def __init__(self, **kwargs):
-        super(KernelGatewayIOLoopKernelManager, self).__init__(**kwargs)
+        super(RemoteKernelManager, self).__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None
         self.sigint_value = None
@@ -203,6 +204,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         self.user_overrides = {}
         self.restarting = False  # need to track whether we're in a restart situation or not
 
+    @gen.coroutine
     def start_kernel(self, **kwargs):
         """Starts a kernel in a separate process.
 
@@ -222,7 +224,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         process_proxy_class = import_item(process_proxy_class_name)
         self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=process_proxy.get('config'))
         self._capture_user_overrides(**kwargs)
-        super(RemoteKernelManager, self).start_kernel(**kwargs)
+        yield super(RemoteKernelManager, self).start_kernel(**kwargs)
 
     def _capture_user_overrides(self, **kwargs):
         """
@@ -258,6 +260,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             return [pat.sub(from_ns, arg) for arg in cmd]
         return cmd
 
+    @gen.coroutine
     def _launch_kernel(self, kernel_cmd, **kwargs):
         # Note: despite the under-bar prefix to this method, the jupyter_client comment says that
         # this method should be "[overridden] in a subclass to launch kernel subprocesses differently".
@@ -275,17 +278,20 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
             del env['KG_AUTH_TOKEN']
 
         self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
-        return self.process_proxy.launch_process(kernel_cmd, **kwargs)
+        res = yield self.process_proxy.launch_process(kernel_cmd, **kwargs)
+        raise gen.Return(res)
 
+    @gen.coroutine
     def request_shutdown(self, restart=False):
         """ Send a shutdown request via control channel and process proxy (if remote). """
-        super(RemoteKernelManager, self).request_shutdown(restart)
+        yield super(RemoteKernelManager, self).request_shutdown(restart)
 
         # If we're using a remote proxy, we need to send the launcher indication that we're
         # shutting down so it can exit its listener thread, if its using one.
         if isinstance(self.process_proxy, RemoteProcessProxy):
             self.process_proxy.shutdown_listener()
 
+    @gen.coroutine
     def restart_kernel(self, now=False, **kwargs):
         """Restarts a kernel with the arguments that were used to launch it.
 
@@ -319,7 +325,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
                 self.parent.shutdown_kernel(kernel_id, now=now)
                 return
-        super(RemoteKernelManager, self).restart_kernel(now, **kwargs)
+        yield super(RemoteKernelManager, self).restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
             # Re-establish activity watching...
             if self._activity_stream:
@@ -363,6 +369,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
+    @gen.coroutine
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
 
@@ -373,7 +380,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         if self.process_proxy:
             self.process_proxy.cleanup()
             self.process_proxy = None
-        return super(RemoteKernelManager, self).cleanup(connection_file)
+        yield super(RemoteKernelManager, self).cleanup(connection_file)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.

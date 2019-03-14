@@ -10,6 +10,8 @@ import subprocess
 import socket
 import re
 
+from tornado import gen
+
 from jupyter_client import launch_kernel, localinterfaces
 
 from .processproxy import RemoteProcessProxy
@@ -34,9 +36,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.conductor_endpoint = proxy_config.get('conductor_endpoint',
                                                    kernel_manager.parent.parent.conductor_endpoint)
 
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a Conductor cluster environment."""
-        super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        yield super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
         # Get cred from process env
         env_dict = dict(os.environ.copy())
         if env_dict and 'EGO_SERVICE_CREDENTIAL' in env_dict:
@@ -55,9 +58,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.env = kwargs.get('env')
         self.log.debug("Conductor cluster kernel launched using Conductor endpoint: {}, pid: {}, Kernel ID: {}, "
                        "cmd: '{}'".format(self.conductor_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
-        self.confirm_remote_startup()
-
-        return self
+        yield self.confirm_remote_startup()
+        raise gen.Return(self)
 
     def _update_launch_info(self, kernel_cmd, **kwargs):
         """ Dynamically assemble the spark-submit configuration passed from NB2KG."""
@@ -114,6 +116,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         else:
             return super(ConductorClusterProcessProxy, self).send_signal(signum)
 
+    @gen.coroutine
     def kill(self):
         """Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
@@ -127,7 +130,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             i = 1
             state = self._query_app_state_by_driver_id(self.driver_id)
             while state not in ConductorClusterProcessProxy.final_states and i <= max_poll_attempts:
-                time.sleep(poll_interval)
+                yield gen.sleep(poll_interval)
                 state = self._query_app_state_by_driver_id(self.driver_id)
                 i = i + 1
 
@@ -138,7 +141,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         self.log.debug("ConductorClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
                        .format(self.application_id, self.kernel_id, state))
-        return result
+        raise gen.Return(result)
 
     def cleanup(self):
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
@@ -173,6 +176,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     self.driver_id = driver_id[0]
                     self.log.debug("Driver ID: {}".format(driver_id[0]))
 
+    @gen.coroutine
     def confirm_remote_startup(self):
         """ Confirms the application is in a started state before returning.  Should post-RUNNING states be
             unexpectedly encountered ('FINISHED', 'KILLED', 'RECLAIMED') then we must throw, otherwise the rest
@@ -187,7 +191,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 output = self.local_proc.stderr.read().decode("utf-8")
                 self._parse_driver_submission_id(output)
             i += 1
-            self.handle_timeout()
+            yield self.handle_timeout()
 
             if self._get_application_id(True):
                 # Once we have an application ID, start monitoring state, obtain assigned host and get connection info
@@ -203,7 +207,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                                format(i, app_state, self.assigned_host, self.kernel_id, self.application_id))
 
                 if self.assigned_host != '':
-                    ready_to_connect = self.receive_connection_info()
+                    ready_to_connect = yield self.receive_connection_info()
             else:
                 self.detect_launch_failure()
 
@@ -223,9 +227,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     self.assigned_ip = socket.gethostbyname(self.assigned_host)
         return app_state
 
+    @gen.coroutine
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        yield gen.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:

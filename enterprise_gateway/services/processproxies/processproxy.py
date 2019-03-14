@@ -18,8 +18,10 @@ import subprocess
 import base64
 import random
 
+import asyncio
+
 from socket import timeout, socket, gethostbyname, gethostname, AF_INET, SOCK_STREAM, SHUT_RDWR, SHUT_WR
-from tornado import web
+from tornado import web, gen
 from calendar import timegm
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
@@ -150,6 +152,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.pgid = 0
 
     @abc.abstractmethod
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
         """Provides basic implementation for launching the process corresponding to the process proxy.
 
@@ -208,6 +211,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         return self.send_signal(0)
 
+    @gen.coroutine
     def wait(self):
         """Wait for the process to become inactive."""
         # If we have a local_proc, call its wait method.  This will cleanup any defunct processes when the kernel
@@ -218,7 +222,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         for i in range(max_poll_attempts):
             if self.poll():
-                time.sleep(poll_interval)
+                yield gen.sleep(poll_interval)
             else:
                 break
         else:
@@ -252,6 +256,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     result = self.remote_signal(signum)
         return result
 
+    @gen.coroutine
     def kill(self):
         """Terminate the process proxy process.
 
@@ -263,7 +268,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         result = self.terminate()  # Send -15 signal first
         i = 1
         while self.poll() is None and i <= max_poll_attempts:
-            time.sleep(poll_interval)
+            yield gen.sleep(poll_interval)
             i = i + 1
         if i > max_poll_attempts:  # Send -9 signal if process is still alive
             if self.local_proc:
@@ -276,7 +281,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     else:
                         result = self.remote_signal(signal.SIGKILL)
                     self.log.debug("SIGKILL signal sent to pid: {}".format(self.pid))
-        return result
+        raise gen.Return(result)
 
     def terminate(self):
         """Gracefully terminate the process proxy process.
@@ -632,8 +637,9 @@ class LocalProcessProxy(BaseProcessProxyABC):
         super(LocalProcessProxy, self).__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
-        super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        yield super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh
         self.local_proc = launch_kernel(kernel_cmd, **kwargs)
@@ -646,7 +652,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
         self.ip = local_ip
         self.log.info("Local kernel launched on '{}', pid: {}, pgid: {}, KernelID: {}, cmd: '{}'"
                       .format(self.ip, self.pid, self.pgid, self.kernel_id, kernel_cmd))
-        return self
+        raise gen.Return(self)
 
 
 class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
@@ -664,12 +670,13 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes = {}
         self._prepare_response_socket()
 
+    @gen.coroutine
     def launch_process(self, kernel_cmd, **kwargs):
         # Pass along port-range info to kernels...
         kwargs['env']['EG_MIN_PORT_RANGE_SIZE'] = str(min_port_range_size)
         kwargs['env']['EG_MAX_PORT_RANGE_RETRIES'] = str(max_port_range_retries)
 
-        super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        yield super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kwargs)
         # remove connection file because a) its not necessary any longer since launchers will return
         # the connection information which will (sufficiently) remain in memory and b) launchers
         # landing on this node may want to write to this file and be denied access.
@@ -818,31 +825,42 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
         return payload
 
+    @gen.coroutine
     def receive_connection_info(self):
         """Monitors the response address for connection info sent by the remote kernel launcher."""
         # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
         ready_to_connect = False
-        if self.response_socket:
-            conn = None
-            data = ''
-            try:
-                conn, address = self.response_socket.accept()
-                while 1:
-                    buffer = conn.recv(1024)
-                    if not buffer:  # send is complete, process payload
-                        self.log.debug("Received Payload '{}'".format(data))
-                        payload = self._decrypt(data)
-                        self.log.debug("Decrypted Payload '{}'".format(payload))
-                        connect_info = json.loads(payload)
-                        self.log.debug("Connect Info received from the launcher is as follows '{}'".
-                                       format(connect_info))
-                        self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
-                                       format(self.assigned_host, self.assigned_ip))
+        loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
 
-                        self._setup_connection_info(connect_info)
-                        ready_to_connect = True
-                        break
-                    data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+        @gen.coroutine
+        def get_info(conn):
+            data = ''
+            while True:
+                buffer = yield loop.sock_recv(conn, 1024)
+                if not buffer:  # send is complete, process payload
+                    self.log.debug("Received Payload '{}'".format(data))
+                    payload = self._decrypt(data)
+                    self.log.debug("Decrypted Payload '{}'".format(payload))
+                    connect_info = json.loads(payload)
+                    self.log.debug("Connect Info received from the launcher is as follows '{}'".
+                                   format(connect_info))
+                    self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
+                                   format(self.assigned_host, self.assigned_ip))
+
+                    self._setup_connection_info(connect_info)
+                    break
+                data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+            conn.close()
+
+        @gen.coroutine
+        def get_response():
+            conn, addr = yield loop.sock_accept(self.response_socket)
+            yield get_info(conn)
+
+        if self.response_socket:
+            try:
+                yield get_response()
+                ready_to_connect = True
             except Exception as e:
                 if type(e) is timeout:
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
@@ -852,15 +870,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
                     self.kill()
                     self.log_and_raise(http_status_code=500, reason=error_message)
-            finally:
-                if conn:
-                    conn.close()
         else:
             error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
                 format(self.kernel_id)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
-        return ready_to_connect
+        raise gen.Return(ready_to_connect)
 
     def _setup_connection_info(self, connect_info):
         """
@@ -968,9 +983,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self.ip = self.assigned_ip
             self.local_proc = None
 
+    @gen.coroutine
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        yield gen.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
