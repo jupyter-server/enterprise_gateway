@@ -42,7 +42,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
-        yarn_url = urlparse(self.yarn_endpoint).hostname
+        yarn_url = urlparse(self.yarn_endpoint)
         yarn_master = yarn_url.hostname
         yarn_port = yarn_url.port
         if self.yarn_endpoint_security_enabled is True:
