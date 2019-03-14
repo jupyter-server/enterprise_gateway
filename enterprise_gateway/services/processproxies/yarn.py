@@ -42,12 +42,16 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
-        yarn_master = urlparse(self.yarn_endpoint).hostname
+        yarn_url = urlparse(self.yarn_endpoint).hostname
+        yarn_master = yarn_url.hostname
+        yarn_port = yarn_url.port
         if self.yarn_endpoint_security_enabled is True:
             self.resource_mgr = ResourceManager(address=yarn_master,
+                                                port=yarn_port,
                                                 kerberos_enabled=self.yarn_endpoint_security_enabled)
         else:
-            self.resource_mgr = ResourceManager(address=yarn_master)
+            self.resource_mgr = ResourceManager(address=yarn_master,
+                                                port=yarn_port)
 
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a YARN cluster environment."""
