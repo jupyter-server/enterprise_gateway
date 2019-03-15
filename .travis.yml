@@ -38,6 +38,7 @@ after_success:
   - python --version
   - pip --version
   - pip list
+  - docker logs itest-yarn
   - pip install codecov
   - codecov
 
