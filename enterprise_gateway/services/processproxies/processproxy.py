@@ -326,7 +326,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def get_connection_filename(self):
         """
-            Although we're just using the same connection file (location) on the remote system, go ahead and 
+            Although we're just using the same connection file (location) on the remote system, go ahead and
             keep this method in case we want the remote connection file to be in a different location.  Should
             we decide to keep the current code, we should probably force the local location by requiring that
             either JUPYTER_DATA_DIR or JUPYTER_RUNTIME_DIR envs be set and issue a warning if not - which could
@@ -336,17 +336,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
     def _enforce_authorization(self, **kw):
         """
-            Regardless of impersonation enablement, this method first adds the appropriate value for 
+            Regardless of impersonation enablement, this method first adds the appropriate value for
             EG_IMPERSONATION_ENABLED into environment (for use by kernelspecs), then ensures that KERNEL_USERNAME
             has a value and is present in the environment (again, for use by kernelspecs).  If unset, KERNEL_USERNAME
             will be defaulted to the current user.
-            
-            Authorization is performed by comparing the value of KERNEL_USERNAME with each value in the set of 
-            unauthorized users.  If any (case-sensitive) matches are found, HTTP error 403 (Forbidden) will be raised 
+
+            Authorization is performed by comparing the value of KERNEL_USERNAME with each value in the set of
+            unauthorized users.  If any (case-sensitive) matches are found, HTTP error 403 (Forbidden) will be raised
             - preventing the launch of the kernel.  If the authorized_users set is non-empty, it is then checked to
             ensure the value of KERNEL_USERNAME is present in that list.  If not found, HTTP error 403 will be raised.
-            
-            It is assumed that the kernelspec logic will take the appropriate steps to impersonate the user identified 
+
+            It is assumed that the kernelspec logic will take the appropriate steps to impersonate the user identified
             by KERNEL_USERNAME when impersonation_enabled is True.
         """
         # Get the env
@@ -819,8 +819,11 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
-            self.response_socket.shutdown(SHUT_RDWR)
-            self.response_socket.close()
+            try:
+                self.response_socket.shutdown(SHUT_RDWR)
+                self.response_socket.close()
+            except OSError:
+                pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
 
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
