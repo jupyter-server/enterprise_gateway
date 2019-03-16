@@ -19,11 +19,10 @@ RUN cd /tmp && \
 
 # Update Java
 RUN cd /tmp && \
-	curl -LO 'https://download.oracle.com/otn-pub/java/jdk/8u191-b12/2787e4a523244c269598db4e85c51e0c/jdk-8u191-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
+	curl -LO 'http://download.oracle.com/otn-pub/java/jdk/8u201-b09/42970487e3af4f5aa5bca3f542482c60/jdk-8u201-linux-x64.rpm' -H 'Cookie: oraclelicense=accept-securebackup-cookie' && \
 	rpm -e jdk-1.7.0_71-fcs.x86_64 && \
-	rpm -i /tmp/jdk-8u191-linux-x64.rpm && \
-	rm -f /tmp/jdk-8u191-linux-x64.rpm
-
+	rpm -i /tmp/jdk-8u201-linux-x64.rpm && \
+	rm -f /tmp/jdk-8u201-linux-x64.rpm
 
 # Install Anaconda
 RUN cd /tmp && \
@@ -41,7 +40,7 @@ RUN cd /tmp && \
 
 # Install Anaconda R binaries, argparser and kernelspecs dir
 RUN conda install --yes --quiet -c r r-essentials r-irkernel && \
-	Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")' 
+	Rscript -e 'install.packages("argparser", repos="https://cran.rstudio.com")'
 
 # Create service user 'elyra'. Pin uid/gid to 1111.
 # Grant sudo privs to elyra. Unlock passwd (for ssh).
