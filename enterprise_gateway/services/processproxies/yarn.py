@@ -39,11 +39,16 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
-        yarn_master = urlparse(self.yarn_endpoint).hostname
+        yarn_url = urlparse(self.yarn_endpoint)
+        yarn_master = yarn_url.hostname
+        yarn_port = yarn_url.port
         if self.yarn_endpoint_security_enabled is True:
-            self.resource_mgr = ResourceManager(address=yarn_master, kerberos_enabled=self.yarn_endpoint_security_enabled)
+            self.resource_mgr = ResourceManager(address=yarn_master,
+                                                port=yarn_port,
+                                                kerberos_enabled=self.yarn_endpoint_security_enabled)
         else:
-            self.resource_mgr = ResourceManager(address=yarn_master)
+            self.resource_mgr = ResourceManager(address=yarn_master,
+                                                port=yarn_port)
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
@@ -67,7 +72,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
 
-        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False. 
+        :return: None if the application's ID is available and state is ACCEPTED/SUBMITTED/RUNNING. Otherwise False.
         """
         result = False
 
@@ -85,7 +90,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """Currently only support 0 as poll and other as kill.
 
         :param signum
-        :return: 
+        :return:
         """
         self.log.debug("YarnClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
@@ -100,7 +105,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def kill(self):
         """Kill a kernel.
-        :return: None if the application existed and is not in RUNNING state, False otherwise. 
+        :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
         state = None
         result = False
