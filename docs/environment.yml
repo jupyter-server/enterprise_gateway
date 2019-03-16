@@ -1,7 +1,7 @@
 name: enterprise_gateway_docs
 dependencies:
-- python=3.5
+- python==3.6
 - sphinx_rtd_theme
-- sphinx
+- sphinx>=1.8.3
 - pip:
     - recommonmark
