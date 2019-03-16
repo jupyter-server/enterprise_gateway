@@ -1,3 +1,4 @@
+**[Website](https://jupyter.org/enterprise_gateway/)** |
 **[Technical Overview](#technical-overview)** |
 **[Features](#features)** |
 **[Installation](#installation)** |
@@ -11,6 +12,8 @@
 [![Documentation Status](http://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
 [![Coverage Status](https://codecov.io/github/jupyter-incubator/enterprise_gateway/coverage.svg?branch=master)](https://codecov.io/github/jupyter-incubator/enterprise_gateway?branch=master)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/jupyter)
+[![Join the chat at https://gitter.im/jupyter/enterprise_gateway](https://badges.gitter.im/jupyter/enterprise_gateway.svg)](https://gitter.im/jupyter/enterprise_gateway?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 Jupyter Enterprise Gateway enables Jupyter Notebook to launch remote kernels in a distributed cluster,
 including Apache Spark managed by YARN or IBM Spectrum Conductor.
