@@ -24,6 +24,7 @@ logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('EG_YAR
 local_ip = localinterfaces.public_ips()[0]
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
+yarn_shutdown_wait_time = float(os.getenv('EG_YARN_SHUTDOWN_WAIT_TIME', '15.0'))
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
@@ -49,6 +50,14 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         else:
             self.resource_mgr = ResourceManager(address=yarn_master,
                                                 port=yarn_port)
+        # YARN applications tend to take longer than the default 5 second wait time.  Rather than
+        # require a command-line option for those using YARN, we'll adjust based on a local env that
+        # defaults to 15 seconds.  Note: we'll only adjust if the current wait time is shorter than
+        # the desired value.
+        if kernel_manager.shutdown_wait_time < yarn_shutdown_wait_time:
+            kernel_manager.shutdown_wait_time = yarn_shutdown_wait_time
+            self.log.debug("{class_name} shutdown wait time adjusted to {wait_time} seconds.".
+                           format(class_name=type(self).__name__, wait_time=kernel_manager.shutdown_wait_time))
 
     def launch_process(self, kernel_cmd, **kw):
         """ Launches the Yarn process.  Prior to invocation, connection files will be distributed to each applicable
