@@ -4,11 +4,11 @@
   "process_proxy": {
     "class_name": "enterprise_gateway.services.processproxies.conductor.ConductorClusterProcessProxy"
   },
-  "env": { 
-    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+  "env": {
+    "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
     "LAUNCH_OPTS": ""
   },
-  "argv": [ 
+  "argv": [
     "{connection_file}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
