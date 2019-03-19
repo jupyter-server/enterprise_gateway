@@ -4,7 +4,7 @@
 .PHONY: help build clean nuke dev dev-http docs kernelspecs install sdist test release docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yarn-spark
 
 SA:=source activate
-ENV:=enterprise-gateway-dev
+ENV:=enterprise-gateway-1x-dev
 SHELL:=/bin/bash
 
 VERSION:=1.2.0.dev0
