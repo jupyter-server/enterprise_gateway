@@ -14,6 +14,10 @@ EG_YARN_ENDPOINT=http://${YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common
 ```
 Note: If Enterprise Gateway is using an applicable HADOOP_CONF_DIR that contains a valid `yarn-site.xml` file, then this config value can remain unset (default = None) and the YARN client library will locate the appropriate Resource Manager from the configuration.  This is also true in cases where the YARN cluster is configured for high availability.
 
+If Enterprise Gateway is remote from the YARN cluster (i.e., no HADOOP_CONF_DIR) and the YARN cluster is configured for high availability, then the alternate endpoint should also be specified...
+```
+EG_ALT_YARN_ENDPOINT=http://${ALT_YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
+```
 ### Configuring Kernels for YARN Cluster mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release [e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).
