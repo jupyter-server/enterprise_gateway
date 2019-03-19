@@ -229,20 +229,15 @@ defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variable
 timeout can be specified as a client attribute of the Notebook session.
 
 ###### YarnClusterProcessProxy
-As part of its base offering, Enterprise Gateway provides an implementation of a process proxy 
-that communicates with the YARN resource manager that has been instructed to launch a kernel
-on one of its worker nodes.  The node on which the kernel is launched is up to the resource
-manager - which enables an optimized distribution of kernel resources.
+As part of its base offering, Enterprise Gateway provides an implementation of a process proxy that communicates with the YARN resource manager that has been instructed to launch a kernel on one of its worker nodes.  The node on which the kernel is launched is up to the resource manager - which enables an optimized distribution of kernel resources.
 
-Derived from `RemoteProcessProxy`, `YarnClusterProcessProxy` uses the `yarn-api-client` library
-to locate the kernel and monitor its life-cycle.  However, once the kernel has returned its
-connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
+Derived from `RemoteProcessProxy`, `YarnClusterProcessProxy` uses the `yarn-api-client` library to locate the kernel and monitor its life-cycle.  However, once the kernel has returned its connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
 
-This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line 
-option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is 
-located.  To accommodate increased flexibility, the endpoint definition can be defined within 
-the process proxy stanza of the kernelspec, enabling the ability to direct specific kernels to 
-different YARN clusters.
+This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.  To accommodate increased flexibility, the endpoint definition can be defined within the process proxy stanza of the kernelspec, enabling the ability to direct specific kernels to different YARN clusters.
+
+In cases where the YARN cluster is configured for high availability, then the `--EnterpriseGatewayApp.alt_yarn_endpoint` command line option or the `EG_ALT_YARN_ENDPOINT` environment variable should also be defined.  When set, the underlying `yarn-api-client` library will choose the active Resource Manager between the two.
+
+Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, neither of these values are required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
 
 See [Enabling YARN Cluster Mode Support](getting-started-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
 

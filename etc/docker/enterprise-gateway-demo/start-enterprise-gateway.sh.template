@@ -5,7 +5,7 @@ export JUPYTER_PATH=${JUPYTER_PATH:-/tmp/byok}
 
 # Enterprise Gateway variables
 export EG_REMOTE_HOSTS=${EG_REMOTE_HOSTS:-HOSTNAME}
-export EG_YARN_ENDPOINT=${EG_YARN_ENDPOINT:-http://HOSTNAME:8088/ws/v1/cluster}
+export EG_YARN_MASTERS=HOSTNAME:8088
 export EG_SSH_PORT=${EG_SSH_PORT:-2122}
 export KG_IP=${KG_IP:-0.0.0.0}
 export KG_PORT=${KG_PORT:-8888}

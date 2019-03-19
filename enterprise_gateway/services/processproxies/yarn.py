@@ -37,22 +37,38 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.application_id = None
+        self.rm_addr = None
         self.yarn_endpoint \
             = proxy_config.get('yarn_endpoint',
                                kernel_manager.parent.parent.yarn_endpoint)
+        self.alt_yarn_endpoint \
+            = proxy_config.get('alt_yarn_endpoint',
+                               kernel_manager.parent.parent.alt_yarn_endpoint)
+
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
-        yarn_url = urlparse(self.yarn_endpoint)
-        yarn_master = yarn_url.hostname
-        yarn_port = yarn_url.port
-        if self.yarn_endpoint_security_enabled is True:
-            self.resource_mgr = ResourceManager(address=yarn_master,
-                                                port=yarn_port,
-                                                kerberos_enabled=self.yarn_endpoint_security_enabled)
-        else:
-            self.resource_mgr = ResourceManager(address=yarn_master,
-                                                port=yarn_port)
+
+        yarn_master = alt_yarn_master = None
+        yarn_port = alt_yarn_port = 8088
+        if self.yarn_endpoint:
+            yarn_url = urlparse(self.yarn_endpoint)
+            yarn_master = yarn_url.hostname
+            yarn_port = yarn_url.port
+            # Only check alternate if "primary" is set.
+            if self.alt_yarn_endpoint:
+                alt_yarn_url = urlparse(self.alt_yarn_endpoint)
+                alt_yarn_master = alt_yarn_url.hostname
+                alt_yarn_port = alt_yarn_url.port
+
+        self.resource_mgr = ResourceManager(address=yarn_master,
+                                            port=yarn_port,
+                                            alt_address=alt_yarn_master,
+                                            alt_port=alt_yarn_port,
+                                            kerberos_enabled=self.yarn_endpoint_security_enabled)
+
+        host, port = self.resource_mgr.get_active_host_port()
+        self.rm_addr = host + ':' + str(port)
 
         # YARN applications tend to take longer than the default 5 second wait time.  Rather than
         # require a command-line option for those using YARN, we'll adjust based on a local env that
@@ -72,8 +88,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
-        self.log.debug("Yarn cluster kernel launched using YARN endpoint: {}, pid: {}, Kernel ID: {}, cmd: '{}'"
-                       .format(self.yarn_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
+        self.log.debug("Yarn cluster kernel launched using YARN RM address: {}, pid: {}, Kernel ID: {}, cmd: '{}'"
+                       .format(self.rm_addr, self.local_proc.pid, self.kernel_id, kernel_cmd))
         self.confirm_remote_startup()
 
         return self
@@ -274,8 +290,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
         except socket.error as sock_err:
             if sock_err.errno == errno.ECONNREFUSED:
-                self.log.warning("YARN end-point: '{}' refused the connection.  Is the resource manager running?".
-                                 format(self.yarn_endpoint))
+                self.log.warning("YARN RM address: '{}' refused the connection.  Is the resource manager running?".
+                                 format(self.rm_addr))
             else:
                 self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
                                  format(kernel_id, type(sock_err), sock_err))
