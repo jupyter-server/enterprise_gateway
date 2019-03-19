@@ -56,13 +56,27 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
     # Yarn endpoint
     yarn_endpoint_env = 'EG_YARN_ENDPOINT'
-    yarn_endpoint_default_value = 'http://localhost:8088/ws/v1/cluster'
-    yarn_endpoint = Unicode(yarn_endpoint_default_value, config=True,
-                            help="""The http url for accessing the YARN Resource Manager. (EG_YARN_ENDPOINT env var)""")
+    yarn_endpoint = Unicode(None, config=True, allow_none=True,
+                            help="""The http url specifying the YARN Resource Manager. Note: If this value is NOT set,
+                            the YARN library will use the files within the local HADOOP_CONFIG_DIR to determine the
+                            active resource manager. (EG_YARN_ENDPOINT env var)""")
 
     @default('yarn_endpoint')
     def yarn_endpoint_default(self):
-        return os.getenv(self.yarn_endpoint_env, self.yarn_endpoint_default_value)
+        return os.getenv(self.yarn_endpoint_env)
+
+    # Alt Yarn endpoint
+    alt_yarn_endpoint_env = 'EG_ALT_YARN_ENDPOINT'
+    alt_yarn_endpoint = Unicode(None, config=True, allow_none=True,
+                                help="""The http url specifying the alternate YARN Resource Manager.  This value should
+                                be set when YARN Resource Managers are configured for high availability.  Note: If both
+                                YARN endpoints are NOT set, the YARN library will use the files within the local
+                                HADOOP_CONFIG_DIR to determine the active resource manager.
+                                (EG_ALT_YARN_ENDPOINT env var)""")
+
+    @default('alt_yarn_endpoint')
+    def alt_yarn_endpoint_default(self):
+        return os.getenv(self.alt_yarn_endpoint_env)
 
     yarn_endpoint_security_enabled_env = 'EG_YARN_ENDPOINT_SECURITY_ENABLED'
     yarn_endpoint_security_enabled_default_value = False
