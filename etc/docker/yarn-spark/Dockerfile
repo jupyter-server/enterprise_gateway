@@ -26,9 +26,9 @@ RUN cd /tmp && \
 
 # Install Anaconda
 RUN cd /tmp && \
-	curl -O https://repo.continuum.io/archive/Anaconda2-4.4.0-Linux-x86_64.sh && \
-    bash /tmp/Anaconda2-4.4.0-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
-    rm -f /tmp/Anaconda2-4.4.0-Linux-x86_64.sh
+	curl -O https://repo.continuum.io/archive/Anaconda2-5.0.1-Linux-x86_64.sh && \
+    bash /tmp/Anaconda2-5.0.1-Linux-x86_64.sh -b -p $ANACONDA_HOME && \
+    rm -f /tmp/Anaconda2-5.0.1-Linux-x86_64.sh
 
 # Install Toree
 RUN cd /tmp && \
@@ -79,5 +79,5 @@ CMD ["--help"]
 
 LABEL Hadoop.version="2.7.1"
 LABEL Spark.version="2.1.0"
-LABEL Anaconda.version="4.4.0"
+LABEL Anaconda.version="5.1.0"
 LABEL Anaconda.python.version="2.7.13"

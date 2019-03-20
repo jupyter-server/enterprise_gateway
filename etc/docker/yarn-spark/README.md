@@ -7,7 +7,7 @@ for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.i
 * Hadoop 2.7.1 
 * Spark 2.1.0
 * Java 1.8 (jdk-8u162)
-* Anaconda 4.4 (python 2.7.13) with R packages
+* Anaconda 5.0.1 (python 2.7.13) with R packages
 * Toree 0.3.0-incubating
 * `elyra` service user, with system users `jovyan`, `bob`, and `alice`.  The jovyan uid is `1000` to match other jupyter
  images.
