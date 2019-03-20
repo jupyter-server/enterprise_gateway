@@ -52,7 +52,7 @@ latest Python version (currently Python 2.7 and Python 3.6).
 * Install the version of Anaconda which you downloaded, following the instructions on the download
 page.
 
-* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/1.1.0)
+* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/1.2.0)
 using `pip`(part of Anaconda) along with its dependencies.
 
 ```bash

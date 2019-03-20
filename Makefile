@@ -7,7 +7,7 @@ SA:=source activate
 ENV:=enterprise-gateway-1x-dev
 SHELL:=/bin/bash
 
-VERSION:=1.2.0.dev0
+VERSION:=1.2.0
 
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-enterprise-gateway" ! -path "./.image-nb2kg" ! -path "./.image-yarn-spark" )
@@ -89,13 +89,13 @@ release: bdist sdist ## Make a wheel + source release on PyPI
 docker-images:  ## Build docker images
 docker-image-enterprise-gateway:  ## Build elyra/enterprise-gateway:dev docker image
 docker-image-yarn-spark:  ## Build elyra/yarn-spark:2.1.0 docker image
-docker-image-nb2kg:  ## Build elyra/nb2kg:dev docker image 
+docker-image-nb2kg:  ## Build elyra/nb2kg:dev docker image
 
 # Actual working targets...
-docker-images docker-image-yarn-spark docker-image-nb2kg:  
+docker-images docker-image-yarn-spark docker-image-nb2kg:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
-docker-image-enterprise-gateway: $(WHEEL_FILE) 
+docker-image-enterprise-gateway: $(WHEEL_FILE)
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 
@@ -109,7 +109,7 @@ docker-clean docker-clean-enterprise-gateway docker-clean-nb2kg docker-clean-yar
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) -C etc $@
 
 
-# itest should have these targets up to date: bdist kernelspecs docker-image-enterprise-gateway 
+# itest should have these targets up to date: bdist kernelspecs docker-image-enterprise-gateway
 
 # itest configurable settings
 # indicates which host (gateway) to connect to...
@@ -133,7 +133,7 @@ endif
 	@echo "Run \`docker logs itest\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
-docker-prep: 
+docker-prep:
 	@-docker rm -f itest >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest\` to see container log)..."
 	@-docker run -itd -p 8888:8888 -h itest --name itest -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway:$(ENTERPRISE_GATEWAY_TAG) --elyra
