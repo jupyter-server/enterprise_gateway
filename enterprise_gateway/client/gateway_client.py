@@ -151,7 +151,7 @@ class Kernel:
         except BaseException as b:
             print(b)
 
-        return '\n'.join(response)
+        return ''.join(response)
 
     def interrupt(self):
         url = "{}/{}".format(self.kernel_http_api_endpoint, "interrupt")
