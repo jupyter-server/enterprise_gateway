@@ -53,6 +53,11 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	# Container-based kernelspecs just get the container launchers
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
+        # Populate kernel resources.  Because tensorflow is also python, it should be last.
+	@echo ../build/kernelspecs/*R* | xargs -t -n 1 cp -r kernel-resources/ir/*
+	@echo ../build/kernelspecs/*scala* | xargs -t -n 1 cp -r kernel-resources/apache_toree/*
+	@echo ../build/kernelspecs/*python* | xargs -t -n 1 cp -r kernel-resources/python/*
+	@echo ../build/kernelspecs/*tf* | xargs -t -n 1 cp -r kernel-resources/tensorflow/*
     # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
 	@(cd ../build/kernelspecs; find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(TAG)/g"; find . -name *.bak -print0 | xargs -0 rm -f)
@@ -94,14 +99,14 @@ kernel_image_files: ../build/kernel_image_files
 # Docker image build section ***********************************************
 #
 
-KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
+KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py
 DOCKER_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 
 docker-images: $(DOCKER_IMAGES)
 kernel-images: $(KERNEL_IMAGES)
 
-publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-spark-py publish-kernel-tf-py publish-kernel-tf-gpu-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
+publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-spark-py publish-kernel-tf-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala
 
 clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-demo-base clean-enterprise-gateway clean-kernel-images
 clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
