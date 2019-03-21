@@ -140,12 +140,14 @@ ITEST_YARN_PORT?=8888
 ITEST_YARN_HOST?=localhost:$(ITEST_YARN_PORT)
 ITEST_YARN_TESTS?=enterprise_gateway.itests
 
+ITEST_KERNEL_LAUNCH_TIMEOUT=90
+
 PREP_ITEST_YARN?=1
 itest-yarn: ## Run integration tests (optionally) against docker demo (YARN) container
 ifeq (1, $(PREP_ITEST_YARN))
 	make itest-yarn-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) KERNEL_USERNAME=$(ITEST_USER) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) nosetests -v $(ITEST_YARN_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) nosetests -v $(ITEST_YARN_TESTS))
 	@echo "Run \`docker logs itest-yarn\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
@@ -167,7 +169,7 @@ itest-docker: ## Run integration tests (optionally) against docker swarm
 ifeq (1, $(PREP_ITEST_DOCKER))
 	make itest-docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) KERNEL_USERNAME=$(ITEST_USER) $(ITEST_DOCKER_KERNELS) nosetests -v $(ITEST_DOCKER_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) nosetests -v $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
