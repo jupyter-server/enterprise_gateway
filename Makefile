@@ -56,7 +56,7 @@ docs: ## Make HTML documentation
 	$(SA) $(ENV) && make -C docs html
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
-kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files: 
+kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
 	make VERSION=$(VERSION) TAG=$(TAG) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
@@ -86,7 +86,7 @@ sdist:
 	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
 		&& rm -rf *.egg-info
 
-dist: bdist sdist kernelspecs ## Make source, binary and kernelspecs distribution to dist folder
+dist: lint bdist sdist kernelspecs ## Make source, binary and kernelspecs distribution to dist folder
 
 test: TEST?=
 test: ## Run unit tests
