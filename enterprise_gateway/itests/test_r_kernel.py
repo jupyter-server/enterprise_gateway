@@ -138,7 +138,7 @@ class TestRKernelCluster(unittest.TestCase, RKernelBaseSparkTestCase):
     def setUpClass(cls):
         super(TestRKernelCluster, cls).setUpClass()
         print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
