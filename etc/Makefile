@@ -99,7 +99,7 @@ kernel_image_files: ../build/kernel_image_files
 # Docker image build section ***********************************************
 #
 
-KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py
+KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 DOCKER_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway $(KERNEL_IMAGES)
 
