@@ -36,7 +36,8 @@ RUN cd /opt/ && \
     ln -sfn /opt/conda/bin/tini /sbin/tini
 
 WORKDIR $SPARK_HOME/work-dir
-RUN chmod g+w $SPARK_HOME/work-dir
+# Ensure that work-dir is writable by everyone
+RUN chmod 0777 $SPARK_HOME/work-dir
 
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
