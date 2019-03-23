@@ -140,7 +140,7 @@ class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseSparkTestCase):
     def setUpClass(cls):
         super(TestScalaKernelCluster, cls).setUpClass()
         print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('Starting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
