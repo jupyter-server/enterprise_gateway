@@ -192,7 +192,7 @@ function update_version_to_release {
     sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
 
     # Update documentation
-    find docs/* -type f -exec sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" {} \;
+    find docs/source/*.md -type f -exec sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" {} \;
 }
 
 function update_version_to_development {
@@ -207,7 +207,7 @@ function update_version_to_development {
     sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
 
     # Update documentation
-    find docs/* -type f -exec sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" {} \;
+    find docs/source/*.md -type f -exec sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" {} \;
 }
 
 if [[ "$RELEASE_PREPARE" == "true" ]]; then
