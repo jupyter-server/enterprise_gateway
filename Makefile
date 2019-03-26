@@ -10,7 +10,7 @@ SA:=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
-VERSION:=2.0.0.dev1
+VERSION:=2.0.0rc1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
     TAG:=dev
