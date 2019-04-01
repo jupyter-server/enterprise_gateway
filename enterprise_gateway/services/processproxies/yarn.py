@@ -41,34 +41,23 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_endpoint \
             = proxy_config.get('yarn_endpoint',
                                kernel_manager.parent.parent.yarn_endpoint)
-        self.alt_yarn_endpoint \
-            = proxy_config.get('alt_yarn_endpoint',
-                               kernel_manager.parent.parent.alt_yarn_endpoint)
-
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
 
-        yarn_master = alt_yarn_master = None
-        yarn_port = alt_yarn_port = 8088
+        yarn_master = None
+        yarn_port = None
         if self.yarn_endpoint:
             yarn_url = urlparse(self.yarn_endpoint)
             yarn_master = yarn_url.hostname
             yarn_port = yarn_url.port
-            # Only check alternate if "primary" is set.
-            if self.alt_yarn_endpoint:
-                alt_yarn_url = urlparse(self.alt_yarn_endpoint)
-                alt_yarn_master = alt_yarn_url.hostname
-                alt_yarn_port = alt_yarn_url.port
 
         self.resource_mgr = ResourceManager(address=yarn_master,
                                             port=yarn_port,
-                                            alt_address=alt_yarn_master,
-                                            alt_port=alt_yarn_port,
                                             kerberos_enabled=self.yarn_endpoint_security_enabled)
 
-        host, port = self.resource_mgr.get_active_host_port()
-        self.rm_addr = host + ':' + str(port)
+        # Temporary until yarn-api-client can be extended to return host-port info when yarn_master is None.
+        self.rm_addr = yarn_master + ':' + str(yarn_port) if yarn_master is not None else '(see yarn-site.xml)'
 
         # YARN applications tend to take longer than the default 5 second wait time.  Rather than
         # require a command-line option for those using YARN, we'll adjust based on a local env that
