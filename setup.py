@@ -44,7 +44,7 @@ Apache Spark, Kubernetes and others..
         'scripts/jupyter-enterprisegateway'
     ],
     install_requires=[
-        'docker>=3.5.0'
+        'docker>=3.5.0',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
         'jupyter_kernel_gateway>=2.3.0',
@@ -58,6 +58,7 @@ Apache Spark, Kubernetes and others..
         'tornado>=4.2.0',
         'traitlets>=4.2.0',
         'yarn-api-client>=0.3.3',
+        'jinja2>=2.10',
     ],
     python_requires='>=3.5',
     classifiers=[
