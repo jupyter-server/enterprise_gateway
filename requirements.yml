@@ -16,6 +16,7 @@ dependencies:
   - pyzmq>=17.0.0
   - python-kubernetes>=4.0.0
   - docker-py>=3.5.0
+  - jinja2>=2.10
   - pip
 
   # Test Requirements

@@ -1,5 +1,5 @@
 # This file defines the Kubernetes objects necessary for Enterprise Gateway kernels to run witihin Kubernetes.
-# Substitution parameters (wrapped with ${}) are processed by the launch_kubernetes.py code located in the
+# Substitution parameters are processed by the launch_kubernetes.py code located in the
 # same directory.  Some values are factory values, while others (typically prefixed with 'kernel_') can be
 # provided by the client.
 #
@@ -10,43 +10,62 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ${kernel_pod_name}
-  namespace: ${kernel_namespace}
+  name: "{{ kernel_pod_name }}"
+  namespace: "{{ kernel_namespace }}"
   labels:
-    kernel_id: ${kernel_id}
+    kernel_id: "{{ kernel_id }}"
     app: enterprise-gateway
     component: kernel
 spec:
   restartPolicy: Never
-  serviceAccountName: ${kernel_service_account_name}
-# Uncomment the following if you want to run the kernel pod as a different user and group
+  serviceAccountName: "{{ kernel_service_account_name }}"
 # NOTE: that using runAsGroup requires that feature-gate RunAsGroup be enabled.
 # WARNING: Only using runAsUser w/o runAsGroup or NOT enabling the RunAsGroup feature-gate
 # will result in the new kernel pod's effective group of 0 (root)! although the user will
 # correspond to the runAsUser value.  As a result, BOTH should be uncommented AND the feature-gate
 # should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
 # that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
-# ${kernel_uid} and ${kernel_gid} values.
-#
-#  securityContext:
-#    runAsUser: ${kernel_uid}
-#    runAsGroup: ${kernel_gid}
-#    fsGroup: 100
+# "kernel_uid" and "kernel_gid" values.
+  {% if kernel_uid is defined or kernel_gid is defined %}
+  securityContext:
+    {% if kernel_uid is defined %}
+    runAsUser: {{ kernel_uid | int }}
+    {% endif %}
+    {% if kernel_gid is defined %}
+    runAsGroup: {{ kernel_gid | int }}
+    {% endif %}
+    fsGroup: 100
+  {% endif %}
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS
-      value: ${eg_response_address}
+      value: "{{ eg_response_address }}"
     - name: KERNEL_LANGUAGE
-      value: ${kernel_language}
+      value: "{{ kernel_language }}"
     - name: KERNEL_SPARK_CONTEXT_INIT_MODE
-      value: ${kernel_spark_context_init_mode}
+      value: "{{ kernel_spark_context_init_mode }}"
     - name: KERNEL_NAME
-      value: ${kernel_name}
+      value: "{{ kernel_name }}"
     - name: KERNEL_USERNAME
-      value: ${kernel_username}
+      value: "{{ kernel_username }}"
     - name: KERNEL_ID
-      value: ${kernel_id}
+      value: "{{ kernel_id }}"
     - name: KERNEL_NAMESPACE
-      value: ${kernel_namespace}
-    image: ${kernel_image}
-    name: ${kernel_pod_name}
+      value: "{{ kernel_namespace }}"
+    image: "{{ kernel_image }}"
+    name: "{{ kernel_pod_name }}"
+    {% if kernel_working_dir is defined %}
+    workingDir: "{{ kernel_working_dir }}"
+    {% endif %}
+    {% if kernel_volume_mounts is defined %}
+    volumeMounts:
+      {% for volume_mount in kernel_volume_mounts %}
+    - {{ volume_mount }}
+      {% endfor %}
+    {% endif %}
+  {% if kernel_volumes is defined %}
+  volumes:
+    {% for volume in kernel_volumes %}
+  - {{ volume }}
+    {% endfor %}
+  {% endif %}

@@ -3,10 +3,27 @@ import sys
 import yaml
 import argparse
 from kubernetes import client, config
-from string import Template, Formatter
 import urllib3
 
+from jinja2 import FileSystemLoader, Environment
+
 urllib3.disable_warnings()
+
+KERNEL_POD_TEMPLATE_PATH = '/kernel-pod.yaml.j2'
+
+
+def generate_kernel_pod_yaml(keywords):
+    """Return the kubernetes pod spec as a yaml string.
+
+    - load jinja2 template from this file directory.
+    - substitute template variables with keywords items.
+    """
+    j_env = Environment(loader=FileSystemLoader(os.path.dirname(__file__)), trim_blocks=True, lstrip_blocks=True)
+    # jinja2 template substitutes template variables with None though keywords doesn't contain corresponding item.
+    # Therfore, no need to check if any are left unsubstituted. Kubernetes API server will validate the pod spec instead.
+    k8s_yaml = j_env.get_template(KERNEL_POD_TEMPLATE_PATH).render(**keywords)
+
+    return k8s_yaml
 
 
 def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
@@ -29,33 +46,10 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     # with name in lower case.
     for name, value in os.environ.items():
         if name.startswith('KERNEL_'):
-            keywords[name.lower()] = value
+            keywords[name.lower()] = yaml.safe_load(value)
 
-    # Read the kernel-pod yaml file, stripping off any commented lines.  This allows instances of the
-    # yaml file to comment out substitution parameters since we want to fail the launch if any are left
-    # unsubstituted.  Otherwise, commented out parameters could fail the launch if they had no substitutions.
-    #
-    yaml_template = ''
-    with open(os.path.join(os.path.dirname(__file__), "kernel-pod.yaml")) as f:
-        for line in f:
-            line = line.split('#', 1)[0]
-            yaml_template = yaml_template + line
-        f.close()
-
-    # Perform substitutions, then verify all parameters have been replaced.  If any
-    # parameters still exist, print their names and exit.  If all have been replaced,
-    # iterate over each document, issue creation statements.
-    #
-    k8s_yaml = Template(yaml_template).safe_substitute(keywords)
-
-    # Check for non-substituted parameters - exit if found.
-    #
-    missing_params = [param[1] for param in Formatter().parse(k8s_yaml) if param[1]]
-    if len(missing_params) > 0:
-        missing_params = ['${' + param[1] + '}' for param in Formatter().parse(k8s_yaml) if param[1]]
-        if len(missing_params) > 0:
-            sys.exit("ERROR - The following parameters were not substituted - kernel launch terminating! {}".
-                     format(missing_params))
+    # Substitute all template variable (wrapped with {{ }}) and generate `yaml` string.
+    k8s_yaml = generate_kernel_pod_yaml(keywords)
 
     # For each k8s object (kind), call the appropriate API method.  Too bad there isn't a method
     # that can take a set of objects.
@@ -70,10 +64,6 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
         if k8s_obj.get('kind'):
             if k8s_obj['kind'] == 'Pod':
                 #print("{}".format(k8s_obj))  # useful for debug
-                # If workingDir is not in the yaml and kernel_working_dir exists, use that as the workingDir
-                if 'workingDir' not in k8s_obj['spec']['containers'][0] and 'kernel_working_dir' in keywords:
-                    k8s_obj['spec']['containers'][0]['workingDir'] = keywords['kernel_working_dir']
-
                 client.CoreV1Api(client.ApiClient()).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
             elif k8s_obj['kind'] == 'Secret':
                 client.CoreV1Api(client.ApiClient()).create_namespaced_secret(body=k8s_obj, namespace=kernel_namespace)
