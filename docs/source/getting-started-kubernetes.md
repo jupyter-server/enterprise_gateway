@@ -397,7 +397,7 @@ deployment "enterprise-gateway" created
 
 ##### Uninstalling Enterprise Gateway
 
-- To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
+To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
 ```
 kubectl delete all -l app=enterprise-gateway
 ```
