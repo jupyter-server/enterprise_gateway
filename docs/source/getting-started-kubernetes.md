@@ -381,6 +381,10 @@ docker pull elyra/kernel-py:VERSION
 
 If it is not possible to pre-seed the nodes, you will likely need to adjust the `EG_KERNEL_LAUNCH_TIMEOUT` value in the `enterprise-gateway.yaml` file as well as the `KG_REQUEST_TIMEOUT` parameter that issue the kernel start requests from the `NB2KG` extension of the Notebook client.
 
+#### Option 1: Deploying with kubectl
+
+Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like Helm.
+
 ##### Create the Enterprise Gateway kubernetes service and deployment
 From the master node, create the service and deployment using the yaml file from the git repository:
 
@@ -390,9 +394,43 @@ kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
 service "enterprise-gateway" created
 deployment "enterprise-gateway" created
 ```
-##### Confirm deployment and note the service port mapping
+
+#### Option 2: Deploying with Helm
+
+Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
+
+##### Create the Enterprise Gateway kubernetes service and deployment
+
+From anywhere with Helm cluster access, create the service and deployment by running Helm from the git repository:
+
 ```
-kubectl get all -l app=enterprise-gateway
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
+```
+
+##### Configuration
+
+Here are all of the values that you can set when deploying the Helm chart. You
+can override them with Helm's `--set` or `--values` options.
+
+| **Parameter** | **Description** | **Default** |
+| ------------- | --------------- | ----------- |
+| `image` | Image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:dev` |
+| `imagePullPolicy` | Image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `replicas` | Update to deploy multiple replicas of EG. | `1` |
+| `kernel_cluster_role` | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client. | `kernel-controller` |
+| `shared_namespace` | All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE must be provided or one will be created for each kernel. | `false` |
+| `mirror_working_dirs` | Whether to mirror working directories. NOTE: This requires appropriate volume mounts to make notebook dir accessible. | `false` |
+| `cull_idle_timeout` | Idle timeout in seconds. Default is 1 hour. | `3600` |
+| `log_level` | Log output level. | `DEBUG` |
+| `kernel_launch_timeout` | Timeout for kernel launching in seconds. | `60` |
+| `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,python_kubernetes,python_tf_kubernetes,python_tf_gpu_kubernetes,scala_kubernetes,spark_r_kubernetes,spark_python_kubernetes,spark_scala_kubernetes}` |
+| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. | `false` |
+| `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
+| `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
+
+#### Confirm deployment and note the service port mapping
+```
+kubectl get all --all-namespaces -l app=enterprise-gateway
 
 NAME                        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 deploy/enterprise-gateway   1         1         1            1           2h
@@ -417,8 +455,9 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 #  - 9.30.118.200
 ```
 
-The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
+However, if using Helm, see the section above about how to set the `k8s_master_public_ip`.
 
+The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
 ### Kubernetes Tips
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes environment.

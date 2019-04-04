@@ -1,27 +1,10 @@
-# Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run.
 image: elyra/enterprise-gateway:dev
-
-# Use IfNotPresent policy so that dev-based systems don't automatically
-# update. This provides more control.  Since formal tags will be release-specific
-# this policy should be sufficient for them as well.
 imagePullPolicy: IfNotPresent
-
-# Update to deploy multiple replicas of EG
 replicas: 1
-
-# Created by this chart.  Used if no KERNEL_NAMESPACE is provided by client.
 kernel_cluster_role: "kernel-controller"
-
-# All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE
-# must be provided or one will be created for each kernel.
 shared_namespace: false
-
-# NOTE: This requires appropriate volume mounts to make notebook dir accessible.
 mirror_working_dirs: false
-
-# Current idle timeout is 1 hour.
 cull_idle_timeout: 3600
-
 log_level: "DEBUG"
 kernel_launch_timeout: 60
 kernel_whitelist:
