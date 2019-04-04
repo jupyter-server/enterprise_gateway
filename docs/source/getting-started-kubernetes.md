@@ -423,7 +423,7 @@ can override them with Helm's `--set` or `--values` options.
 | `cull_idle_timeout` | Idle timeout in seconds. Default is 1 hour. | `3600` |
 | `log_level` | Log output level. | `DEBUG` |
 | `kernel_launch_timeout` | Timeout for kernel launching in seconds. | `60` |
-| `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,python_kubernetes,python_tf_kubernetes,python_tf_gpu_kubernetes,scala_kubernetes,spark_r_kubernetes,spark_python_kubernetes,spark_scala_kubernetes}` |
+| `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
 | `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. | `false` |
 | `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
 | `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
