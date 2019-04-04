@@ -407,6 +407,29 @@ From anywhere with Helm cluster access, create the service and deployment by run
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
 ```
 
+##### Uninstalling Enterprise Gateway
+
+- To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
+```
+kubectl delete all -l app=enterprise-gateway
+```
+or simply delete the namespace
+```
+kubectl delete ns enterprise-gateway
+```
+
+A kernel's objects can be similarly deleted using the kernel's namespace...
+```
+kubectl delete ns <kernel-namespace>
+```
+Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object deletions.
+
+Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`. The following commands can be used to delete these:
+```
+kubectl delete clusterrole -l app=enterprise-gateway
+kubectl delete clusterrolebinding -l app=enterprise-gateway
+```
+
 ##### Configuration
 
 Here are all of the values that you can set when deploying the Helm chart. You
@@ -427,6 +450,14 @@ can override them with Helm's `--set` or `--values` options.
 | `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. | `false` |
 | `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
 | `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
+
+##### Uninstalling Enterprise Gateway
+
+When using Helm, you can uninstall Enterprise Gateway with the following command:
+
+```
+helm delete --purge enterprise-gateway
+```
 
 #### Confirm deployment and note the service port mapping
 ```
@@ -486,27 +517,6 @@ po/alice-5e755458-a114-4215-96b7-bcb016fc7b62   1/1       Running   0          2
 ```
 Note: because kernels are, by default, isolated to their own namespace, you could also find all objects of a
 given kernel using only the `--namespace <kernel-namespace>` clause.
-
-- To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
-```
-kubectl delete all -l app=enterprise-gateway
-```
-or simply delete the namespace
-```
-kubectl delete ns enterprise-gateway
-```
-
-A kernel's objects can be similarly deleted using the kernel's namespace...
-```
-kubectl delete ns <kernel-namespace>
-```
-Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object deletions.
-
-Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`. The following commands can be used to delete these:
-```
-kubectl delete clusterrole -l app=enterprise-gateway 
-kubectl delete clusterrolebinding -l app=enterprise-gateway
-```
 
 - To enter into a given pod (i.e., container) in order to get a better idea of what might be happening within the container, use the exec command with the pod name
 ```
