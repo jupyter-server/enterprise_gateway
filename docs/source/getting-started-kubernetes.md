@@ -395,18 +395,6 @@ service "enterprise-gateway" created
 deployment "enterprise-gateway" created
 ```
 
-#### Option 2: Deploying with Helm
-
-Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
-
-##### Create the Enterprise Gateway kubernetes service and deployment
-
-From anywhere with Helm cluster access, create the service and deployment by running Helm from the git repository:
-
-```
-helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
-```
-
 ##### Uninstalling Enterprise Gateway
 
 - To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
@@ -428,6 +416,18 @@ Also note that deleting the Enterprise Gateway namespace will not delete cluster
 ```
 kubectl delete clusterrole -l app=enterprise-gateway
 kubectl delete clusterrolebinding -l app=enterprise-gateway
+```
+
+#### Option 2: Deploying with Helm
+
+Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
+
+##### Create the Enterprise Gateway kubernetes service and deployment
+
+From anywhere with Helm cluster access, create the service and deployment by running Helm from the git repository:
+
+```
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
 ```
 
 ##### Configuration
