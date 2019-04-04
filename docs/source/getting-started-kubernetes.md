@@ -381,8 +381,12 @@ docker pull elyra/kernel-py:VERSION
 
 If it is not possible to pre-seed the nodes, you will likely need to adjust the `EG_KERNEL_LAUNCH_TIMEOUT` value in the `enterprise-gateway.yaml` file as well as the `KG_REQUEST_TIMEOUT` parameter that issue the kernel start requests from the `NB2KG` extension of the Notebook client.
 
+#### Option 1: Deploying with kubectl
+
+Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like Helm.
+
 ##### Create the Enterprise Gateway kubernetes service and deployment
-From the master node, create the service and deployment using the yaml file from the git repository:
+From the master node, create the service and deployment using the yaml file from a source release or the git repository:
 
 ```
 kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
@@ -390,9 +394,74 @@ kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
 service "enterprise-gateway" created
 deployment "enterprise-gateway" created
 ```
-##### Confirm deployment and note the service port mapping
+
+##### Uninstalling Enterprise Gateway
+
+To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
 ```
-kubectl get all -l app=enterprise-gateway
+kubectl delete all -l app=enterprise-gateway
+```
+or simply delete the namespace
+```
+kubectl delete ns enterprise-gateway
+```
+
+A kernel's objects can be similarly deleted using the kernel's namespace...
+```
+kubectl delete ns <kernel-namespace>
+```
+Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object deletions.
+
+Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`. The following commands can be used to delete these:
+```
+kubectl delete clusterrole -l app=enterprise-gateway
+kubectl delete clusterrolebinding -l app=enterprise-gateway
+```
+
+#### Option 2: Deploying with Helm
+
+Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
+
+##### Create the Enterprise Gateway kubernetes service and deployment
+
+From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
+
+```
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
+```
+
+##### Configuration
+
+Here are all of the values that you can set when deploying the Helm chart. You
+can override them with Helm's `--set` or `--values` options.
+
+| **Parameter** | **Description** | **Default** |
+| ------------- | --------------- | ----------- |
+| `image` | Image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:dev` |
+| `imagePullPolicy` | Image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `replicas` | Update to deploy multiple replicas of EG. | `1` |
+| `kernel_cluster_role` | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client. | `kernel-controller` |
+| `shared_namespace` | All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE must be provided or one will be created for each kernel. | `false` |
+| `mirror_working_dirs` | Whether to mirror working directories. NOTE: This requires appropriate volume mounts to make notebook dir accessible. | `false` |
+| `cull_idle_timeout` | Idle timeout in seconds. Default is 1 hour. | `3600` |
+| `log_level` | Log output level. | `DEBUG` |
+| `kernel_launch_timeout` | Timeout for kernel launching in seconds. | `60` |
+| `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
+| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. | `false` |
+| `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
+| `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
+
+##### Uninstalling Enterprise Gateway
+
+When using Helm, you can uninstall Enterprise Gateway with the following command:
+
+```
+helm delete --purge enterprise-gateway
+```
+
+#### Confirm deployment and note the service port mapping
+```
+kubectl get all --all-namespaces -l app=enterprise-gateway
 
 NAME                        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 deploy/enterprise-gateway   1         1         1            1           2h
@@ -417,8 +486,9 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 #  - 9.30.118.200
 ```
 
-The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
+However, if using Helm, see the section above about how to set the `k8s_master_public_ip`.
 
+The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
 ### Kubernetes Tips
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes environment.
@@ -447,27 +517,6 @@ po/alice-5e755458-a114-4215-96b7-bcb016fc7b62   1/1       Running   0          2
 ```
 Note: because kernels are, by default, isolated to their own namespace, you could also find all objects of a
 given kernel using only the `--namespace <kernel-namespace>` clause.
-
-- To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
-```
-kubectl delete all -l app=enterprise-gateway
-```
-or simply delete the namespace
-```
-kubectl delete ns enterprise-gateway
-```
-
-A kernel's objects can be similarly deleted using the kernel's namespace...
-```
-kubectl delete ns <kernel-namespace>
-```
-Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object deletions.
-
-Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`. The following commands can be used to delete these:
-```
-kubectl delete clusterrole -l app=enterprise-gateway 
-kubectl delete clusterrolebinding -l app=enterprise-gateway
-```
 
 - To enter into a given pod (i.e., container) in order to get a better idea of what might be happening within the container, use the exec command with the pod name
 ```
