@@ -386,7 +386,7 @@ If it is not possible to pre-seed the nodes, you will likely need to adjust the 
 Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like Helm.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
-From the master node, create the service and deployment using the yaml file from the git repository:
+From the master node, create the service and deployment using the yaml file from a source release or the git repository:
 
 ```
 kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
@@ -424,7 +424,7 @@ Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
 
-From anywhere with Helm cluster access, create the service and deployment by running Helm from the git repository:
+From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
 
 ```
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
