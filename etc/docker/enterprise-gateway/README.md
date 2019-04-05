@@ -1,4 +1,4 @@
-This image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster.  It is currently built on jupyter/minimal-notebook as a base with Apache Spark 2.4.0 installed on top.
+This image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster.  It is currently built on jupyter/minimal-notebook as a base with Apache Spark 2.4.1 installed on top.
 
 **Note: If you're looking for the YARN-based image of this name, it has been moved to [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/).**
 
