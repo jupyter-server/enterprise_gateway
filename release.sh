@@ -188,6 +188,9 @@ function update_version_to_release {
     # Update Kubernetes deployment descriprot
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
+    # Update Kubernetes Helm values
+    sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
+
     # Update Makefile
     sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
 
@@ -202,6 +205,9 @@ function update_version_to_development {
 
     # Update Kubernetes deployment descriprot
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
+
+    # Update Kubernetes Helm values
+    sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/values.yaml
 
     # Update Makefile
     sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
