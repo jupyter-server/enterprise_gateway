@@ -25,36 +25,36 @@ spec:
       # Created by this chart.
       serviceAccountName: enterprise-gateway-sa
       containers:
-        - name: enterprise-gateway
-          image: {{ .Values.image }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          args: ["--gateway"]
-          env:
-          - name: EG_NAMESPACE
-            value: {{ .Release.Namespace }}
-          - name: EG_KERNEL_CLUSTER_ROLE
-            value: {{ .Values.kernel_cluster_role }}
-          - name: EG_SHARED_NAMESPACE
-            value: {{ if .Values.shared_namespace }}"True"{{ else }}"False"{{ end }}
-          - name: EG_MIRROR_WORKING_DIRS
-            value: {{ if .Values.mirror_working_dirs }}"True"{{ else }}"False"{{ end }}
-          - name: EG_CULL_IDLE_TIMEOUT
-            value: !!str {{ .Values.cull_idle_timeout }}
-          - name: EG_LOG_LEVEL
-            value: {{ .Values.log_level }}
-          - name: EG_KERNEL_LAUNCH_TIMEOUT
-            value: !!str {{ .Values.kernel_launch_timeout }}
-          - name: EG_KERNEL_WHITELIST
-            value: {{ toJson .Values.kernel_whitelist | squote }}
-          ports:
-          - containerPort: 8888
-{{ if .Values.nfs.enabled }}
-          volumeMounts:
-          - name: kernelspecs
-            mountPath: "/usr/local/share/jupyter/kernels"
-        volumes:
+      - name: enterprise-gateway
+        image: {{ .Values.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        args: ["--gateway"]
+        env:
+        - name: EG_NAMESPACE
+          value: {{ .Release.Namespace }}
+        - name: EG_KERNEL_CLUSTER_ROLE
+          value: {{ .Values.kernel_cluster_role }}
+        - name: EG_SHARED_NAMESPACE
+          value: {{ if .Values.shared_namespace }}"True"{{ else }}"False"{{ end }}
+        - name: EG_MIRROR_WORKING_DIRS
+          value: {{ if .Values.mirror_working_dirs }}"True"{{ else }}"False"{{ end }}
+        - name: EG_CULL_IDLE_TIMEOUT
+          value: !!str {{ .Values.cull_idle_timeout }}
+        - name: EG_LOG_LEVEL
+          value: {{ .Values.log_level }}
+        - name: EG_KERNEL_LAUNCH_TIMEOUT
+          value: !!str {{ .Values.kernel_launch_timeout }}
+        - name: EG_KERNEL_WHITELIST
+          value: {{ toJson .Values.kernel_whitelist | squote }}
+        ports:
+        - containerPort: 8888
+{{- if .Values.nfs.enabled }}
+        volumeMounts:
         - name: kernelspecs
-          nfs:
-            server: {{ .Values.nfs.internal_server_ip_address }}
-            path: "/usr/local/share/jupyter/kernels"
-{{ end }}
+          mountPath: "/usr/local/share/jupyter/kernels"
+      volumes:
+      - name: kernelspecs
+        nfs:
+          server: {{ .Values.nfs.internal_server_ip_address }}
+          path: "/usr/local/share/jupyter/kernels"
+{{- end }}

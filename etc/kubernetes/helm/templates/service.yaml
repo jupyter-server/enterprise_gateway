@@ -18,7 +18,7 @@ spec:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
   type: NodePort
-{{ if .Values.k8s_master_public_ip }}
+{{- if .Values.k8s_master_public_ip }}
   externalIPs:
   - {{ .Values.k8s_master_public_ip }}
-{{ end }}
+{{- end }}
