@@ -1,0 +1,32 @@
+version: "3.3"
+
+services:
+
+  enterprise-gateway:
+    image: elyra/enterprise-gateway:${VERSION:-2.0.0rc1}
+    user: root
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - "EG_DOCKER_NETWORK=enterprise-gateway"
+      - "EG_KERNEL_LAUNCH_TIMEOUT=60"
+      - "EG_CULL_IDLE_TIMEOUT=3600"
+      - "EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-['r_docker','python_docker','python_tf_docker','python_tf_gpu_docker','scala_docker']}"
+      - "EG_MIRROR_WORKING_DIRS=${EG_MIRROR_WORKING_DIRS:-False}"
+      - "KG_PORT=${KG_PORT:-8888}"
+    networks:
+      - "enterprise-gateway"
+    ports:
+      - target: ${KG_PORT:-8888}
+        published: ${KG_PORT:-8888}
+        protocol: tcp
+        mode: host
+    deploy:
+      replicas: 1
+      endpoint_mode: dnsrr
+      labels:
+        app: "enterprise-gateway"
+        component: "enterprise-gateway"
+
+networks:
+  enterprise-gateway:
