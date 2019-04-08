@@ -21,6 +21,9 @@ services:
         published: ${KG_PORT:-8888}
         protocol: tcp
         mode: host
+    labels:
+      app: "enterprise-gateway"
+      component: "enterprise-gateway"
     deploy:
       replicas: 1
       endpoint_mode: dnsrr
