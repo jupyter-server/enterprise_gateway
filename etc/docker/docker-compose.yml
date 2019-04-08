@@ -9,8 +9,8 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - "EG_DOCKER_NETWORK=enterprise-gateway"
-      - "EG_KERNEL_LAUNCH_TIMEOUT=60"
-      - "EG_CULL_IDLE_TIMEOUT=3600"
+      - "EG_KERNEL_LAUNCH_TIMEOUT=${EG_KERNEL_LAUNCH_TIMEOUT:-60}"
+      - "EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-3600}"
       - "EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-['r_docker','python_docker','python_tf_docker','python_tf_gpu_docker','scala_docker']}"
       - "EG_MIRROR_WORKING_DIRS=${EG_MIRROR_WORKING_DIRS:-False}"
       - "KG_PORT=${KG_PORT:-8888}"
