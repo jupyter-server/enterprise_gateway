@@ -32,3 +32,4 @@ dependencies:
   - sphinx_rtd_theme
   - sphinx=1.8.3
   - recommonmark
+  - sphinx-markdown-tables
