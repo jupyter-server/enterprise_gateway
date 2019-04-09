@@ -24,10 +24,20 @@ spec:
     spec:
       # Created by this chart.
       serviceAccountName: enterprise-gateway-sa
+{{- if .Values.kernelspecs_image }}
+      initContainers:
+      - name: kernelspecs
+        image: {{ .Values.kernelspecs_image }}
+        imagePullPolicy: {{ .Values.kernelspecs_image_pull_policy }}
+        args: ["cp", "-r", "/kernels", "/usr/local/share/jupyter"]
+        volumeMounts:
+        - name: image-kernelspecs
+          mountPath: "/usr/local/share/jupyter/kernels"
+{{- end }}
       containers:
       - name: enterprise-gateway
         image: {{ .Values.image }}
-        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.image_pull_policy }}
         args: ["--gateway"]
         env:
         - name: EG_NAMESPACE
@@ -50,11 +60,19 @@ spec:
         - containerPort: 8888
 {{- if .Values.nfs.enabled }}
         volumeMounts:
-        - name: kernelspecs
+        - name: nfs-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
       volumes:
-      - name: kernelspecs
+      - name: nfs-kernelspecs
         nfs:
           server: {{ .Values.nfs.internal_server_ip_address }}
           path: "/usr/local/share/jupyter/kernels"
+{{- else if .Values.kernelspecs_image }}
+        volumeMounts:
+        - name: image-kernelspecs
+          mountPath: "/usr/local/share/jupyter/kernels"
+      volumes:
+      - name: image-kernelspecs
+        emptydir:
+          medium: Memory
 {{- end }}

@@ -1,5 +1,7 @@
 image: elyra/enterprise-gateway:dev
-imagePullPolicy: IfNotPresent
+image_pull_policy: IfNotPresent
+kernelspecs_image:
+kernelspecs_image_pull_policy: Always
 replicas: 1
 kernel_cluster_role: kernel-controller
 shared_namespace: false
