@@ -191,6 +191,9 @@ function update_version_to_release {
     # Update Kubernetes Helm values
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
 
+    # Update Docker compose version
+    sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/docker/docker-compose.yml
+
     # Update Makefile
     sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
 
