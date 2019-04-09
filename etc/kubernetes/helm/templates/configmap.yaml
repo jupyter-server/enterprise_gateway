@@ -1,0 +1,21 @@
+{{- if (len .Values.kernelspecs) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enterprise-gateway-kernelspecs
+  labels:
+    name: enterprise-gateway-kernelspecs
+    app: enterprise-gateway
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  {{- range $kernel_name, $kernelspec := .Values.kernelspecs }}
+  {{ $kernel_name }}.kernel.json: |
+{{ index $kernelspec "kernel.json" | indent 4 }}
+  {{ $kernel_name }}.run.sh: |
+  {{- if hasKey $kernelspec "run.sh" }}
+{{ index $kernelspec "run.sh" | indent 4 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

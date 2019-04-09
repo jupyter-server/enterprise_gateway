@@ -16,6 +16,7 @@ kernel_whitelist:
   - spark_r_kubernetes
   - spark_python_kubernetes
   - spark_scala_kubernetes
+kernelspecs: {}
 
 nfs:
   enabled: false

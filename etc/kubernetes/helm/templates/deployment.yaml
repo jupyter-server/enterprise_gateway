@@ -57,4 +57,22 @@ spec:
         nfs:
           server: {{ .Values.nfs.internal_server_ip_address }}
           path: "/usr/local/share/jupyter/kernels"
+{{- else if (len .Values.kernelspecs) }}
+        volumeMounts:
+        - name: kernelspecs
+          mountPath: "/usr/local/share/jupyter/kernels"
+      volumes:
+      - name: kernelspecs
+        configMap:
+          name: enterprise-gateway-kernelspecs
+          {{- range $kernel_name, $kernelspec := .Values.kernelspecs }}
+          items:
+          - key: {{ $kernel_name }}.kernel.json
+            path: {{ $kernel_name }}/kernel.json
+          {{- if hasKey $kernelspec "run.sh" }}
+          - key: {{ $kernel_name }}.run.sh
+            path: {{ $kernel_name }}/bin/run.sh
+            mode: 0755
+          {{- end }}
+          {{- end }}
 {{- end }}
