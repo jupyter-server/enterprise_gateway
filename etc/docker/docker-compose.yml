@@ -28,20 +28,74 @@ services:
       - "KG_PORT=${KG_PORT:-8888}"
     networks:
       - "enterprise-gateway"
-    ports:
-      - target: ${KG_PORT:-8888}
-        published: ${KG_PORT:-8888}
-        protocol: tcp
-        mode: host
     labels:
       app: "enterprise-gateway"
       component: "enterprise-gateway"
     deploy:
-      replicas: 1
+      replicas: 3
       endpoint_mode: dnsrr
       labels:
         app: "enterprise-gateway"
         component: "enterprise-gateway"
+
+  enterprise-gateway-proxy:
+    image: haproxy:alpine
+    ports:
+      - ${KG_PORT:-8888}:8888
+      - 9088:9088
+    networks:
+      - "enterprise-gateway"
+    entrypoint: ""
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat <<EOF > /usr/local/etc/haproxy/haproxy.cfg
+        global
+           maxconn 4096
+           daemon
+
+        defaults
+          mode http
+          maxconn 10000
+          retries                 3
+          timeout http-request    10s
+          timeout queue           1m
+          timeout connect         10s
+          timeout client          1m
+          timeout server          1m
+          timeout check           10s
+          default-server init-addr none
+
+        listen stats
+          bind :9088
+          mode http
+          stats enable
+          stats refresh 10s
+          stats realm Haproxy\ Statistics
+          stats show-node
+          stats uri /
+
+        resolvers docker
+          nameserver dns 127.0.0.11:53
+          hold valid 1s
+
+        frontend proxy
+          bind 0.0.0.0:8888 maxconn 10000
+          option http-server-close
+          option forwardfor
+          timeout client 5000
+          default_backend enterprise-gateway
+
+        backend enterprise-gateway
+          mode http
+          timeout connect 100
+          timeout server 5000
+          dynamic-cookie-key ENTERPRISE_KEY
+          cookie SRVID insert dynamic
+          server-template enterprise-gateway 5 enterprise-gateway:8888 check resolvers docker
+        EOF
+        exec /docker-entrypoint.sh haproxy -f /usr/local/etc/haproxy/haproxy.cfg
 
 networks:
   enterprise-gateway:
