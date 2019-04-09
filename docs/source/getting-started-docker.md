@@ -8,11 +8,27 @@ The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.dock
 ### Enterprise Gateway Deployment
 Enterprise Gateway manifests itself as a Docker Swarm service.  It is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have a label of `app=enterprise-gateway` applied.
 
-The current deployment script, [enterprise-gateway-swarm.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) creates an overlay network intended for use solely by Enterprise Gateway and any kernel-based services it launches.
+The current deployment uses a compose stack definition, [docker-compose.yml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/docker-compose.yml) which creates an overlay network intended for use solely by Enterprise Gateway and any kernel-based services it launches.
+
+To deploy the stack to a swarm cluster from a manager node, use:
+
+```bash
+docker stack deploy -c docker-compose enterprise-gateway
+```
+
+More information about deploying and managing stacks can be found [here](https://docs.docker.com/engine/reference/commandline/stack_deploy/).
 
 Since Swarm's support for session-based affinity has not been investigated at this time, the deployment script configures a single replica.  Once session affinity is available, the number of replicas can be increased.
 
-An alternative deployment of Enterprise Gateway in docker environments is to deploy Enterprise Gateway as a traditional docker container.  This can be accomplished via the [enterprise-gateway-docker.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-docker.sh) script.  However, keep in mind that in choosing this deployment approach, one loses leveraging swarm's monitoring/restart capabilities.  That said, choosing this approach does not preclude one from leveraging swarm's scheduling capabilities for launching kernels.  As noted below, kernel instances, and how they manifest as docker-based entities (i.e., a swarm service or a docker container), is purely a function of the process proxy class to which they're associated.
+An alternative deployment of Enterprise Gateway in docker environments is to deploy Enterprise Gateway as a traditional docker container.  This can be accomplished via the [docker-compose.yml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/docker-compose.yml) file.  However, keep in mind that in choosing this deployment approach, one loses leveraging swarm's monitoring/restart capabilities.  That said, choosing this approach does not preclude one from leveraging swarm's scheduling capabilities for launching kernels.  As noted below, kernel instances, and how they manifest as docker-based entities (i.e., a swarm service or a docker container), is purely a function of the process proxy class to which they're associated.  
+
+To start the stack using compose:
+
+```bash
+docker-compose up
+```
+
+The documentation for managing a compose stack can be found [here](https://docs.docker.com/compose/overview/).
 
 ##### Kernelspec Modifications
 One of the more common areas of customization we see occur within the kernelspec files located in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions, the kernels directory can be exposed as a mounted volume thereby making it available to all containers within the swarm cluster.
