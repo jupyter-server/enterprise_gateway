@@ -212,6 +212,9 @@ function update_version_to_development {
     # Update Kubernetes Helm values
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/values.yaml
 
+    # Update Kubernetes Helm values
+    sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/docker/docker-compose.yml
+
     # Update Makefile
     sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
 
