@@ -185,7 +185,7 @@ function update_version_to_release {
     # Update Python _version.py
     sed -i .bak "s@^__version__.*@__version__ = '$RELEASE_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Kubernetes deployment descriprot
+    # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
