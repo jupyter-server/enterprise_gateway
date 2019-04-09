@@ -206,7 +206,7 @@ function update_version_to_development {
     # Update Python _version.py
     sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Kubernetes deployment descriprot
+    # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
