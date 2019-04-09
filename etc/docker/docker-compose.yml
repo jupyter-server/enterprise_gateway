@@ -32,7 +32,7 @@ services:
       app: "enterprise-gateway"
       component: "enterprise-gateway"
     deploy:
-      replicas: 3
+      replicas: 1
       endpoint_mode: dnsrr
       labels:
         app: "enterprise-gateway"
@@ -93,7 +93,7 @@ services:
           timeout server 5000
           dynamic-cookie-key ENTERPRISE_KEY
           cookie SRVID insert dynamic
-          server-template enterprise-gateway 5 enterprise-gateway:8888 check resolvers docker
+          server-template enterprise-gateway 2 enterprise-gateway:8888 check resolvers docker
         EOF
         exec /docker-entrypoint.sh haproxy -f /usr/local/etc/haproxy/haproxy.cfg
 
