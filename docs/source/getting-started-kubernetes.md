@@ -212,10 +212,15 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-##### Kernelspec Modifications
-One of the more common areas of customization we see occur within the kernelspec files located in `/usr/local/share/jupyter/kernels`.  To accommodate the ability to customize the kernel definitions, the kernels directory can be mounted as an NFS volume into the Enterprise Gateway pod thereby making the kernelspecs available to all EG pods within the Kubernetes cluster (provided the NFS mounts exist on all applicable nodes).
+#### Kernelspec Modifications
 
-As an example, we have included the necessary entries for mounting an existing NFS mount point into the Enterprise Gateway pod. By default, these references are commented out as they require the system administrator configure the appropriate NFS mounts and server IP.
+One of the more common areas of customization we see occurs within the kernelspec files located in `/usr/local/share/jupyter/kernels`.  To accommodate the ability to customize the kernel definitions, you have two different options: NFS mounts, or custom container images.  The two options are mutually exclusive, because they mount kernelspecs into the same location in the Enterprise Gateway pod.
+
+##### Via NFS
+
+The kernels directory can be mounted as an NFS volume into the Enterprise Gateway pod, thereby making the kernelspecs available to all EG pods within the Kubernetes cluster (provided the NFS mounts exist on all applicable nodes).
+
+As an example, we have included the necessary entries for mounting an existing NFS mount point into the Enterprise Gateway pod.  By default, these references are commented out as they require the system administrator configure the appropriate NFS mounts and server IP.  If you are deploying Enterprise Gateway via the Helm chart (see Deploying Enterprise Gateway, below), you can enable NFS directly via Helm values.
 
 Here you can see how `enterprise-gateway.yaml` references use of the volume (via `volumeMounts`
 for the container specification and `volumes` in the pod specification):
@@ -258,6 +263,28 @@ for the container specification and `volumes` in the pod specification):
 Note that because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 
 Use of more formal persistent volume types must include the [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes) and corresponding Persistent Volume Claim stanzas.
+
+##### Via Custom Container Image
+
+If you are deploying Enterprise Gateway via the Helm chart (see Deploying Enterprise Gateway, below), then instead of using NFS, you can build your custom kernelspecs into a container image that Enterprise Gateway consumes.  Here's an example Dockerfile for such a container:
+
+```
+FROM alpine:3.9
+
+COPY kernels /kernels
+```
+
+This assumes that your source contains a `kernels/` directory with all of the kernelspecs you'd like to end up in the image, e.g. `kernels/python_kubernetes/kernel.json` and any associated files.
+
+Once you build your custom kernelspecs image and push it to a container registry, you can refer to it from your Helm deployment.  For instance:
+
+```bash
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm --set kernelspecs_image=your-custom-image:latest
+```
+
+...where `your-custom-image:latest` is the image name and tag of your kernelspecs image.  Once deployed, the Helm chart copies the data from the `/kernels` directory of your container into the `/usr/local/share/jupyter/kernels` directory of the Enterprise Gateway pod.  Note that when this happens, the built-in kernelspecs are no longer available. So include all kernelspecs that you want to be available in your container image.
+
+Also, you should update the Helm chart `kernel_whitelist` value with the name(s) of your custom kernelspecs.
 
 ### Kubernetes Kernel Instances
 There are essentially two kinds of kernels (independent of language) launched within an Enterprise Gateway Kubernetes cluster - _vanilla_ and _spark-on-kubernetes_ (if available).
@@ -426,7 +453,7 @@ Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
 
 From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
 
-```
+```bash
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
 ```
 
@@ -437,8 +464,10 @@ can override them with Helm's `--set` or `--values` options.
 
 | **Parameter** | **Description** | **Default** |
 | ------------- | --------------- | ----------- |
-| `image` | Image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:dev` |
-| `imagePullPolicy` | Image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `image` | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used |
+| `image_pull_policy` | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `kernelspecs_image` | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled. | `nil` |
+| `kernelspecs_image_pull_policy` | Kernelspecs image pull policy. | `Always` |
 | `replicas` | Update to deploy multiple replicas of EG. | `1` |
 | `kernel_cluster_role` | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client. | `kernel-controller` |
 | `shared_namespace` | All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE must be provided or one will be created for each kernel. | `false` |
@@ -447,7 +476,7 @@ can override them with Helm's `--set` or `--values` options.
 | `log_level` | Log output level. | `DEBUG` |
 | `kernel_launch_timeout` | Timeout for kernel launching in seconds. | `60` |
 | `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
-| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. | `false` |
+| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs_image` set. | `false` |
 | `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
 | `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
 
