@@ -1,4 +1,4 @@
-version: "3.3"
+version: "3.5"
 
 # A docker user network is created and referenced by the service.  This network
 # must also get conveyed to launched kernel containers and that occurs via the env variable: EG_DOCKER_NETWORK
@@ -99,3 +99,5 @@ services:
 
 networks:
   enterprise-gateway:
+    name: enterprise-gateway
+    driver: overlay
