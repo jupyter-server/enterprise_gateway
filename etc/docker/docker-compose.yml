@@ -52,20 +52,30 @@ services:
       - |
         cat <<EOF > /usr/local/etc/haproxy/haproxy.cfg
         global
-           maxconn 4096
-           daemon
+          maxconn 4096
+          daemon
+          log stdout format raw local0
 
         defaults
+          log global
+          option httplog
           mode http
-          maxconn 10000
-          retries                 3
-          timeout http-request    10s
-          timeout queue           1m
-          timeout connect         10s
-          timeout client          1m
-          timeout server          1m
-          timeout check           10s
-          default-server init-addr none
+          option  http-server-close
+          option  dontlognull
+          option  redispatch
+          option  contstats
+          retries 3
+          backlog 10000
+          timeout client          25s
+          timeout connect          5s
+          timeout server          25s
+          timeout tunnel        3600s
+          timeout http-keep-alive  1s
+          timeout http-request    15s
+          timeout queue           30s
+          timeout tarpit          60s
+          default-server inter 3s rise 2 fall 3
+          option forwardfor
 
         listen stats
           bind :9088
@@ -82,15 +92,10 @@ services:
 
         frontend proxy
           bind 0.0.0.0:8888 maxconn 10000
-          option http-server-close
           option forwardfor
-          timeout client 5000
           default_backend enterprise-gateway
 
         backend enterprise-gateway
-          mode http
-          timeout connect 100
-          timeout server 5000
           dynamic-cookie-key ENTERPRISE_KEY
           cookie SRVID insert dynamic
           server-template enterprise-gateway 2 enterprise-gateway:8888 check resolvers docker
