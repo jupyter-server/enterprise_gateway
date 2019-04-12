@@ -1,6 +1,17 @@
 # Ubuntu:xenial
 FROM tensorflow/tensorflow:1.12.0-gpu-py3
 
+RUN apt-get update && apt-get install -yq \
+	build-essential \
+	libsm6 \
+	libxext-dev \
+	libxrender1 \
+	netcat \
+	python-dev \
+	tzdata \
+	unzip \
+	&& rm -rf /var/lib/apt/lists/*
+
 RUN pip install pycrypto
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
