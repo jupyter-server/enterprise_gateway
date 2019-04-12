@@ -2,15 +2,15 @@
 FROM tensorflow/tensorflow:1.12.0-gpu-py3
 
 RUN apt-get update && apt-get install -yq \
-	build-essential \
-	libsm6 \
-	libxext-dev \
-	libxrender1 \
-	netcat \
-	python-dev \
-	tzdata \
-	unzip \
-	&& rm -rf /var/lib/apt/lists/*
+    build-essential \
+    libsm6 \
+    libxext-dev \
+    libxrender1 \
+    netcat \
+    python-dev \
+    tzdata \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install pycrypto
 
@@ -20,8 +20,8 @@ USER root
 
 RUN adduser --system --uid 1000 --gid 100 jovyan && \
     chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
-	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
-	chown -R jovyan:users /usr/local/bin/kernel-launchers
+    chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
+    chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 
 USER jovyan
