@@ -1,0 +1,2 @@
+docker>=3.7.2
+requests>=2.7,<3.0

@@ -187,12 +187,15 @@ function update_version_to_release {
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
 
     # Update Docker compose version
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/docker/docker-compose.yml
+    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/docker/docker-compose.yml
 
     # Update Makefile
     sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
@@ -205,15 +208,19 @@ function update_version_to_development {
     cd $SOURCE_DIR
     # Update Python _version.py
     sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
+    sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/values.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/values.yaml
 
     # Update Kubernetes Helm values
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/docker/docker-compose.yml
+    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/docker/docker-compose.yml
 
     # Update Makefile
     sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile

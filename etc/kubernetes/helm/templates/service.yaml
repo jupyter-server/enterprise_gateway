@@ -12,8 +12,8 @@ metadata:
 spec:
   ports:
   - name: http
-    port: 8888
-    targetPort: 8888
+    port: {{ .Values.eg_port }}
+    targetPort: {{ .Values.eg_port }}
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP

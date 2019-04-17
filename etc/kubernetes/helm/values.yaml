@@ -1,5 +1,10 @@
-image: elyra/enterprise-gateway:dev
-image_pull_policy: IfNotPresent
+eg_image: elyra/enterprise-gateway:dev
+eg_image_pull_policy: IfNotPresent
+eg_port: 8888
+kip_image: elyra/kernel-image-puller:dev
+kip_image_pull_policy: IfNotPresent
+kip_interval: 300
+kip_pull_policy: IfNotPresent
 kernelspecs_image:
 kernelspecs_image_pull_policy: Always
 replicas: 1
