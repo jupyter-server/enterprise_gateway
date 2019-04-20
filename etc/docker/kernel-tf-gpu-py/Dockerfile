@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -yq \
     libxext-dev \
     libxrender1 \
     netcat \
-    python-dev \
+    python3-dev \
     tzdata \
     unzip \
     && rm -rf /var/lib/apt/lists/*
