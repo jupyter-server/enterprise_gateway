@@ -20,7 +20,7 @@ from kernel_gateway.gatewayapp import KernelGatewayApp
 from kernel_gateway.services.sessions.sessionmanager import SessionManager
 
 from ._version import __version__
-from .services.sessions.kernelsessionmanager import KernelSessionManager
+from .services.sessions.kernelsessionmanager import KernelSessionManager, FileKernelSessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
 
 
@@ -163,7 +163,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         default_value=KernelSpecManager,
         config=True,
         help="""
-        The kernel spec manager class to use. Should be a subclass
+        The kernel spec manager class to use. Must be a subclass
         of `jupyter_client.kernelspec.KernelSpecManager`.
         """
     )
@@ -173,17 +173,17 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         default_value=RemoteMappingKernelManager,
         config=True,
         help="""
-        The kernel manager class to use. Should be a subclass
+        The kernel manager class to use. Must be a subclass
         of `notebook.services.kernels.MappingKernelManager`.
         """
     )
 
     kernel_session_manager_class = Type(
         klass=KernelSessionManager,
-        default_value=KernelSessionManager,
+        default_value=FileKernelSessionManager,
         config=True,
         help="""
-        The kernel session manager class to use. Should be a subclass
+        The kernel session manager class to use. Must be a subclass
         of `enterprise_gateway.services.sessions.KernelSessionManager`.
         """
     )
