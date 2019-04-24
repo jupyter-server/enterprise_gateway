@@ -1,3 +1,4 @@
+{{- if .Values.kip.enabled }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -19,15 +20,15 @@ spec:
     spec:
       containers:
       - name: kernel-image-puller
-        image: {{ .Values.kip_image }}
-        imagePullPolicy: {{ .Values.kip_image_pull_policy }}
+        image: {{ .Values.kip.image }}
+        imagePullPolicy: {{ .Values.kip.image_pull_policy }}
         env:
         - name: KIP_GATEWAY_HOST
           value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.eg_port }}"
         - name: KIP_INTERVAL
-          value: !!str {{ .Values.kip_interval }}
+          value: !!str {{ .Values.kip.interval }}
         - name: KIP_PULL_POLICY
-          value: {{ .Values.kip_pull_policy }}
+          value: {{ .Values.kip.pull_policy }}
         volumeMounts:
         - name: dockersock
           mountPath: "/var/run/docker.sock"
@@ -35,3 +36,4 @@ spec:
       - name: dockersock
         hostPath:
           path: /var/run/docker.sock
+{{- end }}

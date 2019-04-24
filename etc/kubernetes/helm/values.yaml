@@ -1,10 +1,6 @@
 eg_image: elyra/enterprise-gateway:dev
 eg_image_pull_policy: IfNotPresent
 eg_port: 8888
-kip_image: elyra/kernel-image-puller:dev
-kip_image_pull_policy: IfNotPresent
-kip_interval: 300
-kip_pull_policy: IfNotPresent
 kernelspecs_image:
 kernelspecs_image_pull_policy: Always
 replicas: 1
@@ -29,3 +25,12 @@ nfs:
   internal_server_ip_address:
 
 k8s_master_public_ip:
+
+# Kernel Image Puller (daemonset)
+kip:
+  enabled: true
+  image: elyra/kernel-image-puller:dev
+  image_pull_policy: IfNotPresent
+  interval: 300
+  pull_policy: IfNotPresent
+
