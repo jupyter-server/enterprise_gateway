@@ -86,7 +86,7 @@ RUN mkdir /home/$NB_USER/work && \
 
 # DOWNLOAD HADOOP AND SPARK
 RUN curl -s http://www.eu.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
-RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current
+RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current
 
 # SETUP SPARK AND HADOOP SYMLINKS
 RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-${SPARK_VER}-bin-hadoop2.7 spark2-client
@@ -182,3 +182,4 @@ EXPOSE 50010 50020 50070 50075 50090 8020 9000 \
 49707 2122
 
 USER $NB_USER
+
