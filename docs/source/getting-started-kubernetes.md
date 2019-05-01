@@ -448,6 +448,8 @@ kubectl delete clusterrolebinding -l app=enterprise-gateway
 #### Option 2: Deploying with Helm
 
 Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
+If Ingress is desired see [this section](#setting-up-a-kubernetes-ingress-for-use-with-enterprise-gateway) before deploying
+with helm.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
 
@@ -518,6 +520,79 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 However, if using Helm, see the section above about how to set the `k8s_master_public_ip`.
 
 The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
+
+### Setting up a Kubernetes Ingress for use with Enterprise Gateway
+
+To setup an ingress with Enterprise Gateway, you'll need an ingress controller deployed on your kubernetes cluster. We 
+recommend either NGINX or Traefik. Installation and configuration instructions can be found at the following :
+
+- [NGINX-Ingress-Controller](https://kubernetes.github.io/ingress-nginx)
+- [Traefik](https://docs.traefik.io/user-guide/kubernetes/) 
+
+Example - Here the NGINX Ingress Controller is deployed as a `LoadBalancer` with `NodePort` 32121 and 30884 open for http and https traffic respectively.
+
+```bash
+$ kubectl get services --all-namespaces
+NAMESPACE            NAME                                             TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+default              service/kubernetes                               ClusterIP      10.96.0.1        <none>        443/TCP                      23h
+default              service/my-nginx-nginx-ingress-controller        LoadBalancer   10.105.234.155   <pending>     80:32121/TCP,443:30884/TCP   22h
+default              service/my-nginx-nginx-ingress-default-backend   ClusterIP      10.107.13.85     <none>        80/TCP                       22h
+enterprise-gateway   service/enterprise-gateway                       NodePort       10.97.127.52     <none>        8888:30767/TCP               27m
+kube-system          service/kube-dns                                 ClusterIP      10.96.0.10       <none>        53/UDP,53/TCP,9153/TCP       23h
+kube-system          service/tiller-deploy                            ClusterIP      10.101.96.215    <none>        44134/TCP                    23h
+```
+
+Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your 
+Enterprise Gateway service. The EG helm chart is configured with an ingress template, which 
+can be found at [here](https://github.com/jupyter/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
+for Enterprise Gateway.
+
+Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired configurations and install EG as normal via Helm.
+```bash
+ingress:
+  enabled: true             # Ingress is disabled by default
+  annotations:              # Annotations to be used, changes depend on which ingress controller you have deployed # default is nginx 
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  hostName: ""              # whether to expose by setting a host-based ingress rule, default is *
+  path: /gateway/?(.*)      # URL context used to expose EG
+```
+
+A quick look at our ingress resource after deploying EG with Helm :
+```bash
+$ kubectl describe ingress enterprise-gateway-ingress -n enterprise-gateway
+Name:             enterprise-gateway-ingress
+Namespace:        enterprise-gateway
+Address:
+Default backend:  default-http-backend:80 (<none>)
+Rules:
+  Host  Path  Backends
+  ----  ----  --------
+  *
+        /gateway/?(.*)   enterprise-gateway:8888 (<none>)
+Annotations:
+  kubectl.kubernetes.io/last-applied-configuration:  {"apiVersion":"extensions/v1beta1","kind":"Ingress","metadata":  
+  {"annotations":{"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/force-ssl-redirect":"false",  
+  "nginx.ingress.kubernetes.io/rewrite-target":"/$1","nginx.ingress.kubernetes.io/ssl-redirect":"false"},  
+  "name":"enterprise-gateway-ingress","namespace":"enterprise-gateway"},"spec":{"rules":[{"http":{"paths":[{  
+  "backend":{"serviceName":"enterprise-gateway","servicePort":8888},"path":"/gateway/?(.*)"}]}}]}}
+
+  kubernetes.io/ingress.class:                     nginx
+  nginx.ingress.kubernetes.io/force-ssl-redirect:  false
+  nginx.ingress.kubernetes.io/rewrite-target:      /$1
+  nginx.ingress.kubernetes.io/ssl-redirect:        false
+Events:                                            <none>
+```
+  
+This will expose the Enterprise Gateway service at 
+```bash
+http://KUBERNETES_HOSTNAME:PORT/gateway
+```   
+where `PORT` is the ingress controller's http `NodePort` we referenced earlier.     
+**NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.  
+
 
 ### Kubernetes Tips
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes environment.
