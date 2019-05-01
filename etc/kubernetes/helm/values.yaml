@@ -23,4 +23,16 @@ nfs:
   enabled: false
   internal_server_ip_address:
 
+ingress:
+  enabled: false
+  namespace: enterprise-gateway
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  hostName: ""
+  path: /gateway/?(.*)
+  port: 8888
+
 k8s_master_public_ip:
