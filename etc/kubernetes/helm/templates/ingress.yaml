@@ -2,7 +2,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  namespace: {{ .Values.ingress.namespace }}
+  namespace: {{ .Release.Namespace }}
   name: enterprise-gateway-ingress
 {{- with .Values.ingress.annotations }}
   annotations:
