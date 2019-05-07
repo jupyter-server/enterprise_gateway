@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-gateway
-  namespace: enterprise-gateway
+  namespace: {{ .Release.Namespace }}
   labels:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway
@@ -36,8 +36,8 @@ spec:
 {{- end }}
       containers:
       - name: enterprise-gateway
-        image: {{ .Values.image }}
-        imagePullPolicy: {{ .Values.image_pull_policy }}
+        image: {{ .Values.eg_image }}
+        imagePullPolicy: {{ .Values.eg_image_pull_policy }}
         args: ["--gateway"]
         env:
         - name: EG_NAMESPACE
@@ -57,7 +57,7 @@ spec:
         - name: EG_KERNEL_WHITELIST
           value: {{ toJson .Values.kernel_whitelist | squote }}
         ports:
-        - containerPort: 8888
+        - containerPort: {{ .Values.eg_port }}
 {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs

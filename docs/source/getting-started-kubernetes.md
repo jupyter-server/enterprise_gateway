@@ -211,6 +211,48 @@ roleRef:
   name: kernel-controller
   apiGroup: rbac.authorization.k8s.io
 ```
+#### Kernel Image Puller
+Because kernels now reside within containers and its typical for the first reference of a container to trigger its pull from a docker repository, kernel startup requests can easily timeout whenever the kernel image is first accessed on any given node.  To mitigate this issue, Enterprise Gateway deployment includes a DaemonSet object named `kernel-image-puller` or KIP.  This object is responsible for polling Enterprise Gateway for the current set of configured kernelspecs, picking out any configured image name references, and pulling those images to the node on which KIP is running.  Because its a daemon set, this will also address the case when new nodes are added to a configuration.
+
+The Kernel Image Puller can be configured for the interval at which it checks for new kernelspecs (`KIP_INTERVAL`), the number of puller threads it will utilize per node (`KIP_NUM_PULLERS`), the number of retries it will attempt for a given image (`KIP_NUM_RETRIES`), and the pull policy (`KIP_PULL_POLICY`) - which essentially dictates whether it will attempt to pull images that its already encoutnered (`Always`) vs. only pulling the image if it hasn't seen it yet (`IfNotPresent`).
+
+Here's what the Kernel Image Puller looks like in the yaml...
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kernel-image-puller
+  namespace: enterprise-gateway
+spec:
+  selector:
+    matchLabels:
+      name: kernel-image-puller 
+  template:
+    metadata:
+      labels:
+        name: kernel-image-puller 
+        app: enterprise-gateway
+        component: kernel-image-puller
+    spec:
+      containers:
+      - name: kernel-image-puller 
+        image: elyra/kernel-image-puller:dev
+        env:
+          - name: KIP_GATEWAY_HOST
+            value: "http://enterprise-gateway.enterprise-gateway:8888"
+          - name: KIP_INTERVAL
+            value: "300"
+          - name: KIP_PULL_POLICY
+            value: "IfNotPresent"
+        volumeMounts:
+          - name: dockersock
+            mountPath: "/var/run/docker.sock"
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock
+```
+
 
 #### Kernelspec Modifications
 
@@ -397,16 +439,7 @@ For these invocations, the `argv:` is nearly identical to non-kubernetes configu
 ```
 
 ### Deploying Enterprise Gateway on Kubernetes
-Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working on the master node, pull the Enterprise Gateway and Kernel images on each worker node:
-
-```
-docker pull elyra/enterprise-gateway:VERSION
-docker pull elyra/kernel-py:VERSION
-```
-
-**Note:** It is important to pre-seed the worker nodes with **all** kernel images, otherwise the automatic download time will count against the kernel's launch timeout.  Although this will likely only impact the first launch of a given kernel on a given worker node, when multiplied against the number of kernels and worker nodes, it will prove to be a frustrating user experience. 
-
-If it is not possible to pre-seed the nodes, you will likely need to adjust the `EG_KERNEL_LAUNCH_TIMEOUT` value in the `enterprise-gateway.yaml` file as well as the `KG_REQUEST_TIMEOUT` parameter that issue the kernel start requests from the `NB2KG` extension of the Notebook client.
+Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working on the master node, it is time to deploy Enterprise Gateway. There a couple of different deployment options - kubectl or helm.
 
 #### Option 1: Deploying with kubectl
 
@@ -466,8 +499,13 @@ can override them with Helm's `--set` or `--values` options.
 
 | **Parameter** | **Description** | **Default** |
 | ------------- | --------------- | ----------- |
-| `image` | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used |
-| `image_pull_policy` | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `eg_image` | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used |
+| `eg_image_pull_policy` | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `eg_port` | The primary port on which Enterprise Gateway is servicing requests. | `8888` |
+| `kip_image` | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run. | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
+| `kip_image_pull_policy` | Kernel Image Puller image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `kip_interval` | The interval (in seconds) at which the Kernel Image Puller fetches kernelspecs to pull kernel images. | `300` |
+| `kip_pull_policy` | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`) | `IfNotPresent` |
 | `kernelspecs_image` | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled. | `nil` |
 | `kernelspecs_image_pull_policy` | Kernelspecs image pull policy. | `Always` |
 | `replicas` | Update to deploy multiple replicas of EG. | `1` |
