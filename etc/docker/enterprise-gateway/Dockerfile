@@ -35,7 +35,7 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-enterprise-gateway.sh && \
 	rm -f /usr/local/bin/bootstrap-kernel.sh
 
 # Download and install Spark
-RUN curl -s http://apache.cs.utah.edu/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
+RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
     tar -xz -C /opt && \
     ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME && \
     mkdir -p /usr/hdp/current && \
