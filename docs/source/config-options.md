@@ -4,9 +4,11 @@ Jupyter Enterprise Gateway adheres to the
 [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html)
 . You can configure an instance of Enterprise Gateway using:
 
-1. A configuration file
+1. A configuration file (recommended)
 2. Command line parameters
 3. Environment variables
+
+See [Dynamic Configurables](#dynamic-configurables) for additional information.
 
 To generate a template configuration file, run the following:
 
@@ -20,7 +22,7 @@ To see the same configuration options at the command line, run the following:
 jupyter enterprisegateway --help-all
 ```
 
-A snapshot of this help appears below for ease of reference on the web.
+A snapshot of this help appears below for ease of reference on the web.  
 
 ```
 Jupyter Enterprise Gateway
@@ -135,6 +137,11 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.default_kernel_name=<Unicode>
     Default: ''
     Default kernel name when spawning a kernel (EG_DEFAULT_KERNEL_NAME env var)
+--EnterpriseGatewayApp.dynamic_config_interval=<Int>
+    Default: 0
+    Specifies the number of seconds configuration files are polled for changes.
+    A value of 0 or less disables dynamic config updates.
+    (EG_DYNAMIC_CONFIG_INTERVAL env var)
 --EnterpriseGatewayApp.env_process_whitelist=<List>
     Default: []
     Environment variables allowed to be inherited from the spawning process by
@@ -639,3 +646,31 @@ The following kernel-specific environment variables are managed within Enterpris
     launch script the mode of Spark context intiatilization it should apply when
     starting the spark-based kernel container.
 ```
+### Dynamic Configurables
+Enterprise Gateway now supports the ability to update configuration variables without having to
+restart Enterprise Gateway.  This enables the ability to do things like enable debug logging or 
+adjust the maximum number of kernels per user, all without having to restart Enterprise Gateway.
+
+To enable dynamic configurables configure `EnterpriseGatewayApp.dynamic_config_interval` to a
+positive value (default is 0 or disabled).  Since this is the number of seconds to poll Enterprise Gateway's configuration files,
+a value greater than 60 (1 minute) is recommended.  This functionality works for most configuration 
+values, but does have the following caveats:
+1. Any configuration variables set on the command line (CLI) or via environment variables are
+NOT eligible for dynamic updates.  This is because Jupyter gives those values priority over
+file-based configuration variables.
+2. Any configuration variables tied to background processing may not reflect their update if
+the variable is not *observed* for changes.  For example, the code behind 
+`MappingKernelManager.cull_idle_timeout` may not reflect changes to the timeout period if 
+that variable is not monitored (i.e., observed) for changes.
+3. Only `Configurables` registered by Enterprise Gateway are eligible for dynamic updates.
+Currently, that list consists of the following (and their subclasses): EnterpriseGatewayApp, 
+MappingKernelManager, KernelSpecManager, and KernelSessionManager.
+
+As a result, administrators are encouraged to configure Enterprise Gateway via configuration
+files with only static values configured via the command line or environment.
+
+Note that if `EnterpriseGatewayApp.dynamic_config_interval` is configured with a positive value
+via the configuration file (i.e., is eligible for updates) and is subsequently set to 0, then
+dynamic configuration updates will be disabled until Enterprise Gateway is restarted with a 
+positive value.  Therefore, we recommend `EnterpriseGatewayApp.dynamic_config_interval` be 
+configured via the command line or environment.
