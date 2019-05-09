@@ -24,11 +24,11 @@ spec:
     spec:
       # Created by this chart.
       serviceAccountName: enterprise-gateway-sa
-{{- if .Values.kernelspecs_image }}
+{{- if .Values.kernelspecs.image }}
       initContainers:
       - name: kernelspecs
-        image: {{ .Values.kernelspecs_image }}
-        imagePullPolicy: {{ .Values.kernelspecs_image_pull_policy }}
+        image: {{ .Values.kernelspecs.image }}
+        imagePullPolicy: {{ .Values.kernelspecs.imagePullPolicy }}
         args: ["cp", "-r", "/kernels", "/usr/local/share/jupyter"]
         volumeMounts:
         - name: image-kernelspecs
@@ -36,28 +36,28 @@ spec:
 {{- end }}
       containers:
       - name: enterprise-gateway
-        image: {{ .Values.eg_image }}
-        imagePullPolicy: {{ .Values.eg_image_pull_policy }}
+        image: {{ .Values.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
         args: ["--gateway"]
         env:
         - name: EG_NAMESPACE
           value: {{ .Release.Namespace }}
         - name: EG_KERNEL_CLUSTER_ROLE
-          value: {{ .Values.kernel_cluster_role }}
+          value: {{ .Values.kernel.clusterRole }}
         - name: EG_SHARED_NAMESPACE
-          value: {{ if .Values.shared_namespace }}"True"{{ else }}"False"{{ end }}
+          value: {{ if .Values.kernel.sharedNamespace }}"True"{{ else }}"False"{{ end }}
         - name: EG_MIRROR_WORKING_DIRS
-          value: {{ if .Values.mirror_working_dirs }}"True"{{ else }}"False"{{ end }}
+          value: {{ if .Values.mirrorWorkingDirs }}"True"{{ else }}"False"{{ end }}
         - name: EG_CULL_IDLE_TIMEOUT
-          value: !!str {{ .Values.cull_idle_timeout }}
+          value: !!str {{ .Values.kernel.cullIdleTimeout }}
         - name: EG_LOG_LEVEL
-          value: {{ .Values.log_level }}
+          value: {{ .Values.logLevel }}
         - name: EG_KERNEL_LAUNCH_TIMEOUT
-          value: !!str {{ .Values.kernel_launch_timeout }}
+          value: !!str {{ .Values.kernel.launchTimeout }}
         - name: EG_KERNEL_WHITELIST
-          value: {{ toJson .Values.kernel_whitelist | squote }}
+          value: {{ toJson .Values.kernel.whitelist | squote }}
         ports:
-        - containerPort: {{ .Values.eg_port }}
+        - containerPort: {{ .Values.port }}
 {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs
@@ -65,9 +65,9 @@ spec:
       volumes:
       - name: nfs-kernelspecs
         nfs:
-          server: {{ .Values.nfs.internal_server_ip_address }}
+          server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
-{{- else if .Values.kernelspecs_image }}
+{{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"

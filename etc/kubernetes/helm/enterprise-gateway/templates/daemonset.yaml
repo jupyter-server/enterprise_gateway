@@ -21,14 +21,14 @@ spec:
       containers:
       - name: kernel-image-puller
         image: {{ .Values.kip.image }}
-        imagePullPolicy: {{ .Values.kip.image_pull_policy }}
+        imagePullPolicy: {{ .Values.kip.imagePullPolicy }}
         env:
         - name: KIP_GATEWAY_HOST
-          value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.eg_port }}"
+          value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.port }}"
         - name: KIP_INTERVAL
           value: !!str {{ .Values.kip.interval }}
         - name: KIP_PULL_POLICY
-          value: {{ .Values.kip.pull_policy }}
+          value: {{ .Values.kip.pullPolicy }}
         volumeMounts:
         - name: dockersock
           mountPath: "/var/run/docker.sock"

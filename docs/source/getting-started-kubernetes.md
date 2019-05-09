@@ -489,7 +489,8 @@ with helm.
 From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
 
 ```bash
-helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm/enterprise-gateway
+
 ```
 
 ##### Configuration
@@ -499,26 +500,32 @@ can override them with Helm's `--set` or `--values` options.
 
 | **Parameter** | **Description** | **Default** |
 | ------------- | --------------- | ----------- |
-| `eg_image` | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used |
-| `eg_image_pull_policy` | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
-| `eg_port` | The primary port on which Enterprise Gateway is servicing requests. | `8888` |
-| `kip_image` | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run. | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
-| `kip_image_pull_policy` | Kernel Image Puller image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
-| `kip_interval` | The interval (in seconds) at which the Kernel Image Puller fetches kernelspecs to pull kernel images. | `300` |
-| `kip_pull_policy` | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`) | `IfNotPresent` |
-| `kernelspecs_image` | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled. | `nil` |
-| `kernelspecs_image_pull_policy` | Kernelspecs image pull policy. | `Always` |
+| `image` | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run. | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used |
+| `imagePullPolicy` | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `port` | The primary port on which Enterprise Gateway is servicing requests. | `8888` |
 | `replicas` | Update to deploy multiple replicas of EG. | `1` |
-| `kernel_cluster_role` | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client. | `kernel-controller` |
-| `shared_namespace` | All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE must be provided or one will be created for each kernel. | `false` |
-| `mirror_working_dirs` | Whether to mirror working directories. NOTE: This requires appropriate volume mounts to make notebook dir accessible. | `false` |
-| `cull_idle_timeout` | Idle timeout in seconds. Default is 1 hour. | `3600` |
-| `log_level` | Log output level. | `DEBUG` |
-| `kernel_launch_timeout` | Timeout for kernel launching in seconds. | `60` |
-| `kernel_whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
+| `logLevel` | Log output level. | `DEBUG` |
+| `mirrorWorkingDirs` | Whether to mirror working directories. NOTE: This requires appropriate volume mounts to make notebook dir accessible. | `false` |
+| `k8sMasterPublicIP` | Master public IP on which to expose EG. | `nil` |
+| `kernel.clusterRole` | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client. | `kernel-controller` |
+| `kernel.sharedNamespace` | All kernels reside in the EG namespace if true, otherwise KERNEL_NAMESPACE must be provided or one will be created for each kernel. | `false` |
+| `kernel.cullIdleTimeout` | Idle timeout in seconds. Default is 1 hour. | `3600` |
+| `kernel.launchTimeout` | Timeout for kernel launching in seconds. | `60` |
+| `kernel.whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
+| `kernelspecs.image` | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled. | `nil` |
+| `kernelspecs.imagePullPolicy` | Kernelspecs image pull policy. | `Always` |
 | `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs_image` set. | `false` |
-| `nfs.internal_server_ip_address` | IP address of NFS server. Required if NFS is enabled. | `nil` |
-| `k8s_master_public_ip` | Master public IP on which to expose EG. | `nil` |
+| `nfs.internalServerIPAddress` | IP address of NFS server. Required if NFS is enabled. | `nil` |
+| `ingress.enabled` | Whether to include an EG ingress resource during deployment. NOTE: A ingress-controller must be installed | `false` |
+| `ingress.annotations` | Ingress annotations to be included. Will depend on the type of ingress controller you have installed | `(nginx-ingress annotations)` |
+| `ingress.hostName` | Ingress resource host  | `nil` |
+| `ingress.path` | URL context to be used in addition to the hostname to access Enterprise Gateway. e.g. http://hostname/(ingress.path) | `/gateway/?(.*)` |
+| `ingress.port` | The port where enterprise gateway service is running | `8888` |
+| `kip.image` | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run. | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
+| `kip.imagePullPolicy` | Kernel Image Puller image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
+| `kip.interval` | The interval (in seconds) at which the Kernel Image Puller fetches kernelspecs to pull kernel images. | `300` |
+| `kip.pullPolicy` | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`) | `IfNotPresent` |
+
 
 ##### Uninstalling Enterprise Gateway
 
@@ -555,7 +562,7 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 #  - 9.30.118.200
 ```
 
-However, if using Helm, see the section above about how to set the `k8s_master_public_ip`.
+However, if using Helm, see the section above about how to set the `k8sMasterPublicIP`.
 
 The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
