@@ -45,7 +45,7 @@ spec:
         - name: EG_KERNEL_CLUSTER_ROLE
           value: {{ .Values.kernel.clusterRole }}
         - name: EG_SHARED_NAMESPACE
-          value: {{ if .Values.kernel.sharedNamespace }}"True"{{ else }}"False"{{ end }}
+          value: {{ if .Values.kernel.shareGatewayNamespace }}"True"{{ else }}"False"{{ end }}
         - name: EG_MIRROR_WORKING_DIRS
           value: {{ if .Values.mirrorWorkingDirs }}"True"{{ else }}"False"{{ end }}
         - name: EG_CULL_IDLE_TIMEOUT

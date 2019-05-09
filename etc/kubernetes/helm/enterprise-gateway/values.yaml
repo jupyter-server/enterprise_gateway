@@ -16,8 +16,8 @@ k8sMasterPublicIP:
 kernel:
   # Kernel cluster role created by this chart.
   clusterRole: kernel-controller
-  # Will start kernels in the same namespace as EG if True. Otherwise kernel will have its own
-  sharedNamespace: false
+  # Will start kernels in the same namespace as EG if True.
+  shareGatewayNamespace: false
   # Timeout for kernel launching in seconds.
   launchTimeout: 60
   # Timeout for an idle kernel before its culled in seconds. Default is 1 hour.
