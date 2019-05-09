@@ -2,15 +2,22 @@
 # Distributed under the terms of the Modified BSD License.
 """Tests for jupyter-enterprise-gateway."""
 
+import os
+import time
+
 from tornado.testing import gen_test
 from tornado.escape import json_decode, url_escape
+
+from ipython_genutils.tempdir import TemporaryDirectory
 from .test_handlers import TestHandlers
+
+pjoin = os.path.join
 
 
 class TestEnterpriseGateway(TestHandlers):
 
     def setUp(self):
-        super(TestHandlers, self).setUp()
+        super(TestEnterpriseGateway, self).setUp()
         # Enable debug logging if necessary
         # app = self.get_app()
         # app.settings['kernel_manager'].log.level = logging.DEBUG
@@ -139,3 +146,49 @@ class TestEnterpriseGateway(TestHandlers):
 
         for port in port_list:
             self.assertTrue(30000 <= port <= 31000)
+
+    @gen_test
+    def test_dynamic_updates(self):
+        app = self.app  # Get the actual EnterpriseGatewayApp instance
+        s1 = time.time()
+        name = app.config_file_name + '.py'
+        with TemporaryDirectory('_1') as td1:
+            os.environ['JUPYTER_CONFIG_DIR'] = td1
+            config_file = pjoin(td1, name)
+            with open(config_file, 'w') as f:
+                f.writelines([
+                    "c.EnterpriseGatewayApp.impersonation_enabled = False\n",
+                    "c.MappingKernelManager.cull_connected = False\n"
+                ])
+            #  app.jupyter_path.append(td1)
+            app.load_config_file()
+            app.add_dynamic_configurable("EnterpriseGatewayApp", app)
+            app.add_dynamic_configurable("RemoteMappingKernelManager", app.kernel_manager)
+            with self.assertRaises(RuntimeError):
+                app.add_dynamic_configurable("Bogus", app.log)
+
+            self.assertEqual(app.impersonation_enabled, False)
+            self.assertEqual(app.kernel_manager.cull_connected, False)
+
+            # Ensure file update doesn't happen during same second as initial value.
+            # This is necessary on test systems that don't have finer-grained
+            # timestamps (of less than a second).
+            s2 = time.time()
+            if s2 - s1 < 1.0:
+                time.sleep(1.0 - (s2 - s1))
+            # update config file
+            with open(config_file, 'w') as f:
+                f.writelines([
+                    "c.EnterpriseGatewayApp.impersonation_enabled = True\n",
+                    "c.MappingKernelManager.cull_connected = True\n"
+                ])
+
+            # trigger reload and verify updates
+            app.update_dynamic_configurables()
+            self.assertEqual(app.impersonation_enabled, True)
+            self.assertEqual(app.kernel_manager.cull_connected, True)
+
+            # repeat to ensure no unexpected changes occurred
+            app.update_dynamic_configurables()
+            self.assertEqual(app.impersonation_enabled, True)
+            self.assertEqual(app.kernel_manager.cull_connected, True)

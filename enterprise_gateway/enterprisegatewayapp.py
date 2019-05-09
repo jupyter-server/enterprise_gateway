@@ -9,6 +9,9 @@ import os
 import signal
 import socket
 import sys
+import time
+import weakref
+
 from distutils.util import strtobool
 
 # Install the pyzmq ioloop. This has to be done before anything else from
@@ -20,7 +23,8 @@ from tornado import httpserver
 from tornado import web
 from tornado.log import enable_pretty_logging, LogFormatter
 
-from traitlets import default, List, Set, Unicode, Type, Instance, Bool, CBool, Integer
+from traitlets import default, List, Set, Unicode, Type, Instance, Bool, CBool, Integer, observe
+from traitlets.config import Configurable
 from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
 from notebook.services.kernels.kernelmanager import MappingKernelManager
@@ -394,6 +398,36 @@ class EnterpriseGatewayApp(JupyterApp):
     def ws_ping_interval_default(self):
         return int(os.getenv(self.ws_ping_interval_env, self.ws_ping_interval_default_value))
 
+    # Dynamic Update Interval
+    dynamic_config_interval_env = 'EG_DYNAMIC_CONFIG_INTERVAL'
+    dynamic_config_interval_default_value = 0
+    dynamic_config_interval = Integer(dynamic_config_interval_default_value, min=0, config=True,
+                                      help="""Specifies the number of seconds configuration files are polled for
+                                      changes.  A value of 0 or less disables dynamic config updates.
+                                      (EG_DYNAMIC_CONFIG_INTERVAL env var)""")
+
+    @default('dynamic_config_interval')
+    def dynamic_config_interval_default(self):
+        return int(os.getenv(self.dynamic_config_interval_env, self.dynamic_config_interval_default_value))
+
+    @observe('dynamic_config_interval')
+    def dynamic_config_interval_changed(self, event):
+        prev_val = event['old']
+        self.dynamic_config_interval = event['new']
+        if self.dynamic_config_interval != prev_val:
+            # Values are different.  Stop the current poller.  If new value is > 0, start a poller.
+            if self.dynamic_config_poller:
+                self.dynamic_config_poller.stop()
+                self.dynamic_config_poller = None
+
+            if self.dynamic_config_interval <= 0:
+                self.log.warning("Dynamic configuration updates have been disabled and cannot be re-enabled "
+                                 "without restarting Enterprise Gateway!")
+            elif prev_val > 0:  # The interval has been changed, but still positive
+                self.init_dynamic_configs()  # Restart the poller
+
+    dynamic_config_poller = None
+
     kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(
@@ -480,6 +514,8 @@ class EnterpriseGatewayApp(JupyterApp):
         self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
+
+        self.init_dynamic_configs()
 
     def _create_request_handlers(self):
         """Create default Jupyter handlers and redefine them off of the
@@ -658,6 +694,82 @@ class EnterpriseGatewayApp(JupyterApp):
     def _signal_stop(self, sig, frame):
         self.log.info("Received signal to terminate Enterprise Gateway.")
         self.io_loop.add_callback_from_signal(self.io_loop.stop)
+
+    _last_config_update = int(time.time())
+    _dynamic_configurables = {}
+
+    def update_dynamic_configurables(self):
+        """
+        Called periodically, this checks the set of loaded configuration files for updates.
+        If updates have been detected, reload the configuration files and update the list of
+        configurables participating in dynamic updates.
+        :return: True if updates were taken
+        """
+        updated = False
+        configs = []
+        for file in self.loaded_config_files:
+            mod_time = int(os.path.getmtime(file))
+            if mod_time > self._last_config_update:
+                self.log.debug("Config file was updated: {}!".format(file))
+                self._last_config_update = mod_time
+                updated = True
+
+        if updated:
+            # If config changes are present, reload the config files.  This will also update
+            # the Application's configuration, then update the config of each configurable
+            # from the newly loaded values.
+
+            self.load_config_file(self)
+
+            for config_name, configurable in self._dynamic_configurables.items():
+                # Since Application.load_config_file calls update_config on the Application, skip
+                # the configurable registered with self (i.e., the application).
+                if configurable is not self:
+                    configurable.update_config(self.config)
+                configs.append(config_name)
+
+            self.log.info("Configuration file changes detected.  Instances for the following "
+                          "configurables have been updated: {}".format(configs))
+        return updated
+
+    def add_dynamic_configurable(self, config_name, configurable):
+        """
+        Adds the configurable instance associated with the given name to the list of Configurables
+        that can have their configurations updated when configuration file updates are detected.
+        :param config_name: the name of the config within this application
+        :param configurable: the configurable instance corresponding to that config
+        """
+        if not isinstance(configurable, Configurable):
+            raise RuntimeError("'{}' is not a subclass of Configurable!".format(configurable))
+
+        self._dynamic_configurables[config_name] = weakref.proxy(configurable)
+
+    def init_dynamic_configs(self):
+        """
+        Initialize the set of configurables that should participate in dynamic updates.  We should
+        also log that we're performing dynamic configuration updates, along with the list of CLI
+        options - that are not privy to dynamic updates.
+        :return:
+        """
+        if self.dynamic_config_interval > 0:
+            self.add_dynamic_configurable('EnterpriseGatewayApp', self)
+            self.add_dynamic_configurable('MappingKernelManager', self.kernel_manager)
+            self.add_dynamic_configurable('KernelSpecManager', self.kernel_spec_manager)
+            self.add_dynamic_configurable('KernelSessionManager', self.kernel_session_manager)
+
+            self.log.info("Dynamic updates have been configured.  Checking every {} seconds.".
+                          format(self.dynamic_config_interval))
+
+            self.log.info("The following configuration options will not be subject to dynamic updates "
+                          "(configured via CLI):")
+            for config, options in self.cli_config.items():
+                for option, value in options.items():
+                    self.log.info("    '{}.{}': '{}'".format(config, option, value))
+
+            if self.dynamic_config_poller is None:
+                self.dynamic_config_poller = ioloop.PeriodicCallback(self.update_dynamic_configurables,
+                                                                     self.dynamic_config_interval * 1000)
+            self.dynamic_config_poller.start()
 
 
 launch_instance = EnterpriseGatewayApp.launch_instance
