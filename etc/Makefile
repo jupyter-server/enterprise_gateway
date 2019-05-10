@@ -12,7 +12,8 @@ SHELL:=/bin/bash
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
 
-NO_CACHE?=--no-cache
+# Set NO_CACHE=--no-cache to force docker build to not use cached layers
+NO_CACHE?=
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -101,12 +102,12 @@ kernel_image_files: ../build/kernel_image_files
 
 KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 DOCKER_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
-PUBLISHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
+PUSHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
 
 docker-images: $(DOCKER_IMAGES)
 kernel-images: $(KERNEL_IMAGES)
 
-publish-images: publish-enterprise-gateway-demo publish-nb2kg publish-enterprise-gateway publish-kernel-py publish-kernel-spark-py publish-kernel-tf-py publish-kernel-r publish-kernel-spark-r publish-kernel-scala publish-kernel-image-puller
+push-images: push-enterprise-gateway-demo push-nb2kg push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-tf-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-image-puller
 
 clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-demo-base clean-enterprise-gateway clean-kernel-image-puller clean-kernel-images
 clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
@@ -148,7 +149,7 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
-	@(cd ../build/docker/$1; docker build --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
+	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endef
@@ -162,10 +163,10 @@ clean-$1:
 endef
 $(foreach image,$(DOCKER_IMAGES),$(eval $(call CLEAN_IMAGE,$(image))))
 
-# Publish each publish image on $(PUBLISHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
-define PUBLISH_IMAGE
-publish-$1:
-	@docker push $(HUB_ORG)/$1:$(TAG)
+# Publish each publish image on $(PUSHED_IMAGES) to DockerHub.  Switch 'eval' to 'info' to see what is produced.
+define PUSH_IMAGE
+push-$1:
+	docker push $(HUB_ORG)/$1:$(TAG)
 endef
-$(foreach image,$(PUBLISHED_IMAGES),$(eval $(call PUBLISH_IMAGE,$(image))))
+$(foreach image,$(PUSHED_IMAGES),$(eval $(call PUSH_IMAGE,$(image))))
 
