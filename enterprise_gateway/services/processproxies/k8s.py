@@ -20,7 +20,7 @@ logging.getLogger('kubernetes').setLevel(os.environ.get('EG_KUBERNETES_LOG_LEVEL
 enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 default_kernel_service_account_name = os.environ.get('EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME', 'default')
 kernel_cluster_role = os.environ.get('EG_KERNEL_CLUSTER_ROLE', 'cluster-admin')
-shared_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
+share_gateway_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
 
 config.load_incluster_config()
 
@@ -151,8 +151,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # create the namespace and record that we'll want to delete it as well.
         namespace = kwargs['env'].get('KERNEL_NAMESPACE')
         if namespace is None:
-            # check if shared namespace is configured...
-            if shared_namespace:  # if so, set to EG namespace
+            # check if share gateway namespace is configured...
+            if share_gateway_namespace:  # if so, set to EG namespace
                 namespace = enterprise_gateway_namespace
                 self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
                                  format(namespace))

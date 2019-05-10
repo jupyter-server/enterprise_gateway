@@ -12,13 +12,13 @@ metadata:
 spec:
   ports:
   - name: http
-    port: {{ .Values.eg_port }}
-    targetPort: {{ .Values.eg_port }}
+    port: {{ .Values.port }}
+    targetPort: {{ .Values.port }}
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
   type: NodePort
-{{- if .Values.k8s_master_public_ip }}
+{{- if .Values.k8sMasterPublicIP }}
   externalIPs:
-  - {{ .Values.k8s_master_public_ip }}
+  - {{ .Values.k8sMasterPublicIP }}
 {{- end }}
