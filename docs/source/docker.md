@@ -72,7 +72,7 @@ FROM elyra/kernel-py:VERSION
 
 USER root  # switch to root user to perform installation (if necessary)
 
-pip install my-libraries
+RUN pip install my-libraries
 
 USER $NB_UID  # switch back to the jovyan user 
 ```
