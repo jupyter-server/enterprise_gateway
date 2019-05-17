@@ -144,7 +144,6 @@ spec:
         # this policy should be sufficient for them as well.
         imagePullPolicy: IfNotPresent
         name: enterprise-gateway
-        args: ["--gateway"]
         ports:
         - containerPort: 8888
 ## Uncomment to enable NFS-mounted kernelspecs

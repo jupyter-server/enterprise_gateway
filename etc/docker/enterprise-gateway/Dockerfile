@@ -25,10 +25,10 @@ RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
-COPY start-enterprise-gateway.sh bootstrap-enterprise-gateway.sh /usr/local/bin/
+COPY start-enterprise-gateway.sh /usr/local/bin/
 
-RUN chown jovyan:users /usr/local/bin/bootstrap-enterprise-gateway.sh && \
-	chmod 0755 /usr/local/bin/bootstrap-enterprise-gateway.sh && \
+RUN chown jovyan:users /usr/local/bin/start-enterprise-gateway.sh && \
+	chmod 0755 /usr/local/bin/start-enterprise-gateway.sh && \
 	touch /usr/local/share/jupyter/enterprise-gateway.log && \
 	chown -R jovyan:users /usr/local/share/jupyter /usr/local/bin/kernel-launchers && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log && \
@@ -43,7 +43,7 @@ RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPA
 
 USER jovyan
 
-ENTRYPOINT ["/usr/local/bin/bootstrap-enterprise-gateway.sh"]
+CMD ["/usr/local/bin/start-enterprise-gateway.sh"]
 
 EXPOSE 8888
 
