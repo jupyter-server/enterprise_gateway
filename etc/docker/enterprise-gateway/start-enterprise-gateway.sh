@@ -23,11 +23,11 @@ export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','
 
 echo "Starting Jupyter Enterprise Gateway..."
 
-jupyter enterprisegateway \
+exec jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
 	--KernelSpecManager.whitelist=${EG_KERNEL_WHITELIST} \
 	--MappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--MappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
-	--MappingKernelManager.cull_connected=${EG_CULL_CONNECTED} 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
+	--MappingKernelManager.cull_connected=${EG_CULL_CONNECTED}
 
 

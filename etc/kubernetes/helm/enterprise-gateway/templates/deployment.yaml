@@ -38,7 +38,6 @@ spec:
       - name: enterprise-gateway
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-        args: ["--gateway"]
         env:
         - name: EG_NAMESPACE
           value: {{ .Release.Namespace }}
