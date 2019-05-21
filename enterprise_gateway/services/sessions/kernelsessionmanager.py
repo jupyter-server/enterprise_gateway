@@ -15,6 +15,12 @@ from traitlets.config.configurable import LoggingConfigurable
 
 kernels_lock = threading.Lock()
 
+# These will be located under the `persistence_root` and exist
+# to make integration with ContentsManager implementations easier.
+KERNEL_SESSIONS_DIR_NAME = "kernel_sessions"
+KERNEL_SESSIONS_FILE_NAME = "sessions.json"
+KERNEL_SESSIONS_PATH_NAME = KERNEL_SESSIONS_DIR_NAME + "/" + KERNEL_SESSIONS_FILE_NAME
+
 
 class KernelSessionManager(LoggingConfigurable):
     """ KernelSessionManager is used to save and load kernel sessions from persistent storage.
@@ -44,6 +50,16 @@ class KernelSessionManager(LoggingConfigurable):
     def session_persistence_default(self):
         return bool(os.getenv(self.session_persistence_env,
                               str(self.session_persistence_default_value)).lower() == 'true')
+
+    # Persistence root
+    persistence_root_env = 'EG_PERSISTENCE_ROOT'
+    persistence_root = Unicode(config=True,
+                               help="""Identifies the root 'directory' under which the 'kernel_sessions' node will
+                               reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""")
+
+    @default('persistence_root')
+    def persistence_root_default(self):
+        return os.getenv(self.persistence_root_env, "/")
 
     def __init__(self, kernel_manager, **kwargs):
         super(KernelSessionManager, self).__init__(**kwargs)
@@ -251,23 +267,19 @@ class KernelSessionManager(LoggingConfigurable):
 
 class FileKernelSessionManager(KernelSessionManager):
     """
-    Performs kernel session persistence operations against the file `kernels.json` located in the directory
-    pointed to by the kernel_session_dir parameter (default JUPYTER_DATA_DIR).
+    Performs kernel session persistence operations against the file `sessions.json` located in the kernel_sessions
+    directory in the directory pointed to by the persistence_root parameter (default JUPYTER_DATA_DIR).
     """
 
-    kernel_session_dir_env = 'EG_KERNEL_SESSION_DIR'
-    kernel_session_dir = Unicode(config=True,
-                                 help="""Identifies the directory in which kernel sessions will be persisted.  Default
-                                 =  JUPYTER_DATA_DIR.  (EG_KERNEL_SESSION_DIR env var)""")
-
-    @default('kernel_session_dir')
-    def kernel_session_dir_default(self):
-        return os.getenv(self.kernel_session_dir_env, jupyter_data_dir())
+    # Change the default to Jupyter Data Dir.
+    @default('persistence_root')
+    def persistence_root_default(self):
+        return os.getenv(self.persistence_root_env, jupyter_data_dir())
 
     def __init__(self, kernel_manager, **kwargs):
         super(FileKernelSessionManager, self).__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
-            self.kernel_session_file = os.path.join(self._get_sessions_loc(), 'kernels.json')
+            self.kernel_session_file = os.path.join(self._get_sessions_loc(), KERNEL_SESSIONS_FILE_NAME)
             self.log.info("Kernel session persistence location: {}".format(self.kernel_session_file))
 
     def save_sessions(self):
@@ -285,7 +297,7 @@ class FileKernelSessionManager(KernelSessionManager):
                     fp.close()
 
     def _get_sessions_loc(self):
-        path = os.path.join(self.kernel_session_dir, 'sessions')
+        path = os.path.join(self.persistence_root, KERNEL_SESSIONS_DIR_NAME)
         if not os.path.exists(path):
             os.makedirs(path, 0o755)
         return path
