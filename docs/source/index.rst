@@ -26,14 +26,19 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :caption: User Documentation
 
    getting-started
+   getting-started-kernels
+   getting-started-security
+   getting-started-other-features
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Orchestrator Support
+
    getting-started-cluster-mode
    getting-started-client-mode
    getting-started-kubernetes
    getting-started-docker
    getting-started-conductor
-   getting-started-kernels
-   getting-started-security
-   getting-started-other-features
 
 .. toctree::
    :maxdepth: 2

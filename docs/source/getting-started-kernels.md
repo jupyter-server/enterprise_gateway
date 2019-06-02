@@ -13,6 +13,16 @@ Please find below more details on the specific kernels supported by Enterprise G
 
 For information about how to build your own kernel-based docker image for use by Enterprise Gateway see [Custom kernel images](docker.html#custom-kernel-images).
 
+You will find in this documentation details on how to install the kernels on various orchestrators:
+
++ [Hadoop Yarm client mode](getting-started-client-mode.html).
++ [Hadoop Yarm cluster mode](getting-started-cluster-mode.html).
++ [Kubernetes](getting-started-kubernetes.html).
++ [Docker](getting-started-docker.html).
++ [Conductor](getting-started-conductor.html).
+
+For the impatients, we give here after basic information for Yarn.
+
 ### Scala kernel (Apache Toree kernel)
 
 We have tested the latest version of [Apache Toree](http://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
@@ -35,7 +45,6 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --d
 ```
 
 For more information about the Scala kernel, please visit the [Apache Toree](http://toree.apache.org/) page.
-
 
 ### Installing support for Python (IPython kernel)
 
@@ -66,8 +75,6 @@ Perform the following steps on Jupyter Enterprise Gateway hosting system as well
 ```Bash
 conda install --yes --quiet -c r r-essentials r-irkernel r-argparse
 
-
-
 # Create an R-script to run and install packages and update IRkernel
 cat <<'EOF' > install_packages.R
 install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
@@ -83,6 +90,7 @@ $ANACONDA_HOME/bin/Rscript install_packages.R
 # OPTIONAL: check the installed R packages
 ls $ANACONDA_HOME/lib/R/library
 ```
+
 **Update the IRkernel Kernelspecs**
 
 Considering we would like to enable the IRkernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_R_yarn_client** and **spark_R_yarn_client** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
