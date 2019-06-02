@@ -1,4 +1,5 @@
-## Enabling Docker Swarm Support
+## Kernels on Docker Swarm
+
 This page describes the approach taken for integrating Enterprise Gateway into an existing Docker Swarm cluster.
 
 In this solution, Enterprise Gateway is, itself, provisioned as a Docker Swarm _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Swarm (although HA cannot be fully realized until EG supports persistent sessions).

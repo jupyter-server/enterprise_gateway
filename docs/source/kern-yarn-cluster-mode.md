@@ -1,4 +1,4 @@
-## Enabling YARN Cluster Mode Support
+## Kernels on YARN Cluster Mode
 
 To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide additional configuration options in a cluster deployment.
 

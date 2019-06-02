@@ -32,13 +32,13 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 
 .. toctree::
    :maxdepth: 2
-   :caption: Orchestrator Support
+   :caption: Resource Managers
 
-   getting-started-cluster-mode
-   getting-started-client-mode
-   getting-started-kubernetes
-   getting-started-docker
-   getting-started-conductor
+   kern-yarn-cluster-mode
+   kern-yarn-client-mode.md
+   kern-kubernetes
+   kern-docker
+   kern-conductor
 
 .. toctree::
    :maxdepth: 2

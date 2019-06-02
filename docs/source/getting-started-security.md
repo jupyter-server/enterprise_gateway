@@ -1,4 +1,5 @@
 ## Security Features
+
 Jupyter Enterprise Gateway does not currently perform user _authentication_ but, instead, assumes that all users
 issuing requests have been previously authenticated.  Recommended applications for this are 
 [Apache Knox](https://knox.apache.org/) or perhaps even [Jupyter Hub](https://jupyterhub.readthedocs.io/en/latest/) 

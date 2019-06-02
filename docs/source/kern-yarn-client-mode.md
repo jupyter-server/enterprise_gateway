@@ -1,4 +1,4 @@
-## Enabling YARN Client Mode or Spark Standalone Support
+## Kernels on YARN Client Mode or Spark Standalone
 
 Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
 

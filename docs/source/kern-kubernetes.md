@@ -1,4 +1,5 @@
-## Enabling Kubernetes Support
+## Kernels on Kubernetes
+
 This page describes the approach taken for integrating Enterprise Gateway into an existing Kubernetes cluster.
 
 In this solution, Enterprise Gateway is, itself, provisioned as a Kubernetes _deployment_ and exposed as a Kubernetes _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Kubernetes (although HA cannot be fully realized until EG supports persistent sessions).
