@@ -13,7 +13,7 @@ The current deployment uses a compose stack definition, [docker-compose.yml](htt
 To deploy the stack to a swarm cluster from a manager node, use:
 
 ```bash
-docker stack deploy -c docker-compose enterprise-gateway
+docker stack deploy -c docker-compose.yml enterprise-gateway
 ```
 
 More information about deploying and managing stacks can be found [here](https://docs.docker.com/engine/reference/commandline/stack_deploy/).
