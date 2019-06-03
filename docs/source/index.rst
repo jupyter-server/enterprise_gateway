@@ -35,7 +35,7 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :caption: Resource Managers
 
    kern-yarn-cluster-mode
-   kern-yarn-client-mode.md
+   kern-yarn-client-mode
    kern-kubernetes
    kern-docker
    kern-conductor

@@ -256,7 +256,7 @@ Like the yarn endpoint parameter the `remote_hosts` parameter can be specified w
 process proxy configuration to override the global value - enabling finer-grained kernel distributions.
 
 See 
-[Enabling YARN Client Mode or Spark Standalone Support](kern-yarn-client-mode.md.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
+[Enabling YARN Client Mode or Spark Standalone Support](kern-yarn-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
 
 ###### KubernetesProcessProxy
 With the popularity of Kubernetes within the enterprise, Enterprise Gateway now provides an implementation
