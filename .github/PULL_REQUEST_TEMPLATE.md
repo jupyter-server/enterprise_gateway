@@ -19,7 +19,7 @@ Please follow the **[seven rules of a great commit message](https://chris.beams.
 
 **Closing issues**
 
-Put Closes #XXXX`in your commit comment to auto-close this PR when merged.
-Put Fixes  #XXXX`in your commit comment to auto-close the issue that your PR fixes (if such).
+- Put `Closes #XXXX`in your commit comment to auto-close this PR when merged.
+- Put `Fixes  #XXXX`in your commit comment to auto-close the issue that your PR fixes (if such).
 
 
