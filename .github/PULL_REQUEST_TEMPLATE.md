@@ -2,17 +2,16 @@
 <!-- You can erase any parts of this template not applicable to your Pull Request. -->
 
 ### PR Checklist
-- [ ] Have you updated the required documentation based on the current PR
-  changes
+- [ ] Have you updated the required documentation based on the current PR, as applicable?
 - [ ] Have you written new tests for your core changes, as applicable?
 
 **Commit Formatting**
 
-Please follow the `seven rules of a great commit message`
+Please follow the **[seven rules of a great commit message](https://chris.beams.io/posts/git-commit/)**
 
 - Separate subject from body with a blank line
 - Limit the subject line to 50 characters
-- Capitalize the subject line
+- Capitalize the first word of the subject line
 - Do not end the subject line with a period
 - Use the imperative mood in the subject line
 - Wrap the body at 72 characters
