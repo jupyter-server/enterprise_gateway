@@ -237,7 +237,7 @@ This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` comm
 
 Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, then the YARN endpoint is not required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
 
-See [Enabling YARN Cluster Mode Support](kern-yarn-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
+See [Enabling YARN Cluster Mode Support](kernel-yarn-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
 
 ###### DistributedProcessProxy
 Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
@@ -256,7 +256,7 @@ Like the yarn endpoint parameter the `remote_hosts` parameter can be specified w
 process proxy configuration to override the global value - enabling finer-grained kernel distributions.
 
 See 
-[Enabling YARN Client Mode or Spark Standalone Support](kern-yarn-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
+[Enabling YARN Client Mode or Spark Standalone Support](kernel-yarn-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
 
 ###### KubernetesProcessProxy
 With the popularity of Kubernetes within the enterprise, Enterprise Gateway now provides an implementation
@@ -267,7 +267,7 @@ cluster as a *Service* and *Deployment*.  The primary vehicle by which this is a
 file that contains the necessary metadata to define its deployment.  
 
 See 
-[Enabling Kubernetes Support](kern-kubernetes.html#enabling-kubernetes-support) for details.
+[Enabling Kubernetes Support](kernel-kubernetes.html#enabling-kubernetes-support) for details.
 
 ###### DockerSwarmProcessProxy
 Enterprise Gateway provides an implementation of a process proxy that communicates with the Docker Swarm resource manager via the Docker API.  When used, the kernels are launched as swarm services and can reside anywhere in the managed cluster. To leverage kernels configured in this manner, Enterprise Gateway can be deployed
@@ -276,7 +276,7 @@ either as a Docker Swarm _service_ or a traditional Docker container.
 A similar `DockerProcessProxy` implementation has also been provided.  When used, the corresponding kernel will be launched as a traditional docker container that runs local to the launching Enterprise Gateway instance.  As a result, its use has limited value.
 
 See 
-[Enabling Docker Swarm Support](kern-docker.html#enabling-docker-swarm-support) for details.
+[Enabling Docker Swarm Support](kernel-docker.html#enabling-docker-swarm-support) for details.
 
 ###### ConductorClusterProcessProxy
 Enterprise Gateway also provides an implementation of a process proxy 
@@ -292,7 +292,7 @@ This process proxy is reliant on the `--EnterpriseGatewayApp.conductor_endpoint`
 option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where the Conductor resource manager is 
 located.  
 
-See [Enabling IBM Spectrum Conductor Support](kern-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
+See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
 
 #### Process Proxy Configuration
 Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 

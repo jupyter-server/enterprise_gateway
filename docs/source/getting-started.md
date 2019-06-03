@@ -86,11 +86,11 @@ To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gatew
 
 Please follow the links below to learn specific details about how to enable/configure the different modes of distributing your kernels:
 
-* [Enabling YARN Cluster Mode support](kern-yarn-cluster-mode.html)
-* [Enabling YARN Client Mode or Spark Standalone support](kern-yarn-client-mode.html)
-* [Enabling Kubernetes Support](kern-kubernetes.html)
-* [Enabling Docker Swarm Support](kern-docker.html)
-* [Enabling IBM Spectrum Conductor Support](kern-conductor.html)
+* [Enabling YARN Cluster Mode support](kernel-yarn-cluster-mode.html)
+* [Enabling YARN Client Mode or Spark Standalone support](kernel-yarn-client-mode.html)
+* [Enabling Kubernetes Support](kernel-kubernetes.html)
+* [Enabling Docker Swarm Support](kernel-docker.html)
+* [Enabling IBM Spectrum Conductor Support](kernel-conductor.html)
 
 ### Starting Enterprise Gateway
 Very few arguments are necessary to minimally start Enterprise Gateway.  The following command could be considered a minimal command and essentially provides functionality equal to Jupyter Kernel Gateway:

@@ -34,11 +34,11 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :maxdepth: 2
    :caption: Resource Managers
 
-   kern-yarn-cluster-mode
-   kern-yarn-client-mode
-   kern-kubernetes
-   kern-docker
-   kern-conductor
+   kernel-yarn-cluster-mode
+   kernel-yarn-client-mode
+   kernel-kubernetes
+   kernel-docker
+   kernel-conductor
 
 .. toctree::
    :maxdepth: 2
