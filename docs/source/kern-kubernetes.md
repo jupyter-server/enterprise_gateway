@@ -1,4 +1,4 @@
-## Kernels on Kubernetes
+## Kubernetes
 
 This page describes the approach taken for integrating Enterprise Gateway into an existing Kubernetes cluster.
 

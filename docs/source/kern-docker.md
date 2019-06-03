@@ -1,4 +1,4 @@
-## Kernels on Docker Swarm
+## Docker Swarm
 
 This page describes the approach taken for integrating Enterprise Gateway into an existing Docker Swarm cluster.
 

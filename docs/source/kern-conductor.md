@@ -1,3 +1,3 @@
-## Kernels on IBM Spectrum Conductor
+## IBM Spectrum Conductor
 
 This information will be added shortly.  The configuration is similar to that of [YARN Cluster mode](kern-yarn-cluster-mode.html) with the `ConductorClusterProcessProxy` used in place of `YARNClusterProcessProxy`.
