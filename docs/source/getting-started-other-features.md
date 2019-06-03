@@ -1,4 +1,5 @@
 ## Ancillary Features
+
 This page points out some features and functionality worthy of your attention but not necessarily part of the Jupyter Enterprise Gateway implementation.
 
 ### Culling idle kernels

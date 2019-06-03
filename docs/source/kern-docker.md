@@ -1,4 +1,5 @@
-## Enabling Docker Swarm Support
+## Docker Swarm
+
 This page describes the approach taken for integrating Enterprise Gateway into an existing Docker Swarm cluster.
 
 In this solution, Enterprise Gateway is, itself, provisioned as a Docker Swarm _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Swarm (although HA cannot be fully realized until EG supports persistent sessions).
@@ -13,7 +14,7 @@ The current deployment uses a compose stack definition, [docker-compose.yml](htt
 To deploy the stack to a swarm cluster from a manager node, use:
 
 ```bash
-docker stack deploy -c docker-compose enterprise-gateway
+docker stack deploy -c docker-compose.yml enterprise-gateway
 ```
 
 More information about deploying and managing stacks can be found [here](https://docs.docker.com/engine/reference/commandline/stack_deploy/).
