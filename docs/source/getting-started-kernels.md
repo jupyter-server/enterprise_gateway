@@ -15,11 +15,11 @@ For information about how to build your own kernel-based docker image for use by
 
 You will find in this documentation details on how to install the kernels on various orchestrators:
 
-+ [Hadoop YARN client mode](kern-yarn-client-mode.html).
-+ [Hadoop YARN cluster mode](kern-yarn-cluster-mode.html).
-+ [Kubernetes](kern-kubernetes.html).
-+ [Docker](kern-docker.html).
-+ [IBM Conductor](kern-conductor.html).
++ [Hadoop YARN client mode](kern-yarn-client-mode.html)
++ [Hadoop YARN cluster mode](kern-yarn-cluster-mode.html)
++ [Kubernetes](kern-kubernetes.html)
++ [Docker](kern-docker.html)
++ [IBM Conductor](kern-conductor.html)
 
 ### Scala kernel (Apache Toree kernel)
 
