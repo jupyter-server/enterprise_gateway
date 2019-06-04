@@ -26,7 +26,6 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :caption: User Documentation
 
    getting-started
-   getting-started-kernels
    getting-started-security
    getting-started-other-features
 
@@ -36,6 +35,7 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 
    kernel-yarn-cluster-mode
    kernel-yarn-client-mode
+   kernel-spark-standalone
    kernel-kubernetes
    kernel-docker
    kernel-conductor

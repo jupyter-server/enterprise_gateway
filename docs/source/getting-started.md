@@ -17,7 +17,7 @@ The following kernels have been tested with the Jupyter Enterprise Gateway:
 * Scala 2.11/Apache Spark 2.x with Apache Toree kernel
 * R/Apache Spark 2.x with IRkernel
 
-To support Scala kernels, [Apache Toree](https://toree.apache.org/) must be installed. To support IPython kernels and R kernels to run in YARN containers, various packages have to be installed on each of the YARN data nodes. The simplest way to enable all the data nodes with requireddependencies is to install [Anaconda](https://anaconda.com/) on all cluster nodes.
+To support Scala kernels, [Apache Toree](https://toree.apache.org/) is used. To support IPython kernels and R kernels, various packages have to be installed on each of the resource manager nodes. The simplest way to enable all the data nodes with required dependencies is to install [Anaconda](https://anaconda.com/) on all cluster nodes.
 
 To take full advantage of security and user impersonation capabilities, a Kerberized cluster is recommended.
 
@@ -76,23 +76,33 @@ conda uninstall jupyter_enterprise_gateway
 
 ### Installing Kernels
 
-Please follow the link below to learn more specific details about how to install/configure specific kernels with Jupyter Enterprise Gateway:
-
-* [Installing and Configuring kernels](getting-started-kernels.html)
-
-### Configuring Resource Managers
-
-To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided deep integration with the Apache Hadoop YARN resource manager. Having said that, Enterprise Gateway also supports running in a pseudo-distributed mode utilizing both YARN client or Spark Standalone modes. We've also recently added Kubernetes, Docker Swarm and IBM Spectrum Conductor integrations.
+To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided deep integration with various resource managers. Having said that, Enterprise Gateway also supports running in a pseudo-distributed mode utilizing for example both YARN client or Spark Standalone modes. We've also recently added Kubernetes, Docker Swarm and IBM Spectrum Conductor integrations.
 
 Please follow the links below to learn specific details about how to enable/configure the different modes of distributing your kernels:
 
 * [Enabling YARN Cluster Mode support](kernel-yarn-cluster-mode.html)
-* [Enabling YARN Client Mode or Spark Standalone support](kernel-yarn-client-mode.html)
+* [Enabling YARN Client Mode](kernel-yarn-client-mode.html)
+* [Spark Standalone support](kernel-spark-standalone.html)
 * [Enabling Kubernetes Support](kernel-kubernetes.html)
 * [Enabling Docker Swarm Support](kernel-docker.html)
 * [Enabling IBM Spectrum Conductor Support](kernel-conductor.html)
 
+The latest release also delivers kernels support for `Distributed Python` (without resource managers) as for `Dask YARN`.
+
+In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
+
+Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
+
+* Python/Apache Spark 2.x with IPython kernel
+* Scala 2.11/Apache Spark 2.x with Apache Toree kernel
+* R/Apache Spark 2.x with IRkernel
+
+We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter/enterprise_gateway/releases) (e.g. [jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz)) that can be extracted and modified to fit your configuration.
+
+For information about how to build your own kernel-based docker image for use by Enterprise Gateway see [Custom kernel images](docker.html#custom-kernel-images).
+
 ### Starting Enterprise Gateway
+
 Very few arguments are necessary to minimally start Enterprise Gateway.  The following command could be considered a minimal command and essentially provides functionality equal to Jupyter Kernel Gateway:
 
 ```bash

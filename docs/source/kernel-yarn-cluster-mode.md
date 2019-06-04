@@ -22,18 +22,13 @@ Considering we would like to enable the IPython Kernel that comes pre-installed 
 
 ``` Bash
 wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
-
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
-
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
-
 mkdir $KERNELS_FOLDER/spark_python_yarn_cluster/
-
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
-
 ```
 
-After that, you should have a kernel.json that looks similar to the one below:
+After that, you should have a `kernel.json` that looks similar to the one below:
 
 ```json
 {
@@ -61,5 +56,73 @@ After that, you should have a kernel.json that looks similar to the one below:
   ]
 }
 ```
+
+### Scala Kernel (Apache Toree kernel)
+
+We have tested the latest version of [Apache Toree](http://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
+
+Follow the steps below to install/configure the Toree kernel:
+
+**Install Apache Toree Kernelspecs**
+
+Considering we would like to enable the Scala Kernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_scala_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
+
+``` Bash
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
+KERNELS_FOLDER=/usr/local/share/jupyter/kernels
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_cluster/ spark_scala_yarn_cluster/
+```
+
+For more information about the Scala kernel, please visit the [Apache Toree](http://toree.apache.org/) page.
+
+### Installing support for Python (IPython kernel)
+
+The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](http://ipython.readthedocs.io/en/stable/).
+
+**Update the IPython Kernelspecs**
+
+Considering we would like to enable the IPython kernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
+
+``` Bash
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
+KERNELS_FOLDER=/usr/local/share/jupyter/kernels
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+```
+
+For more information about the IPython kernel, please visit the [IPython kernel](http://ipython.readthedocs.io/en/stable/) page.
+
+### Installing support for R (IRkernel)
+
+**Install IRkernel**
+
+Perform the following steps on Jupyter Enterprise Gateway hosting system as well as all YARN workers
+
+```Bash
+conda install --yes --quiet -c r r-essentials r-irkernel r-argparse
+# Create an R-script to run and install packages and update IRkernel
+cat <<'EOF' > install_packages.R
+install.packages(c('repr', 'IRdisplay', 'evaluate', 'git2r', 'crayon', 'pbdZMQ',
+                   'devtools', 'uuid', 'digest', 'RCurl', 'curl', 'argparse'),
+                   repos='http://cran.rstudio.com/')
+devtools::install_github('IRkernel/IRkernel@0.8.14')
+IRkernel::installspec(user = FALSE)
+EOF
+# run the package install script
+$ANACONDA_HOME/bin/Rscript install_packages.R
+# OPTIONAL: check the installed R packages
+ls $ANACONDA_HOME/lib/R/library
+```
+
+**Update the IRkernel Kernelspecs**
+
+Considering we would like to enable the IRkernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_R_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
+
+``` Bash
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
+KERNELS_FOLDER=/usr/local/share/jupyter/kernels
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_cluster/ spark_R_yarn_cluster/
+```
+
+For more information about the iR kernel, please visit the [IRkernel](https://irkernel.github.io/) page.
 
 After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents in distributed mode on a Spark/Yarn Cluster.   
