@@ -1,6 +1,6 @@
 ## YARN Client Mode
 
-Jupyter Enterprise Gateway extends Jupyter Kernel Gateway and is 100% compatible with JKG, which means that by installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
+Jupyter Enterprise Gateway extends Jupyter Kernel Gateway which means that by installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
 
 Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 
@@ -18,7 +18,7 @@ EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3
 ```
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[e.g. jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).
+[jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).
 
 Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on
 Yarn Client mode, we would have to copy the sample configuration folder **spark_python_yarn_client**
