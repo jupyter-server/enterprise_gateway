@@ -87,11 +87,11 @@ Please follow the links below to learn specific details about how to enable/conf
 * [Enabling Docker Swarm Support](kernel-docker.html)
 * [Enabling IBM Spectrum Conductor Support](kernel-conductor.html)
 
-The latest release also delivers kernels support for `Distributed Python` (without resource managers) as for `Dask YARN`.
+The latest release also delivers kernels support for `Distributed Python` (without resource managers) as for `Dask YARN` and `Tensforflow`.
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
 
-Depending on the resource manager, we detail the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
+Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 
 * Python/Apache Spark 2.x with IPython kernel
 * Scala 2.11/Apache Spark 2.x with Apache Toree kernel
