@@ -90,19 +90,34 @@ Please follow the links below to learn specific details about how to enable/conf
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
 
-**Important requirements regarding the nodes**
+#### Important requirements regarding the nodes
 
 We have two cases:
 
-1. The kernel is run in (Docker) container: in that case, the image should ensure the availability of the kernel libraries and kernelspec. The kernelspec is not necessary here, only the launcher. We talk about this in container customization.
-2. The kernelspecs are only required on all nodes if using the DistributedProcessProxy - which can apply to YARN Client mode, Standalone, and 
-Distributed. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup. SSH passwordless is needed between the EG node and the other nodes.
+*Case 1 - The kernel is run in (Docker) container.*
+
+In that case, the image should ensure the availability of the kernel libraries and kernelspec. The kernelspec is not necessary here, only the launcher. We talk about this in [container customization](./docker.html#bringing-your-own-kernel-image).
+
+The launch of containerized kernels (at least via EG) is two-fold. First, there's the argv section in the kernelspec that is processed by EG. In these cases, the command that is invoked is a python script using the container's api (kubernetes, docker, or docker swarm) that is responsible for converting any necessary "parameters" to environment variables, etc. that are used during the actual container creation.
+
+The command that is then run in the container is THEN the actual kernel launcher script. This launcher is responsible for taking the response address (which is now an env variable) and returning the kernel's connection information back on that response address to EG. The kernel launcher does additional things - but primarily listens for interrupt and shutdown requests, which it then passes along to the actual (embedded) kernel.
+
+So container envs have two launches - one to launch the container itself, the other to launch the kernel (within the container).
+
+*Case 2 - The kernel is run via DistributedProcessProxy*
+
+The kernelspecs are only required on all nodes if using the DistributedProcessProxy - which apply to YARN Client mode, Standalone, and 
+Distributed modes. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup. SSH passwordless is needed between the EG node and the other nodes.
+
+#### Languages
 
 Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 
 * Python/Apache Spark 2.x with IPython kernel
 * Scala 2.11/Apache Spark 2.x with Apache Toree kernel
 * R/Apache Spark 2.x with IRkernel
+
+#### Sample kernel specs
 
 We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter/enterprise_gateway/releases) (e.g. [jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz)) that can be extracted and modified to fit your configuration.
 
