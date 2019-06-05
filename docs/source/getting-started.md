@@ -78,9 +78,9 @@ conda uninstall jupyter_enterprise_gateway
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided deep integration with various resource managers. Having said that, Enterprise Gateway also supports running in a pseudo-distributed mode utilizing for example both YARN client or Spark Standalone modes. We've also recently added Kubernetes, Docker Swarm and IBM Spectrum Conductor integrations.
 
-Please follow the links below to learn specific details about how to enable/configure the different modes of distributing your kernels:
+Please follow the links below to learn specific details about how to enable/configure the different modes of depoloying your kernels:
 
-* [Vanilla](kernel-vanilla.html)
+* [Distributed](kernel-distributed.html)
 * [YARN Cluster Mode](kernel-yarn-cluster-mode.html)
 * [YARN Client Mode](kernel-yarn-client-mode.html)
 * [Standalone](kernel-spark-standalone.html)
@@ -94,8 +94,9 @@ In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/l
 
 We have two cases:
 
-1. The kernel is run in (Docker) container: in that case, the image should ensure the availability of the kernel libraries and kernelspec. There is no additional action to take on the node.
-2. The kernel is not run in a (Docker) container, e.g. Vanilla across a set of hosts, YARN (cluster mode, client mode) or Spark Standalone: All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. This requirement is applicable for vanilla using a set of distributed hosts and for all reource managers. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup.
+1. The kernel is run in (Docker) container: in that case, the image should ensure the availability of the kernel libraries and kernelspec. The kernelspec is not necessary here, only the launcher. We talk about this in container customization.
+2. The kernelspecs are only required on all nodes if using the DistributedProcessProxy - which can apply to YARN Client mode, Standalone, and 
+Distributed. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup.
 
 Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 

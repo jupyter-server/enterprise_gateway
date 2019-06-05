@@ -71,7 +71,8 @@ via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled`
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
 
-##### Impersonation in YARN Cluster Mode
+#### Impersonation in YARN Cluster Mode
+
 In a cluster managed by the YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
 this security option as a pre-requisite for user impersonation. When user impersonation is enabled, kernels are launched
 with the `--proxy-user ${KERNEL_USERNAME}` which will tell YARN to launch the kernel in a container used by the provided
@@ -82,7 +83,7 @@ Note that, when using kerberos in a YARN managed cluster, the gateway user (`ely
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration steps.
 
-###### SPNEGO Authentication to YARN APIs
+#### SPNEGO Authentication to YARN APIs
 
 When kerberos is enabled in a YARN managed cluster, the administration uis can be configured to require authentication/authorization
 via SPENEGO. When running Enterprise Gateway in a environment configured this way, we need to convey an extra configuration
@@ -92,7 +93,8 @@ to enable the proper authorization when communicating with YARN via the YARN API
 YARN APIs and can also be conveyed via the command-line boolean option `EnterpriseGatewayApp.yarn_endpoint_security_enabled`
 (default = False)
 
-##### Impersonation in Standalone or YARN Client Mode
+#### Impersonation in Standalone or YARN Client Mode
+
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
 kernel launch as the target user.  This can also be configured within the 
 [run.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh)
@@ -112,7 +114,7 @@ will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 
 ### SSH Tunneling
 
-Jupyter Enterprise Gateway is now configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
+Jupyter Enterprise Gateway is configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
 communication socket created within the launcher and used to perform remote and cross-user signalling functionality. SSH
 tunneling is NOT enabled by default. Tunneling can be enabled/disabled via the environment variable `EG_ENABLE_TUNNELING=False`.
 Note, there is no command-line or configuration file support for this variable.
@@ -126,7 +128,8 @@ Please perform necessary steps to validate all hosts before enabling SSH tunneli
 
 ### Securing Enterprise Gateway Server
 
-##### Using SSL for encrypted communication
+#### Using SSL for encrypted communication
+
 Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its clients. With SSL enabled, all the
 communication between the server and client are encrypted and highly secure.
 
@@ -167,7 +170,7 @@ serverextension.
 
 	Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
 
-##### Using Enterprise Gateway configuration file
+#### Using Enterprise Gateway configuration file
 You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
 
 1. If you do not already have a configuration file, generate a Enterprise Gateway configuration file by running the

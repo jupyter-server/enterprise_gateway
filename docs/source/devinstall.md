@@ -89,7 +89,6 @@ Note: Because the scala launcher requires a jar file, `make kernelspecs` require
 scala launcher jar. Please consult the [sbt site](http://www.scala-sbt.org/) for directions to 
 install/upgrade `sbt` on your platform. We currently prefer the use of 1.0.3.
 
-
 ### Build distribution files
 
 Builds the files necessary for a given release: the wheel file, the source tar file, and the kernelspecs tar

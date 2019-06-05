@@ -2,7 +2,7 @@
 
 To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide additional configuration options in a cluster deployment.
 
-Following kernelspecs are available on YARN cluster:
+The following sample kernelspecs are currently available on YARN cluster:
 
 + spark_R_yarn_cluster
 + spark_python_yarn_client

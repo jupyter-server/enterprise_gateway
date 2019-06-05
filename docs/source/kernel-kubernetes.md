@@ -4,7 +4,7 @@ This page describes the approach taken for integrating Enterprise Gateway into a
 
 In this solution, Enterprise Gateway is, itself, provisioned as a Kubernetes _deployment_ and exposed as a Kubernetes _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Kubernetes (although HA cannot be fully realized until EG supports persistent sessions).
 
-Following kernelspecs are available on Kubernetes:
+The following sample kernelspecs are currently available on Kubernetes:
 
 + R_kubernetes
 + python_kubernetes

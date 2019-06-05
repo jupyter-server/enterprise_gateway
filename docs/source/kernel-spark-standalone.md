@@ -20,7 +20,7 @@ EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3
 
 ### Configuring Kernels for Spark Standalone
 
-We will use some `yarn_client` specs for Spark Standalone. Follow [#681](https://github.com/jupyter/enterprise_gateway/issues/681) that will ensure Spark Standalone gets its own kernelspec.
+Although Enterprise Gateway does not currently provide sample kernelspecs for Spark standalone, here are the steps necessary to convert a yarn_client kernelspec to standalone.
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
 [jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).

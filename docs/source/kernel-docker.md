@@ -6,7 +6,7 @@ In this solution, Enterprise Gateway is, itself, provisioned as a Docker Swarm _
 
 The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with other images.  See [Runtime Images](docker.html#runtime-images) for image details.
 
-Following kernelspecs are available on Docker:
+The following sample kernelspecs are currently available on Docker:
 
 + R_docker
 + python_docker
