@@ -96,7 +96,7 @@ We have two cases:
 
 1. The kernel is run in (Docker) container: in that case, the image should ensure the availability of the kernel libraries and kernelspec. The kernelspec is not necessary here, only the launcher. We talk about this in container customization.
 2. The kernelspecs are only required on all nodes if using the DistributedProcessProxy - which can apply to YARN Client mode, Standalone, and 
-Distributed. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup.
+Distributed. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup. SSH passwordless is needed between the EG node and the other nodes.
 
 Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 
