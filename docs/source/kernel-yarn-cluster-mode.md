@@ -2,6 +2,12 @@
 
 To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide additional configuration options in a cluster deployment.
 
+Following kernelspecs are available on YARN cluster:
+
++ spark_R_yarn_cluster
++ spark_python_yarn_client
++ spark_scala_yarn_client
+
 The distributed capabilities are currently based on an Apache Spark cluster utilizing YARN as the Resource Manager and thus require the following environment variables to be set to facilitate the integration between Apache Spark and YARN components:
 
 * SPARK_HOME: Must point to the Apache Spark installation path
