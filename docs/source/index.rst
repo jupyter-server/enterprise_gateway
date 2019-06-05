@@ -26,6 +26,7 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :caption: User Documentation
 
    getting-started
+   system-architecture
    getting-started-security
    getting-started-other-features
 
@@ -43,10 +44,9 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 
 .. toctree::
    :maxdepth: 2
-   :caption: Architecture and Design
+   :caption: Use Cases
 
    use-cases
-   system-architecture
 
 .. toctree::
    :maxdepth: 2
