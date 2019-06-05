@@ -107,7 +107,11 @@ So container envs have two launches - one to launch the container itself, the ot
 *Case 2 - The kernel is run via DistributedProcessProxy*
 
 The kernelspecs are only required on all nodes if using the DistributedProcessProxy - which apply to YARN Client mode, Standalone, and 
-Distributed modes. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup. SSH passwordless is needed between the EG node and the other nodes.
+Distributed modes. All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. 
+
+This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup.
+
+SSH passwordless is needed between the EG node and the other nodes.
 
 #### Languages
 
