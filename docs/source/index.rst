@@ -33,6 +33,7 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    :maxdepth: 2
    :caption: Resource Managers
 
+   kernel-vanilla
    kernel-yarn-cluster-mode
    kernel-yarn-client-mode
    kernel-spark-standalone

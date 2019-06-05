@@ -4,9 +4,10 @@ Jupyter Enterprise Gateway extends Jupyter Kernel Gateway which means that by in
 
 Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 
-The pseudo-distributed capabilities are currently supported in YARN Client mode or using vanilla Spark Standalone and require the following environment variables to be set:
+The pseudo-distributed capabilities are currently supported in YARN Client mode and require the following environment variables to be set:
 
 * SPARK_HOME: Must point to the Apache Spark installation path
+
 ```
 SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP distribution
 ```

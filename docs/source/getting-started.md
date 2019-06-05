@@ -80,16 +80,22 @@ To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gatew
 
 Please follow the links below to learn specific details about how to enable/configure the different modes of distributing your kernels:
 
-* [Enabling YARN Cluster Mode support](kernel-yarn-cluster-mode.html)
-* [Enabling YARN Client Mode](kernel-yarn-client-mode.html)
-* [Spark Standalone support](kernel-spark-standalone.html)
-* [Enabling Kubernetes Support](kernel-kubernetes.html)
-* [Enabling Docker Swarm Support](kernel-docker.html)
-* [Enabling IBM Spectrum Conductor Support](kernel-conductor.html)
-
-The latest release also delivers kernels support for `Distributed Python` (without resource managers) as for `Dask YARN` and `Tensforflow`.
+* [Vanilla](kernel-vanilla.html)
+* [YARN Cluster Mode](kernel-yarn-cluster-mode.html)
+* [YARN Client Mode](kernel-yarn-client-mode.html)
+* [Standalone](kernel-spark-standalone.html)
+* [Kubernetes](kernel-kubernetes.html)
+* [Docker Swarm](kernel-docker.html)
+* [IBM Spectrum Conducto](kernel-conductor.html)
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
+
+**Important requirements regarding the nodes**
+
+We have two cases:
+
+1. The kernel is run in (Docker) container: in that case, the image should ensure the availability of the kernel libraries and kernelspec. There is no additional action to take on the node.
+2. The kernel is not run in a (Docker) container, e.g. Vanilla across a set of hosts, YARN (cluster mode, client mode) or Spark Standalone: All kernels (libraries...) and their corresponding kernelspecs must reside on each nodes. This requirement is applicable for vanilla using a set of distributed hosts and for all reource managers. The kernelspec hierarchies (i.e., paths) must be available and identical on all nodes. This is not applicable to Apache Toree in Yarn cluster mode since spark-submit will transfer the files at startup.
 
 Depending on the resource manager, we details the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 
