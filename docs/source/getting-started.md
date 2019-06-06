@@ -123,7 +123,7 @@ IPython and IRkernel kernels must be installed on each node.
 
 SSH passwordless is needed between the EG node and the other nodes.
 
-*Case 3 - The kernel is run via YarnClusterProcessProxy or ConductionClusterProcessProxy*
+*Case 3 - The kernel is run via YarnClusterProcessProxy or ConductorClusterProcessProxy*
 
 With cluster process proxies, distribution of kernelspecs to all nodes besides the EG node is not required.
 
