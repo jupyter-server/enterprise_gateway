@@ -10,7 +10,8 @@ can result in large processes that together deplete your single node of its reso
 .. figure:: images/Scalability-Before-JEG.gif
    :align: center
 
-   By default, Jupyter runs kernels locally - potentially exhausting the server of resources
+
+By default, Jupyter runs kernels locally - potentially exhausting the server of resources
 
 By leveraging the functionality of the
 underlying resource management applications like Hadoop YARN, Kubernetes, etc., Jupyter Enterprise Gateway
@@ -19,7 +20,7 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 .. figure:: images/Scalability-After-JEG.gif
    :align: center
 
-   Jupyter Enterprise Gateway leverages local resource managers to distribute kernels
+Jupyter Enterprise Gateway leverages local resource managers to distribute kernels
 
 .. toctree::
    :maxdepth: 2
@@ -29,11 +30,13 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    system-architecture
    getting-started-security
    getting-started-other-features
+   use-cases
 
 .. toctree::
    :maxdepth: 2
-   :caption: Resource Managers
+   :caption: Deployments
 
+   kernel-local
    kernel-distributed
    kernel-yarn-cluster-mode
    kernel-yarn-client-mode
@@ -41,12 +44,6 @@ distributes kernels across the compute cluster, dramatically increasing the numb
    kernel-kubernetes
    kernel-docker
    kernel-conductor
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Use Cases
-
-   use-cases
 
 .. toctree::
    :maxdepth: 2

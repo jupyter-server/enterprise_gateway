@@ -1,8 +1,8 @@
-## Distributed
+## Distributed Mode
 
-This page describes the approach taken for integrating Enterprise Gateway into a vanilla set of hosts, without cluster resource managers.
+This page describes the approach taken for integrating Enterprise Gateway into a distributed set of hosts, without cluster resource managers.
 
-Following kernelspec is available on Vanilla mode:
+The following sample kernelspecs are currently available on Distributed mode:
 
 + python_distributed
 

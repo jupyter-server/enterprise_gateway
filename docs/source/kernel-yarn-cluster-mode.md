@@ -33,7 +33,7 @@ KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 mkdir $KERNELS_FOLDER/spark_python_yarn_cluster/
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 ```
-
+  
 After that, you should have a `kernel.json` that looks similar to the one below:
 
 ```json
