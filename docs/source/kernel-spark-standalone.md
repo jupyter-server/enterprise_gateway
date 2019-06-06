@@ -37,6 +37,12 @@ tar -zxvf enterprise_gateway_kernelspecs.tar.gz --strip 1 --directory $KERNELS_F
 mv $KERNELS_FOLDER/spark_python_yarn_client $KERNELS_FOLDER/spark_python_spark_standalone
 ```
 
+You need to edit the kernel.json:
+
++ Update the display_name with e.g. `Spark - Python (Spark Standalone)`.
++ Update the `--master` option in the SPARK_OPTS to point to the spark master node rather than indicate `--deploy-mode client`.
++ Update `SPARK_OPTS` and remove the `spark.yarn.submit.waitAppCompletion=false`.
+
 After that, you should have a kernel.json that looks similar to the one below:
 
 ```json
@@ -53,7 +59,7 @@ After that, you should have a kernel.json that looks similar to the one below:
     "PYSPARK_PYTHON": "/opt/conda/bin/python",
     "PYTHONPATH": "${HOME}/.local/lib/python3.6/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
     "SPARK_YARN_USER_ENV": "PYTHONUSERBASE=/home/yarn/.local,PYTHONPATH=${HOME}/.local/lib/python3.6/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip,PATH=/opt/conda/bin:$PATH",
-    "SPARK_OPTS": "--master spark://127.0.0.1:7077  --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false",
+    "SPARK_OPTS": "--master spark://127.0.0.1:7077  --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
     "LAUNCH_OPTS": ""
   },
   "argv": [
