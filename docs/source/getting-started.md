@@ -92,7 +92,7 @@ Please follow the links below to learn specific details about how to enable/conf
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
 
-Depending on the resource manager, we details in the related section the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
+Depending on the resource manager, we detail in the related section the implemented kernel languages (python, scala, R...). The following kernels have been tested with the Jupyter Enterprise Gateway:
 
 * Python/Apache Spark 2.x with IPython kernel
 * Scala 2.11/Apache Spark 2.x with Apache Toree kernel

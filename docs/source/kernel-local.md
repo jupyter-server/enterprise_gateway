@@ -26,3 +26,5 @@ with the following `launch_ipykernel.py`.
 # ???
 pass
 ```
+
+PS: if Enterprise Gateway encounters a kernelspec without the process_proxy stanza, it will treat that kernelspec as if it contained `LocalProcessProxy.`
