@@ -1,8 +1,8 @@
-## Local Deployment
+## Local Mode
 
 The Local deployment is just for local development and is not meant to be run in real life operations.
 
-If you just want to try EG in a local setup, you can use the following kernelspec:
+If you just want to try EG in a local setup, you can use the following kernelspec (no need for a launcher):
 
 ```json
 {
@@ -15,16 +15,17 @@ If you just want to try EG in a local setup, you can use the following kernelspe
   },
   "argv": [
     "python",
-    "/usr/local/share/jupyter/kernels/python_local/scripts/launch_ipykernel.py",
+    "-m",
+    "ipykernel_launcher",
+    "-f",
+    "{connection_file}"
   ]
 }
 ```
 
-with the following `launch_ipykernel.py`.
+`process_proxy` is optional (if Enterprise Gateway encounters a kernelspec without the `process_proxy` stanza, it will treat that kernelspec as if it contained `LocalProcessProxy`).
 
-```python
-# ???
-pass
-```
+Side note: You can run a Local kernel in [Distributed mode](./kernel-distributed.html) by setting `remote_hosts` to the localhost. Why would you do that?
 
-PS: if Enterprise Gateway encounters a kernelspec without the process_proxy stanza, it will treat that kernelspec as if it contained `LocalProcessProxy.`
+1. One reason is that it decreases the window in which a port conflict can occur since the 5 kernel ports are created by the launcher (within the same process and therefore closer to the actual invocation of the kernel) rather than by the server prior to the launch of the kernel process.
+2. The second reason is that auto-restarted kernels - when an issue occurs - say due to a port conflict - will create a new set of ports rather than try to re-use the same set that produced the failure in the first place. In this case, you'd want to use the [per-kernel configuration](./config-options.html#per-kernel-configuration-overrides) approach and set `remote_hosts` in the config stanza of the `process_proxy` stanza.
