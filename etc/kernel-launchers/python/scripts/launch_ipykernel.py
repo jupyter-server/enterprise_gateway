@@ -7,6 +7,7 @@ import os
 import socket
 import tempfile
 import uuid
+from multiprocessing import Process
 from random import random
 from threading import Thread
 
@@ -303,7 +304,7 @@ def get_gateway_request(sock):
     return request_info
 
 
-def gateway_listener(sock):
+def gateway_listener(sock, parent_pid):
     shutdown = False
     while not shutdown:
         request = get_gateway_request(sock)
@@ -311,7 +312,7 @@ def gateway_listener(sock):
             signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get('signum') is not None:
                 signum = int(request.get('signum'))
-                os.kill(os.getpid(), signum)
+                os.kill(parent_pid, signum)
             elif request.get('shutdown') is not None:
                     shutdown = bool(request.get('shutdown'))
             if signum != 0:
@@ -356,9 +357,9 @@ if __name__ == "__main__":
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
             gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
-            if gateway_socket:  # socket in use, start gateway listener thread
-                gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket,))
-                gateway_listener_thread.start()
+            if gateway_socket:  # socket in use, start gateway listener
+                gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
+                gateway_listener_process.start()
 
     # Initialize the kernel namespace for the given cluster type
     if cluster_type == 'spark' and spark_init_mode == 'none':
