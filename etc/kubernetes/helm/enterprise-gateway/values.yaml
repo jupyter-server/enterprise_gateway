@@ -56,8 +56,6 @@ ingress:
   hostName: ""
   # URL context to be used in addition to the hostname to access Enterprise Gateway.
   path: /gateway/?(.*)
-  # The port where enterprise gateway service is running
-  port: 8888
 
 # Kernel Image Puller (daemonset)
 kip:

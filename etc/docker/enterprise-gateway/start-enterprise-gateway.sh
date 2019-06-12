@@ -7,9 +7,16 @@
 
 # Enterprise Gateway variables
 export EG_SSH_PORT=${EG_SSH_PORT:-2122}
-export KG_IP=${KG_IP:-0.0.0.0}
-export KG_PORT=${KG_PORT:-8888}
-export KG_PORT_RETRIES=${KG_PORT_RETRIES:-0}
+
+# Kernel Gateway looks for KG_ for the following.  For the sake of consistency
+# we want to use EG_.  The following produces the default value in EG_ (unless
+# set in the env), with the ultimate override of KG_ from the env.
+export EG_IP=${EG_IP:-0.0.0.0}
+export KG_IP=${KG_IP:-${EG_IP}}
+export EG_PORT=${EG_PORT:-8888}
+export KG_PORT=${KG_PORT:-${EG_PORT}}
+export EG_PORT_RETRIES=${EG_PORT_RETRIES:-0}
+export KG_PORT_RETRIES=${KG_PORT_RETRIES:-${EG_PORT_RETRIES}}
 
 # To use tunneling set this variable to 'True' (may need to run as root).
 export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}

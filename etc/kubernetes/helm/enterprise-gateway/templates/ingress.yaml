@@ -20,5 +20,6 @@ spec:
       - path: {{ .Values.ingress.path }}
         backend:
           serviceName: enterprise-gateway
-          servicePort: {{ .Values.ingress.port }}
+          servicePort: {{ .Values.port }}
 {{ end }}
+
