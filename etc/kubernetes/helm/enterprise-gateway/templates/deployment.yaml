@@ -39,6 +39,8 @@ spec:
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         env:
+        - name: EG_PORT
+          value: !!str {{ .Values.port }}
         - name: EG_NAMESPACE
           value: {{ .Release.Namespace }}
         - name: EG_KERNEL_CLUSTER_ROLE

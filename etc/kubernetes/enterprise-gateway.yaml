@@ -107,6 +107,9 @@ spec:
       serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
+        - name: EG_PORT
+          value: "8888"
+
           # Created above.
         - name: EG_NAMESPACE
           value: "enterprise-gateway"
