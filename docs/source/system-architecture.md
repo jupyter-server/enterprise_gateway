@@ -235,7 +235,11 @@ Derived from `RemoteProcessProxy`, `YarnClusterProcessProxy` uses the `yarn-api-
 
 This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.  To accommodate increased flexibility, the endpoint definition can be defined within the process proxy stanza of the kernelspec, enabling the ability to direct specific kernels to different YARN clusters.
 
-Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, then the YARN endpoint is not required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
+In cases where the YARN cluster is configured for high availability, then the `--EnterpriseGatewayApp.alt_yarn_endpoint` command line option or the `EG_ALT_YARN_ENDPOINT` environment variable should also be defined.  When set, the underlying `yarn-api-client` library will choose the active Resource Manager between the two.
+
+In cases where the YARN cluster is configured for high availability, then the `--EnterpriseGatewayApp.alt_yarn_endpoint` command line option or the `EG_ALT_YARN_ENDPOINT` environment variable should also be defined.  When set, the underlying `yarn-api-client` library will choose the active Resource Manager between the two.
+
+Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, neither of these values are required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
 
 See [Enabling YARN Cluster Mode Support](kernel-yarn-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
 
