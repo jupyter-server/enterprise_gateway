@@ -4,6 +4,17 @@ This page describes the approach taken for integrating Enterprise Gateway into a
 
 In this solution, Enterprise Gateway is, itself, provisioned as a Kubernetes _deployment_ and exposed as a Kubernetes _service_.  In this way, Enterprise Gateway can leverage load balancing and high availability functionality provided by Kubernetes (although HA cannot be fully realized until EG supports persistent sessions).
 
+The following sample kernelspecs are currently available on Kubernetes:
+
++ R_kubernetes
++ python_kubernetes
++ python_tf_gpu_kubernetes
++ python_tf_kubernetes
++ scala_kubernetes
++ spark_R_kubernetes
++ spark_python_kubernetes
++ spark_scala_kubernetes
+
 As with all kubernetes deployments, Enterprise Gateway is built into a docker image.  The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with other kubernetes-based images.  See [Runtime Images](docker.html#runtime-images) for image details.
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
