@@ -28,7 +28,7 @@ logger = logging.getLogger('launch_ipykernel')
 logger.setLevel(log_level)
 
 
-def initialize_namespace(cluster_type='spark'):
+def initialize_namespace(cluster_type='spark', spark_ns=None):
     """Initialize the kernel namespace.
 
     Parameters
@@ -45,10 +45,9 @@ def initialize_namespace(cluster_type='spark'):
                         "Spark context creation will not occur.")
             return {}
 
-        def initialize_spark_session():
+        def initialize_spark_session(ns):
             """Initialize Spark session and replace global variable
             placeholders with real Spark session object references."""
-            global spark, sc, sql, sqlContext, sqlCtx
             spark = SparkSession.builder.getOrCreate()
             sc = spark.sparkContext
             sql = spark.sql
@@ -58,13 +57,13 @@ def initialize_namespace(cluster_type='spark'):
             # Stop the spark session on exit
             atexit.register(lambda: spark.stop())
 
-            namespace.update({'spark': spark,
+            ns.update({'spark': spark,
                               'sc': spark.sparkContext,
                               'sql': spark.sql,
                               'sqlContext': spark._wrapped,
                               'sqlCtx': spark._wrapped})
 
-        init_thread = Thread(target=initialize_spark_session)
+        init_thread = Thread(target=initialize_spark_session, args=(spark_ns,))
         spark = WaitingForSparkSessionToBeInitialized('spark', init_thread)
         sc = WaitingForSparkSessionToBeInitialized('sc', init_thread)
         sqlContext = WaitingForSparkSessionToBeInitialized('sqlContext', init_thread)
@@ -74,15 +73,15 @@ def initialize_namespace(cluster_type='spark'):
             initialized and call ``spark.sql(query)``"""
             return spark.sql(query)
 
-        namespace = {'spark': spark,
+        spark_ns.update({'spark': spark,
                      'sc': sc,
                      'sql': sql,
                      'sqlContext': sqlContext,
-                     'sqlCtx': sqlContext}
+                     'sqlCtx': sqlContext})
 
         init_thread.start()
 
-        return namespace
+        return spark_ns
 
     elif cluster_type == 'dask':
         import dask_yarn
@@ -357,14 +356,19 @@ if __name__ == "__main__":
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
             gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
-            if gateway_socket:  # socket in use, start gateway listener
+            if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
                 gateway_listener_process.start()
 
     # Initialize the kernel namespace for the given cluster type
     if cluster_type == 'spark' and spark_init_mode == 'none':
         cluster_type = 'none'
-    namespace = initialize_namespace(cluster_type=cluster_type)
+
+    spark_ns = None
+    if cluster_type == 'spark':
+        spark_ns = locals()
+
+    namespace = initialize_namespace(cluster_type=cluster_type, spark_ns=spark_ns)
 
     # launch the IPython kernel instance
     embed_kernel(local_ns=namespace,
