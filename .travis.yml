@@ -1,4 +1,3 @@
-sudo: required
 language: python
 
 python:
@@ -29,7 +28,8 @@ install:
 script:
     - jupyter enterprisegateway --help
     - flake8 enterprise_gateway
-    - nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
+    - travis_wait 3 nosetests -x --process-restartworker --with-coverage --cover-package=enterprise_gateway enterprise_gateway.tests
+    - echo "Starting integration tests ..."
     - make itest-yarn
     - pip uninstall -y jupyter_enterprise_gateway
 
