@@ -102,12 +102,12 @@ kernel_image_files: ../build/kernel_image_files
 
 KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
 DOCKER_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
-PUSHED_IMAGES := enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
+PUSHED_IMAGES := demo-base enterprise-gateway-demo nb2kg enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
 
 docker-images: $(DOCKER_IMAGES)
 kernel-images: $(KERNEL_IMAGES)
 
-push-images: push-enterprise-gateway-demo push-nb2kg push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-tf-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-image-puller
+push-images: push-demo-base push-enterprise-gateway-demo push-nb2kg push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-tf-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-image-puller
 
 clean-images: clean-enterprise-gateway-demo clean-nb2kg clean-demo-base clean-enterprise-gateway clean-kernel-image-puller clean-kernel-images
 clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
@@ -115,7 +115,7 @@ clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py cl
 # Extra dependencies for each docker image...
 DEPENDS_nb2kg:
 DEPENDS_demo-base:
-DEPENDS_enterprise-gateway-demo: demo-base
+DEPENDS_enterprise-gateway-demo: $(FILE_kernelspecs_all)
 DEPENDS_enterprise-gateway: $(FILE_kernelspecs_all)
 DEPENDS_kernel-image-puller:
 DEPENDS_kernel-py DEPENDS_kernel-spark-py DEPENDS_kernel-r DEPENDS_kernel-spark-r DEPENDS_kernel-scala DEPENDS_kernel-tf-py DEPENDS_kernel-tf-gpu-py: $(FILE_kernelspecs_kubernetes) $(FILE_kernelspecs_docker)
