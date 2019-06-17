@@ -85,7 +85,7 @@ RUN mkdir /home/$NB_USER/work && \
     fix-permissions /home/$NB_USER
 
 # DOWNLOAD HADOOP AND SPARK
-RUN curl -s http://www.eu.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
+RUN curl -s http://www.us.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
 RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current
 
 # SETUP SPARK AND HADOOP SYMLINKS
@@ -110,9 +110,9 @@ RUN conda install --yes --quiet \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
-RUN Rscript -e 'install.packages("IRkernel", repos="http://cran.cnr.berkeley.edu", lib="/opt/conda/lib/R/library")' \
+RUN Rscript -e 'install.packages(c("IRkernel","versions"), repos="http://cran.cnr.berkeley.edu", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'devtools::install_github("apache/spark@v2.4.1", subdir="R/pkg")' && \
+            -e 'versions::install.versions("SparkR", "2.4.1", lib="/opt/conda/lib/R/library")' && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
