@@ -44,42 +44,6 @@ def initialize_namespace(namespace, cluster_type='spark'):
                         "Spark context creation will not occur.")
             return {}
 
-        # Note: this is intentionally defined in this block of initialize_namespace()
-        # so that it does not get included in the user namespace
-        class WaitingForSparkSessionToBeInitialized(object):
-            """Wrapper object for SparkContext and other Spark session variables while the real Spark session is being
-            initialized in a background thread. The class name is intentionally worded verbosely explicit as it will show up
-            when executing a cell that contains only a Spark session variable like ``sc`` or ``sqlContext``.
-            """
-
-            # private and public attributes that show up for tab completion,
-            # to indicate pending initialization of Spark session
-            _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
-            WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
-
-            # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
-            def __init__(self, global_variable_name, init_thread, namespace):
-                self._spark_session_variable = global_variable_name
-                self._init_thread = init_thread
-                self._namespace = namespace
-
-            # we intercept all method and attribute references on our temporary Spark session variable,
-            # wait for the thread to complete initializing the Spark sessions and then we forward the
-            # call to the real Spark objects
-            def __getattr__(self, name):
-                # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
-                if name.startswith("__"):
-                    pass
-                elif name.startswith("_ipython_"):
-                    pass
-                elif name.startswith("_repr_"):
-                    pass
-                else:
-                    # wait on thread to initialize the Spark session variables in global variable scope
-                    self._init_thread.join(timeout=None)
-                    # now return attribute/function reference from actual Spark object
-                    return getattr(self._namespace[self._spark_session_variable], name)
-
         def initialize_spark_session():
             import atexit
 
@@ -124,6 +88,41 @@ def initialize_namespace(namespace, cluster_type='spark'):
         namespace.update({'cluster': cluster})
     elif cluster_type != 'none':
         raise RuntimeError("Unknown cluster_type: %r" % cluster_type)
+
+
+class WaitingForSparkSessionToBeInitialized(object):
+    """Wrapper object for SparkContext and other Spark session variables while the real Spark session is being
+    initialized in a background thread. The class name is intentionally worded verbosely explicit as it will show up
+    when executing a cell that contains only a Spark session variable like ``sc`` or ``sqlContext``.
+    """
+
+    # private and public attributes that show up for tab completion,
+    # to indicate pending initialization of Spark session
+    _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
+    WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
+
+    # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
+    def __init__(self, global_variable_name, init_thread, namespace):
+        self._spark_session_variable = global_variable_name
+        self._init_thread = init_thread
+        self._namespace = namespace
+
+    # we intercept all method and attribute references on our temporary Spark session variable,
+    # wait for the thread to complete initializing the Spark sessions and then we forward the
+    # call to the real Spark objects
+    def __getattr__(self, name):
+        # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
+        if name.startswith("__"):
+            pass
+        elif name.startswith("_ipython_"):
+            pass
+        elif name.startswith("_repr_"):
+            pass
+        else:
+            # wait on thread to initialize the Spark session variables in global variable scope
+            self._init_thread.join(timeout=None)
+            # now return attribute/function reference from actual Spark object
+            return getattr(self._namespace[self._spark_session_variable], name)
 
 
 def prepare_gateway_socket(lower_port, upper_port):
