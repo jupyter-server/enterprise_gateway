@@ -1,5 +1,4 @@
 import argparse
-import atexit
 import base64
 import json
 import logging
@@ -28,7 +27,7 @@ logger = logging.getLogger('launch_ipykernel')
 logger.setLevel(log_level)
 
 
-def initialize_namespace(cluster_type='spark'):
+def initialize_namespace(namespace, cluster_type='spark'):
     """Initialize the kernel namespace.
 
     Parameters
@@ -46,9 +45,10 @@ def initialize_namespace(cluster_type='spark'):
             return {}
 
         def initialize_spark_session():
+            import atexit
+
             """Initialize Spark session and replace global variable
             placeholders with real Spark session object references."""
-            global spark, sc, sql, sqlContext, sqlCtx
             spark = SparkSession.builder.getOrCreate()
             sc = spark.sparkContext
             sql = spark.sql
@@ -65,29 +65,27 @@ def initialize_namespace(cluster_type='spark'):
                               'sqlCtx': spark._wrapped})
 
         init_thread = Thread(target=initialize_spark_session)
-        spark = WaitingForSparkSessionToBeInitialized('spark', init_thread)
-        sc = WaitingForSparkSessionToBeInitialized('sc', init_thread)
-        sqlContext = WaitingForSparkSessionToBeInitialized('sqlContext', init_thread)
+        spark = WaitingForSparkSessionToBeInitialized('spark', init_thread, namespace)
+        sc = WaitingForSparkSessionToBeInitialized('sc', init_thread, namespace)
+        sqlContext = WaitingForSparkSessionToBeInitialized('sqlContext', init_thread, namespace)
 
         def sql(query):
             """Placeholder function. When called will wait for Spark session to be
             initialized and call ``spark.sql(query)``"""
             return spark.sql(query)
 
-        namespace = {'spark': spark,
-                     'sc': sc,
-                     'sql': sql,
-                     'sqlContext': sqlContext,
-                     'sqlCtx': sqlContext}
+        namespace.update({'spark': spark,
+                 'sc': sc,
+                 'sql': sql,
+                 'sqlContext': sqlContext,
+                 'sqlCtx': sqlContext})
 
         init_thread.start()
-
-        return namespace
 
     elif cluster_type == 'dask':
         import dask_yarn
         cluster = dask_yarn.YarnCluster.from_current()
-        return {'cluster': cluster}
+        namespace.update({'cluster': cluster})
     elif cluster_type != 'none':
         raise RuntimeError("Unknown cluster_type: %r" % cluster_type)
 
@@ -98,17 +96,20 @@ class WaitingForSparkSessionToBeInitialized(object):
     when executing a cell that contains only a Spark session variable like ``sc`` or ``sqlContext``.
     """
 
-    # private and public attributes that show up for tab completion, to indicate pending initialization of Spark session
+    # private and public attributes that show up for tab completion,
+    # to indicate pending initialization of Spark session
     _WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
     WAITING_FOR_SPARK_SESSION_TO_BE_INITIALIZED = 'Spark Session not yet initialized ...'
 
     # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
-    def __init__(self, global_variable_name, init_thread):
+    def __init__(self, global_variable_name, init_thread, namespace):
         self._spark_session_variable = global_variable_name
         self._init_thread = init_thread
+        self._namespace = namespace
 
-    # we intercept all method and attribute references on our temporary Spark session variable, wait for the thread to
-    # complete initializing the Spark sessions and then we forward the call to the real Spark objects
+    # we intercept all method and attribute references on our temporary Spark session variable,
+    # wait for the thread to complete initializing the Spark sessions and then we forward the
+    # call to the real Spark objects
     def __getattr__(self, name):
         # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
         if name.startswith("__"):
@@ -121,7 +122,7 @@ class WaitingForSparkSessionToBeInitialized(object):
             # wait on thread to initialize the Spark session variables in global variable scope
             self._init_thread.join(timeout=None)
             # now return attribute/function reference from actual Spark object
-            return getattr(globals()[self._spark_session_variable], name)
+            return getattr(self._namespace[self._spark_session_variable], name)
 
 
 def prepare_gateway_socket(lower_port, upper_port):
@@ -319,6 +320,25 @@ def gateway_listener(sock, parent_pid):
                 logger.info("gateway_listener got request: {}".format(request))
 
 
+def start_ipython(namespace, cluster_type="spark", **kwargs):
+    from IPython import embed_kernel
+
+    # create an initial list of variables to clear
+    # we do this without deleting to preserve the locals so that
+    # initialize_namespace isn't affected by this mutation
+    to_delete = [k for k in namespace if not k.startswith('__')]
+
+    # initialize the namespace with the proper variables
+    initialize_namespace(namespace, cluster_type=cluster_type)
+
+    # delete the extraneous variables
+    for k in to_delete:
+        del namespace[k]
+
+    # Start the kernel
+    embed_kernel(local_ns=namespace, **kwargs)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('connection_file', nargs='?', help='Connection file to write connection info')
@@ -357,19 +377,16 @@ if __name__ == "__main__":
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
             gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
-            if gateway_socket:  # socket in use, start gateway listener
+            if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
                 gateway_listener_process.start()
 
     # Initialize the kernel namespace for the given cluster type
     if cluster_type == 'spark' and spark_init_mode == 'none':
         cluster_type = 'none'
-    namespace = initialize_namespace(cluster_type=cluster_type)
 
     # launch the IPython kernel instance
-    embed_kernel(local_ns=namespace,
-                 connection_file=connection_file,
-                 ip=ip)
+    start_ipython(locals(), cluster_type=cluster_type, connection_file=connection_file, ip=ip)
 
     try:
         os.remove(connection_file)

@@ -68,6 +68,19 @@ class PythonKernelBaseTestCase(TestBase):
         interrupted_value = int(self.kernel.execute("print(y)"))  # This will only return the value.
         self.assertEquals(interrupted_value, 124)
 
+    def test_scope(self):
+        # Ensure global variable is accessible in function.
+        # See https://github.com/jupyter/enterprise_gateway/issues/687
+        # Build the example code...
+        scope_code = list()
+        scope_code.append("a = 42\n")
+        scope_code.append("def scope():\n")
+        scope_code.append("    return a\n")
+        scope_code.append("\n")
+        scope_code.append("scope()\n")
+        result = self.kernel.execute(scope_code)
+        self.assertEquals(result, str(42))
+
 
 class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     """
@@ -93,7 +106,7 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     def test_run_pi_example(self):
         # Build the example code...
         pi_code = list()
-        pi_code.append("import random\n")
+        pi_code.append("from random import random\n")
         pi_code.append("from operator import add\n")
         pi_code.append("partitions = 20\n")
         pi_code.append("n = 100000 * partitions\n")
