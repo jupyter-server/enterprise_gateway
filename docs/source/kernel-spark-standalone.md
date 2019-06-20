@@ -23,7 +23,7 @@ EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3
 Although Enterprise Gateway does not currently provide sample kernelspecs for Spark standalone, here are the steps necessary to convert a yarn_client kernelspec to standalone.
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release
-[jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).
+[jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz).
 
 Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on
 Spark Standalone, we would have to copy the sample configuration folder **spark_python_yarn_client**
@@ -87,7 +87,7 @@ Considering we would like to enable the Scala Kernel to run on YARN Cluster and 
 ``` Bash
 wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_client/ spark_scala_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_client/ spark_scala_yarn_client/
 mv $KERNELS_FOLDER/spark_scala_yarn_client $KERNELS_FOLDER/spark_scala_spark_standalone
 ```
 
@@ -104,7 +104,7 @@ Considering we would like to enable the IPython kernel to run on YARN Cluster an
 ``` Bash
 wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_client/ spark_python_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_client/ spark_python_yarn_client/
 mv $KERNELS_FOLDER/spark_python_yarn_client $KERNELS_FOLDER/spark_python_spark_standalone
 ```
 
@@ -139,7 +139,7 @@ Considering we would like to enable the IRkernel to run on YARN Cluster and Clie
 ``` Bash
 wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0rc1/jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.dev2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_client/ spark_R_yarn_client/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0rc1.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_client/ spark_R_yarn_client/
 mv $KERNELS_FOLDER/spark_R_yarn_client $KERNELS_FOLDER/spark_R_spark_standalone
 ```
 

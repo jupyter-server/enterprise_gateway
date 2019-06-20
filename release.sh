@@ -14,7 +14,7 @@ Perform necessary tasks for a Jupyter Enterprise Gateway release
 
 release-prepare: This form creates a release tag and builds the release distribution artifacts.
 
---release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" [--tag="v2.0.0"] [--gitCommitHash="a874b73"]
+--release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" --previousVersion="2.0.0rc2" [--tag="v2.0.0"] [--gitCommitHash="a874b73"]
 
 release-publish: Publish the release distribution artifacts to PyPI.
 
@@ -24,13 +24,14 @@ OPTIONS
 --currentVersion     - Current development version
 --releaseVersion     - Release identifier used when publishing
 --developmentVersion - Release identifier used for next development cycle
+--previousVersion    - Release identifier left in download links from previous release
 --tag                - Release Tag identifier used when taging the release, default 'v$releaseVersion'
 --gitCommitHash      - Release tag or commit to build from, default master HEAD
 --dryRun             - Dry run only, mostly used for testing.
 
 EXAMPLES
-release.sh --release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1"
-release.sh --release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" --tag="v2.0.0" --dryRun
+release.sh --release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" --previousVersion="2.0.0rc2"
+release.sh --release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" --previousVersion="2.0.0rc2" --tag="v2.0.0" --dryRun
 
 release.sh --release-publish --gitTag="v2.0.0"
 EOF
@@ -83,6 +84,10 @@ while [ "${1+defined}" ]; do
       DEVELOPMENT_VERSION="${PARTS[1]}"
       shift
       ;;
+    --previousVersion)
+      PREVIOUS_VERSION="${PARTS[1]}"
+      shift
+      ;;
     --tag)
       RELEASE_TAG="${PARTS[1]}"
       shift
@@ -114,6 +119,11 @@ fi
 
 if [[ "$RELEASE_PREPARE" == "true" && -z "$DEVELOPMENT_VERSION" ]]; then
     echo "ERROR: --developmentVersion must be passed as an argument to run this script"
+    exit_with_usage
+fi
+
+if [[ "$RELEASE_PREPARE" == "true" && -z "$PREVIOUS_VERSION" ]]; then
+    echo "ERROR: --previousVersion must be passed as an argument to run this script"
     exit_with_usage
 fi
 
@@ -190,8 +200,8 @@ function update_version_to_release {
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
-    sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
-    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/values.yaml
+    sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 
     # Update Docker compose version
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/docker/docker-compose.yml
@@ -200,14 +210,13 @@ function update_version_to_release {
     # Update Makefile
     sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
 
-    # Update documentation
-    find docs/source/*.md -type f -exec sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" {} \;
+    # Update documentation - this is a one-way change since links will not be valid in dev "releases".
+    find docs/source/*.md -type f -exec sed -i .bak "s@$PREVIOUS_VERSION@$RELEASE_VERSION@g" {} \;
 }
 
 function update_version_to_development {
     cd $SOURCE_DIR
     # Update Python _version.py
-    sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
     sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
 
     # Update Kubernetes deployment descriptor
@@ -215,18 +224,15 @@ function update_version_to_development {
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm values
-    sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/values.yaml
-    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/values.yaml
+    sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
+    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 
-    # Update Kubernetes Helm values
+    # Update Docker compose version
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/docker/docker-compose.yml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/docker/docker-compose.yml
 
     # Update Makefile
     sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
-
-    # Update documentation
-    find docs/source/*.md -type f -exec sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" {} \;
 }
 
 if [[ "$RELEASE_PREPARE" == "true" ]]; then

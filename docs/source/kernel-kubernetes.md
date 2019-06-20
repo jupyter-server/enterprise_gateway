@@ -93,9 +93,9 @@ spec:
         - name: EG_KERNEL_WHITELIST
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
-        image: elyra/enterprise-gateway:dev
+        image: elyra/enterprise-gateway:VERSION
         # k8s will only pull :latest all the time.  
-        # the following line will make sure that :dev is always pulled
+        # the following line will make sure that :VERSION is always pulled
         # You should remove this if you want to pin EG to a release tag
         imagePullPolicy: Always
         name: enterprise-gateway
@@ -248,7 +248,7 @@ spec:
     spec:
       containers:
       - name: kernel-image-puller 
-        image: elyra/kernel-image-puller:dev
+        image: elyra/kernel-image-puller:VERSION
         env:
           - name: KIP_GATEWAY_HOST
             value: "http://enterprise-gateway.enterprise-gateway:8888"
