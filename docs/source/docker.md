@@ -25,13 +25,13 @@ By default, this container will start with enterprise gateway running as a servi
 
 We plan on producing one image per release to the [enterprise-gateway-demo docker repo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) where the image's tag reflects the corresponding release. 
 
-To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will reflect the value of the VERSION variable in the root Makefile (e.g. 2.0.0.dev2).
+To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
 
 ### elyra/nb2kg
 
 Image [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) is a simple image built on [jupyterhub/k8s-singleuser-sample](https://hub.docker.com/r/https://hub.docker.com/r/jupyterhub/k8s-singleuser-sample/) along with the latest release of [NB2KG](https://github.com/jupyter/nb2kg).  The image also sets some of the new variables that pertain to enterprise gateway (e.g., `KG_REQUEST_TIMEOUT`, `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
 
-To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the tag for this image will reflect the value of the VERSION variable in the root Makefile (e.g. 2.0.0.dev2).
+To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
 
 ## Runtime Images
 
