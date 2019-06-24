@@ -6,7 +6,7 @@
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-nb2kg push-demo-base \
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
-    push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish
+    push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
 SA:=source activate
 ENV:=enterprise-gateway-dev
@@ -23,6 +23,9 @@ endif
 
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
+
+HELM_CHART:=dist/jupyter_enterprise_gateway_helm-$(VERSION).tgz
+HELM_CHART_FILES:=$(shell find etc/kubernetes/helm -type f)
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -88,7 +91,13 @@ sdist:
 	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
 		&& rm -rf *.egg-info
 
-dist: lint bdist sdist kernelspecs ## Make source, binary and kernelspecs distribution to dist folder
+helm-chart:
+	make $(HELM_CHART)
+
+$(HELM_CHART): $(HELM_CHART_FILES)
+	(mkdir -p dist; cd etc/kubernetes/helm; tar -cvzf ../../../$(HELM_CHART) enterprise-gateway)
+
+dist: lint bdist sdist kernelspecs helm-chart ## Make source, binary and kernelspecs distribution to dist folder
 
 TEST_DEBUG_OPTS:=
 
