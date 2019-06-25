@@ -91,13 +91,13 @@ sdist:
 	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
 		&& rm -rf *.egg-info
 
-helm-chart:
+helm-chart: ## Make helm chart distribution
 	make $(HELM_CHART)
 
 $(HELM_CHART): $(HELM_CHART_FILES)
 	(mkdir -p dist; cd etc/kubernetes/helm; tar -cvzf ../../../$(HELM_CHART) enterprise-gateway)
 
-dist: lint bdist sdist kernelspecs helm-chart ## Make source, binary and kernelspecs distribution to dist folder
+dist: lint bdist sdist kernelspecs helm-chart ## Make source, binary, kernelspecs and helm chart distributions to dist folder
 
 TEST_DEBUG_OPTS:=
 
