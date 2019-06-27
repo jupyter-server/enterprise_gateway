@@ -181,8 +181,6 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def zmq_port_ping_interval_default(self):
         return int(os.getenv(self.zmq_port_ping_interval_env, self.zmq_port_ping_interval_default_value))
 
-
-
     kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(
