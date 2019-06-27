@@ -250,7 +250,7 @@ EnterpriseGatewayApp options
     Is YARN Kerberos/SPNEGO Security enabled (True/False).
     (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)
 --EnterpriseGatewayApp.zmq_port_ping_interval=<Int>
-    Default: 3000
+    Default: 30000
     Specifies the value of ws_ping_interval that is being used for websocket
     ping pong mechanism in ZMQ Port Handler from notebook server.
     (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var) 
