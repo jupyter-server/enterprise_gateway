@@ -170,6 +170,18 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def max_kernels_per_user_default(self):
         return int(os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value))
 
+    zmq_port_ping_interval_env = 'NOTEBOOK_ZMQ_PORT_PING_INTERVAL'
+    zmq_port_ping_interval_default_value = 30000
+    zmq_port_ping_interval = Integer(zmq_port_ping_interval_default_value, config=True,
+                                     help="""Specifies the ping interval that should be used by zmq port associated with spawned kernels. Set this 
+           variable to 0 to disable ping mechanism. (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var)""")
+
+    @default('zmq_port_ping_interval')
+    def zmq_port_ping_interval_default(self):
+        return int(os.getenv(self.zmq_port_ping_interval_env, self.zmq_port_ping_interval_default_value))
+
+
+
     kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(
@@ -280,6 +292,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # 'allow_remote_access' is enabled.  Since this is the entire purpose of EG, we'll unconditionally set that
         # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
         self.web_app.settings['allow_remote_access'] = True
+        self.web_app.settings['ws_ping_interval'] = self.zmq_port_ping_interval
 
     def start(self):
         """Starts an IO loop for the application. """
