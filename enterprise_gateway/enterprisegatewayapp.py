@@ -173,8 +173,9 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     zmq_port_ping_interval_env = 'NOTEBOOK_ZMQ_PORT_PING_INTERVAL'
     zmq_port_ping_interval_default_value = 30000
     zmq_port_ping_interval = Integer(zmq_port_ping_interval_default_value, config=True,
-                                     help="""Specifies the ping interval that should be used by zmq port associated with spawned kernels. Set this 
-           variable to 0 to disable ping mechanism. (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var)""")
+                                     help="""Specifies the ping interval that should be used by zmq port associated with
+                                    spawned kernels.Set this variable to 0 to disable ping mechanism.
+                                    (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var)""")
 
     @default('zmq_port_ping_interval')
     def zmq_port_ping_interval_default(self):
@@ -293,8 +294,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
         self.web_app.settings['allow_remote_access'] = True
 
-        #setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
-        #for zmq websockets or increasing/decreasing web socket ping interval/timeouts.
+        # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
+        # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
         self.web_app.settings['ws_ping_interval'] = self.zmq_port_ping_interval
 
     def start(self):
