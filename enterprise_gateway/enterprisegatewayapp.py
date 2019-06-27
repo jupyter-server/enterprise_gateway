@@ -292,6 +292,9 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # 'allow_remote_access' is enabled.  Since this is the entire purpose of EG, we'll unconditionally set that
         # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
         self.web_app.settings['allow_remote_access'] = True
+
+        #setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
+        #for zmq websockets or increasing/decreasing web socket ping interval/timeouts.
         self.web_app.settings['ws_ping_interval'] = self.zmq_port_ping_interval
 
     def start(self):
