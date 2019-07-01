@@ -9,9 +9,9 @@ import getpass
 # Install the pyzmq ioloop. This has to be done before anything else from
 # tornado is imported.
 from zmq.eventloop import ioloop
+
 ioloop.install()
 from tornado.log import LogFormatter
-
 
 from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
 from jupyter_client.kernelspec import KernelSpecManager
@@ -170,6 +170,17 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def max_kernels_per_user_default(self):
         return int(os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value))
 
+    ws_ping_interval_env = 'EG_WS_PING_INTERVAL_SECS'
+    ws_ping_interval_default_value = 30
+    ws_ping_interval = Integer(ws_ping_interval_default_value, config=True,
+                               help="""Specifies the ping interval(in seconds) that should be used by zmq port
+                                     associated withspawned kernels.Set this variable to 0 to disable ping mechanism.
+                                    (EG_WS_PING_INTERVAL_SECS env var)""")
+
+    @default('ws_ping_interval')
+    def ws_ping_interval_default(self):
+        return int(os.getenv(self.ws_ping_interval_env, self.ws_ping_interval_default_value))
+
     kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
     kernel_spec_manager_class = Type(
@@ -281,6 +292,10 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
         self.web_app.settings['allow_remote_access'] = True
 
+        # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
+        # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
+        self.web_app.settings['ws_ping_interval'] = self.ws_ping_interval * 1000
+
     def start(self):
         """Starts an IO loop for the application. """
 
@@ -318,9 +333,11 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         """
         Stops the HTTP server and IO loop associated with the application.
         """
+
         def _stop():
             self.http_server.stop()
             self.io_loop.stop()
+
         self.io_loop.add_callback(_stop)
 
     def _signal_stop(self, sig, frame):
