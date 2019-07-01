@@ -173,8 +173,8 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     ws_ping_interval_env = 'EG_WS_PING_INTERVAL_SECS'
     ws_ping_interval_default_value = 30
     ws_ping_interval = Integer(ws_ping_interval_default_value, config=True,
-                                     help="""Specifies the ping interval(in seconds) that should be used by zmq port associated with
-                                    spawned kernels.Set this variable to 0 to disable ping mechanism.
+                                     help="""Specifies the ping interval(in seconds) that should be used by zmq port 
+                                     associated withspawned kernels.Set this variable to 0 to disable ping mechanism.
                                     (EG_WS_PING_INTERVAL_SECS env var)""")
 
     @default('ws_ping_interval')
