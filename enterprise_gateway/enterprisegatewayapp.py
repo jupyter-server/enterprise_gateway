@@ -9,9 +9,9 @@ import getpass
 # Install the pyzmq ioloop. This has to be done before anything else from
 # tornado is imported.
 from zmq.eventloop import ioloop
+
 ioloop.install()
 from tornado.log import LogFormatter
-
 
 from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
 from jupyter_client.kernelspec import KernelSpecManager
@@ -173,7 +173,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     ws_ping_interval_env = 'EG_WS_PING_INTERVAL_SECS'
     ws_ping_interval_default_value = 30
     ws_ping_interval = Integer(ws_ping_interval_default_value, config=True,
-                                     help="""Specifies the ping interval(in seconds) that should be used by zmq port 
+                               help="""Specifies the ping interval(in seconds) that should be used by zmq port
                                      associated withspawned kernels.Set this variable to 0 to disable ping mechanism.
                                     (EG_WS_PING_INTERVAL_SECS env var)""")
 
@@ -333,9 +333,11 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         """
         Stops the HTTP server and IO loop associated with the application.
         """
+
         def _stop():
             self.http_server.stop()
             self.io_loop.stop()
+
         self.io_loop.add_callback(_stop)
 
     def _signal_stop(self, sig, frame):
