@@ -170,16 +170,16 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def max_kernels_per_user_default(self):
         return int(os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value))
 
-    zmq_port_ping_interval_env = 'NOTEBOOK_ZMQ_PORT_PING_INTERVAL'
-    zmq_port_ping_interval_default_value = 30000
-    zmq_port_ping_interval = Integer(zmq_port_ping_interval_default_value, config=True,
-                                     help="""Specifies the ping interval that should be used by zmq port associated with
+    ws_ping_interval_env = 'EG_WS_PING_INTERVAL_SECS'
+    ws_ping_interval_default_value = 30
+    ws_ping_interval = Integer(ws_ping_interval_default_value, config=True,
+                                     help="""Specifies the ping interval(in seconds) that should be used by zmq port associated with
                                     spawned kernels.Set this variable to 0 to disable ping mechanism.
-                                    (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var)""")
+                                    (EG_WS_PING_INTERVAL_SECS env var)""")
 
-    @default('zmq_port_ping_interval')
-    def zmq_port_ping_interval_default(self):
-        return int(os.getenv(self.zmq_port_ping_interval_env, self.zmq_port_ping_interval_default_value))
+    @default('ws_ping_interval')
+    def ws_ping_interval_default(self):
+        return int(os.getenv(self.ws_ping_interval_env, self.ws_ping_interval_default_value))
 
     kernel_spec_manager = Instance(KernelSpecManager, allow_none=True)
 
@@ -294,7 +294,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
         # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
         # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
-        self.web_app.settings['ws_ping_interval'] = self.zmq_port_ping_interval
+        self.web_app.settings['ws_ping_interval'] = self.ws_ping_interval * 1000
 
     def start(self):
         """Starts an IO loop for the application. """

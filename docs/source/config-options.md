@@ -249,11 +249,11 @@ EnterpriseGatewayApp options
     Default: False
     Is YARN Kerberos/SPNEGO Security enabled (True/False).
     (EG_YARN_ENDPOINT_SECURITY_ENABLED env var)
---EnterpriseGatewayApp.zmq_port_ping_interval=<Int>
-    Default: 30000
+--EnterpriseGatewayApp.ws_ping_interval=<Int>
+    Default: 30
     Specifies the value of ws_ping_interval that is being used for websocket
-    ping pong mechanism in ZMQ Port Handler from notebook server.
-    (NOTEBOOK_ZMQ_PORT_PING_INTERVAL env var) 
+    ping pong mechanism in ZMQ Port Handler from notebook server in seconds.
+    (EG_WS_PING_INTERVAL_SECS env var) 
 --KernelSessionManager.enable_persistence=<Bool>
     Default: False
     Enable kernel session persistence (True or False).  
