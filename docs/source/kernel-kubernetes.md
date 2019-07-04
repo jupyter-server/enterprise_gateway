@@ -333,7 +333,7 @@ This assumes that your source contains a `kernels/` directory with all of the ke
 Once you build your custom kernelspecs image and push it to a container registry, you can refer to it from your Helm deployment.  For instance:
 
 ```bash
-helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm --set kernelspecs_image=your-custom-image:latest
+helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm --set kernelspecs.image=your-custom-image:latest
 ```
 
 ...where `your-custom-image:latest` is the image name and tag of your kernelspecs image.  Once deployed, the Helm chart copies the data from the `/kernels` directory of your container into the `/usr/local/share/jupyter/kernels` directory of the Enterprise Gateway pod.  Note that when this happens, the built-in kernelspecs are no longer available. So include all kernelspecs that you want to be available in your container image.
@@ -528,7 +528,7 @@ can override them with Helm's `--set` or `--values` options.
 | `kernel.whitelist` | List of kernel names that are available for use. | `{r_kubernetes,...}` (see `values.yaml`) |
 | `kernelspecs.image` | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled. | `nil` |
 | `kernelspecs.imagePullPolicy` | Kernelspecs image pull policy. | `Always` |
-| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs_image` set. | `false` |
+| `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs.image` set. | `false` |
 | `nfs.internalServerIPAddress` | IP address of NFS server. Required if NFS is enabled. | `nil` |
 | `ingress.enabled` | Whether to include an EG ingress resource during deployment. NOTE: A ingress-controller must be installed | `false` |
 | `ingress.annotations` | Ingress annotations to be included. Will depend on the type of ingress controller you have installed | `(nginx-ingress annotations)` |
