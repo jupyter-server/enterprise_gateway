@@ -53,7 +53,7 @@ class ScalaKernelBaseTestCase(TestBase):
         # Build the code list to interrupt, in this case, its a sleep call.
         interrupted_code = list()
         interrupted_code.append('println("begin")\n')
-        interrupted_code.append("Thread.sleep(30000)\n")
+        interrupted_code.append("Thread.sleep(60000)\n")
         interrupted_code.append('println("end")\n')
         interrupted_result = self.kernel.execute(interrupted_code)
 
