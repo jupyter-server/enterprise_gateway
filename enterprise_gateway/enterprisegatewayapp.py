@@ -342,7 +342,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
     def _signal_stop(self, sig, frame):
         self.log.info("Received signal to terminate Enterprise Gateway.")
-        self.io_loop.stop()
+        self.io_loop.add_callback_from_signal(self.io_loop.stop)
 
 
 launch_instance = EnterpriseGatewayApp.launch_instance
