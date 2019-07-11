@@ -79,12 +79,15 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.log.debug("{class_name} shutdown wait time adjusted to {wait_time} seconds.".
                            format(class_name=type(self).__name__, wait_time=kernel_manager.shutdown_wait_time))
 
+        # If yarn resource check is enabled and it isn't available immediately,
+        # 20% of kernel_launch_timeout is used to wait
+        # and retry at fixed interval before pronouncing as not feasible to launch.
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
     def launch_process(self, kernel_cmd, **kwargs):
         # checks to see if the queue resource is available
         # if not kernel startup is not tried
-        self.confirm_yarn_queue_avaibility(**kwargs)
+        self.confirm_yarn_queue_availability(**kwargs)
         """Launches the specified process within a YARN cluster environment."""
         super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
@@ -108,49 +111,67 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         """
 
-    def confirm_yarn_queue_avaibility(self, **kwargs):
+    def confirm_yarn_queue_availability(self, **kwargs):
         """
         confirms if the yarn queue has capacity to handle the resource requests that
         will be sent to it.
-        if not, proper error messages are sent back for user experience
-        :param env_dict:
+
+        First check ensures the driver and executor memory request falls within
+        the container size of yarn configuration. This check requires executor and
+        driver memory to be available in the env.
+
+        Second,Current version of check, takes into consideration node label partitioning
+        on given queues. Provided the queue name and node label this checks if
+        the given partition has capacity available for kernel startup.
+
+        All Checks are optional. If we have KERNEL_EXECUTOR_MEMORY and KERNEL_DRIVER_MEMORY
+        specified, first check is performed.
+
+        If we have KERNEL_QUEUE and KERNEL_NODE_LABEL specified, second check is performed.
+
+        Proper error messages are sent back for user experience
+        :param kwargs:
         :return:
         """
+        env_dict = kwargs.get('env', {})
 
-        executer_memory = int(kwargs['env']['KERNEL_EXECUTOR_MEMORY'])
-        driver_memory = int(kwargs['env']['KERNEL_DRIVER_MEMORY'])
+        executor_memory = int(env_dict.get('KERNEL_EXECUTOR_MEMORY', 0))
+        driver_memory = int(env_dict.get('KERNEL_DRIVER_MEMORY', 0))
 
-        candidate_queue_name = str(kwargs['env']['KERNEL_QUEUE'])
+        if executor_memory*driver_memory > 0:
+            container_memory = self.resource_mgr.cluster_node_container_memory()
+            if max(executor_memory, driver_memory) > container_memory:
+                self.log_and_raise(http_status_code=500,
+                                   reason="Container Memory not sufficient for a executor/driver allocation")
 
-        node_label = str(kwargs['env']['KERNEL_NODE_LABEL'])
+        candidate_queue_name = (env_dict.get('KERNEL_QUEUE', None))
+        node_label = env_dict.get('KERNEL_NODE_LABEL', None)
 
-        self.container_memory = self.resource_mgr.cluster_node_container_memory()
-        self.candidate_queue = self.resource_mgr.cluster_scheduler_queue(candidate_queue_name)
-        self.candidate_partition = self.resource_mgr.cluster_queue_partition(self.candidate_queue, node_label)
-
-        if max(executer_memory, driver_memory) > self.container_memory:
-            self.log_and_raise(http_status_code=500,
-                               reason="Container Memory not sufficient for a executor/driver allocation")
+        if candidate_queue_name is None or node_label is None:
+            return
 
         # else the resources may or may not be available now. it may be possible that if we wait then the resources
         # become available. start  a timeout process
 
         self.start_time = RemoteProcessProxy.get_current_time()
+        self.candidate_queue = self.resource_mgr.cluster_scheduler_queue(candidate_queue_name)
+        self.candidate_partition = self.resource_mgr.cluster_queue_partition(self.candidate_queue, node_label)
+
         yarn_available = False
 
-        self.log.info("Yarn Endpoint to check for resources : " + self.yarn_endpoint)
-        self.log.info("Retrying for " + str(self.yarn_resource_check_wait_time) + " ms if resources not found ")
+        self.log.debug("Yarn Endpoint to check for resources : " + self.yarn_endpoint)
+        self.log.debug("Retrying for " + str(self.yarn_resource_check_wait_time) + " ms if resources not found ")
         while not yarn_available:
             self.handle_yarn_queue_timeout()
+            self.log.debug("Checking if " + self.candidate_partition + " has used capacity < 95% ")
             yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition)
+            self.log.debug("Result: " + str(yarn_available))
+            # each time we sleep we substract equal amount of time for the kernel launch timeout
+            self.kernel_launch_timeout -= poll_interval
 
     def handle_yarn_queue_timeout(self):
 
-        # each time we sleep we substract equal amount of time for the kernel launch timeout
-        self.log.debug("Kernel Launch Timeout - {}".format(self.kernel_launch_timeout))
         time.sleep(poll_interval)
-        self.kernel_launch_timeout -= poll_interval
-
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.yarn_resource_check_wait_time:
