@@ -55,9 +55,8 @@ max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 # exist just in case we find them necessary in some configurations (where the service user
 # must be different).  However, tests show that that configuration doesn't work - so there
 # might be more to do.  At any rate, we'll use these variables for now.
-remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
-remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
-
+remote_user = None
+remote_pwd = None
 
 # Allow users to specify local ips (regular expressions can be used) that should not be included
 # when determining the response address.  For example, on systems with many network interfaces,
@@ -312,6 +311,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         :return: ssh client instance
         """
         ssh = None
+
+        global remote_user
+        global remote_pwd
+        if remote_user is None:
+            remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
+            remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
+
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
