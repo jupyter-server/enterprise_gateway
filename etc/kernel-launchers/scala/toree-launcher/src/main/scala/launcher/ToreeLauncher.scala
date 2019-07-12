@@ -184,7 +184,7 @@ object ToreeLauncher extends LogLike {
     initArguments(args)
 
     if (profilePath == null && kernelId == null){
-      logger.error("At least one of '--profile' or '--RemoteProcessProxy.kernel_id' " +
+      logger.error("At least one of '--profile' or '--RemoteProcessProxy.kernel-id' " +
         "must be provided - exiting!")
       sys.exit(-1)
     }
@@ -235,14 +235,14 @@ object ToreeLauncher extends LogLike {
   private def getReconciledSignalName(sigNum: Int): String = {
     // To raise the signal, we must map the signal number back to the appropriate
     // name as follows:  Take the common case and assume interrupt and check if an
-    // alternate interrupt signal has been given. If sigNum = 9, use "KILL", else
+    // alternate interrupt signal has been given. If sigNum = 9, use "TERM", else
     // if no alternate has been provided use "INT".  Note that use of SIGINT won't
     // get received because the JVM won't propagate to background threads, buy it's
     // the best we can do.  We'll still issue a warning in the log.
 
     require(sigNum > 0, "sigNum must be greater than zero")
 
-    if (sigNum == 9) "KILL"
+    if (sigNum == 9) "TERM"
     else {
       if (alternateSigint == null) {
         logger.warn("--alternate-sigint is not defined and signum %d has been " +

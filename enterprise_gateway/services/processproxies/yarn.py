@@ -119,7 +119,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param signum
         :return:
         """
-        self.log.debug("YarnClusterProcessProxy.send_signal {}".format(signum))
         if signum == 0:
             return self.poll()
         elif signum == signal.SIGKILL:
@@ -137,11 +136,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         state = None
         result = False
         if self._get_application_id():
-            resp = self._kill_app_by_id(self.application_id)
-            self.log.debug(
-                "YarnClusterProcessProxy.kill: kill_app_by_id({}) response: {}, confirming app state is not RUNNING"
-                    .format(self.application_id, resp))
-
+            self._kill_app_by_id(self.application_id)
+            # Check that state has moved to a final state (most likely KILLED)
             i = 1
             state = self._query_app_state_by_id(self.application_id)
             while state not in YarnClusterProcessProxy.final_states and i <= max_poll_attempts:
@@ -152,10 +148,11 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             if state in YarnClusterProcessProxy.final_states:
                 result = None
 
-        super(YarnClusterProcessProxy, self).kill()
+        if result is False:  # We couldn't terminate via Yarn, try remote signal
+            result = super(YarnClusterProcessProxy, self).kill()
 
-        self.log.debug("YarnClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}"
-                       .format(self.application_id, self.kernel_id, state))
+        self.log.debug("YarnClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}, result: {}"
+                       .format(self.application_id, self.kernel_id, state, result))
         return result
 
     def cleanup(self):
