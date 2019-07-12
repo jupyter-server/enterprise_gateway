@@ -332,7 +332,6 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
 
     def signal_kernel(self, signum):
         """Sends signal `signum` to the kernel process. """
-        self.log.debug("RemoteKernelManager.signal_kernel({})".format(signum))
         if self.has_kernel:
             if signum == signal.SIGINT:
                 if self.sigint_value is None:

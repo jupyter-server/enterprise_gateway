@@ -972,7 +972,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 pgid = None
         if pid or pgid:  # if either process ids were updated, update the ip as well and don't use local_proc
             self.ip = self.assigned_ip
-            self.local_proc = None
+            if not BaseProcessProxyABC.ip_is_local(self.ip):  # only unset local_proc if we're remote
+                self.local_proc = None
 
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
@@ -988,6 +989,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def cleanup(self):
         """Terminates tunnel processes, if applicable."""
+        self.shutdown_listener()  # Ensure listener has been shutdown
+
         self.assigned_ip = None
 
         for kernel_channel, process in self.tunnel_processes.items():
@@ -997,9 +1000,31 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes.clear()
         super(RemoteProcessProxy, self).cleanup()
 
+    def _send_listener_request(self, request, shutdown_socket=False):
+        # Sends the request dictionary to the kernel listener via the comm port.  Caller is responsible for
+        # handling any exceptions.
+
+        if self.comm_port > 0:
+            sock = socket(AF_INET, SOCK_STREAM)
+            try:
+                sock.settimeout(socket_timeout)
+                sock.connect((self.comm_ip, self.comm_port))
+                sock.send(json.dumps(request).encode(encoding='utf-8'))
+            finally:
+                if shutdown_socket:
+                    try:
+                        sock.shutdown(SHUT_WR)
+                    except Exception as e2:
+                        if isinstance(e2, OSError) and e2.errno == errno.ENOTCONN:
+                            pass  # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
+                        else:
+                            self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
+                                             "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
+                                                                                      self.kernel_id, str(e2)))
+                sock.close()
+
     def send_signal(self, signum):
         """Sends `signum` via the communication port.
-
         The kernel launcher listening on its communication port will receive the signum and perform
         the necessary signal operation local to the process.
         """
@@ -1012,23 +1037,20 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             signal_request = dict()
             signal_request['signum'] = signum
 
-            sock = socket(AF_INET, SOCK_STREAM)
             try:
-                sock.settimeout(socket_timeout)
-                sock.connect((self.comm_ip, self.comm_port))
-                sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
+                self._send_listener_request(signal_request)
+
                 if signum > 0:  # Polling (signum == 0) is too frequent
                     self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
-                if isinstance(e, OSError):
-                    if e.errno == errno.ECONNREFUSED and signum == 0:  # Return False since there's no process.
-                        return False
-                return super(RemoteProcessProxy, self).send_signal(signum)
-            finally:
-                sock.close()
-        else:
-            return super(RemoteProcessProxy, self).send_signal(signum)
+                if isinstance(e, OSError) and e.errno == errno.ECONNREFUSED:  # Return False since there's no process.
+                    return False
+
+                self.log.warning("An unexpected exception occurred sending signal ({}) for KernelID '{}': {}"
+                                 .format(signum, self.kernel_id, str(e)))
+
+        return super(RemoteProcessProxy, self).send_signal(signum)
 
     def shutdown_listener(self):
         """Sends a shutdown request to the kernel launcher listener."""
@@ -1040,24 +1062,14 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             shutdown_request = dict()
             shutdown_request['shutdown'] = 1
 
-            sock = socket(AF_INET, SOCK_STREAM)
             try:
-                sock.settimeout(socket_timeout)
-                sock.connect((self.comm_ip, self.comm_port))
-                sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
+                self._send_listener_request(shutdown_request, shutdown_socket=True)
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
             except Exception as e:
-                self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
-                                 "(using alternate shutdown): {}"
-                                 .format(self.comm_ip, self.comm_port, self.kernel_id, str(e)))
-            finally:
-                try:
-                    sock.shutdown(SHUT_WR)
-                except Exception as e2:
-                    self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
-                                     "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
-                                                                              self.kernel_id, str(e2)))
-                sock.close()
+                if not isinstance(e, OSError) or e.errno != errno.ECONNREFUSED:
+                    self.log.warning("An unexpected exception occurred sending listener shutdown to {}:{} for "
+                                     "KernelID '{}': {}"
+                                     .format(self.comm_ip, self.comm_port, self.kernel_id, str(e)))
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
             # this process results in the kernel (launcher) appearing to remain alive following the shutdown
