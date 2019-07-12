@@ -256,3 +256,12 @@ but it failed with a "Kernel error" and a SSHException.**
 
     The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
     with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
+
+- **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environment fails trying to create /home/jovyan/.local**
+
+    As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/3.6/admin_guide/manage_scc.html#enable-images-to-run-with-user-in-the-dockerfile)
+    there is a need to issue the following command to enable running  with `USER` in Dockerfile.
+    
+    ```bash
+    oc adm policy add-scc-to-group anyuid system:authenticated
+    ```
