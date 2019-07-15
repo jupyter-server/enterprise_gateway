@@ -169,7 +169,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.log.debug("Retrying for " + str(self.yarn_resource_check_wait_time) + " ms if resources not found ")
         while not yarn_available:
             self.handle_yarn_queue_timeout()
-            yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition)
+            yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,partition_availability_threshold)
             retry_attempt+=1
 
         #subtracting the total amount of time spent for polling for queue availability
