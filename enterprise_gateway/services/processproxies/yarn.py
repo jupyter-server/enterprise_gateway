@@ -149,7 +149,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         candidate_queue_name = (env_dict.get('KERNEL_QUEUE', None))
         node_label = env_dict.get('KERNEL_NODE_LABEL', None)
-        partition_availability_threshold = float(env_dict.get('PARTITION_THRESHOLD',95.0))
+        partition_availability_threshold = float(env_dict.get('YARN_PARTITION_THRESHOLD', 95.0))
 
         if candidate_queue_name is None or node_label is None:
             return
@@ -161,19 +161,23 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.candidate_queue = self.resource_mgr.cluster_scheduler_queue(candidate_queue_name)
         self.candidate_partition = self.resource_mgr.cluster_queue_partition(self.candidate_queue, node_label)
 
-        yarn_available = False
-        retry_attempt = 0
+        self.log.debug("Checking endpoint: {} if partition: {} has used capacity <= {}%".format(self.yarn_endpoint,
+                                                                                                self.candidate_partition,
+                                                                                                    partition_availability_threshold))
 
-        self.log.debug("Yarn Endpoint to check for resources : " + self.yarn_endpoint)
-        self.log.debug("Checking if " + self.candidate_partition + " has used capacity <= " + str(partition_availability_threshold) + "%" )
-        self.log.debug("Retrying for " + str(self.yarn_resource_check_wait_time) + " ms if resources not found ")
-        while not yarn_available:
-            self.handle_yarn_queue_timeout()
-            yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,partition_availability_threshold)
-            retry_attempt+=1
+        yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,
+                                                                                partition_availability_threshold)
+        if not yarn_available:
+            self.log.debug(
+                "Retrying for {} ms since resources are not available".format(self.yarn_resource_check_wait_time))
+            while not yarn_available:
+                self.handle_yarn_queue_timeout()
+                yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,
+                                                                                        partition_availability_threshold)
 
-        #subtracting the total amount of time spent for polling for queue availability
-        self.kernel_launch_timeout -= (poll_interval*retry_attempt)
+        # subtracting the total amount of time spent for polling for queue availability
+        self.kernel_launch_timeout -= RemoteProcessProxy.get_time_diff(self.start_time,
+                                                                       RemoteProcessProxy.get_current_time())
 
     def handle_yarn_queue_timeout(self):
 
@@ -182,7 +186,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         if time_interval > self.yarn_resource_check_wait_time:
             error_http_code = 500
-            reason = "Yarn Compute Resource is unavailable"
+            reason = "Yarn Compute Resource is unavailable after {} seconds".format(self.yarn_resource_check_wait_time)
             self.log_and_raise(http_status_code=error_http_code, reason=reason)
 
     def poll(self):
