@@ -102,14 +102,12 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         return self
 
-    """Submitting jobs to yarn queue and then checking till the jobs are in running state 
-           will lead to orphan jobs being created in some scenarios.
-           We take kernel_launch_timeout time and divide this into two parts.
-           if the queue is unavailable we take max 20% of the time to poll the queue periodically
-           and if the queue becomes available the rest of timeout is met in 80% of the remmaining 
-           time.  
-
-        """
+    """Submitting jobs to yarn queue and then checking till the jobs are in running state
+        will lead to orphan jobs being created in some scenarios.
+        We take kernel_launch_timeout time and divide this into two parts.
+        if the queue is unavailable we take max 20% of the time to poll the queue periodically
+        and if the queue becomes available the rest of timeout is met in 80% of the remmaining
+        time."""
 
     def confirm_yarn_queue_availability(self, **kwargs):
         """
@@ -159,11 +157,20 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         self.start_time = RemoteProcessProxy.get_current_time()
         self.candidate_queue = self.resource_mgr.cluster_scheduler_queue(candidate_queue_name)
+
+        if self.candidate_queue is None:
+            self.log.debug("Queue: {} does not exist in the cluster".format(candidate_queue_name))
+            return
+
         self.candidate_partition = self.resource_mgr.cluster_queue_partition(self.candidate_queue, node_label)
 
-        self.log.debug("Checking endpoint: {} if partition: {} has used capacity <= {}%".format(self.yarn_endpoint,
-                                                                                                self.candidate_partition,
-                                                                                                    partition_availability_threshold))
+        if self.candidate_partition is None:
+            self.log.debug("Parition: {} not found in {} queue".format(node_label, candidate_queue_name))
+            return
+
+        self.log.debug("Checking endpoint: {} if partition: {} "
+                       "has used capacity <= {}%".format(self.yarn_endpoint,
+                                                         self.candidate_partition, partition_availability_threshold))
 
         yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,
                                                                                 partition_availability_threshold)
@@ -172,8 +179,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 "Retrying for {} ms since resources are not available".format(self.yarn_resource_check_wait_time))
             while not yarn_available:
                 self.handle_yarn_queue_timeout()
-                yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(self.candidate_partition,
-                                                                                        partition_availability_threshold)
+                yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(
+                    self.candidate_partition, partition_availability_threshold)
 
         # subtracting the total amount of time spent for polling for queue availability
         self.kernel_launch_timeout -= RemoteProcessProxy.get_time_diff(self.start_time,
