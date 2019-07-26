@@ -159,13 +159,15 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.candidate_queue = self.resource_mgr.cluster_scheduler_queue(candidate_queue_name)
 
         if self.candidate_queue is None:
-            self.log.debug("Queue: {} does not exist in the cluster".format(candidate_queue_name))
+            self.log.warning("Queue: {} not found in cluster."
+                             "Availability check will not be performed".format(candidate_queue_name))
             return
 
         self.candidate_partition = self.resource_mgr.cluster_queue_partition(self.candidate_queue, node_label)
 
         if self.candidate_partition is None:
-            self.log.debug("Parition: {} not found in {} queue".format(node_label, candidate_queue_name))
+            self.log.debug("Partition: {} not found in {} queue."
+                           "Availability check will not be performed".format(node_label, candidate_queue_name))
             return
 
         self.log.debug("Checking endpoint: {} if partition: {} "
