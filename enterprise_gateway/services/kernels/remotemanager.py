@@ -52,6 +52,11 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         # Load connection info into member vars - no need to write out connection file
         km.load_connection_info(connection_info)
 
+        # Converting `connection_info['key']` back to string so that json operations work properly
+        info_key = connection_info.get('key')
+        if info_key:
+            connection_info['key'] = bytes_to_str(info_key)
+
         km._launch_args = launch_args
 
         # Construct a process-proxy
