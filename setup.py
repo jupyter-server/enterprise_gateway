@@ -49,7 +49,7 @@ Apache Spark, Kubernetes and others..
         'jupyter_core>=4.4.0',
         'jupyter_kernel_gateway>=2.4.0',
         'kubernetes>=4.0.0',
-        'notebook>=5.7.6,<6.0',
+        'notebook>=5.7.6,<7.0',
         'paramiko>=2.1.2',
         'pexpect>=4.2.0',
         'pycrypto>=2.6.1',
