@@ -32,7 +32,7 @@ yarn_shutdown_wait_time = float(os.getenv('EG_YARN_SHUTDOWN_WAIT_TIME', '15.0'))
 class YarnClusterProcessProxy(RemoteProcessProxy):
     """Kernel lifecycle management for YARN clusters."""
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
-    final_states = {'FINISHED', 'KILLED'}  # Don't include FAILED state
+    final_states = {'FINISHED', 'KILLED', 'FAILED'}
 
     def __init__(self, kernel_manager, proxy_config):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
@@ -279,7 +279,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def confirm_remote_startup(self):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
-            unexpectedly encountered (FINISHED, KILLED) then we must throw, otherwise the rest of the gateway will
+            unexpectedly encountered (FINISHED, KILLED, FAILED) then we must throw, otherwise the rest of the gateway will
             believe its talking to a valid kernel.
         """
         self.start_time = RemoteProcessProxy.get_current_time()
