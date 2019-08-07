@@ -279,8 +279,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     def confirm_remote_startup(self):
         """ Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
-            unexpectedly encountered (FINISHED, KILLED, FAILED) then we must throw, otherwise the rest of the gateway will
-            believe its talking to a valid kernel.
+            unexpectedly encountered (FINISHED, KILLED, FAILED) then we must throw,
+            otherwise the rest of the gateway will believe its talking to a valid kernel.
         """
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
