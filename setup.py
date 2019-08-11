@@ -45,6 +45,7 @@ Apache Spark, Kubernetes and others..
     ],
     install_requires=[
         'docker>=3.5.0',
+        'jinja2>=2.10',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
         'jupyter_kernel_gateway>=2.4.0',
@@ -58,7 +59,6 @@ Apache Spark, Kubernetes and others..
         'tornado>=4.2.0',
         'traitlets>=4.2.0',
         'yarn-api-client>=0.3.6,<0.4.0',
-        'jinja2>=2.10',
     ],
     python_requires='>=3.5',
     classifiers=[
