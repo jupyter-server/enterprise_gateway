@@ -47,7 +47,7 @@ Apache Spark, Kubernetes and others..
         'docker>=3.5.0',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
-        'jupyter_kernel_gateway>=2.3.0',
+        'jupyter_kernel_gateway>=2.4.0',
         'kubernetes>=4.0.0',
         'notebook>=5.7.6,<6.0',
         'paramiko>=2.1.2',
