@@ -113,6 +113,9 @@ class KernelClient(object):
             self.response_queues = None
 
         if self.response_reader:
+            self.response_reader.join(timeout=2.0)
+            if self.response_reader.is_alive():
+                self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
 
     def execute(self, code, timeout=REQUEST_TIMEOUT):
