@@ -100,6 +100,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
+USER root
+
 RUN conda install --yes --quiet \
     'pip' \
     'jupyter' \
@@ -109,6 +111,8 @@ RUN conda install --yes --quiet \
     conda clean -tipsy && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
+
+USER $NB_UID
 
 RUN Rscript -e 'install.packages(c("IRkernel","versions"), repos="http://cran.cnr.berkeley.edu", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
