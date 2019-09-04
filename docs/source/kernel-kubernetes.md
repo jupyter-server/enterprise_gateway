@@ -530,10 +530,14 @@ can override them with Helm's `--set` or `--values` options.
 | `kernelspecs.imagePullPolicy` | Kernelspecs image pull policy. | `Always` |
 | `nfs.enabled` | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs.image` set. | `false` |
 | `nfs.internalServerIPAddress` | IP address of NFS server. Required if NFS is enabled. | `nil` |
-| `ingress.enabled` | Whether to include an EG ingress resource during deployment. NOTE: A ingress-controller must be installed | `false` |
-| `ingress.annotations` | Ingress annotations to be included. Will depend on the type of ingress controller you have installed | `(nginx-ingress annotations)` |
+| `ingress.enabled` | Whether to include an EG ingress resource during deployment.| `false` |
+| `ingress.traefik.enabled` | Configure the ingress using Traefik as the controller. NOTE: A traefik controller must be installed and `ingress.enabled` must be `true`. | `true` |
+| `ingress.traefik.annotations` | Traefik-relative ingress annotations to be included when `ingress.traefik.enabled` is `true`. | `(traefik-ingress annotations)` |
+| `ingress.traefik.path` | URL context to be used in addition to the hostname to access Enterprise Gateway when `ingress.traefik.enabled` is `true`. | `/gateway` |
+| `ingress.nginx.enabled` | Configure the ingress using Nginx as the controller. NOTE: A nginx controller must be installed and `ingress.enabled` must be `true`. | `false` |
+| `ingress.nginx.annotations` | Nginx-relative ingress annotations to be included when `ingress.nginx.enabled` is `true`. | `(nginx-ingress annotations)` |
+| `ingress.nginx.path` | URL context to be used in addition to the hostname to access Enterprise Gateway when `ingress.nginx.enabled` is `true`. | `/gateway/?(.*)` |
 | `ingress.hostName` | Ingress resource host  | `nil` |
-| `ingress.path` | URL context to be used in addition to the hostname to access Enterprise Gateway. e.g. http://hostname/(ingress.path) | `/gateway/?(.*)` |
 | `ingress.port` | The port where enterprise gateway service is running | `8888` |
 | `kip.image` | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run. | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
 | `kip.imagePullPolicy` | Kernel Image Puller image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control.  Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent` |
