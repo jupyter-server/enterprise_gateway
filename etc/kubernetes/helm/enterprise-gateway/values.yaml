@@ -49,18 +49,18 @@ ingress:
 
   # Ingress resource host
   hostName: ""
-  # URL context to be used in addition to the hostname to access Enterprise Gateway.
-  path: /gateway
 
   # Ingress resource annotations to be included depending in ingress controller.
   traefik:
     enabled: true
+    path: /gateway
     annotations:
       kubernetes.io/ingress.class: "traefik"
       traefik.frontend.rule.type: PathPrefixStrip
 
   nginx:
     enabled: false
+    path: /gateway/?(.*)
     annotations:
       kubernetes.io/ingress.class: "nginx"
       nginx.ingress.kubernetes.io/rewrite-target: /$1

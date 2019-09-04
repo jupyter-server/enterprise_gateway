@@ -5,11 +5,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
   name: enterprise-gateway-ingress
   annotations:
-{{ if .Values.ingress.nginx.enabled }}
+{{- if .Values.ingress.nginx.enabled }}
 {{- with .Values.ingress.nginx.annotations }}
 {{ toYaml . | indent 4 }}
 {{- end }}
-{{ else if .Values.ingress.traefik.enabled }}
+{{- else if .Values.ingress.traefik.enabled }}
 {{- with .Values.ingress.traefik.annotations }}
 {{ toYaml . | indent 4 }}
 {{- end }}
@@ -23,7 +23,11 @@ spec:
   - http:
   {{- end }}
       paths:
-      - path: {{ .Values.ingress.path }}
+{{- if .Values.ingress.nginx.enabled }}
+      - path: {{ .Values.ingress.nginx.path }}
+{{- else if .Values.ingress.traefik.enabled }}
+      - path: {{ .Values.ingress.traefik.path }}
+{{- end }}
         backend:
           serviceName: enterprise-gateway
           servicePort: {{ .Values.port }}
