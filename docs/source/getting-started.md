@@ -169,7 +169,34 @@ fi
 
 ### Connecting a Notebook to Enterprise Gateway
 
-[NB2KG](https://github.com/jupyter/nb2kg) is used to connect a Notebook from a local desktop or laptop to the Enterprise Gateway instance on the Spark/YARN cluster. We strongly recommend that at least NB2KG [v0.1.0](https://github.com/jupyter/nb2kg/releases/tag/v0.1.0) be used as our team has provided some security enhancements to enable for conveying the notebook user (for configurations when Enterprise Gateway is running behind a secured gateway) and allowing for increased request timeouts (due to the longer kernel startup times when interacting with the resource manager or distribution operations).
+To leverage the benefits of Enterprise Gateway, it's helpful to redirect a Notebook server's kernel management to the Gateway server.  This allows better separation of the user's notebooks from the managed computer cluster (Kubernetes, Hadoop YARN, Docker Swarm, etc.) on which Enterprise Gateway resides.  A Notebook server can be configured to relay kernel requests to an Enterprise Gateway server in two ways - depending on the version of Notebook you're using.
+
+#### Notebook 6.0 (and above)
+With the Notebook 6.0 release, the NB2KG server extension (see next section) is built directly into the Notebook server.  As a result, the steps for installing and configuring the server extension are no longer necessary.
+
+To start the notebook server from the command line, the following will redirect kernel management request to the Gateway server running at `<ENTERPRISE_GATEWAY_HOST_IP>`:
+```bash
+jupyter notebook --gateway-url=http://<ENTERPRISE_GATEWAY_HOST_IP>:8888 --GatewayClient.http_user=guest --GatewayClient.http_pwd=guest-password
+```
+
+If you have Notebook already in a docker image, a corresponding docker invocation would look something like this:
+```bash
+docker run -t --rm \
+  -e JUPYTER_GATEWAY_URL='http://<master ip>:8888' \
+  -e JUPYTER_GATEWAY_HTTP_USER=guest \
+  -e JUPYTER_GATEWAY_HTTP_PWD=guest-password \
+  -e JUPYTER_GATEWAY_VALIDATE_CERT='false' \
+  -e LOG_LEVEL=DEBUG \
+  -p 8888:8888 \
+  -v ${HOME}/notebooks/:/tmp/notebooks \
+  -w /tmp/notebooks \
+  notebook-docker-image
+```
+
+Notebook files residing in `${HOME}/notebooks` can then be accessed via `http://localhost:8888`.  
+
+#### NB2KG Server Extension
+For Notebook versions prior to 6.0, the [NB2KG](https://github.com/jupyter/nb2kg) server extension is used to connect a Notebook from a local desktop or laptop to the Enterprise Gateway instance.  Please refer to the NB2KG repository's README file for [installation instructions](https://github.com/jupyter/nb2kg#install).
 
 Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter/nb2kg#run-notebook-server), one might use the following...
 
@@ -177,7 +204,6 @@ Extending the notebook launch command listed on the [NB2KG repo](https://github.
 export KG_URL=http://<ENTERPRISE_GATEWAY_HOST_IP>:8888
 export KG_HTTP_USER=guest
 export KG_HTTP_PASS=guest-password
-export KG_REQUEST_TIMEOUT=30
 export KERNEL_USERNAME=${KG_HTTP_USER}
 jupyter notebook \
   --NotebookApp.session_manager_class=nb2kg.managers.SessionManager \
@@ -192,11 +218,9 @@ docker run -t --rm \
   -e KG_URL='http://<master ip>:8888' \
   -e KG_HTTP_USER=guest \
   -e KG_HTTP_PASS=guest-password \
-  -p 8888:8888 \
-  -e VALIDATE_KG_CERT='no' \
+  -e VALIDATE_KG_CERT='false' \
   -e LOG_LEVEL=DEBUG \
-  -e KG_REQUEST_TIMEOUT=40 \
-  -e KG_CONNECT_TIMEOUT=40 \
+  -p 8888:8888 \
   -v ${HOME}/notebooks/:/tmp/notebooks \
   -w /tmp/notebooks \
   elyra/nb2kg
