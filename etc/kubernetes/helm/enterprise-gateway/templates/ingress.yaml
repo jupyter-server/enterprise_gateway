@@ -4,9 +4,15 @@ kind: Ingress
 metadata:
   namespace: {{ .Release.Namespace }}
   name: enterprise-gateway-ingress
-{{- with .Values.ingress.annotations }}
   annotations:
+{{ if .Values.ingress.nginx.enabled }}
+{{- with .Values.ingress.nginx.annotations }}
 {{ toYaml . | indent 4 }}
+{{- end }}
+{{ else if .Values.ingress.traefik.enabled }}
+{{- with .Values.ingress.traefik.annotations }}
+{{ toYaml . | indent 4 }}
+{{- end }}
 {{- end }}
 spec:
   rules:
