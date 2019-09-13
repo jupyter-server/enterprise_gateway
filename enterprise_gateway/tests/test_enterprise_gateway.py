@@ -4,13 +4,13 @@
 
 from tornado.testing import gen_test
 from tornado.escape import json_decode, url_escape
-from .test_jupyter_websocket import TestJupyterWebsocket
+from .test_handlers import TestHandlers
 
 
-class TestEnterpriseGateway(TestJupyterWebsocket):
+class TestEnterpriseGateway(TestHandlers):
 
     def setUp(self):
-        super(TestJupyterWebsocket, self).setUp()
+        super(TestHandlers, self).setUp()
         # Enable debug logging if necessary
         # app = self.get_app()
         # app.settings['kernel_manager'].log.level = logging.DEBUG

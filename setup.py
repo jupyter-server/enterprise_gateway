@@ -34,9 +34,12 @@ Apache Spark, Kubernetes and others..
     keywords=['Interactive', 'Interpreter', 'Kernel', 'Web', 'Cloud'],
     packages=[
         'enterprise_gateway',
+        'enterprise_gateway.base',
         'enterprise_gateway.client',
         'enterprise_gateway.services',
+        'enterprise_gateway.services.api',
         'enterprise_gateway.services.kernels',
+        'enterprise_gateway.services.kernelspecs',
         'enterprise_gateway.services.processproxies',
         'enterprise_gateway.services.sessions'
     ],
@@ -48,7 +51,6 @@ Apache Spark, Kubernetes and others..
         'jinja2>=2.10',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
-        'jupyter_kernel_gateway>=2.4.0',
         'kubernetes>=4.0.0',
         'notebook>=5.7.6,<7.0',
         'paramiko>=2.1.2',

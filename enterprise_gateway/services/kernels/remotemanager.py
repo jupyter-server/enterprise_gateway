@@ -10,7 +10,8 @@ import uuid
 from tornado import gen
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
-from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
+from notebook.services.kernels.kernelmanager import MappingKernelManager
+from jupyter_client.ioloop.manager import IOLoopKernelManager
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
@@ -43,8 +44,8 @@ def get_process_proxy_config(kernelspec):
     return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
 
 
-class RemoteMappingKernelManager(SeedingMappingKernelManager):
-    """Extends the SeedingMappingKernelManager with support for managing remote kernels via the process-proxy. """
+class RemoteMappingKernelManager(MappingKernelManager):
+    """Extends the MappingKernelManager with support for managing remote kernels via the process-proxy. """
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
@@ -185,8 +186,8 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         return kernel_id
 
 
-class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
-    """Extends the KernelGatewayIOLoopKernelManager used by the RemoteMappingKernelManager.
+class RemoteKernelManager(IOLoopKernelManager):
+    """Extends the IOLoopKernelManager used by the MappingKernelManager.
 
     This class is responsible for detecting that a remote kernel is desired, then launching the
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
@@ -194,7 +195,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
     """
 
     def __init__(self, **kwargs):
-        super(KernelGatewayIOLoopKernelManager, self).__init__(**kwargs)
+        super(RemoteKernelManager, self).__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None
         self.sigint_value = None
@@ -234,7 +235,7 @@ class RemoteKernelManager(KernelGatewayIOLoopKernelManager):
         self.user_overrides.update({key: value for key, value in env.items()
                                    if key.startswith('KERNEL_') or
                                     key in self.parent.parent.env_process_whitelist or
-                                    key in self.parent.parent.personality.env_whitelist})
+                                    key in self.parent.parent.env_whitelist})
 
     def format_kernel_cmd(self, extra_arguments=None):
         """ Replace templated args (e.g. {response_address}, {port_range}, or {kernel_id}). """

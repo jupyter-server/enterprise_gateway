@@ -6,7 +6,6 @@ import logging
 import unittest
 import os
 from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp, ioloop
-from kernel_gateway.notebook_http.swagger.handlers import SwaggerSpecHandler
 from tornado.testing import AsyncHTTPTestCase, ExpectLog
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -37,9 +36,6 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_MAX_AGE'] = '5'
         os.environ['KG_BASE_URL'] = '/fake/path'
         os.environ['KG_MAX_KERNELS'] = '1'
-        os.environ['KG_SEED_URI'] = 'fake-notebook.ipynb'
-        os.environ['KG_PRESPAWN_COUNT'] = '1'
-        os.environ['KG_FORCE_KERNEL_NAME'] = 'fake_kernel_forced'
         os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
         os.environ['KG_KEYFILE'] = '/test/fake.key'
         os.environ['KG_CERTFILE'] = '/test/fake.crt'
@@ -59,10 +55,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.max_age, '5')
         self.assertEqual(app.base_url, '/fake/path')
         self.assertEqual(app.max_kernels, 1)
-        self.assertEqual(app.seed_uri, 'fake-notebook.ipynb')
-        self.assertEqual(app.prespawn_count, 1)
         self.assertEqual(app.default_kernel_name, 'fake_kernel')
-        self.assertEqual(app.force_kernel_name, 'fake_kernel_forced')
         self.assertEqual(app.keyfile, '/test/fake.key')
         self.assertEqual(app.certfile, '/test/fake.crt')
         self.assertEqual(app.client_ca, '/test/fake_ca.crt')
@@ -81,8 +74,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
         """Shuts down the app after test run."""
         if self.app:
             self.app.shutdown()
-        # Make sure the generated Swagger output is reset for subsequent tests
-        SwaggerSpecHandler.output = None
+
         super(TestGatewayAppBase, self).tearDown()
 
     def get_new_ioloop(self):
