@@ -90,7 +90,7 @@ class JSONErrorsMixin(object):
         """Responds with an application/json error object.
 
         Overrides the APIHandler.write_error in the notebook server until it
-        properly sets the 'reason' field. 
+        properly sets the 'reason' field.
 
         Parameters
         ----------

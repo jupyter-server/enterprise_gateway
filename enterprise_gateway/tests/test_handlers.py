@@ -316,6 +316,7 @@ class TestDefaults(TestHandlers):
         self.assertEqual(response.code, 200)
         info = json_decode(response.body)
         self.assertIn('version', info)
+        self.assertIn('gateway_version', info)
 
     @gen_test
     def test_get_kernelspecs(self):

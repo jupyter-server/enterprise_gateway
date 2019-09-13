@@ -5,7 +5,7 @@ import os
 
 from notebook.utils import maybe_future
 from tornado import gen, web
-from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+from ...mixins import CORSMixin
 
 
 class BaseSpecHandler(CORSMixin, web.StaticFileHandler):

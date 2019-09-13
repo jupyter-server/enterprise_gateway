@@ -6,10 +6,11 @@ import tornado
 import notebook.services.sessions.handlers as notebook_handlers
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
+
 class SessionRootHandler(TokenAuthorizationMixin,
-                        CORSMixin,
-                        JSONErrorsMixin,
-                        notebook_handlers.SessionRootHandler):
+                         CORSMixin,
+                         JSONErrorsMixin,
+                         notebook_handlers.SessionRootHandler):
     """Extends the notebook root session handler with token auth, CORS, and
     JSON errors.
     """
@@ -22,10 +23,11 @@ class SessionRootHandler(TokenAuthorizationMixin,
         tornado.web.HTTPError
             If kg_list_kernels is False, respond with 403 Forbidden
         """
-        if 'kg_list_kernels' not in self.settings or self.settings['kg_list_kernels'] != True:
+        if 'kg_list_kernels' not in self.settings or not self.settings['kg_list_kernels']:
             raise tornado.web.HTTPError(403, 'Forbidden')
         else:
             super(SessionRootHandler, self).get()
+
 
 default_handlers = []
 for path, cls in notebook_handlers.default_handlers:

@@ -59,10 +59,10 @@ class MainKernelHandler(TokenAuthorizationMixin,
             env = {'PATH': os.getenv('PATH', '')}
             # Whitelist environment variables from current process environment
             env.update({key: value for key, value in os.environ.items()
-                   if key in self.env_process_whitelist})
+                        if key in self.env_process_whitelist})
             # Whitelist KERNEL_* args and those allowed by configuration from client
             env.update({key: value for key, value in model['env'].items()
-                   if key.startswith('KERNEL_') or key in self.env_whitelist})
+                        if key.startswith('KERNEL_') or key in self.env_whitelist})
             # No way to override the call to start_kernel on the kernel manager
             # so do a temporary partial (ugh)
             orig_start = self.kernel_manager.start_kernel

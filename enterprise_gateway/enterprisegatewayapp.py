@@ -66,8 +66,7 @@ class EnterpriseGatewayApp(JupyterApp):
     description = """
         Jupyter Enterprise Gateway
 
-        Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic
-        to them.
+        Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic to them.
     """
 
     # Enable some command line shortcuts
@@ -77,8 +76,7 @@ class EnterpriseGatewayApp(JupyterApp):
     port_env = 'KG_PORT'
     port_default_value = 8888
     port = Integer(port_default_value, config=True,
-        help='Port on which to listen (KG_PORT env var)'
-    )
+                   help='Port on which to listen (KG_PORT env var)')
 
     @default('port')
     def port_default(self):
@@ -87,8 +85,8 @@ class EnterpriseGatewayApp(JupyterApp):
     port_retries_env = 'KG_PORT_RETRIES'
     port_retries_default_value = 50
     port_retries = Integer(port_retries_default_value, config=True,
-        help='Number of ports to try if the specified port is not available (KG_PORT_RETRIES env var)'
-    )
+                           help="""Number of ports to try if the specified port is not available
+                           (KG_PORT_RETRIES env var)""")
 
     @default('port_retries')
     def port_retries_default(self):
@@ -97,8 +95,7 @@ class EnterpriseGatewayApp(JupyterApp):
     ip_env = 'KG_IP'
     ip_default_value = '127.0.0.1'
     ip = Unicode(ip_default_value, config=True,
-        help='IP address on which to listen (KG_IP env var)'
-    )
+                 help='IP address on which to listen (KG_IP env var)')
 
     @default('ip')
     def ip_default(self):
@@ -108,7 +105,7 @@ class EnterpriseGatewayApp(JupyterApp):
     base_url_env = 'KG_BASE_URL'
     base_url_default_value = '/'
     base_url = Unicode(base_url_default_value, config=True,
-        help='The base path for mounting all API resources (KG_BASE_URL env var)')
+                       help='The base path for mounting all API resources (KG_BASE_URL env var)')
 
     @default('base_url')
     def base_url_default(self):
@@ -117,8 +114,7 @@ class EnterpriseGatewayApp(JupyterApp):
     # Token authorization
     auth_token_env = 'KG_AUTH_TOKEN'
     auth_token = Unicode(config=True,
-        help='Authorization token required for all requests (KG_AUTH_TOKEN env var)'
-    )
+                         help='Authorization token required for all requests (KG_AUTH_TOKEN env var)')
 
     @default('auth_token')
     def _auth_token_default(self):
@@ -127,8 +123,7 @@ class EnterpriseGatewayApp(JupyterApp):
     # CORS headers
     allow_credentials_env = 'KG_ALLOW_CREDENTIALS'
     allow_credentials = Unicode(config=True,
-        help='Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env var)'
-    )
+                                help='Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env var)')
 
     @default('allow_credentials')
     def allow_credentials_default(self):
@@ -136,8 +131,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     allow_headers_env = 'KG_ALLOW_HEADERS'
     allow_headers = Unicode(config=True,
-        help='Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)'
-    )
+                            help='Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)')
 
     @default('allow_headers')
     def allow_headers_default(self):
@@ -145,8 +139,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     allow_methods_env = 'KG_ALLOW_METHODS'
     allow_methods = Unicode(config=True,
-        help='Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)'
-    )
+                            help='Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)')
 
     @default('allow_methods')
     def allow_methods_default(self):
@@ -154,8 +147,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     allow_origin_env = 'KG_ALLOW_ORIGIN'
     allow_origin = Unicode(config=True,
-        help='Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)'
-    )
+                           help='Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)')
 
     @default('allow_origin')
     def allow_origin_default(self):
@@ -163,8 +155,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     expose_headers_env = 'KG_EXPOSE_HEADERS'
     expose_headers = Unicode(config=True,
-        help='Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)'
-    )
+                             help='Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)')
 
     @default('expose_headers')
     def expose_headers_default(self):
@@ -172,9 +163,9 @@ class EnterpriseGatewayApp(JupyterApp):
 
     trust_xheaders_env = 'KG_TRUST_XHEADERS'
     trust_xheaders = CBool(False, config=True,
-        help='Use x-* header values for overriding the remote-ip, useful when '
-             'application is behing a proxy. (KG_TRUST_XHEADERS env var)'
-    )
+                           help="""Use x-* header values for overriding the remote-ip, useful when
+                           application is behing a proxy. (KG_TRUST_XHEADERS env var)""")
+
     @default('trust_xheaders')
     def trust_xheaders_default(self):
         return strtobool(os.getenv(self.trust_xheaders_env, 'False'))
@@ -197,7 +188,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     client_ca_env = 'KG_CLIENT_CA'
     client_ca = Unicode(None, config=True, allow_none=True,
-                        help="""The full path to a certificate authority certificate for SSL/TLS 
+                        help="""The full path to a certificate authority certificate for SSL/TLS
                         client authentication. (KG_CLIENT_CA env var)""")
 
     @default('client_ca')
@@ -206,8 +197,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     max_age_env = 'KG_MAX_AGE'
     max_age = Unicode(config=True,
-        help='Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)'
-    )
+                      help='Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)')
 
     @default('max_age')
     def max_age_default(self):
@@ -215,10 +205,9 @@ class EnterpriseGatewayApp(JupyterApp):
 
     max_kernels_env = 'KG_MAX_KERNELS'
     max_kernels = Integer(None, config=True,
-        allow_none=True,
-        help='Limits the number of kernel instances allowed to run by this gateway. '
-             'Unbounded by default. (KG_MAX_KERNELS env var)'
-    )
+                          allow_none=True,
+                          help="""Limits the number of kernel instances allowed to run by this gateway.
+                          Unbounded by default. (KG_MAX_KERNELS env var)""")
 
     @default('max_kernels')
     def max_kernels_default(self):
@@ -227,7 +216,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
-        help='Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)')
+                                  help='Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)')
 
     @default('default_kernel_name')
     def default_kernel_name_default(self):
@@ -236,10 +225,9 @@ class EnterpriseGatewayApp(JupyterApp):
 
     list_kernels_env = 'KG_LIST_KERNELS'
     list_kernels = Bool(config=True,
-        help="""Permits listing of the running kernels using API endpoints /api/kernels
-            and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
-            allows this by default but kernel gateway does not."""
-    )
+                        help="""Permits listing of the running kernels using API endpoints /api/kernels
+                        and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
+                        allows this by default but kernel gateway does not.""")
 
     @default('list_kernels')
     def list_kernels_default(self):
@@ -255,7 +243,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     env_process_whitelist_env = 'KG_ENV_PROCESS_WHITELIST'
     env_process_whitelist = List(config=True,
-                                 help="""Environment variables allowed to be inherited 
+                                 help="""Environment variables allowed to be inherited
                                  from the spawning process by the kernel""")
 
     @default('env_process_whitelist')
@@ -593,7 +581,7 @@ class EnterpriseGatewayApp(JupyterApp):
                                                  xheaders=self.trust_xheaders,
                                                  ssl_options=ssl_options)
 
-        for port in random_ports(self.port, self.port_retries+1):
+        for port in random_ports(self.port, self.port_retries + 1):
             try:
                 self.http_server.listen(port, self.ip)
             except socket.error as e:

@@ -7,6 +7,7 @@ from tornado import web, gen
 from traitlets.config.configurable import LoggingConfigurable
 from ipython_genutils.py3compat import unicode_type
 
+
 class SessionManager(LoggingConfigurable):
     """Simple implementation of the SessionManager interface that allows clients
     to associate basic metadata with a kernel.
@@ -97,7 +98,7 @@ class SessionManager(LoggingConfigurable):
             Session model with `session_id`, `path`, and `kernel_id` keys
         """
         self._sessions.append({'session_id': session_id,
-                               'path':path,
+                               'path': path,
                                'kernel_id': kernel_id})
 
         return self.get_session(session_id=session_id)
