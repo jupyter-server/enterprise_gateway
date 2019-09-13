@@ -22,7 +22,7 @@ class TestHandlers(TestGatewayAppBase):
         os.environ['JUPYTER_PATH'] = RESOURCES
 
         # These are required for setup of test_kernel_defaults
-        os.environ['KG_ENV_PROCESS_WHITELIST'] = "PROCESS_VAR1,PROCESS_VAR2"
+        os.environ['EG_ENV_PROCESS_WHITELIST'] = "PROCESS_VAR1,PROCESS_VAR2"
         os.environ['PROCESS_VAR1'] = "process_var1_override"
 
         self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
@@ -110,7 +110,7 @@ class TestDefaults(TestHandlers):
     @gen_test
     def test_startup(self):
         """Root of kernels resource should be OK."""
-        self.app.web_app.settings['kg_list_kernels'] = True
+        self.app.web_app.settings['eg_list_kernels'] = True
         response = yield self.http_client.fetch(self.get_url('/api/kernels'))
         self.assertEqual(response.code, 200)
 
@@ -151,7 +151,7 @@ class TestDefaults(TestHandlers):
         """All server endpoints should check the configured auth token."""
         # Set token requirement
         app = self.get_app()
-        app.settings['kg_auth_token'] = 'fake-token'
+        app.settings['eg_auth_token'] = 'fake-token'
 
         # Requst API without the token
         response = yield self.http_client.fetch(
@@ -246,13 +246,13 @@ class TestDefaults(TestHandlers):
     def test_cors_headers(self):
         """All kernel endpoints should respond with configured CORS headers."""
         app = self.get_app()
-        app.settings['kg_allow_credentials'] = 'false'
-        app.settings['kg_allow_headers'] = 'Authorization,Content-Type'
-        app.settings['kg_allow_methods'] = 'GET,POST'
-        app.settings['kg_allow_origin'] = 'https://jupyter.org'
-        app.settings['kg_expose_headers'] = 'X-My-Fake-Header'
-        app.settings['kg_max_age'] = '600'
-        app.settings['kg_list_kernels'] = True
+        app.settings['eg_allow_credentials'] = 'false'
+        app.settings['eg_allow_headers'] = 'Authorization,Content-Type'
+        app.settings['eg_allow_methods'] = 'GET,POST'
+        app.settings['eg_allow_origin'] = 'https://jupyter.org'
+        app.settings['eg_expose_headers'] = 'X-My-Fake-Header'
+        app.settings['eg_max_age'] = '600'
+        app.settings['eg_list_kernels'] = True
 
         # Get kernels to check headers
         response = yield self.http_client.fetch(
@@ -272,7 +272,7 @@ class TestDefaults(TestHandlers):
     def test_max_kernels(self):
         """Number of kernels should be limited."""
         app = self.get_app()
-        app.settings['kg_max_kernels'] = 1
+        app.settings['eg_max_kernels'] = 1
 
         # Request a kernel
         response = yield self.http_client.fetch(
@@ -332,7 +332,7 @@ class TestDefaults(TestHandlers):
     @gen_test
     def test_get_kernels(self):
         """Server should respond with running kernel information."""
-        self.app.web_app.settings['kg_list_kernels'] = True
+        self.app.web_app.settings['eg_list_kernels'] = True
         response = yield self.http_client.fetch(
             self.get_url('/api/kernels')
         )
@@ -408,7 +408,7 @@ class TestDefaults(TestHandlers):
     def test_crud_sessions(self):
         """Server should create, list, and delete sessions."""
         app = self.get_app()
-        app.settings['kg_list_kernels'] = True
+        app.settings['eg_list_kernels'] = True
 
         # Ensure no sessions by default
         response = yield self.http_client.fetch(
@@ -562,17 +562,17 @@ class TestDefaults(TestHandlers):
 
     @gen_test
     def test_kernel_env_auth_token(self):
-        """Kernel should not have KG_AUTH_TOKEN in its environment."""
-        os.environ['KG_AUTH_TOKEN'] = 'fake-secret'
+        """Kernel should not have EG_AUTH_TOKEN in its environment."""
+        os.environ['EG_AUTH_TOKEN'] = 'fake-secret'
 
         try:
             ws = yield self.spawn_kernel()
-            req = self.execute_request('import os; print(os.getenv("KG_AUTH_TOKEN"))')
+            req = self.execute_request('import os; print(os.getenv("EG_AUTH_TOKEN"))')
             ws.write_message(json_encode(req))
             content = yield self.await_stream(ws)
             self.assertNotIn('fake-secret', content['text'])
         finally:
-            del os.environ['KG_AUTH_TOKEN']
+            del os.environ['EG_AUTH_TOKEN']
             ws.close()
 
 
@@ -654,7 +654,7 @@ class TestRelativeBaseURL(TestHandlers):
     @gen_test
     def test_base_url(self):
         """Server should mount resources under fixed base."""
-        self.app.web_app.settings['kg_list_kernels'] = True
+        self.app.web_app.settings['eg_list_kernels'] = True
 
         # Should exist under path
         response = yield self.http_client.fetch(

@@ -21,11 +21,11 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
     @property
     def env_whitelist(self):
-        return self.settings['kg_env_whitelist']
+        return self.settings['eg_env_whitelist']
 
     @property
     def env_process_whitelist(self):
-        return self.settings['kg_env_process_whitelist']
+        return self.settings['eg_env_process_whitelist']
 
     @gen.coroutine
     def post(self):
@@ -42,7 +42,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
         tornado.web.HTTPError
             403 Forbidden if the limit is reached
         """
-        max_kernels = self.settings['kg_max_kernels']
+        max_kernels = self.settings['eg_max_kernels']
         if max_kernels is not None:
             km = self.settings['kernel_manager']
             kernels = km.list_kernels()
@@ -85,7 +85,7 @@ class MainKernelHandler(TokenAuthorizationMixin,
         tornado.web.HTTPError
             403 Forbidden if kernel listing is disabled
         """
-        if not self.settings.get('kg_list_kernels'):
+        if not self.settings.get('eg_list_kernels'):
             raise tornado.web.HTTPError(403, 'Forbidden')
         else:
             super(MainKernelHandler, self).get()

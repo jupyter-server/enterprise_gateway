@@ -12,7 +12,7 @@ except ImportError:
     from mock import Mock
 
 from tornado import web
-from kernel_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
+from enterprise_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
 
 
 class SuperTokenAuthHandler(object):
@@ -27,7 +27,7 @@ class SuperTokenAuthHandler(object):
 class TestableTokenAuthHandler(TokenAuthorizationMixin, SuperTokenAuthHandler):
     """Implementation that uses the TokenAuthorizationMixin for testing."""
     def __init__(self, token=''):
-        self.settings = {'kg_auth_token': token}
+        self.settings = {'eg_auth_token': token}
         self.arguments = {}
         self.response = None
         self.status_code = None
@@ -47,7 +47,7 @@ class TestTokenAuthMixin(unittest.TestCase):
 
     def test_no_token_required(self):
         """No token required - status should be None."""
-        self.mixin.settings['kg_auth_token'] = ''
+        self.mixin.settings['eg_auth_token'] = ''
         self.mixin.prepare()
         self.assertEqual(self.mixin.is_prepared, True)
         self.assertEqual(self.mixin.status_code, None)

@@ -21,9 +21,9 @@ class SessionRootHandler(TokenAuthorizationMixin,
         Raises
         ------
         tornado.web.HTTPError
-            If kg_list_kernels is False, respond with 403 Forbidden
+            If eg_list_kernels is False, respond with 403 Forbidden
         """
-        if 'kg_list_kernels' not in self.settings or not self.settings['kg_list_kernels']:
+        if 'eg_list_kernels' not in self.settings or not self.settings['eg_list_kernels']:
             raise tornado.web.HTTPError(403, 'Forbidden')
         else:
             super(SessionRootHandler, self).get()

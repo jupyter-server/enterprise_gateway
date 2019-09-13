@@ -15,12 +15,12 @@ except ImportError:
 class CORSMixin(object):
     """Mixes CORS headers into tornado.web.RequestHandlers."""
     SETTINGS_TO_HEADERS = {
-        'kg_allow_credentials': 'Access-Control-Allow-Credentials',
-        'kg_allow_headers': 'Access-Control-Allow-Headers',
-        'kg_allow_methods': 'Access-Control-Allow-Methods',
-        'kg_allow_origin': 'Access-Control-Allow-Origin',
-        'kg_expose_headers': 'Access-Control-Expose-Headers',
-        'kg_max_age': 'Access-Control-Max-Age'
+        'eg_allow_credentials': 'Access-Control-Allow-Credentials',
+        'eg_allow_headers': 'Access-Control-Allow-Headers',
+        'eg_allow_methods': 'Access-Control-Allow-Methods',
+        'eg_allow_origin': 'Access-Control-Allow-Origin',
+        'eg_expose_headers': 'Access-Control-Expose-Headers',
+        'eg_max_age': 'Access-Control-Max-Age'
     }
 
     def set_default_headers(self):
@@ -57,9 +57,9 @@ class TokenAuthorizationMixin(object):
     def prepare(self):
         """Ensures the correct auth token is present, either as a parameter
         `token=<value>` or as a header `Authorization: token <value>`.
-        Does nothing unless an auth token is configured in kg_auth_token.
+        Does nothing unless an auth token is configured in eg_auth_token.
 
-        If kg_auth_token is set and the token is not present, responds
+        If eg_auth_token is set and the token is not present, responds
         with 401 Unauthorized.
 
         Notes
@@ -68,7 +68,7 @@ class TokenAuthorizationMixin(object):
         with the `@web.authenticated` decorated methods in the notebook
         package.
         """
-        server_token = self.settings.get('kg_auth_token')
+        server_token = self.settings.get('eg_auth_token')
         if server_token and not self.request.method == 'OPTIONS':
             client_token = self.get_argument('token', None)
             if client_token is None:

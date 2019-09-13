@@ -21,25 +21,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         """Resets the environment."""
         os.environ = self.environ
 
-    def test_config_env_vars(self):
-        """Env vars should be honored for traitlets."""
-        # Environment vars are always strings
-        os.environ['KG_PORT'] = '1234'
-        os.environ['KG_PORT_RETRIES'] = '4321'
-        os.environ['KG_IP'] = '1.1.1.1'
-        os.environ['KG_AUTH_TOKEN'] = 'fake-token'
-        os.environ['KG_ALLOW_CREDENTIALS'] = 'true'
-        os.environ['KG_ALLOW_HEADERS'] = 'Authorization'
-        os.environ['KG_ALLOW_METHODS'] = 'GET'
-        os.environ['KG_ALLOW_ORIGIN'] = '*'
-        os.environ['KG_EXPOSE_HEADERS'] = 'X-Fake-Header'
-        os.environ['KG_MAX_AGE'] = '5'
-        os.environ['KG_BASE_URL'] = '/fake/path'
-        os.environ['KG_MAX_KERNELS'] = '1'
-        os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
-        os.environ['KG_KEYFILE'] = '/test/fake.key'
-        os.environ['KG_CERTFILE'] = '/test/fake.crt'
-        os.environ['KG_CLIENT_CA'] = '/test/fake_ca.crt'
+    def _assert_envs_to_traitlets(self):
 
         app = EnterpriseGatewayApp()
 
@@ -59,6 +41,50 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.keyfile, '/test/fake.key')
         self.assertEqual(app.certfile, '/test/fake.crt')
         self.assertEqual(app.client_ca, '/test/fake_ca.crt')
+
+    def test_config_env_vars_bc(self):
+        """B/C env vars should be honored for traitlets."""
+        # Environment vars are always strings
+        os.environ['KG_PORT'] = '1234'
+        os.environ['KG_PORT_RETRIES'] = '4321'
+        os.environ['KG_IP'] = '1.1.1.1'
+        os.environ['KG_AUTH_TOKEN'] = 'fake-token'
+        os.environ['KG_ALLOW_CREDENTIALS'] = 'true'
+        os.environ['KG_ALLOW_HEADERS'] = 'Authorization'
+        os.environ['KG_ALLOW_METHODS'] = 'GET'
+        os.environ['KG_ALLOW_ORIGIN'] = '*'
+        os.environ['KG_EXPOSE_HEADERS'] = 'X-Fake-Header'
+        os.environ['KG_MAX_AGE'] = '5'
+        os.environ['KG_BASE_URL'] = '/fake/path'
+        os.environ['KG_MAX_KERNELS'] = '1'
+        os.environ['KG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
+        os.environ['KG_KEYFILE'] = '/test/fake.key'
+        os.environ['KG_CERTFILE'] = '/test/fake.crt'
+        os.environ['KG_CLIENT_CA'] = '/test/fake_ca.crt'
+
+        self._assert_envs_to_traitlets()
+
+    def test_config_env_vars(self):
+        """Env vars should be honored for traitlets."""
+        # Environment vars are always strings
+        os.environ['EG_PORT'] = '1234'
+        os.environ['EG_PORT_RETRIES'] = '4321'
+        os.environ['EG_IP'] = '1.1.1.1'
+        os.environ['EG_AUTH_TOKEN'] = 'fake-token'
+        os.environ['EG_ALLOW_CREDENTIALS'] = 'true'
+        os.environ['EG_ALLOW_HEADERS'] = 'Authorization'
+        os.environ['EG_ALLOW_METHODS'] = 'GET'
+        os.environ['EG_ALLOW_ORIGIN'] = '*'
+        os.environ['EG_EXPOSE_HEADERS'] = 'X-Fake-Header'
+        os.environ['EG_MAX_AGE'] = '5'
+        os.environ['EG_BASE_URL'] = '/fake/path'
+        os.environ['EG_MAX_KERNELS'] = '1'
+        os.environ['EG_DEFAULT_KERNEL_NAME'] = 'fake_kernel'
+        os.environ['EG_KEYFILE'] = '/test/fake.key'
+        os.environ['EG_CERTFILE'] = '/test/fake.crt'
+        os.environ['EG_CLIENT_CA'] = '/test/fake_ca.crt'
+
+        self._assert_envs_to_traitlets()
 
 
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):

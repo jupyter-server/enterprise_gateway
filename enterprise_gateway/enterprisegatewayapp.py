@@ -73,182 +73,184 @@ class EnterpriseGatewayApp(JupyterApp):
     aliases = aliases
 
     # Server IP / PORT binding
-    port_env = 'KG_PORT'
+    port_env = 'EG_PORT'
     port_default_value = 8888
     port = Integer(port_default_value, config=True,
-                   help='Port on which to listen (KG_PORT env var)')
+                   help='Port on which to listen (EG_PORT env var)')
 
     @default('port')
     def port_default(self):
-        return int(os.getenv(self.port_env, self.port_default_value))
+        return int(os.getenv(self.port_env, os.getenv('KG_PORT', self.port_default_value)))
 
-    port_retries_env = 'KG_PORT_RETRIES'
+    port_retries_env = 'EG_PORT_RETRIES'
     port_retries_default_value = 50
     port_retries = Integer(port_retries_default_value, config=True,
                            help="""Number of ports to try if the specified port is not available
-                           (KG_PORT_RETRIES env var)""")
+                           (EG_PORT_RETRIES env var)""")
 
     @default('port_retries')
     def port_retries_default(self):
-        return int(os.getenv(self.port_retries_env, self.port_retries_default_value))
+        return int(os.getenv(self.port_retries_env, os.getenv('KG_PORT_RETRIES', self.port_retries_default_value)))
 
-    ip_env = 'KG_IP'
+    ip_env = 'EG_IP'
     ip_default_value = '127.0.0.1'
     ip = Unicode(ip_default_value, config=True,
-                 help='IP address on which to listen (KG_IP env var)')
+                 help='IP address on which to listen (EG_IP env var)')
 
     @default('ip')
     def ip_default(self):
-        return os.getenv(self.ip_env, self.ip_default_value)
+        return os.getenv(self.ip_env, os.getenv('KG_IP', self.ip_default_value))
 
     # Base URL
-    base_url_env = 'KG_BASE_URL'
+    base_url_env = 'EG_BASE_URL'
     base_url_default_value = '/'
     base_url = Unicode(base_url_default_value, config=True,
-                       help='The base path for mounting all API resources (KG_BASE_URL env var)')
+                       help='The base path for mounting all API resources (EG_BASE_URL env var)')
 
     @default('base_url')
     def base_url_default(self):
-        return os.getenv(self.base_url_env, self.base_url_default_value)
+        return os.getenv(self.base_url_env, os.getenv('KG_BASE_URL', self.base_url_default_value))
 
     # Token authorization
-    auth_token_env = 'KG_AUTH_TOKEN'
+    auth_token_env = 'EG_AUTH_TOKEN'
     auth_token = Unicode(config=True,
-                         help='Authorization token required for all requests (KG_AUTH_TOKEN env var)')
+                         help='Authorization token required for all requests (EG_AUTH_TOKEN env var)')
 
     @default('auth_token')
     def _auth_token_default(self):
-        return os.getenv(self.auth_token_env, '')
+        return os.getenv(self.auth_token_env, os.getenv('KG_AUTH_TOKEN', ''))
 
-    # CORS headers
-    allow_credentials_env = 'KG_ALLOW_CREDENTIALS'
+    # Begin CORS headers
+    allow_credentials_env = 'EG_ALLOW_CREDENTIALS'
     allow_credentials = Unicode(config=True,
-                                help='Sets the Access-Control-Allow-Credentials header. (KG_ALLOW_CREDENTIALS env var)')
+                                help='Sets the Access-Control-Allow-Credentials header. (EG_ALLOW_CREDENTIALS env var)')
 
     @default('allow_credentials')
     def allow_credentials_default(self):
-        return os.getenv(self.allow_credentials_env, '')
+        return os.getenv(self.allow_credentials_env, os.getenv('KG_ALLOW_CREDENTIALS', ''))
 
-    allow_headers_env = 'KG_ALLOW_HEADERS'
+    allow_headers_env = 'EG_ALLOW_HEADERS'
     allow_headers = Unicode(config=True,
-                            help='Sets the Access-Control-Allow-Headers header. (KG_ALLOW_HEADERS env var)')
+                            help='Sets the Access-Control-Allow-Headers header. (EG_ALLOW_HEADERS env var)')
 
     @default('allow_headers')
     def allow_headers_default(self):
-        return os.getenv(self.allow_headers_env, '')
+        return os.getenv(self.allow_headers_env, os.getenv('KG_ALLOW_HEADERS', ''))
 
-    allow_methods_env = 'KG_ALLOW_METHODS'
+    allow_methods_env = 'EG_ALLOW_METHODS'
     allow_methods = Unicode(config=True,
-                            help='Sets the Access-Control-Allow-Methods header. (KG_ALLOW_METHODS env var)')
+                            help='Sets the Access-Control-Allow-Methods header. (EG_ALLOW_METHODS env var)')
 
     @default('allow_methods')
     def allow_methods_default(self):
-        return os.getenv(self.allow_methods_env, '')
+        return os.getenv(self.allow_methods_env, os.getenv('KG_ALLOW_METHODS', ''))
 
-    allow_origin_env = 'KG_ALLOW_ORIGIN'
+    allow_origin_env = 'EG_ALLOW_ORIGIN'
     allow_origin = Unicode(config=True,
-                           help='Sets the Access-Control-Allow-Origin header. (KG_ALLOW_ORIGIN env var)')
+                           help='Sets the Access-Control-Allow-Origin header. (EG_ALLOW_ORIGIN env var)')
 
     @default('allow_origin')
     def allow_origin_default(self):
-        return os.getenv(self.allow_origin_env, '')
+        return os.getenv(self.allow_origin_env, os.getenv('KG_ALLOW_ORIGIN', ''))
 
-    expose_headers_env = 'KG_EXPOSE_HEADERS'
+    expose_headers_env = 'EG_EXPOSE_HEADERS'
     expose_headers = Unicode(config=True,
-                             help='Sets the Access-Control-Expose-Headers header. (KG_EXPOSE_HEADERS env var)')
+                             help='Sets the Access-Control-Expose-Headers header. (EG_EXPOSE_HEADERS env var)')
 
     @default('expose_headers')
     def expose_headers_default(self):
-        return os.getenv(self.expose_headers_env, '')
+        return os.getenv(self.expose_headers_env, os.getenv('KG_EXPOSE_HEADERS', ''))
 
-    trust_xheaders_env = 'KG_TRUST_XHEADERS'
+    trust_xheaders_env = 'EG_TRUST_XHEADERS'
     trust_xheaders = CBool(False, config=True,
                            help="""Use x-* header values for overriding the remote-ip, useful when
-                           application is behing a proxy. (KG_TRUST_XHEADERS env var)""")
+                           application is behing a proxy. (EG_TRUST_XHEADERS env var)""")
 
     @default('trust_xheaders')
     def trust_xheaders_default(self):
-        return strtobool(os.getenv(self.trust_xheaders_env, 'False'))
+        return strtobool(os.getenv(self.trust_xheaders_env, os.getenv('KG_TRUST_XHEADERS', 'False')))
 
-    certfile_env = 'KG_CERTFILE'
+    certfile_env = 'EG_CERTFILE'
     certfile = Unicode(None, config=True, allow_none=True,
-                       help='The full path to an SSL/TLS certificate file. (KG_CERTFILE env var)')
+                       help='The full path to an SSL/TLS certificate file. (EG_CERTFILE env var)')
 
     @default('certfile')
     def certfile_default(self):
-        return os.getenv(self.certfile_env)
+        return os.getenv(self.certfile_env, os.getenv('KG_CERTFILE'))
 
-    keyfile_env = 'KG_KEYFILE'
+    keyfile_env = 'EG_KEYFILE'
     keyfile = Unicode(None, config=True, allow_none=True,
-                      help='The full path to a private key file for usage with SSL/TLS. (KG_KEYFILE env var)')
+                      help='The full path to a private key file for usage with SSL/TLS. (EG_KEYFILE env var)')
 
     @default('keyfile')
     def keyfile_default(self):
-        return os.getenv(self.keyfile_env)
+        return os.getenv(self.keyfile_env, os.getenv('KG_KEYFILE'))
 
-    client_ca_env = 'KG_CLIENT_CA'
+    client_ca_env = 'EG_CLIENT_CA'
     client_ca = Unicode(None, config=True, allow_none=True,
                         help="""The full path to a certificate authority certificate for SSL/TLS
-                        client authentication. (KG_CLIENT_CA env var)""")
+                        client authentication. (EG_CLIENT_CA env var)""")
 
     @default('client_ca')
     def client_ca_default(self):
-        return os.getenv(self.client_ca_env)
+        return os.getenv(self.client_ca_env, os.getenv('KG_CLIENT_CA'))
 
-    max_age_env = 'KG_MAX_AGE'
+    max_age_env = 'EG_MAX_AGE'
     max_age = Unicode(config=True,
-                      help='Sets the Access-Control-Max-Age header. (KG_MAX_AGE env var)')
+                      help='Sets the Access-Control-Max-Age header. (EG_MAX_AGE env var)')
 
     @default('max_age')
     def max_age_default(self):
-        return os.getenv(self.max_age_env, '')
+        return os.getenv(self.max_age_env, os.getenv('KG_MAX_AGE', ''))
+    # End CORS headers
 
-    max_kernels_env = 'KG_MAX_KERNELS'
+    max_kernels_env = 'EG_MAX_KERNELS'
     max_kernels = Integer(None, config=True,
                           allow_none=True,
                           help="""Limits the number of kernel instances allowed to run by this gateway.
-                          Unbounded by default. (KG_MAX_KERNELS env var)""")
+                          Unbounded by default. (EG_MAX_KERNELS env var)""")
 
     @default('max_kernels')
     def max_kernels_default(self):
-        val = os.getenv(self.max_kernels_env)
+        val = os.getenv(self.max_kernels_env, os.getenv('KG_MAX_KERNELS'))
         return val if val is None else int(val)
 
-    default_kernel_name_env = 'KG_DEFAULT_KERNEL_NAME'
+    default_kernel_name_env = 'EG_DEFAULT_KERNEL_NAME'
     default_kernel_name = Unicode(config=True,
-                                  help='Default kernel name when spawning a kernel (KG_DEFAULT_KERNEL_NAME env var)')
+                                  help='Default kernel name when spawning a kernel (EG_DEFAULT_KERNEL_NAME env var)')
 
     @default('default_kernel_name')
     def default_kernel_name_default(self):
         # defaults to Jupyter's default kernel name on empty string
-        return os.getenv(self.default_kernel_name_env, '')
+        return os.getenv(self.default_kernel_name_env, os.getenv('KG_DEFAULT_KERNEL_NAME', ''))
 
-    list_kernels_env = 'KG_LIST_KERNELS'
+    list_kernels_env = 'EG_LIST_KERNELS'
     list_kernels = Bool(config=True,
                         help="""Permits listing of the running kernels using API endpoints /api/kernels
-                        and /api/sessions (KG_LIST_KERNELS env var). Note: Jupyter Notebook
-                        allows this by default but kernel gateway does not.""")
+                        and /api/sessions. (EG_LIST_KERNELS env var) Note: Jupyter Notebook
+                        allows this by default but Jupyter Enterprise Gateway does not.""")
 
     @default('list_kernels')
     def list_kernels_default(self):
-        return os.getenv(self.list_kernels_env, 'False') == 'True'
+        return os.getenv(self.list_kernels_env, os.getenv('KG_LIST_KERNELS', 'False')) == 'True'
 
-    env_whitelist_env = 'KG_ENV_WHITELIST'
+    env_whitelist_env = 'EG_ENV_WHITELIST'
     env_whitelist = List(config=True,
-                         help='Environment variables allowed to be set when a client requests a new kernel')
+                         help="""Environment variables allowed to be set when a client requests a
+                         new kernel. (EG_ENV_WHITELIST env var)""")
 
     @default('env_whitelist')
     def env_whitelist_default(self):
-        return os.getenv(self.env_whitelist_env, '').split(',')
+        return os.getenv(self.env_whitelist_env, os.getenv('KG_ENV_WHITELIST', '')).split(',')
 
-    env_process_whitelist_env = 'KG_ENV_PROCESS_WHITELIST'
+    env_process_whitelist_env = 'EG_ENV_PROCESS_WHITELIST'
     env_process_whitelist = List(config=True,
                                  help="""Environment variables allowed to be inherited
-                                 from the spawning process by the kernel""")
+                                 from the spawning process by the kernel. (EG_ENV_PROCESS_WHITELIST env var)""")
 
     @default('env_process_whitelist')
     def env_process_whitelist_default(self):
-        return os.getenv(self.env_process_whitelist_env, '').split(',')
+        return os.getenv(self.env_process_whitelist_env, os.getenv('KG_ENV_PROCESS_WHITELIST', '')).split(',')
 
     # Remote hosts
     remote_hosts_env = 'EG_REMOTE_HOSTS'
@@ -518,17 +520,17 @@ class EnterpriseGatewayApp(JupyterApp):
             session_manager=self.session_manager,
             contents_manager=self.contents_manager,
             kernel_spec_manager=self.kernel_spec_manager,
-            kg_auth_token=self.auth_token,
-            kg_allow_credentials=self.allow_credentials,
-            kg_allow_headers=self.allow_headers,
-            kg_allow_methods=self.allow_methods,
-            kg_allow_origin=self.allow_origin,
-            kg_expose_headers=self.expose_headers,
-            kg_max_age=self.max_age,
-            kg_max_kernels=self.max_kernels,
-            kg_env_process_whitelist=self.env_process_whitelist,
-            kg_env_whitelist=self.env_whitelist,
-            kg_list_kernels=self.list_kernels,
+            eg_auth_token=self.auth_token,
+            eg_allow_credentials=self.allow_credentials,
+            eg_allow_headers=self.allow_headers,
+            eg_allow_methods=self.allow_methods,
+            eg_allow_origin=self.allow_origin,
+            eg_expose_headers=self.expose_headers,
+            eg_max_age=self.max_age,
+            eg_max_kernels=self.max_kernels,
+            eg_env_process_whitelist=self.env_process_whitelist,
+            eg_env_whitelist=self.env_whitelist,
+            eg_list_kernels=self.list_kernels,
             # Also set the allow_origin setting used by notebook so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin,

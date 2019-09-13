@@ -267,11 +267,13 @@ class RemoteKernelManager(IOLoopKernelManager):
         env = kwargs['env']
 
         # Apply user_overrides to enable defaulting behavior from kernelspec.env stanza.  Note that we do this
-        # BEFORE setting KERNEL_GATEWAY and removing KG_AUTH_TOKEN so those operations cannot be overridden.
+        # BEFORE setting KERNEL_GATEWAY and removing {EG,KG}_AUTH_TOKEN so those operations cannot be overridden.
         env.update(self.user_overrides)
 
-        # Since we can't call the _launch_kernel in KernelGateway - replicate its functionality here.
+        # No longer using Kernel Gateway, but retain references of B/C purposes
         env['KERNEL_GATEWAY'] = '1'
+        if 'EG_AUTH_TOKEN' in env:
+            del env['EG_AUTH_TOKEN']
         if 'KG_AUTH_TOKEN' in env:
             del env['KG_AUTH_TOKEN']
 
