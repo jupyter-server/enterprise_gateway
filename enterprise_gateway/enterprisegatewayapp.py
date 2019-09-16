@@ -69,6 +69,9 @@ class EnterpriseGatewayApp(JupyterApp):
         Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic to them.
     """
 
+    # Also include when generating help options
+    classes = [FileKernelSessionManager, RemoteMappingKernelManager]
+
     # Enable some command line shortcuts
     aliases = aliases
 
