@@ -235,7 +235,7 @@ class EnterpriseGatewayApp(JupyterApp):
 
     @default('list_kernels')
     def list_kernels_default(self):
-        return os.getenv(self.list_kernels_env, os.getenv('KG_LIST_KERNELS', 'False')) == 'True'
+        return os.getenv(self.list_kernels_env, os.getenv('KG_LIST_KERNELS', 'False')).lower() == 'true'
 
     env_whitelist_env = 'EG_ENV_WHITELIST'
     env_whitelist = List(config=True,
