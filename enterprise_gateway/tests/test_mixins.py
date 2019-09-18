@@ -12,7 +12,7 @@ except ImportError:
     from mock import Mock
 
 from tornado import web
-from kernel_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
+from enterprise_gateway.mixins import TokenAuthorizationMixin, JSONErrorsMixin
 
 
 class SuperTokenAuthHandler(object):
@@ -27,7 +27,7 @@ class SuperTokenAuthHandler(object):
 class TestableTokenAuthHandler(TokenAuthorizationMixin, SuperTokenAuthHandler):
     """Implementation that uses the TokenAuthorizationMixin for testing."""
     def __init__(self, token=''):
-        self.settings = {'kg_auth_token': token}
+        self.settings = {'eg_auth_token': token}
         self.arguments = {}
         self.response = None
         self.status_code = None
@@ -46,14 +46,14 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.mixin = TestableTokenAuthHandler('YouKnowMe')
 
     def test_no_token_required(self):
-        """Status should be None."""
-        self.mixin.settings['kg_auth_token'] = ''
+        """No token required - status should be None."""
+        self.mixin.settings['eg_auth_token'] = ''
         self.mixin.prepare()
         self.assertEqual(self.mixin.is_prepared, True)
         self.assertEqual(self.mixin.status_code, None)
 
     def test_missing_token(self):
-        """Status should be 'unauthorized'."""
+        """Missing token - tatus should be 'unauthorized'."""
         attrs = {'headers': {}}
         self.mixin.request = Mock(**attrs)
         self.mixin.prepare()
@@ -61,7 +61,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, 401)
 
     def test_valid_header_token(self):
-        """Status should be None."""
+        """Valid header token - status should be None."""
         attrs = {'headers': {'Authorization': 'token YouKnowMe'}}
         self.mixin.request = Mock(**attrs)
         self.mixin.prepare()
@@ -69,7 +69,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, None)
 
     def test_wrong_header_token(self):
-        """Status should be 'unauthorized'."""
+        """Wrong header token - status should be 'unauthorized'."""
         attrs = {'headers': {'Authorization': 'token NeverHeardOf'}}
         self.mixin.request = Mock(**attrs)
         self.mixin.prepare()
@@ -77,7 +77,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, 401)
 
     def test_valid_url_token(self):
-        """Status should be None."""
+        """Valid url token - status should be None."""
         self.mixin.arguments['token'] = 'YouKnowMe'
         attrs = {'headers': {}}
         self.mixin.request = Mock(**attrs)
@@ -86,7 +86,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, None)
 
     def test_wrong_url_token(self):
-        """Status should be 'unauthorized'."""
+        """Wrong url token - tatus should be 'unauthorized'."""
         self.mixin.arguments['token'] = 'NeverHeardOf'
         attrs = {'headers': {}}
         self.mixin.request = Mock(**attrs)
@@ -95,7 +95,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, 401)
 
     def test_differing_tokens_valid_url(self):
-        """Status should be None, URL token takes precedence"""
+        """Differing tokens - status should be None, URL token takes precedence"""
         self.mixin.arguments['token'] = 'YouKnowMe'
         attrs = {'headers': {'Authorization': 'token NeverHeardOf'}}
         self.mixin.request = Mock(**attrs)
@@ -104,7 +104,7 @@ class TestTokenAuthMixin(unittest.TestCase):
         self.assertEqual(self.mixin.status_code, None)
 
     def test_differing_tokens_wrong_url(self):
-        """Status should be 'unauthorized', URL token takes precedence"""
+        """Differing token w/ wrong url - status should be 'unauthorized', URL token takes precedence"""
         attrs = {'headers': {'Authorization': 'token YouKnowMe'}}
         self.mixin.request = Mock(**attrs)
         self.mixin.arguments['token'] = 'NeverHeardOf'

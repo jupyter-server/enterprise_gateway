@@ -1,6 +1,6 @@
 ## YARN Client Mode
 
-Jupyter Enterprise Gateway extends Jupyter Kernel Gateway which means that by installing kernels in Enterprise Gateway and using the vanila kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway. 
+By default, Jupyter Enterprise Gateway provides feature parity with Jupyter Kernel Gateway's websocket-mode, which means that by installing kernels in Enterprise Gateway and using the vanilla kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway.
 
 Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 

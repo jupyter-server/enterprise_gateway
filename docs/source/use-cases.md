@@ -2,7 +2,7 @@
 
 Jupyter Enterprise Gateway addresses specific use cases for different personas.  We list a few below:
 
-- **As an administrator**,  I want to fix the bottleneck on the Kernel Gateway server due to large number of kernels
+- **As an administrator**,  I want to fix the bottleneck on the Jupyter Kernel Gateway server due to large number of kernels
 running on it and the size of each kernel (spark driver) process, by deploying the Enterprise Gateway, such that
 kernels can be launched as managed resources within YARN, distributing the resource-intensive driver processes across
 the YARN cluster, while still allowing the data analysts to leverage the compute power of a large YARN cluster.

@@ -25,24 +25,22 @@ It provides out of the box support for the following kernels:
 Full Documentation for Jupyter Enterprise Gateway can be found [here](http://jupyter-enterprise-gateway.readthedocs.io/en/latest)
 
 Jupyter Enterprise Gateway does not manage multiple Jupyter Notebook deployments, for that
-you should look for [JupyterHub](https://github.com/jupyterhub/jupyterhub).
+you should use [JupyterHub](https://github.com/jupyterhub/jupyterhub).
 
 ## Technical Overview
 
 Jupyter Enterprise Gateway is a web server that provides headless access to Jupyter kernels within 
-an enterprise.  Built directly upon Jupyter Kernel Gateway, Jupyter Enterprise Gateway leverages all 
-of the Kernel Gateway functionality in addition to the following:
+an enterprise.  Inspired by Jupyter Kernel Gateway, Jupyter Enterprise Gateway provides feature parity with Kernel Gateway's [jupyter-websocket mode](https://jupyter-kernel-gateway.readthedocs.io/en/latest/websocket-mode.html) in addition to the following:
 * Adds support for remote kernels hosted throughout the enterprise where kernels can be launched in 
 the following ways:
     * Local to the Enterprise Gateway server (today's Kernel Gateway behavior)
     * On specific nodes of the cluster utilizing a round-robin algorithm
     * On nodes identified by an associated resource manager
-* Provides support Apache Spark managed by YARN, IBM Spectrum Conductor, Kubernetes or Docker Swarm out of the box.  
-Others can be configured via Enterprise Gateway's extensible framework.
+* Provides support for Apache Spark managed by YARN, IBM Spectrum Conductor, Kubernetes or Docker Swarm out of the box.   Others can be configured via Enterprise Gateway's extensible framework.
 * Secure communication from the client, through the Enterprise Gateway server, to the kernels
 * Multi-tenant capabilities
-* Ability to associate profiles consisting of configuration settings to a kernel for a given user
 * Persistent kernel sessions
+* Ability to associate profiles consisting of configuration settings to a kernel for a given user (see [Project Roadmap](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/roadmap.html))
 
 ![Deployment Diagram](https://github.com/jupyter/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
 

@@ -2,30 +2,57 @@
 # Distributed under the terms of the Modified BSD License.
 """Enterprise Gateway Jupyter application."""
 
-import os
-import sys
-import signal
+import errno
 import getpass
+import logging
+import os
+import signal
+import socket
+import sys
+from distutils.util import strtobool
 
 # Install the pyzmq ioloop. This has to be done before anything else from
 # tornado is imported.
 from zmq.eventloop import ioloop
-
 ioloop.install()
-from tornado.log import LogFormatter
 
-from traitlets import default, List, Set, Unicode, Type, Instance, Bool, Integer
+from tornado import httpserver
+from tornado import web
+from tornado.log import enable_pretty_logging, LogFormatter
+
+from traitlets import default, List, Set, Unicode, Type, Instance, Bool, CBool, Integer
+from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
 from notebook.services.kernels.kernelmanager import MappingKernelManager
-from kernel_gateway.gatewayapp import KernelGatewayApp
-from kernel_gateway.services.sessions.sessionmanager import SessionManager
+from notebook.notebookapp import random_ports
+from notebook.utils import url_path_join
 
 from ._version import __version__
+
+from .base.handlers import default_handlers as default_base_handlers
+from .services.api.handlers import default_handlers as default_api_handlers
+from .services.kernels.handlers import default_handlers as default_kernel_handlers
+from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
+from .services.sessions.handlers import default_handlers as default_session_handlers
+
 from .services.sessions.kernelsessionmanager import KernelSessionManager, FileKernelSessionManager
+from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
 
 
-class EnterpriseGatewayApp(KernelGatewayApp):
+# Add additional command line aliases
+aliases = dict(base_aliases)
+aliases.update({
+    'ip': 'EnterpriseGatewayApp.ip',
+    'port': 'EnterpriseGatewayApp.port',
+    'port_retries': 'EnterpriseGatewayApp.port_retries',
+    'keyfile': 'EnterpriseGatewayApp.keyfile',
+    'certfile': 'EnterpriseGatewayApp.certfile',
+    'client-ca': 'EnterpriseGatewayApp.client_ca'
+})
+
+
+class EnterpriseGatewayApp(JupyterApp):
     """Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
 
@@ -39,9 +66,194 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     description = """
         Jupyter Enterprise Gateway
 
-        Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic
-        to them.
+        Provisions remote Jupyter kernels and proxies HTTP/Websocket traffic to them.
     """
+
+    # Also include when generating help options
+    classes = [FileKernelSessionManager, RemoteMappingKernelManager]
+
+    # Enable some command line shortcuts
+    aliases = aliases
+
+    # Server IP / PORT binding
+    port_env = 'EG_PORT'
+    port_default_value = 8888
+    port = Integer(port_default_value, config=True,
+                   help='Port on which to listen (EG_PORT env var)')
+
+    @default('port')
+    def port_default(self):
+        return int(os.getenv(self.port_env, os.getenv('KG_PORT', self.port_default_value)))
+
+    port_retries_env = 'EG_PORT_RETRIES'
+    port_retries_default_value = 50
+    port_retries = Integer(port_retries_default_value, config=True,
+                           help="""Number of ports to try if the specified port is not available
+                           (EG_PORT_RETRIES env var)""")
+
+    @default('port_retries')
+    def port_retries_default(self):
+        return int(os.getenv(self.port_retries_env, os.getenv('KG_PORT_RETRIES', self.port_retries_default_value)))
+
+    ip_env = 'EG_IP'
+    ip_default_value = '127.0.0.1'
+    ip = Unicode(ip_default_value, config=True,
+                 help='IP address on which to listen (EG_IP env var)')
+
+    @default('ip')
+    def ip_default(self):
+        return os.getenv(self.ip_env, os.getenv('KG_IP', self.ip_default_value))
+
+    # Base URL
+    base_url_env = 'EG_BASE_URL'
+    base_url_default_value = '/'
+    base_url = Unicode(base_url_default_value, config=True,
+                       help='The base path for mounting all API resources (EG_BASE_URL env var)')
+
+    @default('base_url')
+    def base_url_default(self):
+        return os.getenv(self.base_url_env, os.getenv('KG_BASE_URL', self.base_url_default_value))
+
+    # Token authorization
+    auth_token_env = 'EG_AUTH_TOKEN'
+    auth_token = Unicode(config=True,
+                         help='Authorization token required for all requests (EG_AUTH_TOKEN env var)')
+
+    @default('auth_token')
+    def _auth_token_default(self):
+        return os.getenv(self.auth_token_env, os.getenv('KG_AUTH_TOKEN', ''))
+
+    # Begin CORS headers
+    allow_credentials_env = 'EG_ALLOW_CREDENTIALS'
+    allow_credentials = Unicode(config=True,
+                                help='Sets the Access-Control-Allow-Credentials header. (EG_ALLOW_CREDENTIALS env var)')
+
+    @default('allow_credentials')
+    def allow_credentials_default(self):
+        return os.getenv(self.allow_credentials_env, os.getenv('KG_ALLOW_CREDENTIALS', ''))
+
+    allow_headers_env = 'EG_ALLOW_HEADERS'
+    allow_headers = Unicode(config=True,
+                            help='Sets the Access-Control-Allow-Headers header. (EG_ALLOW_HEADERS env var)')
+
+    @default('allow_headers')
+    def allow_headers_default(self):
+        return os.getenv(self.allow_headers_env, os.getenv('KG_ALLOW_HEADERS', ''))
+
+    allow_methods_env = 'EG_ALLOW_METHODS'
+    allow_methods = Unicode(config=True,
+                            help='Sets the Access-Control-Allow-Methods header. (EG_ALLOW_METHODS env var)')
+
+    @default('allow_methods')
+    def allow_methods_default(self):
+        return os.getenv(self.allow_methods_env, os.getenv('KG_ALLOW_METHODS', ''))
+
+    allow_origin_env = 'EG_ALLOW_ORIGIN'
+    allow_origin = Unicode(config=True,
+                           help='Sets the Access-Control-Allow-Origin header. (EG_ALLOW_ORIGIN env var)')
+
+    @default('allow_origin')
+    def allow_origin_default(self):
+        return os.getenv(self.allow_origin_env, os.getenv('KG_ALLOW_ORIGIN', ''))
+
+    expose_headers_env = 'EG_EXPOSE_HEADERS'
+    expose_headers = Unicode(config=True,
+                             help='Sets the Access-Control-Expose-Headers header. (EG_EXPOSE_HEADERS env var)')
+
+    @default('expose_headers')
+    def expose_headers_default(self):
+        return os.getenv(self.expose_headers_env, os.getenv('KG_EXPOSE_HEADERS', ''))
+
+    trust_xheaders_env = 'EG_TRUST_XHEADERS'
+    trust_xheaders = CBool(False, config=True,
+                           help="""Use x-* header values for overriding the remote-ip, useful when
+                           application is behing a proxy. (EG_TRUST_XHEADERS env var)""")
+
+    @default('trust_xheaders')
+    def trust_xheaders_default(self):
+        return strtobool(os.getenv(self.trust_xheaders_env, os.getenv('KG_TRUST_XHEADERS', 'False')))
+
+    certfile_env = 'EG_CERTFILE'
+    certfile = Unicode(None, config=True, allow_none=True,
+                       help='The full path to an SSL/TLS certificate file. (EG_CERTFILE env var)')
+
+    @default('certfile')
+    def certfile_default(self):
+        return os.getenv(self.certfile_env, os.getenv('KG_CERTFILE'))
+
+    keyfile_env = 'EG_KEYFILE'
+    keyfile = Unicode(None, config=True, allow_none=True,
+                      help='The full path to a private key file for usage with SSL/TLS. (EG_KEYFILE env var)')
+
+    @default('keyfile')
+    def keyfile_default(self):
+        return os.getenv(self.keyfile_env, os.getenv('KG_KEYFILE'))
+
+    client_ca_env = 'EG_CLIENT_CA'
+    client_ca = Unicode(None, config=True, allow_none=True,
+                        help="""The full path to a certificate authority certificate for SSL/TLS
+                        client authentication. (EG_CLIENT_CA env var)""")
+
+    @default('client_ca')
+    def client_ca_default(self):
+        return os.getenv(self.client_ca_env, os.getenv('KG_CLIENT_CA'))
+
+    max_age_env = 'EG_MAX_AGE'
+    max_age = Unicode(config=True,
+                      help='Sets the Access-Control-Max-Age header. (EG_MAX_AGE env var)')
+
+    @default('max_age')
+    def max_age_default(self):
+        return os.getenv(self.max_age_env, os.getenv('KG_MAX_AGE', ''))
+    # End CORS headers
+
+    max_kernels_env = 'EG_MAX_KERNELS'
+    max_kernels = Integer(None, config=True,
+                          allow_none=True,
+                          help="""Limits the number of kernel instances allowed to run by this gateway.
+                          Unbounded by default. (EG_MAX_KERNELS env var)""")
+
+    @default('max_kernels')
+    def max_kernels_default(self):
+        val = os.getenv(self.max_kernels_env, os.getenv('KG_MAX_KERNELS'))
+        return val if val is None else int(val)
+
+    default_kernel_name_env = 'EG_DEFAULT_KERNEL_NAME'
+    default_kernel_name = Unicode(config=True,
+                                  help='Default kernel name when spawning a kernel (EG_DEFAULT_KERNEL_NAME env var)')
+
+    @default('default_kernel_name')
+    def default_kernel_name_default(self):
+        # defaults to Jupyter's default kernel name on empty string
+        return os.getenv(self.default_kernel_name_env, os.getenv('KG_DEFAULT_KERNEL_NAME', ''))
+
+    list_kernels_env = 'EG_LIST_KERNELS'
+    list_kernels = Bool(config=True,
+                        help="""Permits listing of the running kernels using API endpoints /api/kernels
+                        and /api/sessions. (EG_LIST_KERNELS env var) Note: Jupyter Notebook
+                        allows this by default but Jupyter Enterprise Gateway does not.""")
+
+    @default('list_kernels')
+    def list_kernels_default(self):
+        return os.getenv(self.list_kernels_env, os.getenv('KG_LIST_KERNELS', 'False')).lower() == 'true'
+
+    env_whitelist_env = 'EG_ENV_WHITELIST'
+    env_whitelist = List(config=True,
+                         help="""Environment variables allowed to be set when a client requests a
+                         new kernel. (EG_ENV_WHITELIST env var)""")
+
+    @default('env_whitelist')
+    def env_whitelist_default(self):
+        return os.getenv(self.env_whitelist_env, os.getenv('KG_ENV_WHITELIST', '')).split(',')
+
+    env_process_whitelist_env = 'EG_ENV_PROCESS_WHITELIST'
+    env_process_whitelist = List(config=True,
+                                 help="""Environment variables allowed to be inherited
+                                 from the spawning process by the kernel. (EG_ENV_PROCESS_WHITELIST env var)""")
+
+    @default('env_process_whitelist')
+    def env_process_whitelist_default(self):
+        return os.getenv(self.env_process_whitelist_env, os.getenv('KG_ENV_PROCESS_WHITELIST', '')).split(',')
 
     # Remote hosts
     remote_hosts_env = 'EG_REMOTE_HOSTS'
@@ -101,7 +313,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
     def conductor_endpoint_default(self):
         return os.getenv(self.conductor_endpoint_env, self.conductor_endpoint_default_value)
 
-    _log_formatter_cls = LogFormatter
+    _log_formatter_cls = LogFormatter  # traitlet default is LevelFormatter
 
     @default('log_format')
     def _default_log_format(self):
@@ -213,22 +425,25 @@ class EnterpriseGatewayApp(KernelGatewayApp):
         """
     )
 
+    def initialize(self, argv=None):
+        """Initializes the base class, configurable manager instances, the
+        Tornado web app, and the tornado HTTP server.
+
+        Parameters
+        ----------
+        argv
+            Command line arguments
+        """
+        super(EnterpriseGatewayApp, self).initialize(argv)
+        self.init_configurables()
+        self.init_webapp()
+        self.init_http_server()
+
     def init_configurables(self):
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and personality.
-
-        Any kernel pool configured by the personality will be its responsibility
-        to shut down.
-
-        Optionally, loads a notebook and pre-spawns the configured number of
-        kernels.
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
-
-        self.seed_notebook = None
-        if self.seed_uri is not None:
-            # Note: must be set before instantiating a SeedingMappingKernelManager
-            self.seed_notebook = self._load_notebook(self.seed_uri)
 
         # Only pass a default kernel name when one is provided. Otherwise,
         # adopt whatever default the kernel manager wants to use.
@@ -248,12 +463,6 @@ class EnterpriseGatewayApp(KernelGatewayApp):
             **kwargs
         )
 
-        # Detect older version of notebook
-        func = getattr(self.kernel_manager, 'initialize_culler', None)
-        if not func:
-            self.log.warning("Older version of Notebook detected - idle kernels will not be culled.  "
-                             "Culling requires Notebook >= 5.1.0.")
-
         self.session_manager = SessionManager(
             log=self.log,
             kernel_manager=self.kernel_manager
@@ -272,37 +481,135 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
         self.contents_manager = None  # Gateways don't use contents manager
 
-        if self.prespawn_count:
-            if self.max_kernels and self.prespawn_count > self.max_kernels:
-                raise RuntimeError('cannot prespawn {}; more than max kernels {}'.format(
-                    self.prespawn_count, self.max_kernels)
-                )
+    def _create_request_handlers(self):
+        """Create default Jupyter handlers and redefine them off of the
+        base_url path. Assumes init_configurables() has already been called.
+        """
+        handlers = []
 
-        api_module = self._load_api_module(self.api)
-        func = getattr(api_module, 'create_personality')
-        self.personality = func(parent=self, log=self.log)
-
-        self.personality.init_configurables()
+        # append tuples for the standard kernel gateway endpoints
+        for handler in (
+            default_api_handlers +
+            default_kernel_handlers +
+            default_kernelspec_handlers +
+            default_session_handlers +
+            default_base_handlers
+        ):
+            # Create a new handler pattern rooted at the base_url
+            pattern = url_path_join('/', self.base_url, handler[0])
+            # Some handlers take args, so retain those in addition to the
+            # handler class ref
+            new_handler = tuple([pattern] + list(handler[1:]))
+            handlers.append(new_handler)
+        return handlers
 
     def init_webapp(self):
-        """Initializes Tornado web application (via superclass) with uri handlers and enables remote access. """
-        super(EnterpriseGatewayApp, self).init_webapp()
+        """Initializes Tornado web application with uri handlers.
 
-        # As of Notebook 5.6, remote kernels are prevented: https://github.com/jupyter/notebook/pull/3714/ unless
-        # 'allow_remote_access' is enabled.  Since this is the entire purpose of EG, we'll unconditionally set that
-        # here.  Because this is a dictionary, we shouldn't have to worry about older versions as this will be ignored.
-        self.web_app.settings['allow_remote_access'] = True
+        Adds the various managers and web-front configuration values to the
+        Tornado settings for reference by the handlers.
+        """
+        # Enable the same pretty logging the notebook uses
+        enable_pretty_logging()
 
-        # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
-        # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
-        self.web_app.settings['ws_ping_interval'] = self.ws_ping_interval * 1000
+        # Configure the tornado logging level too
+        logging.getLogger().setLevel(self.log_level)
+
+        handlers = self._create_request_handlers()
+
+        self.web_app = web.Application(
+            handlers=handlers,
+            kernel_manager=self.kernel_manager,
+            session_manager=self.session_manager,
+            contents_manager=self.contents_manager,
+            kernel_spec_manager=self.kernel_spec_manager,
+            eg_auth_token=self.auth_token,
+            eg_allow_credentials=self.allow_credentials,
+            eg_allow_headers=self.allow_headers,
+            eg_allow_methods=self.allow_methods,
+            eg_allow_origin=self.allow_origin,
+            eg_expose_headers=self.expose_headers,
+            eg_max_age=self.max_age,
+            eg_max_kernels=self.max_kernels,
+            eg_env_process_whitelist=self.env_process_whitelist,
+            eg_env_whitelist=self.env_whitelist,
+            eg_list_kernels=self.list_kernels,
+            # Also set the allow_origin setting used by notebook so that the
+            # check_origin method used everywhere respects the value
+            allow_origin=self.allow_origin,
+            # Always allow remote access (has been limited to localhost >= notebook 5.6)
+            allow_remote_access=True,
+            # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
+            # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
+            ws_ping_interval=self.ws_ping_interval * 1000
+        )
+
+    def _build_ssl_options(self):
+        """Build a dictionary of SSL options for the tornado HTTP server.
+
+        Taken directly from jupyter/notebook code.
+        """
+        ssl_options = {}
+        if self.certfile:
+            ssl_options['certfile'] = self.certfile
+        if self.keyfile:
+            ssl_options['keyfile'] = self.keyfile
+        if self.client_ca:
+            ssl_options['ca_certs'] = self.client_ca
+        if not ssl_options:
+            # None indicates no SSL config
+            ssl_options = None
+        else:
+            # SSL may be missing, so only import it if it's to be used
+            import ssl
+            # PROTOCOL_TLS selects the highest ssl/tls protocol version that both the client and
+            # server support. When PROTOCOL_TLS is not available use PROTOCOL_SSLv23.
+            # PROTOCOL_TLS is new in version 2.7.13, 3.5.3 and 3.6
+            ssl_options.setdefault(
+                'ssl_version',
+                getattr(ssl, 'PROTOCOL_TLS', ssl.PROTOCOL_SSLv23)
+            )
+            if ssl_options.get('ca_certs', False):
+                ssl_options.setdefault('cert_reqs', ssl.CERT_REQUIRED)
+
+        return ssl_options
+
+    def init_http_server(self):
+        """Initializes a HTTP server for the Tornado web application on the
+        configured interface and port.
+
+        Tries to find an open port if the one configured is not available using
+        the same logic as the Jupyer Notebook server.
+        """
+        ssl_options = self._build_ssl_options()
+        self.http_server = httpserver.HTTPServer(self.web_app,
+                                                 xheaders=self.trust_xheaders,
+                                                 ssl_options=ssl_options)
+
+        for port in random_ports(self.port, self.port_retries + 1):
+            try:
+                self.http_server.listen(port, self.ip)
+            except socket.error as e:
+                if e.errno == errno.EADDRINUSE:
+                    self.log.info('The port %i is already in use, trying another port.' % port)
+                    continue
+                elif e.errno in (errno.EACCES, getattr(errno, 'WSAEACCES', errno.EACCES)):
+                    self.log.warning("Permission to listen on port %i denied" % port)
+                    continue
+                else:
+                    raise
+            else:
+                self.port = port
+                break
+        else:
+            self.log.critical('ERROR: the gateway server could not be started because '
+                              'no available port could be found.')
+            self.exit(1)
 
     def start(self):
         """Starts an IO loop for the application. """
 
-        # Note that we *intentionally* reference the KernelGatewayApp so that we bypass
-        # its start() logic and just call that of JKG's superclass.
-        super(KernelGatewayApp, self).start()
+        super(EnterpriseGatewayApp, self).start()
 
         self.log.info('Jupyter Enterprise Gateway {} is available at http{}://{}:{}'.format(
             EnterpriseGatewayApp.version, 's' if self.keyfile else '', self.ip, self.port
@@ -330,6 +637,12 @@ class EnterpriseGatewayApp(KernelGatewayApp):
             signal.signal(signal.SIGINT, signal.SIG_IGN)
         finally:
             self.shutdown()
+
+    def shutdown(self):
+        """Shuts down all running kernels."""
+        kids = self.kernel_manager.list_kernel_ids()
+        for kid in kids:
+            self.kernel_manager.shutdown_kernel(kid, now=True)
 
     def stop(self):
         """
