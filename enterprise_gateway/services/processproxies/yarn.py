@@ -14,11 +14,6 @@ from yarn_api_client.resource_manager import ResourceManager
 
 from .processproxy import RemoteProcessProxy
 
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-
 # Default logging level of yarn-api and underlying connectionpool produce too much noise - raise to warning only.
 logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('EG_YARN_LOG_LEVEL', logging.WARNING))
 logging.getLogger('urllib3.connectionpool').setLevel(os.environ.get('EG_YARN_LOG_LEVEL', logging.WARNING))
@@ -37,7 +32,12 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.application_id = None
-        self.rm_addr = None
+        self.candidate_queue = None
+        self.candidate_partition = None
+        self.local_proc = None
+        self.pid = None
+        self.ip = None
+
         self.yarn_endpoint \
             = proxy_config.get('yarn_endpoint',
                                kernel_manager.parent.parent.yarn_endpoint)
@@ -49,26 +49,22 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.parent.parent.yarn_endpoint_security_enabled)
 
-        yarn_master = alt_yarn_master = None
-        yarn_port = alt_yarn_port = None
+        endpoints = None
         if self.yarn_endpoint:
-            yarn_url = urlparse(self.yarn_endpoint)
-            yarn_master = yarn_url.hostname
-            yarn_port = yarn_url.port
+            endpoints = [self.yarn_endpoint]
+
             # Only check alternate if "primary" is set.
             if self.alt_yarn_endpoint:
-                alt_yarn_url = urlparse(self.alt_yarn_endpoint)
-                alt_yarn_master = alt_yarn_url.hostname
-                alt_yarn_port = alt_yarn_url.port
+                endpoints.append(self.alt_yarn_endpoint)
 
-        self.resource_mgr = ResourceManager(address=yarn_master,
-                                            port=yarn_port,
-                                            alt_address=alt_yarn_master,
-                                            alt_port=alt_yarn_port,
-                                            kerberos_enabled=self.yarn_endpoint_security_enabled)
+        auth = None
+        if self.yarn_endpoint_security_enabled:
+            from requests_kerberos import HTTPKerberosAuth
+            auth = HTTPKerberosAuth()
 
-        host, port = self.resource_mgr.get_active_host_port()
-        self.rm_addr = host + ':' + str(port)
+        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth)
+
+        self.rm_addr = self.resource_mgr.get_active_endpoint()
 
         # YARN applications tend to take longer than the default 5 second wait time.  Rather than
         # require a command-line option for those using YARN, we'll adjust based on a local env that
@@ -85,10 +81,12 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
     def launch_process(self, kernel_cmd, **kwargs):
-        # checks to see if the queue resource is available
-        # if not kernel startup is not tried
-        self.confirm_yarn_queue_availability(**kwargs)
         """Launches the specified process within a YARN cluster environment."""
+
+        # checks to see if the queue resource is available
+        # if not available, kernel startup is not attempted
+        self.confirm_yarn_queue_availability(**kwargs)
+
         super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh - which is configured for yarn-cluster...
@@ -102,15 +100,16 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         return self
 
-    """Submitting jobs to yarn queue and then checking till the jobs are in running state
-        will lead to orphan jobs being created in some scenarios.
-        We take kernel_launch_timeout time and divide this into two parts.
-        if the queue is unavailable we take max 20% of the time to poll the queue periodically
-        and if the queue becomes available the rest of timeout is met in 80% of the remmaining
-        time."""
-
     def confirm_yarn_queue_availability(self, **kwargs):
         """
+        Submitting jobs to yarn queue and then checking till the jobs are in running state
+        will lead to orphan jobs being created in some scenarios.
+
+        We take kernel_launch_timeout time and divide this into two parts.
+        If the queue is unavailable we take max 20% of the time to poll the queue periodically
+        and if the queue becomes available the rest of timeout is met in 80% of the remaining
+        time.
+
         This algorithm is subject to change. Please read the below cases to understand
         when and how checks are applied.
 
