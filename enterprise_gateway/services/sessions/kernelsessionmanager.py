@@ -18,8 +18,6 @@ kernels_lock = threading.Lock()
 # These will be located under the `persistence_root` and exist
 # to make integration with ContentsManager implementations easier.
 KERNEL_SESSIONS_DIR_NAME = "kernel_sessions"
-KERNEL_SESSIONS_FILE_NAME = "sessions.json"
-KERNEL_SESSIONS_PATH_NAME = KERNEL_SESSIONS_DIR_NAME + "/" + KERNEL_SESSIONS_FILE_NAME
 
 
 class KernelSessionManager(LoggingConfigurable):
@@ -279,22 +277,48 @@ class FileKernelSessionManager(KernelSessionManager):
     def __init__(self, kernel_manager, **kwargs):
         super(FileKernelSessionManager, self).__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
-            self.kernel_session_file = os.path.join(self._get_sessions_loc(), KERNEL_SESSIONS_FILE_NAME)
-            self.log.info("Kernel session persistence location: {}".format(self.kernel_session_file))
+            self.log.info("Kernel session persistence location: {}".format(self._get_sessions_loc()))
 
     def save_sessions(self):
         if self.enable_persistence:
-            with open(self.kernel_session_file, 'w') as fp:
-                json.dump(KernelSessionManager.pre_save_transformation(self._sessions), fp)
-                fp.close()
+            os.rmdir(self._get_sessions_loc())
+            for kernel_id, session in self._sessions.items():
+                if kernel_id is not None:
+                    json_file_name = "".join(['kernel_', kernel_id, '.json'])
+                    kernel_session_file_path = os.path.join(self._get_sessions_loc(), json_file_name)
+                    temp_session = dict()
+                    temp_session[kernel_id] = session
+                    with open(kernel_session_file_path, 'w') as fp:
+                        json.dump(KernelSessionManager.pre_save_transformation(temp_session), fp)
+                        fp.close()
 
     def load_sessions(self):
         if self.enable_persistence:
-            if os.path.exists(self.kernel_session_file):
-                self.log.debug("Loading saved sessions from {}".format(self.kernel_session_file))
-                with open(self.kernel_session_file) as fp:
-                    self._sessions = KernelSessionManager.post_load_transformation(json.load(fp))
+            self._load_sessions()
+
+    def _load_sessions(self, kernel_id=None):
+        if kernel_id is not None:
+            kernel_file = "".join(['kernel_', kernel_id, '.json'])
+            kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_file)
+            temp_sessions = self._save_sessions(kernel_session_file_path)
+        else:
+            kernel_session_files = [json_files for json_files in os.listdir(self._get_sessions_loc()) if
+                                    json_files.endswith('.json')]
+
+            temp_sessions = self._save_sessions(kernel_session_files)
+
+        self._sessions = KernelSessionManager.post_load_transformation(temp_sessions)
+
+    def _save_sessions(self, kernel_session_files):
+        temp_sessions = dict()
+        for each_file in kernel_session_files:
+            kernel_session_file_path = os.path.join(self._get_sessions_loc(), each_file)
+            if os.path.exists(kernel_session_file_path):
+                self.log.debug("Loading saved session(s) from {}".format(kernel_session_file_path))
+                with open(kernel_session_file_path) as fp:
+                    temp_sessions.update(json.load(fp))
                     fp.close()
+        return temp_sessions
 
     def _get_sessions_loc(self):
         path = os.path.join(self.persistence_root, KERNEL_SESSIONS_DIR_NAME)
