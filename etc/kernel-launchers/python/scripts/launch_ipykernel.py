@@ -26,6 +26,18 @@ logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]
 logger = logging.getLogger('launch_ipykernel')
 logger.setLevel(log_level)
 
+class ExceptionThread(Thread):
+    # Wrap thread to handle the exception
+    def __init__(self, target):
+        self.target = target
+        self.exc = None
+        Thread.__init__(self)
+
+    def run(self):
+        try:
+            self.target()
+        except Exception as exc:
+            self.exc = exc
 
 def initialize_namespace(namespace, cluster_type='spark'):
     """Initialize the kernel namespace.
@@ -64,7 +76,7 @@ def initialize_namespace(namespace, cluster_type='spark'):
                               'sqlContext': spark._wrapped,
                               'sqlCtx': spark._wrapped})
 
-        init_thread = Thread(target=initialize_spark_session)
+        init_thread = ExceptionThread(target=initialize_spark_session)
         spark = WaitingForSparkSessionToBeInitialized('spark', init_thread, namespace)
         sc = WaitingForSparkSessionToBeInitialized('sc', init_thread, namespace)
         sqlContext = WaitingForSparkSessionToBeInitialized('sqlContext', init_thread, namespace)
@@ -121,6 +133,9 @@ class WaitingForSparkSessionToBeInitialized(object):
         else:
             # wait on thread to initialize the Spark session variables in global variable scope
             self._init_thread.join(timeout=None)
+            exc = self._init_thread.exc
+            if exc:
+                raise RuntimeError("Variable: {} was not initialized properly.".format(self._spark_session_variable)) from exc
             # now return attribute/function reference from actual Spark object
             return getattr(self._namespace[self._spark_session_variable], name)
 
