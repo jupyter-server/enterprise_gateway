@@ -57,7 +57,6 @@ spec:
     {% if kernel_working_dir is defined %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
-    {% if kernel_volume_mounts is defined %}
     volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
     {% if kernel_volume_mounts is defined %}
