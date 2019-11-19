@@ -395,7 +395,7 @@ There are a number of items worth noting:
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
 
 ### Unconditional Volume Mounts
-Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. An example for these unconditional can be the docker shared memory. For some I/O jobs the pod will need more than the default `64mb` of shared memory on the `/dev/shm` path.
+Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. An example of these unconditional volume mounts can be found when extending docker shared memory. For some I/O jobs the pod will need more than the default `64mb` of shared memory on the `/dev/shm` path.
 
 ```
 volumeMounts:
