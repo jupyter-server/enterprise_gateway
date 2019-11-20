@@ -106,7 +106,7 @@ spec:
 #### Namespaces
 A best practice for Kubernetes applications running in an enterprise is to isolate applications via namespaces.  Since Enterprise Gateway also requires isolation at the kernel level, it makes sense to use a namespace for each kernel, by default.
 
-The initial namespace is created in the `enterprise-gateway.yaml` file using a default name of `enterprise-gateway`.  This name is communicated to the EG application via the env variable `EG_NAMESPACE`.  All Enterprise Gateway components reside in this namespace. 
+The initial namespace is created in the `enterprise-gateway.yaml` file using a default name of `enterprise-gateway`.  This name is communicated to the EG application via the env variable `EG_NAMESPACE`.  All Enterprise Gateway components reside in this namespace.
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -166,7 +166,7 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: enterprise-gateway-controller
-  apiGroup: rbac.authorization.k8s.io 
+  apiGroup: rbac.authorization.k8s.io
 ```
 
 The `enterprise-gateway.yaml` file also defines the minimally viable roles for a kernel pod - most of which are required for Spark support.  Since kernels, by default, reside within their own namespace created upon their launch, a cluster role is used within a namespace-scoped role binding created when the kernel's namespace is created. The name of the kernel cluster role is `kernel-controller` and, when Enterprise Gateway creates the namespace and role binding, is also the name of the role binding instance.
@@ -238,16 +238,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: kernel-image-puller 
+      name: kernel-image-puller
   template:
     metadata:
       labels:
-        name: kernel-image-puller 
+        name: kernel-image-puller
         app: enterprise-gateway
         component: kernel-image-puller
     spec:
       containers:
-      - name: kernel-image-puller 
+      - name: kernel-image-puller
         image: elyra/kernel-image-puller:VERSION
         env:
           - name: KIP_GATEWAY_HOST
@@ -382,17 +382,61 @@ spec:
     name: ${kernel_username}-${kernel_id}
 ```
 There are a number of items worth noting:
-1. Kernel pods can be identified in three ways using `kubectl`: 
-    1. By the global label `app=enterprise-gateway` - useful when needing to identify all related objects (e.g., `kubectl get all -l app=enterprise-gateway`) 
+1. Kernel pods can be identified in three ways using `kubectl`:
+    1. By the global label `app=enterprise-gateway` - useful when needing to identify all related objects (e.g., `kubectl get all -l app=enterprise-gateway`)
     1. By the *kernel_id* label `kernel_id=<kernel_id>` - useful when only needing specifics about a given kernel.  This label is used internally by enterprise-gateway when performing its discovery and lifecycle management operations.
     1. By the *component* label `component=kernel` - useful when needing to identity only kernels and not other enterprise-gateway components.  (Note, the latter can be isolated via `component=enterprise-gateway`.)
-    
+
     Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces.  To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`).  This identifier also applies to those kernels launched within `spark-on-kubernetes`.
 1. Kernel pods use the specified `securityContext`.  If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used.  Similarly for `KERNEL_GID`, whose default is `100` (the users group).  In addition, Enterprise Gateway enforces a blacklist for each of the UID and GID values.  By default, this list is initialized to the 0 (root) UID and GID.  Administrators can configure the `EG_UID_BLACKLIST` and `EG_GID_BLACKLIST` environment variables via the enterprise-gateway.yaml file with comma-separated values to alter the set of user and group ids to be prevented.
 1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml` as `${kernel_namespace}` and `${kernel_service_account_name}`, respectively.
 1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
+
+### Unconditional Volume Mounts
+Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. An example of these unconditional volume mounts can be found when extending docker shared memory. For some I/O jobs the pod will need more than the default `64mb` of shared memory on the `/dev/shm` path.
+
+```
+volumeMounts:
+# Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
+{% if kernel_volume_mounts is defined %}
+  {% for volume_mount in kernel_volume_mounts %}
+- {{ volume_mount }}
+  {% endfor %}
+{% endif %}
+volumes:
+# Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
+{% if kernel_volumes is defined %}
+{% for volume in kernel_volumes %}
+- {{ volume }}
+{% endfor %}
+{% endif %}
+```  
+
+The conditional volumes are handled by the loops inside of the yaml file. Any unconditional volumes can be added before these conditions. In the scenario where the `/dev/shm` will need to be expanded the following mount has to be added.
+
+```
+volumeMounts:
+# Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
+- mountPath: /dev/shm
+  name: dshm
+{% if kernel_volume_mounts is defined %}
+  {% for volume_mount in kernel_volume_mounts %}
+- {{ volume_mount }}
+  {% endfor %}
+{% endif %}
+volumes:
+# Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
+- name: dshm
+emptyDir:
+  medium: Memory
+{% if kernel_volumes is defined %}
+{% for volume in kernel_volumes %}
+- {{ volume }}
+{% endfor %}
+{% endif %}
+```
 
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:` of `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Kubernetes environment.
@@ -586,11 +630,11 @@ The value of the `KG_URL` used by `NB2KG` will vary depending on whether you cho
 
 ### Setting up a Kubernetes Ingress for use with Enterprise Gateway
 
-To setup an ingress with Enterprise Gateway, you'll need an ingress controller deployed on your kubernetes cluster. We 
+To setup an ingress with Enterprise Gateway, you'll need an ingress controller deployed on your kubernetes cluster. We
 recommend either NGINX or Traefik. Installation and configuration instructions can be found at the following :
 
 - [NGINX-Ingress-Controller](https://kubernetes.github.io/ingress-nginx)
-- [Traefik](https://docs.traefik.io/user-guide/kubernetes/) 
+- [Traefik](https://docs.traefik.io/user-guide/kubernetes/)
 
 Example - Here the NGINX Ingress Controller is deployed as a `LoadBalancer` with `NodePort` 32121 and 30884 open for http and https traffic respectively.
 
@@ -605,8 +649,8 @@ kube-system          service/kube-dns                                 ClusterIP 
 kube-system          service/tiller-deploy                            ClusterIP      10.101.96.215    <none>        44134/TCP                    23h
 ```
 
-Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your 
-Enterprise Gateway service. The EG helm chart is configured with an ingress template, which 
+Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your
+Enterprise Gateway service. The EG helm chart is configured with an ingress template, which
 can be found at [here](https://github.com/jupyter/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
 for Enterprise Gateway.
 
@@ -614,7 +658,7 @@ Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired
 ```bash
 ingress:
   enabled: true             # Ingress is disabled by default
-  annotations:              # Annotations to be used, changes depend on which ingress controller you have deployed # default is nginx 
+  annotations:              # Annotations to be used, changes depend on which ingress controller you have deployed # default is nginx
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -648,8 +692,8 @@ Annotations:
   nginx.ingress.kubernetes.io/ssl-redirect:        false
 Events:                                            <none>
 ```
-  
-This will expose the Enterprise Gateway service at 
+
+This will expose the Enterprise Gateway service at
 ```bash
 http://KUBERNETES_HOSTNAME:PORT/gateway
 ```   
