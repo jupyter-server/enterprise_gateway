@@ -7,7 +7,9 @@ import getpass
 import json
 import os
 import threading
+import time
 
+from enterprise_gateway.services.sessions.statsd_client import Statsd
 from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 from jupyter_core.paths import jupyter_data_dir
 from traitlets import Bool, Unicode, default
@@ -61,11 +63,41 @@ class KernelSessionManager(LoggingConfigurable):
     def persistence_root_default(self):
         return os.getenv(self.persistence_root_env, "/")
 
+    statsd_client = Statsd.getClient()
+
     def __init__(self, kernel_manager, **kwargs):
         super(KernelSessionManager, self).__init__(**kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = dict()
         self._sessionsByUser = dict()
+        self._kernelStartTime = dict()
+        self.active_users = 0
+
+    def get_metrics(self):
+        busy_kernels, idle_kernels, starting_kernels = self.get_idle_and_busy_kernel_count()
+        metric_dict = {
+            'total_kernels': len(self._sessions),
+            'total_users': self.active_users,
+            'busy_kernels': busy_kernels,
+            'idle_kernels': idle_kernels,
+            'starting_kernels': starting_kernels
+        }
+        return metric_dict
+
+    def get_idle_and_busy_kernel_count(self):
+        idle_kernels = 0
+        busy_kernels = 0
+        starting_kernels = 0
+        active_kernels = list(self._sessions.keys())
+        for kernel_id in active_kernels:
+            kernel = self.kernel_manager.get_kernel(kernel_id)
+            if kernel.execution_state == 'busy':
+                busy_kernels += 1
+            if kernel.execution_state == 'idle':
+                idle_kernels += 1
+            if kernel.execution_state == 'starting':
+                starting_kernels += 1
+        return busy_kernels, idle_kernels, starting_kernels
 
     def create_session(self, kernel_id, **kwargs):
         """Creates a session associated with this kernel.
@@ -117,10 +149,15 @@ class KernelSessionManager(LoggingConfigurable):
             if username not in self._sessionsByUser:
                 self._sessionsByUser[username] = []
                 self._sessionsByUser[username].append(kernel_id)
+                self._kernelStartTime[kernel_id] = time.time()
+                self.active_users += 1
             else:
                 # Only append if not there yet (e.g. restarts will be there already)
                 if kernel_id not in self._sessionsByUser[username]:
+                    if len(self._sessionsByUser[username]) == 0:
+                        self.active_users += 1
                     self._sessionsByUser[username].append(kernel_id)
+                    self._kernelStartTime[kernel_id] = time.time()
             self.save_sessions()  # persist changes
         finally:
             kernels_lock.release()
@@ -168,6 +205,10 @@ class KernelSessionManager(LoggingConfigurable):
         if self.enable_persistence:
             self.log.info("Deleted persisted kernel session for id: %s" % kernel_id)
 
+    def calculate_and_push_kernel_runtime(self, kernel_id):
+        kernel_runtime = time.time() - self._kernelStartTime[kernel_id]
+        self.statsd_client.gauge('Kernel_Runtime', kernel_runtime, delta=True)
+
     def _delete_sessions(self, kernel_ids):
         # Remove unstarted sessions and rewrite
         kernels_lock.acquire()
@@ -177,7 +218,11 @@ class KernelSessionManager(LoggingConfigurable):
                 kernel_session = self._sessions[kernel_id]
                 username = kernel_session['username']
                 if username in self._sessionsByUser and kernel_id in self._sessionsByUser[username]:
+                    self.calculate_and_push_kernel_runtime(kernel_id)
                     self._sessionsByUser[username].remove(kernel_id)
+                    self._kernelStartTime.pop(kernel_id)
+                    if len(self._sessionsByUser[username]) == 0:
+                        self.active_users -= 1
                 self._sessions.pop(kernel_id, None)
 
             self.save_sessions()  # persist changes

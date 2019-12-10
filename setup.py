@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 v = sys.version_info
 if v[:2] < (3, 5):
     error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.5 or above."
-    print(error, file=sys.stderr)
+    print(error,file=sys.stderr)
     sys.exit(1)
 
 version_ns = {}
@@ -48,9 +48,9 @@ Apache Spark, Kubernetes and others..
         'jinja2>=2.10',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
-        'jupyter_kernel_gateway>=2.4.0',
+        'jupyter_kernel_gateway==2.4.0.fk.2',
         'kubernetes>=4.0.0',
-        'notebook>=5.7.6,<7.0',
+        'notebook==5.7.8.fk.2',
         'paramiko>=2.1.2',
         'pexpect>=4.2.0',
         'pycrypto>=2.6.1',

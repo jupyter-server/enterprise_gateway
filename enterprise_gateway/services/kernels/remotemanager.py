@@ -11,6 +11,7 @@ from tornado import gen
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from kernel_gateway.services.kernels.manager import SeedingMappingKernelManager, KernelGatewayIOLoopKernelManager
+from enterprise_gateway.services.sessions.statsd_client import Statsd
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
@@ -45,9 +46,12 @@ def get_process_proxy_config(kernelspec):
 
 class RemoteMappingKernelManager(SeedingMappingKernelManager):
     """Extends the SeedingMappingKernelManager with support for managing remote kernels via the process-proxy. """
+    statsd = Statsd.getClient()
+
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
+    @statsd.timer('StartKernelTimer')
     @gen.coroutine
     def start_kernel(self, *args, **kwargs):
         """Starts a kernel for a session and return its kernel_id.
@@ -65,6 +69,7 @@ class RemoteMappingKernelManager(SeedingMappingKernelManager):
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         raise gen.Return(kernel_id)
 
+    @statsd.timer('RemoveKernelTimer')
     def remove_kernel(self, kernel_id):
         """ Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session. """
         super(RemoteMappingKernelManager, self).remove_kernel(kernel_id)

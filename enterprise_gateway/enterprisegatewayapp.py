@@ -23,6 +23,7 @@ from kernel_gateway.services.sessions.sessionmanager import SessionManager
 from ._version import __version__
 from .services.sessions.kernelsessionmanager import KernelSessionManager, FileKernelSessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
+from .services.api.handlers import MetricGenerator
 
 
 class EnterpriseGatewayApp(KernelGatewayApp):
@@ -269,7 +270,7 @@ class EnterpriseGatewayApp(KernelGatewayApp):
 
         # Attempt to start persisted sessions
         self.kernel_session_manager.start_sessions()
-
+        self.metric_generator = MetricGenerator(kernel_session_manager=self.kernel_session_manager)
         self.contents_manager = None  # Gateways don't use contents manager
 
         if self.prespawn_count:
