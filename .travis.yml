@@ -21,7 +21,7 @@ before_install:
 
 install:
     - pip install --upgrade setuptools pip websocket-client flake8
-    - travis_retry make dist enterprise-gateway-demo
+    - travis_retry make clean dist enterprise-gateway-demo
     - pip install dist/*.whl coverage
     - pip freeze
 

@@ -81,7 +81,7 @@ spec:
 #  externalIPs:
 #  - k8s-master-public-ip
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-gateway
