@@ -171,13 +171,14 @@ class KernelSessionManager(LoggingConfigurable):
         try:
             for kernel_id in kernel_ids:
                 # Prior to removing session, update the per User list
-                kernel_session = self._sessions[kernel_id]
-                username = kernel_session['username']
-                if username in self._sessionsByUser and kernel_id in self._sessionsByUser[username]:
-                    self._sessionsByUser[username].remove(kernel_id)
-                self._sessions.pop(kernel_id, None)
+                kernel_session = self._sessions.get(kernel_id, None)
+                if kernel_session is not None:
+                    username = kernel_session['username']
+                    if username in self._sessionsByUser and kernel_id in self._sessionsByUser[username]:
+                        self._sessionsByUser[username].remove(kernel_id)
+                    self._sessions.pop(kernel_id, None)
 
-            self.save_sessions()  # persist changes
+            self.delete_sessions()
         finally:
             kernels_lock.release()
 
@@ -221,7 +222,7 @@ class KernelSessionManager(LoggingConfigurable):
         raise NotImplementedError("KernelSessionManager.load_sessions() requires an implementation!")
 
     # abstractmethod
-    def save_sessions(self):
+    def delete_sessions(self):
         """
         Persists the changes to the persistent storage.  Caller is responsible for synchronizing call.
         """
@@ -292,7 +293,7 @@ class FileKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             self.log.info("Kernel session persistence location: {}".format(self._get_sessions_loc()))
 
-    def save_sessions(self):
+    def delete_sessions(self):
         if self.enable_persistence:
             for kernel_id in self.sessions_to_remove:
                 kernel_file_name = "".join([kernel_id, '.json'])
@@ -323,7 +324,6 @@ class FileKernelSessionManager(KernelSessionManager):
                         self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
                         fp.close()
 
-    # Not being used. Will add usage in next PR.
     def load_session(self, kernel_id):
         if kernel_id is not None:
             kernel_file_name = "".join([kernel_id, '.json'])

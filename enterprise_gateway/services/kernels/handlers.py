@@ -1,12 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel CRUD and communication."""
-
+import json
 import os
 
 import tornado
 import notebook.services.kernels.handlers as notebook_handlers
-from tornado import gen
+from jupyter_client.jsonutil import date_default
+from tornado import gen, web
 from functools import partial
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
@@ -102,9 +103,17 @@ class KernelHandler(TokenAuthorizationMixin,
     """Extends the notebook kernel handler with token auth, CORS, and
     JSON errors.
     """
+
     def options(self, **kwargs):
         """Method for properly handling CORS pre-flight"""
         self.finish()
+
+    @web.authenticated
+    def get(self, kernel_id):
+        km = self.kernel_manager
+        km._check_kernel_id(kernel_id)
+        model = km.kernel_model(kernel_id)
+        self.finish(json.dumps(model, default=date_default))
 
 
 default_handlers = []
