@@ -111,7 +111,7 @@ class KernelHandler(TokenAuthorizationMixin,
     @web.authenticated
     def get(self, kernel_id):
         km = self.kernel_manager
-        km._check_kernel_id(kernel_id)
+        km.check_kernel_id(kernel_id)
         model = km.kernel_model(kernel_id)
         self.finish(json.dumps(model, default=date_default))
 

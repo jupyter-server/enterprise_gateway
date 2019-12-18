@@ -123,6 +123,11 @@ class KernelSessionManager(LoggingConfigurable):
         finally:
             kernels_lock.release()
 
+    def start_session(self, kernel_id):
+        kernel_session = self._sessions.get(kernel_id, None)
+        if kernel_session is not None:
+            return self._start_session(kernel_session)
+
     def start_sessions(self):
         """ Attempt to start persisted sessions.
 
@@ -178,7 +183,7 @@ class KernelSessionManager(LoggingConfigurable):
                         self._sessionsByUser[username].remove(kernel_id)
                     self._sessions.pop(kernel_id, None)
 
-            self.delete_sessions()
+            self.delete_sessions(kernel_ids)
         finally:
             kernels_lock.release()
 
@@ -222,11 +227,11 @@ class KernelSessionManager(LoggingConfigurable):
         raise NotImplementedError("KernelSessionManager.load_sessions() requires an implementation!")
 
     # abstractmethod
-    def delete_sessions(self):
+    def delete_sessions(self, kernel_ids):
         """
-        Persists the changes to the persistent storage.  Caller is responsible for synchronizing call.
+        Delete the sessions in persistent storage.  Caller is responsible for synchronizing call.
         """
-        raise NotImplementedError("KernelSessionManager.save_sessions() requires an implementation!")
+        raise NotImplementedError("KernelSessionManager.delete_sessions(kernel_ids) requires an implementation!")
 
     def save_session(self, kernel_id):
         """
@@ -293,9 +298,9 @@ class FileKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             self.log.info("Kernel session persistence location: {}".format(self._get_sessions_loc()))
 
-    def delete_sessions(self):
+    def delete_sessions(self, kernel_ids):
         if self.enable_persistence:
-            for kernel_id in self.sessions_to_remove:
+            for kernel_id in kernel_ids:
                 kernel_file_name = "".join([kernel_id, '.json'])
                 kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_file_name)
                 if os.path.exists(kernel_session_file_path):
@@ -317,22 +322,20 @@ class FileKernelSessionManager(KernelSessionManager):
             kernel_session_files = [json_files for json_files in os.listdir(self._get_sessions_loc()) if
                                     json_files.endswith('.json')]
             for kernel_session_file in kernel_session_files:
-                kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_session_file)
-                if os.path.exists(kernel_session_file_path):
-                    self.log.debug("Loading saved session(s) from {}".format(kernel_session_file_path))
-                    with open(kernel_session_file_path) as fp:
-                        self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
-                        fp.close()
+                self._load_session_from_file(kernel_session_file)
 
     def load_session(self, kernel_id):
         if kernel_id is not None:
-            kernel_file_name = "".join([kernel_id, '.json'])
-            kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_file_name)
-            if os.path.exists(kernel_session_file_path):
-                self.log.debug("Loading saved session(s) from {}".format(kernel_session_file_path))
-                with open(kernel_session_file_path) as fp:
-                    self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
-                    fp.close()
+            kernel_session_file = "".join([kernel_id, '.json'])
+            self._load_session_from_file(kernel_session_file)
+
+    def _load_session_from_file(self, file_name):
+        kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)
+        if os.path.exists(kernel_session_file_path):
+            self.log.debug("Loading saved session(s) from {}".format(kernel_session_file_path))
+            with open(kernel_session_file_path) as fp:
+                self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
+                fp.close()
 
     def _get_sessions_loc(self):
         path = os.path.join(self.persistence_root, KERNEL_SESSIONS_DIR_NAME)

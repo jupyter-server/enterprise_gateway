@@ -50,7 +50,7 @@ class RemoteMappingKernelManager(MappingKernelManager):
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
-    def _check_kernel_id(self, kernel_id):
+    def check_kernel_id(self, kernel_id):
         """Check that a kernel_id exists and raise 404 if not."""
         if kernel_id not in self:
             if not self._refresh_kernel(kernel_id):
@@ -59,12 +59,7 @@ class RemoteMappingKernelManager(MappingKernelManager):
 
     def _refresh_kernel(self, kernel_id):
         self.parent.kernel_session_manager.load_session(kernel_id)
-
-        if kernel_id in self.parent.kernel_session_manager._sessions:
-            return self.parent.kernel_session_manager._start_session(
-                self.parent.kernel_session_manager._sessions.get(kernel_id))
-
-        return False
+        return self.parent.kernel_session_manager.start_session(kernel_id)
 
     @gen.coroutine
     def start_kernel(self, *args, **kwargs):
