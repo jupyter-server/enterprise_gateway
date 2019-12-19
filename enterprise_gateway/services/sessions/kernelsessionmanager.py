@@ -63,7 +63,6 @@ class KernelSessionManager(LoggingConfigurable):
         self.kernel_manager = kernel_manager
         self._sessions = dict()
         self._sessionsByUser = dict()
-        self.sessions_to_remove = []
 
     def create_session(self, kernel_id, **kwargs):
         """Creates a session associated with this kernel.
@@ -136,17 +135,18 @@ class KernelSessionManager(LoggingConfigurable):
         """
         if self.enable_persistence:
             self.load_sessions()
+            sessions_to_remove = []
             for kernel_id, kernel_session in self._sessions.items():
                 self.log.info("Attempting startup of persisted kernel session for id: %s..." % kernel_id)
                 if self._start_session(kernel_session):
                     self.log.info("Startup of persisted kernel session for id '{}' was successful.  Client should "
                                   "reconnect kernel.".format(kernel_id))
                 else:
-                    self.sessions_to_remove.append(kernel_id)
+                    sessions_to_remove.append(kernel_id)
                     self.log.warn("Startup of persisted kernel session for id '{}' was not successful.  Check if "
                                   "client is still active and restart kernel.".format(kernel_id))
 
-            self._delete_sessions(self.sessions_to_remove)
+            self._delete_sessions(sessions_to_remove)
 
     def _start_session(self, kernel_session):
         # Attempt to start kernel from persisted state.  if started, record kernel_session in dictionary
