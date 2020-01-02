@@ -477,7 +477,8 @@ class EnterpriseGatewayApp(JupyterApp):
         )
 
         # Attempt to start persisted sessions
-        self.kernel_session_manager.start_sessions()
+        # Commented as part of https://github.com/jupyter/enterprise_gateway/pull/737#issuecomment-567598751
+        # self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
 

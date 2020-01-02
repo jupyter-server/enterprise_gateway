@@ -7,7 +7,7 @@ import signal
 import re
 import uuid
 
-from tornado import gen
+from tornado import gen, web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import MappingKernelManager
@@ -46,8 +46,20 @@ def get_process_proxy_config(kernelspec):
 
 class RemoteMappingKernelManager(MappingKernelManager):
     """Extends the MappingKernelManager with support for managing remote kernels via the process-proxy. """
+
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
+
+    def check_kernel_id(self, kernel_id):
+        """Check that a kernel_id exists and raise 404 if not."""
+        if kernel_id not in self:
+            if not self._refresh_kernel(kernel_id):
+                self.parent.kernel_session_manager.delete_session(kernel_id)
+                raise web.HTTPError(404, u'Kernel does not exist: %s' % kernel_id)
+
+    def _refresh_kernel(self, kernel_id):
+        self.parent.kernel_session_manager.load_session(kernel_id)
+        return self.parent.kernel_session_manager.start_session(kernel_id)
 
     @gen.coroutine
     def start_kernel(self, *args, **kwargs):
@@ -141,7 +153,7 @@ class RemoteMappingKernelManager(MappingKernelManager):
         self.start_watching_activity(kernel_id)
         self.add_restart_callback(kernel_id,
                                   lambda: self._handle_kernel_died(kernel_id),
-                                  'dead',)
+                                  'dead', )
         # Only initialize culling if available.  Warning message will be issued in gatewayapp at startup.
         func = getattr(self, 'initialize_culler', None)
         if func:
@@ -166,7 +178,7 @@ class RemoteMappingKernelManager(MappingKernelManager):
             The uuid string to associate with the new kernel
         """
         env = kwargs.get('env')
-        if env and env.get('KERNEL_ID'):   # If there's a KERNEL_ID in the env, check it out
+        if env and env.get('KERNEL_ID'):  # If there's a KERNEL_ID in the env, check it out
             # convert string back to UUID - validating string in the process.
             str_kernel_id = env.get('KERNEL_ID')
             try:
@@ -233,7 +245,7 @@ class RemoteKernelManager(IOLoopKernelManager):
         """
         env = kwargs.get('env', {})
         self.user_overrides.update({key: value for key, value in env.items()
-                                   if key.startswith('KERNEL_') or
+                                    if key.startswith('KERNEL_') or
                                     key in self.parent.parent.env_process_whitelist or
                                     key in self.parent.parent.env_whitelist})
 
@@ -352,8 +364,8 @@ class RemoteKernelManager(IOLoopKernelManager):
                             else:  # Python 3
                                 self.sigint_value = sig_value.value
                             self.log.debug(
-                                "Converted EG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".
-                                format(alt_sigint, self.sigint_value))
+                                "Converted EG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".format(
+                                    alt_sigint, self.sigint_value))
                         except AttributeError:
                             self.log.warning("Error received when attempting to convert EG_ALTERNATE_SIGINT of "
                                              "'{}' to a value. Check kernelspec entry for kernel '{}' - using "
