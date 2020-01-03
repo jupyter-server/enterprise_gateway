@@ -15,7 +15,7 @@ from yarn_api_client.resource_manager import ResourceManager
 from .processproxy import RemoteProcessProxy
 
 # Default logging level of yarn-api and underlying connectionpool produce too much noise - raise to warning only.
-logging.getLogger('yarn_api_client.resource_manager').setLevel(os.getenv('EG_YARN_LOG_LEVEL', logging.WARNING))
+logging.getLogger('yarn_api_client').setLevel(os.getenv('EG_YARN_LOG_LEVEL', logging.WARNING))
 logging.getLogger('urllib3.connectionpool').setLevel(os.environ.get('EG_YARN_LOG_LEVEL', logging.WARNING))
 
 local_ip = localinterfaces.public_ips()[0]
@@ -32,6 +32,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(YarnClusterProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.application_id = None
+        self.last_known_state = None
         self.candidate_queue = None
         self.candidate_partition = None
         self.local_proc = None
@@ -305,21 +306,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             else:
                 self.detect_launch_failure()
 
-    def _get_application_state(self):
-        # Gets the current application state using the application_id already obtained.  Once the assigned host
-        # has been identified, it is nolonger accessed.
-        app_state = None
-        app = self._query_app_by_id(self.application_id)
-
-        if app:
-            if app.get('state'):
-                app_state = app.get('state')
-            if self.assigned_host == '' and app.get('amHostHttpAddress'):
-                self.assigned_host = app.get('amHostHttpAddress').split(':')[0]
-                # Set the kernel manager ip to the actual host where the application landed.
-                self.assigned_ip = socket.gethostbyname(self.assigned_host)
-        return app_state
-
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
         time.sleep(poll_interval)
@@ -344,24 +330,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
-    def _get_application_id(self, ignore_final_states=False):
-        # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
-        # from scratch, do not consider kernels in final states.
-        if not self.application_id:
-            app = self._query_app_by_name(self.kernel_id)
-            state_condition = True
-            if type(app) is dict and ignore_final_states:
-                state_condition = app.get('state') not in YarnClusterProcessProxy.final_states
-
-            if type(app) is dict and len(app.get('id', '')) > 0 and state_condition:
-                self.application_id = app['id']
-                time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
-                self.log.info("ApplicationID: '{}' assigned for KernelID: '{}', state: {}, {} seconds after starting."
-                              .format(app['id'], self.kernel_id, app.get('state'), time_interval))
-            else:
-                self.log.debug("ApplicationID not yet assigned for KernelID: '{}' - retrying...".format(self.kernel_id))
-        return self.application_id
-
     def get_process_info(self):
         """Captures the base information necessary for kernel persistence relative to YARN clusters."""
         process_info = super(YarnClusterProcessProxy, self).get_process_info()
@@ -372,6 +340,47 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """Loads the base information necessary for kernel persistence relative to YARN clusters."""
         super(YarnClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
+
+    def _get_application_state(self):
+        # Gets the current application state using the application_id already obtained.  Once the assigned host
+        # has been identified, 'amHostHttpAddress' is nolonger accessed.
+        app_state = self.last_known_state
+        app = self._query_app_by_id(self.application_id)
+        if app:
+            if app.get('state'):
+                app_state = app.get('state')
+                self.last_known_state = app_state
+
+            if self.assigned_host == '' and app.get('amHostHttpAddress'):
+                self.assigned_host = app.get('amHostHttpAddress').split(':')[0]
+                # Set the kernel manager ip to the actual host where the application landed.
+                self.assigned_ip = socket.gethostbyname(self.assigned_host)
+
+        return app_state
+
+    def _get_application_id(self, ignore_final_states=False):
+        # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
+        # from scratch, do not consider kernels in final states.
+        if not self.application_id:
+            app = self._query_app_by_name(self.kernel_id)
+            state_condition = True
+            if type(app) is dict:
+                state = app.get('state')
+                self.last_known_state = state
+
+                if ignore_final_states:
+                    state_condition = state not in YarnClusterProcessProxy.final_states
+
+                if len(app.get('id', '')) > 0 and state_condition:
+                    self.application_id = app['id']
+                    time_interval = RemoteProcessProxy.get_time_diff(self.start_time,
+                                                                     RemoteProcessProxy.get_current_time())
+                    self.log.info("ApplicationID: '{}' assigned for KernelID: '{}', "
+                                  "state: {}, {} seconds after starting."
+                                  .format(app['id'], self.kernel_id, state, time_interval))
+            if not self.application_id:
+                self.log.debug("ApplicationID not yet assigned for KernelID: '{}' - retrying...".format(self.kernel_id))
+        return self.application_id
 
     def _query_app_by_name(self, kernel_id):
         """Retrieve application by using kernel_id as the unique app name.
@@ -386,9 +395,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         """
         top_most_app_id = ''
         target_app = None
-        data = None
         try:
-            data = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time)).data
+            response = self.resource_mgr.cluster_applications(started_time_begin=str(self.start_time))
         except socket.error as sock_err:
             if sock_err.errno == errno.ECONNREFUSED:
                 self.log.warning("YARN RM address: '{}' refused the connection.  Is the resource manager running?".
@@ -399,12 +407,13 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except Exception as e:
             self.log.warning("Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".
                              format(kernel_id, type(e), e))
-
-        if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
-            for app in data['apps']['app']:
-                if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
-                    target_app = app
-                    top_most_app_id = app.get('id')
+        else:
+            data = response.data
+            if type(data) is dict and type(data.get("apps")) is dict and 'app' in data.get("apps"):
+                for app in data['apps']['app']:
+                    if app.get('name', '').find(kernel_id) >= 0 and app.get('id') > top_most_app_id:
+                        target_app = app
+                        top_most_app_id = app.get('id')
         return target_app
 
     def _query_app_by_id(self, app_id):
@@ -413,30 +422,37 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         :param app_id
         :return: The JSON object of an application.
         """
-        data = None
+        app = None
         try:
-            data = self.resource_mgr.cluster_application(application_id=app_id).data
+            response = self.resource_mgr.cluster_application(application_id=app_id)
         except Exception as e:
             self.log.warning("Query for application ID '{}' failed with exception: '{}'.  Continuing...".
                              format(app_id, e))
-        if type(data) is dict and 'app' in data:
-            return data['app']
-        return None
+        else:
+            data = response.data
+            if type(data) is dict and 'app' in data:
+                app = data['app']
+
+        return app
 
     def _query_app_state_by_id(self, app_id):
-        """Return the state of an application.
+        """Return the state of an application. If a failure occurs, the last known state is returned.
 
         :param app_id:
-        :return:
+        :return: application state (str)
         """
-        response = None
+        state = self.last_known_state
         try:
             response = self.resource_mgr.cluster_application_state(application_id=app_id)
         except Exception as e:
-            self.log.warning("Query for application '{}' state failed with exception: '{}'.  Continuing...".
-                             format(app_id, e))
+            self.log.warning("Query for application '{}' state failed with exception: '{}'.  "
+                             "Continuing with last known state = '{}'...".
+                             format(app_id, e, state))
+        else:
+            state = response.data['state']
+            self.last_known_state = state
 
-        return response.data['state']
+        return state
 
     def _kill_app_by_id(self, app_id):
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
