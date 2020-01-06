@@ -3,7 +3,7 @@
   "info": {
     "title": "Jupyter Enterprise Gateway API",
     "description": "The API for the Jupyter Enterprise Gateway",
-    "version": "5",
+    "version": "6",
     "contact": {
       "name": "Jupyter Project",
       "url": "https://jupyter.org"
@@ -160,14 +160,21 @@
         ],
         "parameters": [
           {
-            "name": "name",
+            "name": "start_kernel_body",
             "in": "body",
-            "description": "Kernel spec name (defaults to default kernel spec for server)",
             "schema": {
               "type": "object",
               "properties": {
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Kernel spec name (defaults to default kernel spec for server)"
+                },
+                "env": {
+                  "type": "object",
+                  "description": "A dictionary of environment variables and values to include in the kernel process - subject to whitelisting.",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -500,6 +507,11 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "metadata": {
+          "type": "object",
+          "description": "A free-form dictionary consisting of additional information about the kernel and its environment.",
+          "additionalProperties": true
         },
         "help_links": {
           "type": "array",

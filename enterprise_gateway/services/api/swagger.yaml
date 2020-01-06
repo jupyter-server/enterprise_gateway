@@ -3,7 +3,7 @@ swagger: '2.0'
 info:
   title: Jupyter Enterprise Gateway API
   description: The API for the Jupyter Enterprise Gateway
-  version: "5"
+  version: "6"
   contact:
     name: Jupyter Project
     url: https://jupyter.org
@@ -33,17 +33,19 @@ securityDefinitions:
     type: apiKey
     name: Authorization
     in: header
-    description: The authorization token to verify authorization. This is only
-      needed when `EnterpriseGatewayApp.auth_token` is set. This should take the form
-      of `token {value}` where `{value}` is the value of the token.
+    description: |
+      The authorization token to verify authorization. This is only needed
+      when `EnterpriseGatewayApp.auth_token` is set. This should take the
+      form of `token {value}` where `{value}` is the value of the token.
       Alternatively, the token can be passed as a query parameter.
   tokenParam:
     type: apiKey
     name: token
     in: query
-    description: The authorization token to verify authorization. This is only
-      needed when `EnterpriseGatewayApp.auth_token` is set. This should take the form
-      of `token={value}` where `{value}` is the value of the token.
+    description: |
+      The authorization token to verify authorization. This is only needed
+      when `EnterpriseGatewayApp.auth_token` is set. This should take the
+      form of `token={value}` where `{value}` is the value of the token.
       Alternatively, the token can be passed as a header.
 
 security:
@@ -110,8 +112,8 @@ paths:
             items:
               $ref: '#/definitions/Kernel'
         403:
-          description: This method is not accessible when
-            `EnterpriseGatewayApp.list_kernels` is `False`.
+          description: |
+            This method is not accessible when `EnterpriseGatewayApp.list_kernels` is `False`.
           schema:
             $ref: '#/definitions/Error'
     post:
@@ -119,15 +121,21 @@ paths:
       tags:
         - kernels
       parameters:
-        - name: name
+        - name: start_kernel_body
           in: body
-          description: Kernel spec name (defaults to default kernel spec for 
-            server)
           schema:
             type: object
             properties:
               name:
-                type: string
+                 type: string
+                 description: Kernel spec name (defaults to default kernel spec for server)
+              env:
+                type: object
+                description: |
+                  A dictionary of environment variables and values to include in the
+                  kernel process - subject to whitelisting.
+                additionalProperties:
+                  type: string
       responses:
         201:
           description: The metadata about the newly created kernel.
@@ -211,12 +219,14 @@ paths:
             items:
               $ref: '#/definitions/Session'
         403:
-          description: This method is not accessible when the kernel gateway
+          description: |
+            This method is not accessible when the kernel gateway
             when the `list_kernels` option is `False`.
           schema:
             $ref: '#/definitions/Error'
     post:
-      summary: Create a new session, or return an existing session if a session
+      summary: |
+        Create a new session, or return an existing session if a session
         of the same name already exists.
       tags:
         - sessions
@@ -279,7 +289,8 @@ paths:
         204:
           description: Session (and kernel) were deleted
         410:
-          description: Kernel was deleted before the session, and the session
+          description: |
+            Kernel was deleted before the session, and the session
             was *not* deleted
 
 definitions:
@@ -316,8 +327,8 @@ definitions:
           logo-*:
             type: string
             format: filename
-            description: path for logo file.  Logo filenames are of the form
-              `logo-widthxheight`
+            description: |
+              path for logo file.  Logo filenames are of the form `logo-widthxheight`
   KernelSpecFile:
     description: Kernel spec json file
     required:
@@ -330,20 +341,33 @@ definitions:
         description: The programming language which this kernel runs. This will be stored in notebook metadata.
       argv:
         type: array
-        description: "A list of command line arguments used to start the kernel. The text `{connection_file}` in any argument will be replaced with the path to the connection file."
+        description: |
+          A list of command line arguments used to start the kernel. The text `{connection_file}` in any
+          argument will be replaced with the path to the connection file.
         items:
           type: string
       display_name:
         type: string
-        description: "The kernel's name as it should be displayed in the UI. Unlike the kernel name used in the API, this can contain arbitrary unicode characters."
+        description: |
+          The kernel's name as it should be displayed in the UI. Unlike the kernel name used in the API,
+          this can contain arbitrary unicode characters.
       codemirror_mode:
         type: string
-        description: Codemirror mode.  Can be a string *or* an valid Codemirror mode object.  This defaults to the string from the `language` property.
+        description: |
+          Codemirror mode.  Can be a string *or* an valid Codemirror mode object.  This defaults to the
+          string from the `language` property.
       env:
         type: object
-        description: A dictionary of environment variables to set for the kernel. These will be added to the current environment variables.
+        description: |
+          A dictionary of environment variables to set for the kernel. These will be added to the current
+          environment variables.
         additionalProperties:
           type: string
+      metadata:
+        type: object
+        description: |
+          A free-form dictionary consisting of additional information about the kernel and its environment.
+        additionalProperties: true
       help_links:
         type: array
         description: Help items to be displayed in the help menu in the notebook UI.
