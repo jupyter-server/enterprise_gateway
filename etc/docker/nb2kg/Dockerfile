@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 # Ubuntu 18.04 LTS - Bionic
-FROM jupyterhub/k8s-singleuser-sample:0.7.0
+FROM jupyterhub/k8s-singleuser-sample:0.8.2
 
 # pip packages
 RUN pip install --upgrade pip
