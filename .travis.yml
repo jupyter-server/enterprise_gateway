@@ -17,7 +17,7 @@ env:
 
 before_install:
     - mkdir -p $HOME/.sbt/launchers/1.2.1
-    - curl -L -o $HOME/.sbt/launchers/1.2.1/sbt-launch.jar http://central.maven.org/maven2/org/scala-sbt/sbt-launch/1.2.1/sbt-launch-1.2.1.jar
+    - curl -L -o $HOME/.sbt/launchers/1.2.1/sbt-launch.jar https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.2.1/sbt-launch.jar
 
 install:
     - pip install --upgrade setuptools pip websocket-client flake8
