@@ -54,11 +54,11 @@ spec:
       value: "{{ kernel_namespace }}"
     image: "{{ kernel_image }}"
     name: "{{ kernel_pod_name }}"
-    resources:
-      limits:
-        cpu: "1"
-        memory: "2Gi"
-        nvidia.com/gpu: "0"
+    # resources:
+    #   limits:
+    #     cpu: "1"
+    #     memory: "2Gi"
+    #     nvidia.com/gpu: "0"
     {% if kernel_working_dir is defined %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
