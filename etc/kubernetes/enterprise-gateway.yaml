@@ -142,6 +142,11 @@ spec:
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+            nvidia.com/gpu: "0"
         # Use IfNotPresent policy so that dev-based systems don't automatically
         # update. This provides more control.  Since formal tags will be release-specific
         # this policy should be sufficient for them as well.
@@ -167,17 +172,22 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: kernel-image-puller 
+      name: kernel-image-puller
   template:
     metadata:
       labels:
-        name: kernel-image-puller 
+        name: kernel-image-puller
         app: enterprise-gateway
         component: kernel-image-puller
     spec:
       containers:
-      - name: kernel-image-puller 
+      - name: kernel-image-puller
         image: elyra/kernel-image-puller:dev
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+            nvidia.com/gpu: "0"
         env:
           - name: KIP_GATEWAY_HOST
             value: "http://enterprise-gateway.enterprise-gateway:8888"
