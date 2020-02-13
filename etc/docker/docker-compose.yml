@@ -11,7 +11,7 @@ version: "3.3"
 services:
 
   enterprise-gateway:
-    image: elyra/enterprise-gateway:dev
+    image: elyra/enterprise-gateway:2.1.0
     user: root
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"

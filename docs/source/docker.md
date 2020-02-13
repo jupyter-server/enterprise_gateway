@@ -94,7 +94,7 @@ Users that do not wish to extend an existing kernel image must be cognizant of a
 2. Is the base image one from [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks)?
 
 #### Requirements for Custom Kernel Images
-Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.0.0`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
+Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.1.0`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
 
 ##### Bootstrap-kernel.sh
 Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.

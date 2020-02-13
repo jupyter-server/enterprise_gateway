@@ -28,16 +28,16 @@ EG_ALT_YARN_ENDPOINT=http://${ALT_YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster
 
 ### Configuring Kernels for YARN Cluster mode
 
-For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release [jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0/jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz).
+For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release [jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.1.0/jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz).
 
 Considering we would like to enable the IPython Kernel that comes pre-installed with Anaconda to run on Yarn Cluster mode, we would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0/jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.1.0/jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz
 SCALA_KERNEL_DIR="$(jupyter kernelspec list | grep -w "python3" | awk '{print $2}')"
 KERNELS_FOLDER="$(dirname "${SCALA_KERNEL_DIR}")"
 mkdir $KERNELS_FOLDER/spark_python_yarn_cluster/
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 ```
   
 After that, you should have a `kernel.json` that looks similar to the one below:
@@ -80,9 +80,9 @@ Follow the steps below to install/configure the Toree kernel:
 Considering we would like to enable the Scala Kernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_scala_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0/jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.1.0/jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_cluster/ spark_scala_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_cluster/ spark_scala_yarn_cluster/
 ```
 
 For more information about the Scala kernel, please visit the [Apache Toree](http://toree.apache.org/) page.
@@ -96,9 +96,9 @@ The IPython kernel comes pre-installed with Anaconda and we have tested with its
 Considering we would like to enable the IPython kernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_python_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0/jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.1.0/jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_cluster/ spark_python_yarn_cluster/
 ```
 
 For more information about the IPython kernel, please visit the [IPython kernel](http://ipython.readthedocs.io/en/stable/) page.
@@ -130,9 +130,9 @@ ls $ANACONDA_HOME/lib/R/library
 Considering we would like to enable the IRkernel to run on YARN Cluster and Client mode we would have to copy the sample configuration folder **spark_R_yarn_cluster** to where the Jupyter kernels are installed (e.g. jupyter kernelspec list)
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.0.0/jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.1.0/jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.0.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_cluster/ spark_R_yarn_cluster/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.1.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_R_yarn_cluster/ spark_R_yarn_cluster/
 ```
 
 For more information about the iR kernel, please visit the [IRkernel](https://irkernel.github.io/) page.
