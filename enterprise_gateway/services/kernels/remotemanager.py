@@ -216,6 +216,14 @@ class RemoteKernelManager(IOLoopKernelManager):
         self.user_overrides = {}
         self.restarting = False  # need to track whether we're in a restart situation or not
 
+        # If this instance supports port caching, then disable cache_ports since we don't need this
+        # for remote kernels and it breaks the ability to support port ranges for local kernels (which
+        # is viewed as more imporant for EG).
+        # Note: This check MUST remain in this method since cache_ports is used immediately
+        # following construction.
+        if hasattr(self, "cache_ports"):
+            self.cache_ports = False
+
     def start_kernel(self, **kwargs):
         """Starts a kernel in a separate process.
 
@@ -227,13 +235,7 @@ class RemoteKernelManager(IOLoopKernelManager):
              keyword arguments that are passed down to build the kernel_cmd
              and launching the kernel (e.g. Popen kwargs).
         """
-
-        process_proxy = get_process_proxy_config(self.kernel_spec)
-        process_proxy_class_name = process_proxy.get('class_name')
-        self.log.debug("Instantiating kernel '{}' with process proxy: {}".
-                       format(self.kernel_spec.display_name, process_proxy_class_name))
-        process_proxy_class = import_item(process_proxy_class_name)
-        self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=process_proxy.get('config'))
+        self._get_process_proxy()
         self._capture_user_overrides(**kwargs)
         super(RemoteKernelManager, self).start_kernel(**kwargs)
 
@@ -398,7 +400,7 @@ class RemoteKernelManager(IOLoopKernelManager):
         """
         if (isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address) and not self.restarting:
             # However, since we *may* want to limit the selected ports, go ahead and get the ports using
-            # the process proxy (will be LocalPropcessProxy for default case) since the port selection will
+            # the process proxy (will be LocalProcessProxy for default case) since the port selection will
             # handle the default case when the member ports aren't set anyway.
             ports = self.process_proxy.select_ports(5)
             self.shell_port = ports[0]
@@ -408,3 +410,16 @@ class RemoteKernelManager(IOLoopKernelManager):
             self.control_port = ports[4]
 
             return super(RemoteKernelManager, self).write_connection_file()
+
+    def _get_process_proxy(self):
+        """Reads the associated kernelspec and to see if has a process proxy stanza.
+           If one exists, it instantiates an instance.  If a process proxy is not
+           specified in the kernelspec, a LocalProcessProxy stanza is fabricated and
+           instantiated.
+        """
+        process_proxy_cfg = get_process_proxy_config(self.kernel_spec)
+        process_proxy_class_name = process_proxy_cfg.get('class_name')
+        self.log.debug("Instantiating kernel '{}' with process proxy: {}".
+                       format(self.kernel_spec.display_name, process_proxy_class_name))
+        process_proxy_class = import_item(process_proxy_class_name)
+        self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=process_proxy_cfg.get('config'))
