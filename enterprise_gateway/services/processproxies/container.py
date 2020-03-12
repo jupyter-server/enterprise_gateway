@@ -2,13 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running in containers."""
 
+import abc
 import os
 import signal
-import abc
-
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
-
-from tornado import gen
 
 from jupyter_client import launch_kernel, localinterfaces
 
@@ -53,8 +50,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             self.kernel_executor_image = proxy_config.get('executor_image_name')
         self.kernel_executor_image = os.environ.get('KERNEL_EXECUTOR_IMAGE', self.kernel_executor_image)
 
-    @gen.coroutine
-    def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within the container environment."""
         # Set env before superclass call so we see these in the debug output
 
@@ -67,7 +63,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         self._enforce_uid_gid_blacklists(**kwargs)
 
-        yield super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.local_proc = launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
@@ -76,8 +72,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.log.info("{}: kernel launched. Kernel image: {}, KernelID: {}, cmd: '{}'"
                       .format(self.__class__.__name__, self.kernel_image, self.kernel_id, kernel_cmd))
 
-        yield self.confirm_remote_startup()
-        raise gen.Return(self)
+        await self.confirm_remote_startup()
+        return self
 
     def _enforce_uid_gid_blacklists(self, **kwargs):
         """Determine UID and GID with which to launch container and ensure they do not appear in blacklist."""
@@ -155,20 +151,19 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.kill()
         super(ContainerProcessProxy, self).cleanup()
 
-    @gen.coroutine
-    def confirm_remote_startup(self):
+    async def confirm_remote_startup(self):
         """Confirms the container has started and returned necessary connection information."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
-            yield self.handle_timeout()
+            await self.handle_timeout()
 
             container_status = self.get_container_status(str(i))
             if container_status:
                 if self.assigned_host != '':
-                    ready_to_connect = yield self.receive_connection_info()
+                    ready_to_connect = await self.receive_connection_info()
                     self.pid = 0  # We won't send process signals for kubernetes lifecycle management
                     self.pgid = 0
             else:

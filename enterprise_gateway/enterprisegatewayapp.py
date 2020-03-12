@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Enterprise Gateway Jupyter application."""
 
+import asyncio
 import errno
 import getpass
 import logging
@@ -19,15 +20,13 @@ from distutils.util import strtobool
 from zmq.eventloop import ioloop
 ioloop.install()
 
-from tornado import httpserver
-from tornado import web
+from tornado import httpserver, web
 from tornado.log import enable_pretty_logging, LogFormatter
 
 from traitlets import default, List, Set, Unicode, Type, Instance, Bool, CBool, Integer, observe
 from traitlets.config import Configurable
 from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
-from notebook.services.kernels.kernelmanager import MappingKernelManager
 from notebook.notebookapp import random_ports
 from notebook.utils import url_path_join
 
@@ -678,7 +677,7 @@ class EnterpriseGatewayApp(JupyterApp):
         """Shuts down all running kernels."""
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            self.kernel_manager.shutdown_kernel(kid, now=True)
+            asyncio.get_event_loop().run_until_complete(self.kernel_manager.shutdown_kernel(kid, now=True))
 
     def stop(self):
         """

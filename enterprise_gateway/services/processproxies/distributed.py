@@ -2,12 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 """Code used for the generic distribution of kernels across a set of hosts."""
 
-import os
 import json
+import os
 import signal
 import time
 
-from tornado import gen
 from subprocess import STDOUT
 from socket import gethostbyname
 
@@ -31,10 +30,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         else:
             self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
 
-    @gen.coroutine
-    def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd, **kwargs):
         """Launches a kernel process on a selected host."""
-        yield super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.assigned_host = self._determine_next_host()
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
@@ -51,8 +49,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.log.info("Kernel launched on '{}', pid: {}, ID: {}, Log file: {}:{}, Command: '{}'.  ".
                       format(self.assigned_host, self.pid, self.kernel_id, self.assigned_host,
                              self.kernel_log, kernel_cmd))
-        yield self.confirm_remote_startup()
-        raise gen.Return(self)
+        await self.confirm_remote_startup()
+        return self
 
     def _launch_remote_process(self, kernel_cmd, **kwargs):
         """
@@ -123,21 +121,20 @@ class DistributedProcessProxy(RemoteProcessProxy):
         DistributedProcessProxy.host_index += 1
         return next_host
 
-    @gen.coroutine
-    def confirm_remote_startup(self):
+    async def confirm_remote_startup(self):
         """ Confirms the remote kernel has started by obtaining connection information from the remote host."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
-            yield self.handle_timeout()
+            await self.handle_timeout()
 
             self.log.debug("{}: Waiting to connect.  Host: '{}', KernelID: '{}'".
                            format(i, self.assigned_host, self.kernel_id))
 
             if self.assigned_host != '':
-                ready_to_connect = yield self.receive_connection_info()
+                ready_to_connect = await self.receive_connection_info()
 
     def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""

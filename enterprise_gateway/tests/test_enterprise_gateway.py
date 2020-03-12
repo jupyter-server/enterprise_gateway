@@ -158,7 +158,7 @@ class TestEnterpriseGateway(TestHandlers):
             with open(config_file, 'w') as f:
                 f.writelines([
                     "c.EnterpriseGatewayApp.impersonation_enabled = False\n",
-                    "c.MappingKernelManager.cull_connected = False\n"
+                    "c.AsyncMappingKernelManager.cull_connected = False\n"
                 ])
             #  app.jupyter_path.append(td1)
             app.load_config_file()
@@ -180,7 +180,7 @@ class TestEnterpriseGateway(TestHandlers):
             with open(config_file, 'w') as f:
                 f.writelines([
                     "c.EnterpriseGatewayApp.impersonation_enabled = True\n",
-                    "c.MappingKernelManager.cull_connected = True\n"
+                    "c.AsyncMappingKernelManager.cull_connected = True\n"
                 ])
 
             # trigger reload and verify updates

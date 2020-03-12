@@ -7,7 +7,7 @@ import signal
 import re
 import uuid
 
-from tornado import gen, web
+from tornado import web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import AsyncMappingKernelManager
@@ -60,8 +60,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.load_session(kernel_id)
         return self.parent.kernel_session_manager.start_session(kernel_id)
 
-    @gen.coroutine
-    def start_kernel(self, *args, **kwargs):
+    async def start_kernel(self, *args, **kwargs):
         """Starts a kernel for a session and return its kernel_id.
 
         Returns
@@ -73,9 +72,9 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-        kernel_id = yield super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs)
+        kernel_id = await super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
-        raise gen.Return(kernel_id)
+        return kernel_id
 
     def remove_kernel(self, kernel_id):
         """ Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session. """
@@ -223,8 +222,7 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
         if hasattr(self, "cache_ports"):
             self.cache_ports = False
 
-    @gen.coroutine
-    def start_kernel(self, **kwargs):
+    async def start_kernel(self, **kwargs):
         """Starts a kernel in a separate process.
 
         Where the started kernel resides depends on the configured process proxy.
@@ -237,7 +235,7 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
         """
         self._get_process_proxy()
         self._capture_user_overrides(**kwargs)
-        yield super(RemoteKernelManager, self).start_kernel(**kwargs)
+        await super(RemoteKernelManager, self).start_kernel(**kwargs)
 
     def _capture_user_overrides(self, **kwargs):
         """
@@ -273,8 +271,7 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
             return [pat.sub(from_ns, arg) for arg in cmd]
         return cmd
 
-    @gen.coroutine
-    def _launch_kernel(self, kernel_cmd, **kwargs):
+    async def _launch_kernel(self, kernel_cmd, **kwargs):
         # Note: despite the under-bar prefix to this method, the jupyter_client comment says that
         # this method should be "[overridden] in a subclass to launch kernel subprocesses differently".
         # So that's what we've done.
@@ -293,21 +290,19 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
             del env['KG_AUTH_TOKEN']
 
         self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
-        res = yield self.process_proxy.launch_process(kernel_cmd, **kwargs)
-        raise gen.Return(res)
+        proxy = await self.process_proxy.launch_process(kernel_cmd, **kwargs)
+        return proxy
 
-    @gen.coroutine
     def request_shutdown(self, restart=False):
         """ Send a shutdown request via control channel and process proxy (if remote). """
-        yield super(RemoteKernelManager, self).request_shutdown(restart)
+        super(RemoteKernelManager, self).request_shutdown(restart)
 
         # If we're using a remote proxy, we need to send the launcher indication that we're
         # shutting down so it can exit its listener thread, if its using one.
         if isinstance(self.process_proxy, RemoteProcessProxy):
             self.process_proxy.shutdown_listener()
 
-    @gen.coroutine
-    def restart_kernel(self, now=False, **kwargs):
+    async def restart_kernel(self, now=False, **kwargs):
         """Restarts a kernel with the arguments that were used to launch it.
 
         This is an automatic restart request (now=True) AND this is associated with a
@@ -340,7 +335,7 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
                 self.parent.shutdown_kernel(kernel_id, now=now)
                 return
-        yield super(RemoteKernelManager, self).restart_kernel(now, **kwargs)
+        await super(RemoteKernelManager, self).restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
             # Re-establish activity watching...
             if self._activity_stream:
@@ -351,7 +346,7 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
         self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
         self.restarting = False
 
-    def signal_kernel(self, signum):
+    async def signal_kernel(self, signum):
         """Sends signal `signum` to the kernel process. """
         if self.has_kernel:
             if signum == signal.SIGINT:
@@ -383,7 +378,6 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
-    @gen.coroutine
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
 
@@ -394,7 +388,8 @@ class RemoteKernelManager(AsyncIOLoopKernelManager):
         if self.process_proxy:
             self.process_proxy.cleanup()
             self.process_proxy = None
-        yield super(RemoteKernelManager, self).cleanup(connection_file)
+
+        super(RemoteKernelManager, self).cleanup(connection_file)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.
