@@ -10,8 +10,7 @@ from multiprocessing import Process
 from random import random
 from threading import Thread
 
-from Crypto.Cipher import AES
-from IPython import embed_kernel
+from Cryptodome.Cipher import AES
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
@@ -26,6 +25,7 @@ logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]
 logger = logging.getLogger('launch_ipykernel')
 logger.setLevel(log_level)
 
+
 class ExceptionThread(Thread):
     # Wrap thread to handle the exception
     def __init__(self, target):
@@ -38,6 +38,7 @@ class ExceptionThread(Thread):
             self.target()
         except Exception as exc:
             self.exc = exc
+
 
 def initialize_namespace(namespace, cluster_type='spark'):
     """Initialize the kernel namespace.
@@ -159,7 +160,7 @@ def _encrypt(connection_info, conn_file):
 
     # Encrypt connection_info whose length is a multiple of BLOCK_SIZE using
     # AES cipher and then encode the resulting byte array using Base64.
-    encryptAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+    encryptAES = lambda c, s: base64.b64encode(c.encrypt(pad(s).encode('utf-8')))
 
     # Create a key using first 16 chars of the kernel-id that is burnt in
     # the name of the connection file.
@@ -174,8 +175,7 @@ def _encrypt(connection_info, conn_file):
     # print("AES Encryption Key '{}'".format(key))
 
     # Creates the cipher obj using the key.
-    cipher = AES.new(key)
-
+    cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
     payload = encryptAES(cipher, connection_info)
     return payload
 
