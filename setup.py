@@ -55,7 +55,7 @@ Apache Spark, Kubernetes and others..
         'notebook>=5.7.6,<7.0',
         'paramiko>=2.1.2',
         'pexpect>=4.2.0',
-        'pycrypto>=2.6.1',
+        'pycryptodomex>=3.9.7',
         'pyzmq>=17.0.0',
         'requests>=2.7,<3.0',
         'tornado>=4.2.0',
