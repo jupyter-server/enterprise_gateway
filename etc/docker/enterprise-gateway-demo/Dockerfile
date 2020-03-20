@@ -8,7 +8,7 @@ ENV NB_USER="jovyan"
 USER $NB_USER
 
 # Install Enterprise Gateway wheel and kernelspecs
-COPY jupyter_enterprise_gateway*.whl /tmp
+COPY jupyter_enterprise_gateway*.whl /tmp/
 
 RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
     pip install --upgrade ipykernel jupyter-client notebook
