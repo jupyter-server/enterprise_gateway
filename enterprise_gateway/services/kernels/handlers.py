@@ -123,5 +123,5 @@ for path, cls in notebook_handlers.default_handlers:
         default_handlers.append((path, globals()[cls.__name__]))
     else:
         # Gen a new type with CORS and token auth
-        bases = (TokenAuthorizationMixin, CORSMixin, cls)
+        bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
         default_handlers.append((path, type(cls.__name__, bases, {})))
