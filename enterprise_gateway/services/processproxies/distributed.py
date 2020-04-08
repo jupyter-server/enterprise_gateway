@@ -2,10 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 """Code used for the generic distribution of kernels across a set of hosts."""
 
+import asyncio
 import json
 import os
 import signal
-import time
 
 from subprocess import STDOUT
 from socket import gethostbyname
@@ -136,9 +136,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
             if self.assigned_host != '':
                 ready_to_connect = await self.receive_connection_info()
 
-    def handle_timeout(self):
+    async def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        await asyncio.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
