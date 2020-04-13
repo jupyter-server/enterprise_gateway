@@ -108,7 +108,8 @@ def exists(obj, chain):
     if _key in obj:
         return exists(obj[_key], chain) if chain else obj[_key]
 
-def apply_user_filter(kernelspec_model, kernel_user = None):
+
+def apply_user_filter(kernelspec_model, kernel_user=None):
     if kernel_user:
         # Check unauthorized list
         if exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'unauthorized_users']):
@@ -123,7 +124,8 @@ def apply_user_filter(kernelspec_model, kernel_user = None):
                 return None
     return kernelspec_model
 
-class ModifyKernelSpecHandler (APIHandler):
+
+class ModifyKernelSpecHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
     def get(self, kernel_user = None):
@@ -134,7 +136,7 @@ class ModifyKernelSpecHandler (APIHandler):
         model['kernelspecs'] = specs = {}
         kspecs = yield maybe_future (ksm.get_all_specs ())
         if kernel_user:
-            self.log.info("Searching kernels for user '%s' " %kernel_user)
+            self.log.info("Searching kernels for user '%s' " % kernel_user)
         else:
             self.log.info("No user. All kernels given")
 
@@ -173,5 +175,5 @@ for path, cls in default_handlers_notebooks:
 for path, cls in notebook_kernelspecs_resources_handlers.default_handlers:
     # Everything should have CORS and token auth
     bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
-    default_handlers.append ((path, type(cls.__name__, bases, {})))
+    default_handlers.append((path, type(cls.__name__, bases, {})))
 
