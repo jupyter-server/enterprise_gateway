@@ -109,19 +109,19 @@ def exists(obj, chain):
         return exists(obj[_key], chain) if chain else obj[_key]
 
 def apply_user_filter(kernelspec_model, kernel_user = None):
-  if kernel_user:
-    # Check unauthorized list
-    if exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'unauthorized_users']):
-      # Check if kernel_user in kernelspec_model
-      unauthorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['unauthorized_users']
-      if kernel_user in unauthorized_list:
-        return None
-    # Now we have check that unauthorized list doesnt exist
-    if exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'authorized_users']):
-      authorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['authorized_users']
-      if authorized_list and kernel_user not in authorized_list:
-        return None
-  return kernelspec_model
+    if kernel_user:
+        # Check unauthorized list
+        if exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'unauthorized_users']):
+            # Check if kernel_user in kernelspec_model
+            unauthorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['unauthorized_users']
+            if kernel_user in unauthorized_list:
+                return None
+        # Now we have check that unauthorized list doesnt exist
+        if exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'authorized_users']):
+            authorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['authorized_users']
+            if authorized_list and kernel_user not in authorized_list:
+                return None
+    return kernelspec_model
 
 class ModifyKernelSpecHandler (APIHandler):
     @web.authenticated
