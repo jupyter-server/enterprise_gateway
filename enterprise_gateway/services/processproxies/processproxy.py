@@ -26,7 +26,7 @@ from jupyter_client import launch_kernel, localinterfaces
 from notebook import _tz
 from zmq.ssh import tunnel
 from enum import Enum
-from Cryptodome.Cipher import AES
+from Crypto.Cipher import AES
 
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
@@ -636,6 +636,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
     """
     def __init__(self, kernel_manager, proxy_config):
         super(LocalProcessProxy, self).__init__(kernel_manager, proxy_config)
+        self.log.info(kernel_manager)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
     def launch_process(self, kernel_cmd, **kwargs):
@@ -819,7 +820,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def _decrypt(self, data):
         """Decrypts `data` using the kernel_id as the key."""
         key = self.kernel_id[0:16]
-        cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
+        cipher = AES.new(key)
         payload = cipher.decrypt(base64.b64decode(data))
         payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
         return payload
