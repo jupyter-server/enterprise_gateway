@@ -25,7 +25,7 @@ def url_unescape(path):
     Turns '/foo%20bar/' into '/foo bar/'
     """
     return u'/'.join([
-        py3compat.str_to_unicode (unquote(p), encoding='utf8')
+        py3compat.str_to_unicode(unquote(p), encoding='utf8')
         for p in py3compat.unicode_to_str(path, encoding='utf8').split('/')
     ])
 
@@ -37,7 +37,7 @@ def maybe_future(obj):
     """
     if inspect.isawaitable(obj):
         return asyncio.ensure_future(obj)
-    elif isinstance (obj, concurrent.futures.Future):
+    elif isinstance(obj, concurrent.futures.Future):
         return asyncio.wrap_future(obj)
     else:
         # not awaitable, wrap scalar in future
@@ -66,7 +66,7 @@ def url_path_join(*pieces):
 
 def is_kernelspec_model(spec_dict):
     """Returns True if spec_dict is already in proper form.  This will occur when using a gateway."""
-    return isinstance (spec_dict, dict) and 'name' in spec_dict and 'spec' in spec_dict and 'resources' in spec_dict
+    return isinstance(spec_dict, dict) and 'name' in spec_dict and 'spec' in spec_dict and 'resources' in spec_dict
 
 
 def kernelspec_model(handler, name, spec_dict, resource_dir):
@@ -88,8 +88,8 @@ def kernelspec_model(handler, name, spec_dict, resource_dir):
                 resource
             )
     for logo_file in glob.glob(pjoin(resource_dir, 'logo-*')):
-        fname = os.path.basename (logo_file)
-        no_ext, _ = os.path.splitext (fname)
+        fname = os.path.basename(logo_file)
+        no_ext, _ = os.path.splitext(fname)
         d['resources'][no_ext] = url_path_join(
             handler.base_url,
             'kernelspecs',
@@ -135,7 +135,7 @@ class ModifyKernelSpecHandler(APIHandler):
         model = {}
         model['default'] = km.default_kernel_name
         model['kernelspecs'] = specs = {}
-        kspecs = yield maybe_future(ksm.get_all_specs ())
+        kspecs = yield maybe_future(ksm.get_all_specs())
         if kernel_user:
             self.log.info("Searching kernels for user '%s' " % kernel_user)
         else:
@@ -164,9 +164,9 @@ kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 kernel_user_regex = r"(?P<kernel_user>[\w%]+)"
 
 default_handlers_notebooks = [
-            (r"/api/kernelspecs", ModifyKernelSpecHandler),
-            (r"/api/kernelspecs/user/%s" % kernel_user_regex, ModifyKernelSpecHandler),
-            (r"/api/kernelspecs/%s" % kernel_name_regex, notebook_handlers.KernelSpecHandler)
+    (r"/api/kernelspecs", ModifyKernelSpecHandler),
+    (r"/api/kernelspecs/user/%s" % kernel_user_regex, ModifyKernelSpecHandler),
+    (r"/api/kernelspecs/%s" % kernel_name_regex, notebook_handlers.KernelSpecHandler)
 ]
 
 for path, cls in default_handlers_notebooks:
