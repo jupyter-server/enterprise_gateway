@@ -24,9 +24,9 @@ def url_unescape(path):
     """Unescape special characters in a URL path
     Turns '/foo%20bar/' into '/foo bar/'
     """
-    return u'/'.join ([
-        py3compat.str_to_unicode (unquote (p), encoding='utf8')
-        for p in py3compat.unicode_to_str (path, encoding='utf8').split ('/')
+    return u'/'.join([
+        py3compat.str_to_unicode (unquote(p), encoding='utf8')
+        for p in py3compat.unicode_to_str(path, encoding='utf8').split('/')
     ])
 
 
@@ -35,14 +35,14 @@ def maybe_future(obj):
     but more compatible with asyncio for recent versions
     of tornado
     """
-    if inspect.isawaitable (obj):
-        return asyncio.ensure_future (obj)
+    if inspect.isawaitable(obj):
+        return asyncio.ensure_future(obj)
     elif isinstance (obj, concurrent.futures.Future):
-        return asyncio.wrap_future (obj)
+        return asyncio.wrap_future(obj)
     else:
         # not awaitable, wrap scalar in future
-        f = asyncio.Future ()
-        f.set_result (obj)
+        f = asyncio.Future()
+        f.set_result(obj)
         return f
 
 
@@ -51,13 +51,16 @@ def url_path_join(*pieces):
     Use to prevent double slash when joining subpath. This will leave the
     initial and final / in place
     """
-    initial = pieces[0].startswith ('/')
-    final = pieces[-1].endswith ('/')
-    stripped = [s.strip ('/') for s in pieces]
-    result = '/'.join (s for s in stripped if s)
-    if initial: result = '/' + result
-    if final: result = result + '/'
-    if result == '//': result = '/'
+    initial = pieces[0].startswith('/')
+    final = pieces[-1].endswith('/')
+    stripped = [s.strip('/') for s in pieces]
+    result = '/'.join(s for s in stripped if s)
+    if initial:
+        result = '/' + result
+    if final:
+        result = result + '/'
+    if result == '//':
+        result = '/'
     return result
 
 
@@ -77,17 +80,17 @@ def kernelspec_model(handler, name, spec_dict, resource_dir):
     # Add resource files if they exist
     resource_dir = resource_dir
     for resource in ['kernel.js', 'kernel.css']:
-        if os.path.exists (pjoin (resource_dir, resource)):
-            d['resources'][resource] = url_path_join (
+        if os.path.exists(pjoin(resource_dir, resource)):
+            d['resources'][resource] = url_path_join(
                 handler.base_url,
                 'kernelspecs',
                 name,
                 resource
             )
-    for logo_file in glob.glob (pjoin (resource_dir, 'logo-*')):
+    for logo_file in glob.glob(pjoin(resource_dir, 'logo-*')):
         fname = os.path.basename (logo_file)
         no_ext, _ = os.path.splitext (fname)
-        d['resources'][no_ext] = url_path_join (
+        d['resources'][no_ext] = url_path_join(
             handler.base_url,
             'kernelspecs',
             name,
@@ -126,21 +129,21 @@ def apply_user_filter(kernelspec_model, kernel_user=None):
 class ModifyKernelSpecHandler(APIHandler):
     @web.authenticated
     @gen.coroutine
-    def get(self, kernel_user = None):
+    def get(self, kernel_user=None):
         ksm = self.kernel_spec_manager
         km = self.kernel_manager
         model = {}
         model['default'] = km.default_kernel_name
         model['kernelspecs'] = specs = {}
-        kspecs = yield maybe_future (ksm.get_all_specs ())
+        kspecs = yield maybe_future(ksm.get_all_specs ())
         if kernel_user:
             self.log.info("Searching kernels for user '%s' " % kernel_user)
         else:
             self.log.info("No user. All kernels given")
 
-        for kernel_name, kernel_info in kspecs.items ():
+        for kernel_name, kernel_info in kspecs.items():
             try:
-                if is_kernelspec_model (kernel_info):
+                if is_kernelspec_model(kernel_info):
                     d = kernel_info
                 else:
                     d = kernelspec_model(self, kernel_name, kernel_info['spec'], kernel_info['resource_dir'])
@@ -174,4 +177,3 @@ for path, cls in notebook_kernelspecs_resources_handlers.default_handlers:
     # Everything should have CORS and token auth
     bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
     default_handlers.append((path, type(cls.__name__, bases, {})))
-
