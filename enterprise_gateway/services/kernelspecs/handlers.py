@@ -10,9 +10,7 @@ import concurrent.futures
 
 import inspect
 import os
-import logging
-import traceback
-from pygments.lexer import default
+
 from tornado import web, gen
 from ipython_genutils import py3compat
 from urllib.parse import unquote
