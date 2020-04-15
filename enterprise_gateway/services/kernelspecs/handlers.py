@@ -1,7 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel specs."""
-import glob
 import json
 import notebook.services.kernelspecs.handlers as notebook_handlers
 import notebook.kernelspecs.handlers as notebook_kernelspecs_resources_handlers
