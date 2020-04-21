@@ -34,7 +34,7 @@ def apply_user_filter(kernelspec_model, kernel_user=None):
     return kernelspec_model
 
 
-class UserKernelSpecHandler(APIHandler):
+class MainKernelSpecHandler(APIHandler):
     @web.authenticated
     async def get(self):
         ksm = self.kernel_spec_manager
@@ -72,18 +72,16 @@ class UserKernelSpecHandler(APIHandler):
         self.finish(json.dumps(model))
 
 
-class UserInfoKernelSpecHandler(APIHandler):
+class KernelSpecHandler(APIHandler):
 
     @web.authenticated
     async def get(self, kernel_name):
         ksm = self.kernel_spec_manager
         kernel_name = url_unescape(kernel_name)
-
         kernel_user_filter = self.request.query_arguments.get('user')
         kernel_user = None
         if kernel_user_filter:
             kernel_user = kernel_user_filter[0].decode("utf-8")
-
         try:
             spec = await maybe_future(ksm.get_kernel_spec(kernel_name))
         except KeyError:
@@ -95,10 +93,8 @@ class UserInfoKernelSpecHandler(APIHandler):
         d = apply_user_filter(model, kernel_user)
 
         if d is None:
-            self.log.debu("You shouldnt been doing that")
-            # User is not Authorized to know kernel
-            # specs
-            # Do something
+            raise web.HTTPError(403, u'User %s is not authorized to use this kernel spec %s'
+                                % (kernel_user, kernel_name))
 
         self.set_header("Content-Type", 'application/json')
         self.finish(json.dumps(model))
@@ -107,17 +103,18 @@ class UserInfoKernelSpecHandler(APIHandler):
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 kernel_user_regex = r"(?P<kernel_user>[\w%]+)"
 
-default_handlers_notebooks = [
-    (r"/api/kernelspecs", UserKernelSpecHandler),
-    (r"/api/kernelspecs/%s" % kernel_name_regex, UserInfoKernelSpecHandler)
+modified_handlers_notebooks = [
+    (r"/api/kernelspecs", MainKernelSpecHandler),
+    (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler)
 ]
 
 # Extends the default handlers from the notebook package with token auth, CORS
 # and JSON errors.
 default_handlers = []
 
-for path, cls in default_handlers_notebooks:
+for path, cls in modified_handlers_notebooks:
     # Everything should have CORS and token auth
+    print (path)
     bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
     default_handlers.append((path, type(cls.__name__, bases, {})))
 
