@@ -2,18 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel specs."""
 import json
-import notebook.services.kernelspecs.handlers as notebook_handlers
+
 import notebook.kernelspecs.handlers as notebook_kernelspecs_resources_handlers
-from notebook.utils import maybe_future
 from notebook.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
-
+from notebook.utils import maybe_future, url_unescape
 from tornado import web
-from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
-from ...base.handlers import APIHandler
 
-# Extends the default handlers from the notebook package with token auth, CORS
-# and JSON errors.
-default_handlers = []
+from ...base.handlers import APIHandler
+from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
 
 def key_exists(obj, chain):
@@ -40,13 +36,19 @@ def apply_user_filter(kernelspec_model, kernel_user=None):
 
 class UserKernelSpecHandler(APIHandler):
     @web.authenticated
-    async def get(self, kernel_user=None):
+    async def get(self):
         ksm = self.kernel_spec_manager
         km = self.kernel_manager
         model = {}
         model['default'] = km.default_kernel_name
         model['kernelspecs'] = specs = {}
         kspecs = await maybe_future(ksm.get_all_specs())
+
+        kernel_user_filter = self.request.query_arguments.get('user')
+        kernel_user = None
+        if kernel_user_filter:
+            kernel_user = kernel_user_filter[0].decode("utf-8")
+
         if kernel_user:
             self.log.debug("Searching kernels for user '%s' " % kernel_user)
         else:
@@ -70,16 +72,52 @@ class UserKernelSpecHandler(APIHandler):
         self.finish(json.dumps(model))
 
 
+class UserInfoKernelSpecHandler(APIHandler):
+
+    @web.authenticated
+    async def get(self, kernel_name):
+        ksm = self.kernel_spec_manager
+        kernel_name = url_unescape(kernel_name)
+
+        kernel_user_filter = self.request.query_arguments.get('user')
+        kernel_user = None
+        if kernel_user_filter:
+            kernel_user = kernel_user_filter[0].decode("utf-8")
+
+        try:
+            spec = await maybe_future(ksm.get_kernel_spec(kernel_name))
+        except KeyError:
+            raise web.HTTPError(404, u'Kernel spec %s not found' % kernel_name)
+        if is_kernelspec_model(spec):
+            model = spec
+        else:
+            model = kernelspec_model(self, kernel_name, spec.to_dict(), spec.resource_dir)
+        d = apply_user_filter(model, kernel_user)
+
+        if d is None:
+            self.log.debu("You shouldnt been doing that")
+            # User is not Authorized to know kernel
+            # specs
+            # Do something
+
+        self.set_header("Content-Type", 'application/json')
+        self.finish(json.dumps(model))
+
+
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 kernel_user_regex = r"(?P<kernel_user>[\w%]+)"
 
 default_handlers_notebooks = [
     (r"/api/kernelspecs", UserKernelSpecHandler),
-    (r"/api/kernelspecs/user/%s" % kernel_user_regex, UserKernelSpecHandler),
-    (r"/api/kernelspecs/%s" % kernel_name_regex, notebook_handlers.KernelSpecHandler)
+    (r"/api/kernelspecs/%s" % kernel_name_regex, UserInfoKernelSpecHandler)
 ]
 
+# Extends the default handlers from the notebook package with token auth, CORS
+# and JSON errors.
+default_handlers = []
+
 for path, cls in default_handlers_notebooks:
+    # Everything should have CORS and token auth
     bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
     default_handlers.append((path, type(cls.__name__, bases, {})))
 
