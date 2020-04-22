@@ -34,7 +34,10 @@ def apply_user_filter(kernelspec_model, kernel_user=None):
     return kernelspec_model
 
 
-class MainKernelSpecHandler(APIHandler):
+class MainKernelSpecHandler(TokenAuthorizationMixin,
+                            CORSMixin,
+                            JSONErrorsMixin,
+                            APIHandler):
     @web.authenticated
     async def get(self):
         ksm = self.kernel_spec_manager
@@ -72,7 +75,10 @@ class MainKernelSpecHandler(APIHandler):
         self.finish(json.dumps(model))
 
 
-class KernelSpecHandler(APIHandler):
+class KernelSpecHandler(TokenAuthorizationMixin,
+                        CORSMixin,
+                        JSONErrorsMixin,
+                        APIHandler):
 
     @web.authenticated
     async def get(self, kernel_name):
@@ -93,7 +99,7 @@ class KernelSpecHandler(APIHandler):
         d = apply_user_filter(model, kernel_user)
 
         if d is None:
-            raise web.HTTPError(403, u'User %s is not authorized to use this kernel spec %s'
+            raise web.HTTPError(403, u'User %s is not authorized to use kernel spec %s'
                                 % (kernel_user, kernel_name))
 
         self.set_header("Content-Type", 'application/json')
@@ -103,20 +109,12 @@ class KernelSpecHandler(APIHandler):
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 kernel_user_regex = r"(?P<kernel_user>[\w%]+)"
 
-modified_handlers_notebooks = [
+# Extends the default handlers from the notebook package with token auth, CORS
+# and JSON errors.
+default_handlers = [
     (r"/api/kernelspecs", MainKernelSpecHandler),
     (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler)
 ]
-
-# Extends the default handlers from the notebook package with token auth, CORS
-# and JSON errors.
-default_handlers = []
-
-for path, cls in modified_handlers_notebooks:
-    # Everything should have CORS and token auth
-    print (path)
-    bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
-    default_handlers.append((path, type(cls.__name__, bases, {})))
 
 for path, cls in notebook_kernelspecs_resources_handlers.default_handlers:
     # Everything should have CORS and token auth
