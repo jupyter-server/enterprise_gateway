@@ -2,12 +2,10 @@
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel specs."""
 import json
-
 import notebook.kernelspecs.handlers as notebook_kernelspecs_resources_handlers
 from notebook.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
 from notebook.utils import maybe_future, url_unescape
 from tornado import web
-
 from ...base.handlers import APIHandler
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
