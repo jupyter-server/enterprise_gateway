@@ -958,7 +958,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if pid:
             try:
                 self.pid = int(pid)
-                self.log.debug("Updated pid to: {}".format(self.pid))
             except ValueError:
                 self.log.warning("pid returned from kernel launcher is not an integer: {} - ignoring.".format(pid))
                 pid = None
@@ -966,7 +965,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if pgid:
             try:
                 self.pgid = int(pgid)
-                self.log.debug("Updated pgid to: {}".format(self.pgid))
             except ValueError:
                 self.log.warning("pgid returned from kernel launcher is not an integer: {} - ignoring.".format(pgid))
                 pgid = None
