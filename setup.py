@@ -48,6 +48,7 @@ Apache Spark, Kubernetes and others..
     ],
     install_requires=[
         'docker>=3.5.0',
+        'future',
         'jinja2>=2.10',
         'jupyter_client>=5.2.0',
         'jupyter_core>=4.4.0',
