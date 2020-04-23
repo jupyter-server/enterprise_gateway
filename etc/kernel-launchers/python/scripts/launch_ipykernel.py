@@ -6,6 +6,7 @@ import os
 import socket
 import tempfile
 import uuid
+from future.utils import raise_from
 from multiprocessing import Process
 from random import random
 from threading import Thread
@@ -136,7 +137,7 @@ class WaitingForSparkSessionToBeInitialized(object):
             self._init_thread.join(timeout=None)
             exc = self._init_thread.exc
             if exc:
-                raise RuntimeError("Variable: {} was not initialized properly.".format(self._spark_session_variable)) from exc
+                raise_from(RuntimeError("Variable: {} was not initialized properly.".format(self._spark_session_variable)), exc)
             # now return attribute/function reference from actual Spark object
             return getattr(self._namespace[self._spark_session_variable], name)
 
