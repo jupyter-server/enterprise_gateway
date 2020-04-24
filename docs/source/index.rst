@@ -41,6 +41,7 @@ Jupyter Enterprise Gateway leverages local resource managers to distribute kerne
    kernel-kubernetes
    kernel-docker
    kernel-conductor
+   kernel-library
 
 .. toctree::
    :maxdepth: 2

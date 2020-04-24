@@ -22,3 +22,6 @@ issues and manage network configurations that adhere to my corporate policy.
 
 - **As an administrator**, I want to constrain the number of active kernels that each of my users can have at any 
 given time.
+
+- **As a solution architect**, I want to easily integrate the ability to launch remote kernels with existing platforms, 
+so I can leverage my compute cluster in a customizable way.

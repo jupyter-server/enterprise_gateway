@@ -116,9 +116,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         # relaunch (see jupyter_client.manager.start_kernel().
         self.kernel_manager.ip = '0.0.0.0'
         self.log = kernel_manager.log
+
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
-        self.kernel_manager.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
-            replace('kernel-', '').replace('.json', '')
+        if self.kernel_manager.kernel_id is None:
+            self.kernel_manager.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
+                replace('kernel-', '').replace('.json', '')
+
         self.kernel_id = self.kernel_manager.kernel_id
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.lower_port = 0
@@ -127,7 +130,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # Handle authorization sets...
         # Take union of unauthorized users...
-        self.unauthorized_users = self.kernel_manager.parent.parent.unauthorized_users
+        self.unauthorized_users = self.kernel_manager.unauthorized_users
         if proxy_config.get('unauthorized_users'):
             self.unauthorized_users = self.unauthorized_users.union(proxy_config.get('unauthorized_users').split(','))
 
@@ -135,7 +138,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if proxy_config.get('authorized_users'):
             self.authorized_users = set(proxy_config.get('authorized_users').split(','))
         else:
-            self.authorized_users = self.kernel_manager.parent.parent.authorized_users
+            self.authorized_users = self.kernel_manager.authorized_users
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if EG is restarted and the
@@ -432,7 +435,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # Although it may already be set in the env, just override in case it was only set via command line or config
         # Convert to string since execve() (called by Popen in base classes) wants string values.
-        env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.parent.parent.impersonation_enabled)
+        env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.impersonation_enabled)
 
         # Ensure KERNEL_USERNAME is set
         kernel_username = KernelSessionManager.get_kernel_username(**kwargs)
@@ -460,16 +463,19 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # if kernels-per-user is configured, ensure that this next kernel is still within the limit.  If this
         # is due to a restart, skip enforcement since we're re-using that id.
-        max_kernels_per_user = self.kernel_manager.parent.parent.max_kernels_per_user
+        max_kernels_per_user = self.kernel_manager.max_kernels_per_user
         if max_kernels_per_user >= 0 and not self.kernel_manager.restarting:
             env_dict = kwargs.get('env')
             username = env_dict['KERNEL_USERNAME']
-            current_kernel_count = self.kernel_manager.parent.parent.kernel_session_manager.active_sessions(username)
-            if current_kernel_count >= max_kernels_per_user:
-                error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
-                                "active {}.".format(max_kernels_per_user, username, current_kernel_count,
-                                                    "kernel" if max_kernels_per_user == 1 else "kernels")
-                self.log_and_raise(http_status_code=403, reason=error_message)
+
+            # Per user limits are only meaningful if a session manager exists.
+            if self.kernel_manager.kernel_session_manager:
+                current_kernel_count = self.kernel_manager.kernel_session_manager.active_sessions(username)
+                if current_kernel_count >= max_kernels_per_user:
+                    error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
+                                    "active {}.".format(max_kernels_per_user, username, current_kernel_count,
+                                                        "kernel" if max_kernels_per_user == 1 else "kernels")
+                    self.log_and_raise(http_status_code=403, reason=error_message)
 
     def get_process_info(self):
         """Captures the base information necessary for kernel persistence relative to process proxies.
@@ -494,7 +500,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
     def _validate_port_range(self, proxy_config):
         """Validates the port range configuration option to ensure appropriate values."""
         # Let port_range override global value - if set on kernelspec...
-        port_range = self.kernel_manager.parent.parent.port_range
+        port_range = self.kernel_manager.port_range
         if proxy_config.get('port_range'):
             port_range = proxy_config.get('port_range')
 
@@ -797,7 +803,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
 
     def _get_keep_alive_interval(self, kernel_channel):
-        cull_idle_timeout = self.kernel_manager.parent.cull_idle_timeout
+        cull_idle_timeout = self.kernel_manager.cull_idle_timeout
 
         if (kernel_channel == KernelChannel.COMMUNICATION or
                 kernel_channel == KernelChannel.CONTROL or
