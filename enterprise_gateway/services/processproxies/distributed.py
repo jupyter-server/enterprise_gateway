@@ -28,7 +28,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if proxy_config.get('remote_hosts'):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
-            self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
+            self.hosts = kernel_manager.remote_hosts  # from command line or env
 
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches a kernel process on a selected host."""

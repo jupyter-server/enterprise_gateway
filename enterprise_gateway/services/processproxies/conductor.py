@@ -32,7 +32,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.env = None
         self.rest_credential = None
         self.conductor_endpoint = proxy_config.get('conductor_endpoint',
-                                                   kernel_manager.parent.parent.conductor_endpoint)
+                                                   kernel_manager.conductor_endpoint)
 
     def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a Conductor cluster environment."""

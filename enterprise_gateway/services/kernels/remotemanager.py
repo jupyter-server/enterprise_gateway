@@ -12,9 +12,11 @@ from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 from jupyter_client.ioloop.manager import IOLoopKernelManager
+from traitlets import directional_link, log as traitlets_log
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
+from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
 
 def get_process_proxy_config(kernelspec):
@@ -42,6 +44,46 @@ def get_process_proxy_config(kernelspec):
                 process_proxy.update({"config": {}})
             return process_proxy  # Return what we found (plus config stanza if necessary)
     return {"class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy", "config": {}}
+
+
+def new_kernel_id(**kwargs):
+    """
+    This method provides a mechanism by which clients can specify a kernel's id.  In this case
+    that mechanism is via the per-kernel environment variable: KERNEL_ID.  If specified, its value
+    will be validated and returned, otherwise the result from the provided method is returned.
+
+    NOTE: This method exists in jupyter_client.multikernelmanager.py for releases > 5.2.3.  If you
+    find that this method is not getting invoked, then you likely need to update the version of
+    jupyter_client.  The Enterprise Gateway dependency will be updated once new releases of
+    jupyter_client are more prevalent.
+
+    Returns
+    -------
+    kernel_id : str
+        The uuid string to associate with the new kernel
+    """
+    log = kwargs.pop("log", None) or traitlets_log.get_logger()
+    kernel_id_fn = kwargs.pop("kernel_id_fn", None) or (lambda: unicode_type(uuid.uuid4()))
+
+    env = kwargs.get('env')
+    if env and env.get('KERNEL_ID'):  # If there's a KERNEL_ID in the env, check it out
+        # convert string back to UUID - validating string in the process.
+        str_kernel_id = env.get('KERNEL_ID')
+        try:
+            str_v4_kernel_id = str(uuid.UUID(str_kernel_id, version=4))
+            if str_kernel_id != str_v4_kernel_id:  # Given string is not uuid v4 compliant
+                raise ValueError("value is not uuid v4 compliant")
+        except ValueError as ve:
+            log.error("Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{}'!  Error: {}".
+                      format(str_kernel_id, ve))
+            raise ve
+        # user-provided id is valid, use it
+        kernel_id = unicode_type(str_kernel_id)
+        log.debug("Using user-provided kernel_id: {}".format(kernel_id))
+    else:
+        kernel_id = kernel_id_fn(**kwargs)
+
+    return kernel_id
 
 
 class RemoteMappingKernelManager(MappingKernelManager):
@@ -161,44 +203,12 @@ class RemoteMappingKernelManager(MappingKernelManager):
         return True
 
     def new_kernel_id(self, **kwargs):
-        """Determines the kernel_id to use for a new kernel.
+        """Determines the kernel_id to use for a new kernel."""
 
-        This method provides a mechanism by which clients can specify a kernel's id.  In this case
-        that mechanism is via the per-kernel environment variable: KERNEL_ID.  If specified, its value
-        will be validated and returned, otherwise the result from the superclass method is returned.
-
-        NOTE: This method exists in jupyter_client.multikernelmanager.py for releases > 5.2.3.  If you
-        find that this method is not getting invoked, then you likely need to update the version of
-        jupyter_client.  The Enterprise Gateway dependency will be updated once new releases of
-        jupyter_client are more prevalent.
-
-        Returns
-        -------
-        kernel_id : str
-            The uuid string to associate with the new kernel
-        """
-        env = kwargs.get('env')
-        if env and env.get('KERNEL_ID'):  # If there's a KERNEL_ID in the env, check it out
-            # convert string back to UUID - validating string in the process.
-            str_kernel_id = env.get('KERNEL_ID')
-            try:
-                str_v4_kernel_id = str(uuid.UUID(str_kernel_id, version=4))
-                if str_kernel_id != str_v4_kernel_id:  # Given string is not uuid v4 compliant
-                    raise ValueError("value is not uuid v4 compliant")
-            except ValueError as ve:
-                self.log.error("Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{}'!  Error: {}".
-                               format(str_kernel_id, ve))
-                raise ve
-            # user-provided id is valid, use it
-            kernel_id = unicode_type(str_kernel_id)
-            self.log.debug("Using user-provided kernel_id: {}".format(kernel_id))
-        else:
-            kernel_id = super(RemoteMappingKernelManager, self).new_kernel_id(**kwargs)
-
-        return kernel_id
+        return new_kernel_id(kernel_id_fn=super(RemoteMappingKernelManager, self).new_kernel_id, log=self.log)
 
 
-class RemoteKernelManager(IOLoopKernelManager):
+class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
     """Extends the IOLoopKernelManager used by the MappingKernelManager.
 
     This class is responsible for detecting that a remote kernel is desired, then launching the
@@ -211,7 +221,6 @@ class RemoteKernelManager(IOLoopKernelManager):
         self.process_proxy = None
         self.response_address = None
         self.sigint_value = None
-        self.port_range = None
         self.kernel_id = None
         self.user_overrides = {}
         self.restarting = False  # need to track whether we're in a restart situation or not
@@ -223,6 +232,43 @@ class RemoteKernelManager(IOLoopKernelManager):
         # following construction.
         if hasattr(self, "cache_ports"):
             self.cache_ports = False
+
+        if not self.connection_file:
+            self.kernel_id = new_kernel_id(log=self.log)
+
+        self._link_dependent_props()
+
+        if self.kernel_spec_manager is None:
+            self.kernel_spec_manager = self.kernel_spec_manager_class(
+                parent=self,
+            )
+
+    def _link_dependent_props(self):
+        """
+        Ensure that RemoteKernelManager, when used as part of an EnterpriseGatewayApp,
+        has certain necessary configuration stay in sync with the app's configuration.
+
+        When RemoteKernelManager is used independently, this function is a no-op, and
+        default values or configuration set on this class is used.
+        """
+        try:
+            eg_instance = self.parent.parent
+        except AttributeError:
+            return
+        dependent_props = ["authorized_users",
+                           "unauthorized_users",
+                           "port_range",
+                           "impersonation_enabled",
+                           "max_kernels_per_user",
+                           "env_whitelist",
+                           "env_process_whitelist",
+                           "yarn_endpoint",
+                           "alt_yarn_endpoint",
+                           "yarn_endpoint_security_enabled",
+                           "conductor_endpoint",
+                           "remote_hosts"
+                           ]
+        self._links = [directional_link((eg_instance, prop), (self, prop)) for prop in dependent_props]
 
     def start_kernel(self, **kwargs):
         """Starts a kernel in a separate process.
@@ -248,8 +294,8 @@ class RemoteKernelManager(IOLoopKernelManager):
         env = kwargs.get('env', {})
         self.user_overrides.update({key: value for key, value in env.items()
                                     if key.startswith('KERNEL_') or
-                                    key in self.parent.parent.env_process_whitelist or
-                                    key in self.parent.parent.env_whitelist})
+                                    key in self.env_process_whitelist or
+                                    key in self.env_whitelist})
 
     def format_kernel_cmd(self, extra_arguments=None):
         """ Replace templated args (e.g. {response_address}, {port_range}, or {kernel_id}). """
@@ -325,16 +371,16 @@ class RemoteKernelManager(IOLoopKernelManager):
             kernel.
         """
         self.restarting = True
-        kernel_id = os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
+        kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace('kernel-', '').replace('.json', '')
         # Check if this is a remote process proxy and if now = True. If so, check its connection count. If no
         # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
         # the default value (False).
-        if isinstance(self.process_proxy, RemoteProcessProxy) and now:
-            if self.parent._kernel_connections.get(kernel_id, 0) == 0:
+        if isinstance(self.process_proxy, RemoteProcessProxy) and now and self.mapping_kernel_manager:
+            if self.mapping_kernel_manager._kernel_connections.get(kernel_id, 0) == 0:
                 self.log.warning("Remote kernel ({}) will not be automatically restarted since there are no "
                                  "clients connected at this time.".format(kernel_id))
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
-                self.parent.shutdown_kernel(kernel_id, now=now)
+                self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
                 return
         super(RemoteKernelManager, self).restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
@@ -342,9 +388,11 @@ class RemoteKernelManager(IOLoopKernelManager):
             if self._activity_stream:
                 self._activity_stream.close()
                 self._activity_stream = None
-            self.parent.start_watching_activity(kernel_id)
+            if self.mapping_kernel_manager:
+                self.mapping_kernel_manager.start_watching_activity(kernel_id)
         # Refresh persisted state.
-        self.parent.parent.kernel_session_manager.refresh_session(kernel_id)
+        if self.kernel_session_manager:
+            self.kernel_session_manager.refresh_session(kernel_id)
         self.restarting = False
 
     def signal_kernel(self, signum):
@@ -423,3 +471,27 @@ class RemoteKernelManager(IOLoopKernelManager):
                        format(self.kernel_spec.display_name, process_proxy_class_name))
         process_proxy_class = import_item(process_proxy_class_name)
         self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=process_proxy_cfg.get('config'))
+
+    # When this class is used by an EnterpriseGatewayApp instance, it will be able to
+    # access the app's configuration using the traitlet parent chain.
+    # When it's used independently, it should fall back to safe defaults.
+    @property
+    def kernel_session_manager(self):
+        try:
+            return self.parent.parent.kernel_session_manager
+        except AttributeError:
+            return None
+
+    @property
+    def cull_idle_timeout(self):
+        try:
+            return self.parent.cull_idle_timeout
+        except AttributeError:
+            return 0
+
+    @property
+    def mapping_kernel_manager(self):
+        try:
+            return self.parent
+        except AttributeError:
+            return None
