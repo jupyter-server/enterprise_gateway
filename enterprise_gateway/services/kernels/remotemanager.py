@@ -11,6 +11,7 @@ from tornado import gen, web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import MappingKernelManager
+from notebook.utils import maybe_future
 from jupyter_client.ioloop.manager import IOLoopKernelManager
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
@@ -74,7 +75,7 @@ class RemoteMappingKernelManager(MappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-        kernel_id = yield gen.maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
+        kernel_id = yield maybe_future(super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs))
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         raise gen.Return(kernel_id)
 
