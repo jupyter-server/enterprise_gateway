@@ -8,7 +8,8 @@ RUN conda install --quiet --yes \
     ipykernel \
     ipython \
     jupyter_client \
-    pycrypto && \
+    future \
+    pycryptodomex && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
