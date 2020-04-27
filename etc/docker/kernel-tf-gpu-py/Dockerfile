@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -yq \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install pycrypto
+RUN pip install future pycryptodomex
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

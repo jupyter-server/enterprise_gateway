@@ -8,7 +8,8 @@ RUN conda install --quiet --yes \
     cffi \
     send2trash \
     requests \
-    pycrypto && \
+    future \
+    pycryptodomex && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
