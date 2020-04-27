@@ -48,9 +48,8 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
         kernel_user = None
         if kernel_user_filter:
             kernel_user = kernel_user_filter[0].decode("utf-8")
-
-        if kernel_user:
-            self.log.debug("Searching kernels for user '%s' " % kernel_user)
+            if kernel_user:
+                self.log.debug("Searching kernels for user '%s' " % kernel_user)
 
         kspecs = await maybe_future(ksm.get_all_specs())
 
