@@ -43,7 +43,6 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
         model = {}
         model['default'] = km.default_kernel_name
         model['kernelspecs'] = specs = {}
-        kspecs = await maybe_future(ksm.get_all_specs())
 
         kernel_user_filter = self.request.query_arguments.get('user')
         kernel_user = None
@@ -52,8 +51,8 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
 
         if kernel_user:
             self.log.debug("Searching kernels for user '%s' " % kernel_user)
-        else:
-            self.log.debug("No user. All kernels given")
+
+        kspecs = await maybe_future(ksm.get_all_specs())
 
         list_kernels_found = []
         for kernel_name, kernel_info in kspecs.items():
@@ -69,6 +68,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
             except Exception:
                 self.log.error("Failed to load kernel spec: '%s'", kernel_name)
                 continue
+
         self.set_header("Content-Type", 'application/json')
         self.finish(json.dumps(model))
 
