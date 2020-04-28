@@ -86,9 +86,17 @@ paths:
       summary: Get kernel specs
       tags:
         - kernelspecs
+      parameters:
+        - name: user
+          in: query
+          description: User value that need to be considered for filtering kernels
+          required: false
+          type: string
       responses:
         200:
-          description: Returns the available kernel specs to spawn new kernels.
+          description: |
+            Returns the available kernel specs to spawn new kernels. If no query param is used, it returns all
+            kernels available.
           schema:
             type: object
             properties:
