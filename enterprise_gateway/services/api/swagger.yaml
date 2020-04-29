@@ -89,14 +89,14 @@ paths:
       parameters:
         - name: user
           in: query
-          description: User value that need to be considered for filtering kernels
+          description: When present, kernelspec results will be filtered based on the configured authorization of specified value.
           required: false
           type: string
       responses:
         200:
           description: |
-            Returns the available kernel specs to spawn new kernels. If no query param is used, it returns all
-            kernels available.
+            If no query parameter is specified, all kernel specs will be returned;
+            otherwise the result set is filtered based on the query parameter.
           schema:
             type: object
             properties:

@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel specs."""
 import json
+
 import notebook.kernelspecs.handlers as notebook_kernelspecs_resources_handlers
 from notebook.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
 from notebook.utils import maybe_future, url_unescape
@@ -11,6 +12,8 @@ from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
 
 def key_exists(obj, chain):
+    """Ensures every entry in the chain array exists as a key in nested dictionaries of obj,
+    returning the value of the last key"""
     _key = chain.pop(0)
     if _key in obj:
         return key_exists(obj[_key], chain) if chain else obj[_key]
@@ -64,6 +67,8 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
                 if d is not None:
                     specs[kernel_name] = d
                     list_kernels_found.append(d['name'])
+                else:
+                    self.log.debug('User %s is not authorized to use kernel spec %s' % (kernel_user, kernel_name))
             except Exception:
                 self.log.error("Failed to load kernel spec: '%s'", kernel_name)
                 continue
