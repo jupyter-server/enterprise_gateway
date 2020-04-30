@@ -108,13 +108,11 @@
           "kernelspecs"
         ],
         "parameters": {
-          "kernel": {
             "name": "user",
             "required": false,
             "in": "query",
             "description": "When present, kernelspec results will be filtered based on the configured authorization of specified value.",
             "type": "string"
-          }
         },
         "responses": {
           "200": {
