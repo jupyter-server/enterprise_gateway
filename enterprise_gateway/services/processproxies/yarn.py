@@ -42,14 +42,14 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         self.yarn_endpoint \
             = proxy_config.get('yarn_endpoint',
-                               kernel_manager.parent.parent.yarn_endpoint)
+                               kernel_manager.yarn_endpoint)
         self.alt_yarn_endpoint \
             = proxy_config.get('alt_yarn_endpoint',
-                               kernel_manager.parent.parent.alt_yarn_endpoint)
+                               kernel_manager.alt_yarn_endpoint)
 
         self.yarn_endpoint_security_enabled \
             = proxy_config.get('yarn_endpoint_security_enabled',
-                               kernel_manager.parent.parent.yarn_endpoint_security_enabled)
+                               kernel_manager.yarn_endpoint_security_enabled)
 
         endpoints = None
         if self.yarn_endpoint:

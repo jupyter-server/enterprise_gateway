@@ -26,8 +26,8 @@ class TestEnterpriseGateway(TestHandlers):
     def test_max_kernels_per_user(self):
         """Number of kernels should be limited per user."""
 
-        app = self.get_app()
-        app.settings['kernel_manager'].parent.max_kernels_per_user = 1
+        self.get_app()
+        self.app.max_kernels_per_user = 1
 
         # Request a kernel for bob
         bob_response = yield self.http_client.fetch(
@@ -74,9 +74,9 @@ class TestEnterpriseGateway(TestHandlers):
     def test_authorization(self):
         """Verify authorized users can start a kernel, unauthorized users cannot"""
 
-        app = self.get_app()
-        app.settings['kernel_manager'].parent.authorized_users = {'bob', 'alice', 'bad_guy'}
-        app.settings['kernel_manager'].parent.unauthorized_users = {'bad_guy'}
+        self.get_app()
+        self.app.authorized_users = {'bob', 'alice', 'bad_guy'}
+        self.app.unauthorized_users = {'bad_guy'}
 
         # Request a kernel for alice
         alice_response = yield self.http_client.fetch(
@@ -100,7 +100,7 @@ class TestEnterpriseGateway(TestHandlers):
         """Verify port-range behaviors are correct"""
 
         app = self.get_app()
-        app.settings['kernel_manager'].parent.port_range = "10000..10999"  # range too small
+        self.app.port_range = "10000..10999"  # range too small
         # Request a kernel for alice - 500 expected
         alice_response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -110,7 +110,7 @@ class TestEnterpriseGateway(TestHandlers):
         )
         self.assertEqual(alice_response.code, 500)
 
-        app.settings['kernel_manager'].parent.port_range = "100..11099"  # invalid lower port
+        self.app.port_range = "100..11099"  # invalid lower port
         # Request a kernel for alice - 500 expected
         alice_response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -120,7 +120,7 @@ class TestEnterpriseGateway(TestHandlers):
         )
         self.assertEqual(alice_response.code, 500)
 
-        app.settings['kernel_manager'].parent.port_range = "10000..65537"  # invalid upper port
+        self.app.port_range = "10000..65537"  # invalid upper port
         # Request a kernel for alice - 500 expected
         alice_response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
@@ -130,7 +130,7 @@ class TestEnterpriseGateway(TestHandlers):
         )
         self.assertEqual(alice_response.code, 500)
 
-        app.settings['kernel_manager'].parent.port_range = "30000..31000"  # valid range
+        self.app.port_range = "30000..31000"  # valid range
         # Request a kernel for alice - 201 expected
         alice_response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),
