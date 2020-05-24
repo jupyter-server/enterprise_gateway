@@ -109,7 +109,6 @@ class KernelSpecHandler(TokenAuthorizationMixin,
 
 
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
-kernel_user_regex = r"(?P<kernel_user>[\w%]+)"
 
 # Extends the default handlers from the notebook package with token auth, CORS
 # and JSON errors.
