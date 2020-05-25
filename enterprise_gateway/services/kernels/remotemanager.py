@@ -428,7 +428,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
-    def cleanup(self, connection_file=True):
+    def cleanup(self, restart=False):
         """Clean up resources when the kernel is shut down"""
 
         # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
@@ -438,7 +438,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
         if self.process_proxy:
             self.process_proxy.cleanup()
             self.process_proxy = None
-        return super(RemoteKernelManager, self).cleanup(connection_file)
+        return super(RemoteKernelManager, self).cleanup(restart)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.
