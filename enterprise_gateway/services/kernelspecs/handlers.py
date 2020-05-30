@@ -19,19 +19,32 @@ def key_exists(obj, chain):
         return key_exists(obj[_key], chain) if chain else obj[_key]
 
 
-def apply_user_filter(kernelspec_model, kernel_user=None):
+def apply_user_filter(kernelspec_model, global_authorized_list, global_unauthorized_list, kernel_user=None):
+    """If authorization lists are configured - either within the kernelspec or globally, ensure
+       the user is authorized for the given kernelspec.
+    """
     if kernel_user:
-        # Check unauthorized list
+        # Check the unauthorized list of the kernelspec, then the globally-configured unauthorized list - the
+        # semantics of which are a union of the two lists.
         if key_exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'unauthorized_users']):
             # Check if kernel_user in kernelspec_model
             unauthorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['unauthorized_users']
             if kernel_user in unauthorized_list:
                 return None
-        # Check authorized list
+        if global_unauthorized_list and kernel_user in global_unauthorized_list:
+            return None
+
+        # Check the authorized list of the kernelspec, then the globally-configured authorized list -
+        # but only if the kernelspec list doesn't exist.  This is because the kernelspec set of authorized
+        # users may be a subset of globally authorized users and is, essentially, used as a denial to those
+        # not defined in the kernelspec's list.
         if key_exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'authorized_users']):
             authorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['authorized_users']
             if authorized_list and kernel_user not in authorized_list:
                 return None
+        elif global_authorized_list and kernel_user not in global_authorized_list:
+            return None
+
     return kernelspec_model
 
 
@@ -63,7 +76,8 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
                     d = kernel_info
                 else:
                     d = kernelspec_model(self, kernel_name, kernel_info['spec'], kernel_info['resource_dir'])
-                d = apply_user_filter(d, kernel_user)
+                d = apply_user_filter(d, self.settings['eg_authorized_users'],
+                                      self.settings['eg_unauthorized_users'], kernel_user)
                 if d is not None:
                     specs[kernel_name] = d
                     list_kernels_found.append(d['name'])
@@ -98,7 +112,8 @@ class KernelSpecHandler(TokenAuthorizationMixin,
             model = spec
         else:
             model = kernelspec_model(self, kernel_name, spec.to_dict(), spec.resource_dir)
-        d = apply_user_filter(model, kernel_user)
+        d = apply_user_filter(model, self.settings['eg_authorized_users'],
+                              self.settings['eg_unauthorized_users'], kernel_user)
 
         if d is None:
             raise web.HTTPError(403, u'User %s is not authorized to use kernel spec %s'
