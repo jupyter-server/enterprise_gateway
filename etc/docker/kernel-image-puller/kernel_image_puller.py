@@ -86,8 +86,19 @@ def pull_image(image_name):
     """
     if policy == POLICY_IF_NOT_PRESENT:
         if image_name in pulled_images:
-            logger.info("Image '{}' already pulled and policy is '{}'.".format(image_name, policy))
-            return
+            # Image has been pulled, but make sure it still exists.  If it doesn't exist
+            # let this drop through to actual pull
+            logger.info("Image '{}' already pulled and policy is '{}'.  Checking existence.".
+                        format(image_name, policy))
+            try:
+                t1 = time.time()
+                docker_client.images.get(image_name)
+                t2 = time.time()
+                logger.debug("Checked existence of image '{}' in {:.3f} secs.".format(image_name, t2 - t1))
+                return
+            except NotFound:
+                pulled_images.remove(image_name)
+                logger.warning("Previously pulled image '{}' was not found - attempting pull...".format(image_name))
 
     logger.debug("Pulling image '{}'...".format(image_name))
     try:
