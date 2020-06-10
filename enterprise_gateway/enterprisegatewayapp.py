@@ -190,6 +190,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             eg_env_process_whitelist=self.env_process_whitelist,
             eg_env_whitelist=self.env_whitelist,
             eg_list_kernels=self.list_kernels,
+            eg_authorized_users=self.authorized_users,
+            eg_unauthorized_users=self.unauthorized_users,
             # Also set the allow_origin setting used by notebook so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin,
