@@ -993,8 +993,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def cleanup(self):
         """Terminates tunnel processes, if applicable."""
-        self.shutdown_listener()  # Ensure listener has been shutdown
-
         self.assigned_ip = None
 
         for kernel_channel, process in self.tunnel_processes.items():
