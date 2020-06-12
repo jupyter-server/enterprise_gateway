@@ -92,6 +92,9 @@ spec:
           value: "60"
         - name: EG_KERNEL_WHITELIST
           value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+        - name: EG_DEFAULT_KERNEL_NAME
+          value: "python_kubernetes"
+
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
         # k8s will only pull :latest all the time.  
