@@ -80,7 +80,7 @@ def launch_docker_kernel(kernel_id, response_addr, spark_context_init_mode):
         kwargs['environment'] = param_env
         kwargs['remove'] = remove_container
         kwargs['network'] = docker_network
-        kwargs['group_add_list'] = [group, '100']
+        kwargs['group_add'] = [group, '100']
         kwargs['detach'] = True
         if param_env.get('KERNEL_WORKING_DIR'):
             kwargs['working_dir'] = param_env.get('KERNEL_WORKING_DIR')
