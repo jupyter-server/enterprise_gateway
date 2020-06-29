@@ -312,6 +312,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
+            self.close_response_socket()
             reason = "Application ID is None. Failed to submit a new application to YARN within {} seconds.  " \
                      "Check Enterprise Gateway log for more information.". \
                 format(self.kernel_launch_timeout)

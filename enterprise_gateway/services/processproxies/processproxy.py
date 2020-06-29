@@ -712,6 +712,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             poll_result = self.local_proc.poll()
             if poll_result and poll_result > 0:
                 self.local_proc.wait()
+                self.close_response_socket()
                 error_message = "Error occurred during launch of KernelID: {}.  " \
                                 "Check Enterprise Gateway log for more information.".format(self.kernel_id)
                 self.local_proc = None
@@ -947,16 +948,19 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             "connection information is null!".format(self.kernel_id)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
+        self.close_response_socket()
+        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
+
+    def close_response_socket(self):
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             try:
+                self.log.debug("response socket still open, close it")
                 self.response_socket.shutdown(SHUT_RDWR)
                 self.response_socket.close()
             except OSError:
                 pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
-
-        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
     def _extract_pid_info(self, connect_info):
         """Extracts any PID, PGID info from the payload received on the response socket."""
@@ -985,6 +989,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
+            self.close_response_socket()
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
