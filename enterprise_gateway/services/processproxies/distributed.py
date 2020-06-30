@@ -150,6 +150,12 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.kill()
             self.log_and_raise(http_status_code=500, reason=timeout_message)
 
+    def cleanup(self):
+        # DistributedProcessProxy can have a tendency to leave zombies, particularly when EG is
+        # abruptly terminated.  This extra call to shutdown_lister does the trick.
+        self.shutdown_listener()
+        super(RemoteProcessProxy, self).cleanup()
+
     def shutdown_listener(self):
         """Ensure that kernel process is terminated."""
         self.send_signal(signal.SIGTERM)

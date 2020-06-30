@@ -6,6 +6,7 @@ import os
 import signal
 import re
 import uuid
+import zmq
 import warnings
 
 from tornado import gen, web
@@ -14,7 +15,7 @@ from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import MappingKernelManager
 from notebook.utils import maybe_future
 from jupyter_client.ioloop.manager import IOLoopKernelManager
-from traitlets import directional_link, log as traitlets_log
+from traitlets import directional_link, default, Bool, log as traitlets_log
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
@@ -217,6 +218,23 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
+
+    use_global_zmq_context_env = 'EG_USE_GLOBAL_ZMQ_CONTEXT'
+    use_global_zmq_context = Bool(False, config=True,
+                                  help="""Indicates whether a global ZMQ context should be used.
+                                  (EG_USE_GLOBAL_ZMQ_CONTEXT env var)""")
+
+    @default('use_global_zmq_context')
+    def use_global_zmq_context_default(self):
+        return bool(os.getenv(self.use_global_zmq_context_env, 'false').lower() == 'true')
+
+    # Override _context_default and create a GLOBAL ZMQ context.  This prevents leaks, but could break
+    # down the road, thus it doesn't occur by default.
+    def _context_default(self):
+        if self.use_global_zmq_context:
+            self.log.info("Using global ZMQ context via configuration override (use_global_zmq_context=True).")
+            return zmq.Context.instance()
+        return super(RemoteKernelManager, self)._context_default()
 
     def __init__(self, **kwargs):
         super(RemoteKernelManager, self).__init__(**kwargs)

@@ -1,11 +1,14 @@
-import os
 import logging
-import time
+import os
 import queue
 import requests
-from threading import Thread
+import time
+
 from docker.client import DockerClient
-from docker.errors import NotFound, APIError
+from docker.errors import APIError
+from docker.errors import NotFound
+from threading import Thread
+
 
 gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:8888")
 num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
@@ -35,8 +38,7 @@ def get_kernelspecs():
 
 
 def fetch_image_names():
-    """
-    Fetches the image names by hitting the /api/kernelspecs endpoing of the Gateway.
+    """Fetches the image names by hitting the /api/kernelspecs endpoint of the Gateway.
 
     For process-proxy kernelspecs, the image names are contained in the config stanza - which
     resides in the process-proxy stanza located in the metadata.
@@ -76,8 +78,9 @@ def fetch_image_names():
 
 
 def pull_image(image_name):
-    """
-    Pulls the image.  If the policy is `IfNotPresent` the set of pulled image names is
+    """Pulls the image.
+
+    If the policy is `IfNotPresent` the set of pulled image names is
     checked and, if present, the method returns.  Otherwise, the pull attempt is made
     and the set of pulled images is updated, when successful.
 
@@ -86,8 +89,19 @@ def pull_image(image_name):
     """
     if policy == POLICY_IF_NOT_PRESENT:
         if image_name in pulled_images:
-            logger.info("Image '{}' already pulled and policy is '{}'.".format(image_name, policy))
-            return
+            # Image has been pulled, but make sure it still exists.  If it doesn't exist
+            # let this drop through to actual pull
+            logger.info("Image '{}' already pulled and policy is '{}'.  Checking existence.".
+                        format(image_name, policy))
+            try:
+                t1 = time.time()
+                docker_client.images.get(image_name)
+                t2 = time.time()
+                logger.debug("Checked existence of image '{}' in {:.3f} secs.".format(image_name, t2 - t1))
+                return
+            except NotFound:
+                pulled_images.remove(image_name)
+                logger.warning("Previously pulled image '{}' was not found - attempting pull...".format(image_name))
 
     logger.debug("Pulling image '{}'...".format(image_name))
     try:
@@ -95,18 +109,19 @@ def pull_image(image_name):
         docker_client.images.pull(image_name)
         t2 = time.time()
         pulled_images.add(image_name)
-        logger.info("Pulled image '{}' in {:.3f} secs.".format(image_name, t2-t1))
+        logger.info("Pulled image '{}' in {:.3f} secs.".format(image_name, t2 - t1))
     except NotFound:
         logger.warning("Image '{}' was not found!".format(image_name))
 
 
 def puller():
+    """Thread-based puller.
+
+    Gets image name from the queue and attempts to pull the image. Any issues, except
+    for NotFound, are retried up to num_retries times. Once the image has been pulled, it's not found or the
+    retries have been exceeded, the queue task is marked as done.
     """
-    Thread-based puller.  Gets image name from the queue and attempts to pull the image.
-    Any issues, except for NotFound, are retried up to num_retries times.
-    Once the image has been pulled, it's not found or the retries have been exceeded,
-    the queue task is marked as done.
-    """
+
     while True:
         image_name = name_queue.get()
         if image_name is None:
@@ -121,7 +136,7 @@ def puller():
                 i += 1
                 if i < num_retries:
                     logger.warning("Attempt {} to pull image '{}' encountered exception - retrying.  Exception was: {}".
-                                 format(i, image_name, ex))
+                                   format(i, image_name, ex))
                 else:
                     logger.error("Attempt {} to pull image '{}' failed with exception: {}".
                                  format(i, image_name, ex))
@@ -152,17 +167,21 @@ if __name__ == "__main__":
     name_queue = queue.Queue()
     threads = []
     for i in range(num_pullers):
-        t = Thread(target=puller, name="t{}".format(i+1))
+        t = Thread(target=puller, name="t{}".format(i + 1))
         t.start()
         threads.append(t)
 
     # Fetch the image names, then wait for name queue to drain.  Once drained, or if there were issues
     # fetching the image names, wait the interval number of seconds and perform the operation again.
+
+    wait_interval = 5  # Start with 5 seconds to ensure EG service gets started...
+    time.sleep(wait_interval)
     while True:
         fetched = fetch_image_names()
         if fetched:
+            wait_interval = interval  # Once we have fetched kernelspecs, update wait_interval
             name_queue.join()
-            logger.info("Images pulled.  Sleeping {} seconds...\n".format(interval))
+            logger.info("Images pulled.  Sleeping {} seconds...\n".format(wait_interval))
         else:
-            logger.info("Sleeping {} seconds to fetch image names...\n".format(interval))
-        time.sleep(interval)
+            logger.info("Sleeping {} seconds to fetch image names...\n".format(wait_interval))
+        time.sleep(wait_interval)
