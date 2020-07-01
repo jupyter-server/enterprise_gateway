@@ -447,11 +447,11 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
-    def cleanup(self, restart=False):
+    def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
         warnings.warn("Method cleanup(connection_file=True) is deprecated, use cleanup_resources(restart=False).",
-                      DeprecationWarning)
-        self.cleanup_resources(restart)
+                      FutureWarning)
+        self.cleanup_resources(not connection_file)
 
     def cleanup_resources(self, restart=False):
         """Clean up resources when the kernel is shut down"""
@@ -463,7 +463,13 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
         if self.process_proxy:
             self.process_proxy.cleanup()
             self.process_proxy = None
-        return super(RemoteKernelManager, self).cleanup_resources(restart)
+
+        import jupyter_client as jc
+        from distutils.version import LooseVersion
+        if LooseVersion(jc.__version__) < LooseVersion('6.2'):
+            return super(RemoteKernelManager, self).cleanup(connection_file=not restart)
+        else:
+            return super(RemoteKernelManager, self).cleanup_resources(restart)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.
