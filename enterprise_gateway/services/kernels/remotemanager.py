@@ -7,7 +7,6 @@ import signal
 import re
 import uuid
 import zmq
-import warnings
 
 from tornado import gen, web
 from ipython_genutils.py3compat import unicode_type
