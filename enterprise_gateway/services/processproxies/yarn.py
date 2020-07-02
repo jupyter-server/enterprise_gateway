@@ -294,7 +294,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 app_state = self._get_application_state()
 
                 if app_state in YarnClusterProcessProxy.final_states:
-                    self.close_response_socket()
                     error_message = "KernelID: '{}', ApplicationID: '{}' unexpectedly found in state '{}'" \
                                     " during kernel startup!".format(self.kernel_id, self.application_id, app_state)
                     self.log_and_raise(http_status_code=500, reason=error_message)
@@ -313,7 +312,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            self.close_response_socket()
             reason = "Application ID is None. Failed to submit a new application to YARN within {} seconds.  " \
                      "Check Enterprise Gateway log for more information.". \
                 format(self.kernel_launch_timeout)

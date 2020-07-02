@@ -712,7 +712,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             poll_result = self.local_proc.poll()
             if poll_result and poll_result > 0:
                 self.local_proc.wait()
-                self.close_response_socket()
                 error_message = "Error occurred during launch of KernelID: {}.  " \
                                 "Check Enterprise Gateway log for more information.".format(self.kernel_id)
                 self.local_proc = None
@@ -948,10 +947,10 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             "connection information is null!".format(self.kernel_id)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
-        self.close_response_socket()
+        self._close_response_socket()
         self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
-    def close_response_socket(self):
+    def _close_response_socket(self):
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             try:
@@ -989,7 +988,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
-            self.close_response_socket()
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
@@ -1110,6 +1108,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             # If this was a tunneled connection, re-establish tunnels.  Note, this will reset the
             # communication socket (comm_ip, comm_port) members as well.
             self._setup_connection_info(process_info['tunneled_connect_info'])
+
+    def log_and_raise(self, http_status_code=None, reason=None):
+        """Override log_and_raise method in order to verify that the response socket is properly closed
+        before raise exception """
+        self._close_response_socket()
+        super().log_and_raise(http_status_code, reason)
 
     @staticmethod
     def get_current_time():
