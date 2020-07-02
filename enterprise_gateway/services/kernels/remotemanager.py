@@ -449,6 +449,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
 
+        # Note This method has been deprecated in jupyter_client 6.1.5 and
+        # remains here for pre-6.2.0 jupyter_client installations.
+
         # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
         # The reason is because if the kernel shutdown sequence has triggered its "forced kill" logic
         # then that method (jupyter_client/manager.py/_kill_kernel()) will set `self.kernel` to None,
@@ -457,6 +460,22 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, IOLoopKernelManager):
             self.process_proxy.cleanup()
             self.process_proxy = None
         return super(RemoteKernelManager, self).cleanup(connection_file)
+
+    def cleanup_resources(self, restart=False):
+        """Clean up resources when the kernel is shut down"""
+
+        # Note This method was introduced in jupyter_client 6.1.5 and
+        # will not be called until jupyter_client 6.2.0 has been released.
+
+        # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
+        # The reason is because if the kernel shutdown sequence has triggered its "forced kill" logic
+        # then that method (jupyter_client/manager.py/_kill_kernel()) will set `self.kernel` to None,
+        # which then prevents process proxy cleanup.
+        if self.process_proxy:
+            self.process_proxy.cleanup()
+            self.process_proxy = None
+
+        return super(RemoteKernelManager, self).cleanup_resources(restart)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.
