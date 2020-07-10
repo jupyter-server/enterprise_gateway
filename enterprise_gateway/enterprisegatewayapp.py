@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 """Enterprise Gateway Jupyter application."""
 
+import asyncio
 import errno
 import getpass
 import logging
@@ -299,7 +300,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         """Shuts down all running kernels."""
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            self.kernel_manager.shutdown_kernel(kid, now=True)
+            asyncio.get_event_loop().run_until_complete(self.kernel_manager.shutdown_kernel(kid, now=True))
 
     def stop(self):
         """

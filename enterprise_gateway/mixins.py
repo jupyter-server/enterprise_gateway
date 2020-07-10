@@ -499,12 +499,12 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     kernel_manager_class = Type(
-        klass="notebook.services.kernels.kernelmanager.MappingKernelManager",
+        klass="enterprise_gateway.services.kernels.remotemanager.RemoteMappingKernelManager",
         default_value="enterprise_gateway.services.kernels.remotemanager.RemoteMappingKernelManager",
         config=True,
         help="""
         The kernel manager class to use. Must be a subclass
-        of `notebook.services.kernels.MappingKernelManager`.
+        of `enterprise_gateway.services.kernels.RemoteMappingKernelManager`.
         """
     )
 

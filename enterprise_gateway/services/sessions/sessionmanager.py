@@ -3,8 +3,7 @@
 """Session manager that keeps all its metadata in memory."""
 
 import uuid
-from notebook.utils import maybe_future
-from tornado import web, gen
+from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
 from ipython_genutils.py3compat import unicode_type
 
@@ -51,8 +50,7 @@ class SessionManager(LoggingConfigurable):
         """Creates a uuid for a new session."""
         return unicode_type(uuid.uuid4())
 
-    @gen.coroutine
-    def create_session(self, path=None, kernel_name=None, kernel_id=None, *args, **kwargs):
+    async def create_session(self, path=None, kernel_name=None, kernel_id=None, *args, **kwargs):
         """Creates a session and returns its model.
 
         Launches a kernel and stores the session metadata for later lookup.
@@ -73,10 +71,8 @@ class SessionManager(LoggingConfigurable):
         """
         session_id = self.new_session_id()
         # allow nbm to specify kernels cwd
-        kernel_id = yield maybe_future(self.kernel_manager.start_kernel(path=path,
-                                                                        kernel_name=kernel_name))
-        raise gen.Return(self.save_session(session_id, path=path,
-                                           kernel_id=kernel_id))
+        kernel_id = await self.kernel_manager.start_kernel(path=path, kernel_name=kernel_name)
+        return self.save_session(session_id, path=path, kernel_id=kernel_id)
 
     def save_session(self, session_id, path=None, kernel_id=None, *args, **kwargs):
         """Saves the metadata for the session with the given `session_id`.
@@ -238,7 +234,7 @@ class SessionManager(LoggingConfigurable):
         l = [self.row_to_model(r) for r in self._sessions]
         return l
 
-    def delete_session(self, session_id, *args, **kwargs):
+    async def delete_session(self, session_id, *args, **kwargs):
         """Deletes the session in the session store with given `session_id`.
 
         Raises
@@ -251,5 +247,5 @@ class SessionManager(LoggingConfigurable):
         if not s:
             raise KeyError
 
-        self.kernel_manager.shutdown_kernel(s['kernel_id'])
+        await self.kernel_manager.shutdown_kernel(s['kernel_id'])
         self._sessions.remove(s)
