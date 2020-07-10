@@ -6,14 +6,13 @@ import os
 import signal
 import re
 import uuid
-import zmq
 
 from tornado import web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
 from notebook.services.kernels.kernelmanager import AsyncMappingKernelManager
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
-from traitlets import directional_link, default, Bool, log as traitlets_log
+from traitlets import directional_link, log as traitlets_log
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
@@ -214,23 +213,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     appropriate class (previously pulled from the kernel spec).  The process 'proxy' is
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
-
-    use_global_zmq_context_env = 'EG_USE_GLOBAL_ZMQ_CONTEXT'
-    use_global_zmq_context = Bool(False, config=True,
-                                  help="""Indicates whether a global ZMQ context should be used.
-                                  (EG_USE_GLOBAL_ZMQ_CONTEXT env var)""")
-
-    @default('use_global_zmq_context')
-    def use_global_zmq_context_default(self):
-        return bool(os.getenv(self.use_global_zmq_context_env, 'false').lower() == 'true')
-
-    # Override _context_default and create a GLOBAL ZMQ context.  This prevents leaks, but could break
-    # down the road, thus it doesn't occur by default.
-    def _context_default(self):
-        if self.use_global_zmq_context:
-            self.log.info("Using global ZMQ context via configuration override (use_global_zmq_context=True).")
-            return zmq.Context.instance()
-        return super(RemoteKernelManager, self)._context_default()
 
     def __init__(self, **kwargs):
         super(RemoteKernelManager, self).__init__(**kwargs)
@@ -447,6 +429,24 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     def cleanup(self, connection_file=True):
         """Clean up resources when the kernel is shut down"""
 
+        # Note This method has been deprecated in jupyter_client 6.1.5 and
+        # remains here for pre-6.2.0 jupyter_client installations.
+
+        # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
+        # The reason is because if the kernel shutdown sequence has triggered its "forced kill" logic
+        # then that method (jupyter_client/manager.py/_kill_kernel()) will set `self.kernel` to None,
+        # which then prevents process proxy cleanup.
+        if self.process_proxy:
+            self.process_proxy.cleanup()
+            self.process_proxy = None
+        return super(RemoteKernelManager, self).cleanup(connection_file)
+
+    def cleanup_resources(self, restart=False):
+        """Clean up resources when the kernel is shut down"""
+
+        # Note This method was introduced in jupyter_client 6.1.5 and
+        # will not be called until jupyter_client 6.2.0 has been released.
+
         # Note we must use `process_proxy` here rather than `kernel`, although they're the same value.
         # The reason is because if the kernel shutdown sequence has triggered its "forced kill" logic
         # then that method (jupyter_client/manager.py/_kill_kernel()) will set `self.kernel` to None,
@@ -455,7 +455,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             self.process_proxy.cleanup()
             self.process_proxy = None
 
-        super(RemoteKernelManager, self).cleanup(connection_file)
+        return super(RemoteKernelManager, self).cleanup_resources(restart)
 
     def write_connection_file(self):
         """Write connection info to JSON dict in self.connection_file if the kernel is local.

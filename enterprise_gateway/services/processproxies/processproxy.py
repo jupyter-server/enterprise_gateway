@@ -953,16 +953,19 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             "connection information is null!".format(self.kernel_id)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
+        self._close_response_socket()
+        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
+
+    def _close_response_socket(self):
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             try:
+                self.log.debug("response socket still open, close it")
                 self.response_socket.shutdown(SHUT_RDWR)
                 self.response_socket.close()
             except OSError:
                 pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
-
-        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
     def _extract_pid_info(self, connect_info):
         """Extracts any PID, PGID info from the payload received on the response socket."""
@@ -999,8 +1002,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
 
     def cleanup(self):
         """Terminates tunnel processes, if applicable."""
-        self.shutdown_listener()  # Ensure listener has been shutdown
-
         self.assigned_ip = None
 
         for kernel_channel, process in self.tunnel_processes.items():
@@ -1113,6 +1114,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             # If this was a tunneled connection, re-establish tunnels.  Note, this will reset the
             # communication socket (comm_ip, comm_port) members as well.
             self._setup_connection_info(process_info['tunneled_connect_info'])
+
+    def log_and_raise(self, http_status_code=None, reason=None):
+        """Override log_and_raise method in order to verify that the response socket is properly closed
+        before raise exception """
+        self._close_response_socket()
+        super().log_and_raise(http_status_code, reason)
 
     @staticmethod
     def get_current_time():
