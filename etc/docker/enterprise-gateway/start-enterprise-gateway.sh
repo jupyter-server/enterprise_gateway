@@ -21,6 +21,7 @@ export KG_PORT_RETRIES=${KG_PORT_RETRIES:-${EG_PORT_RETRIES}}
 # To use tunneling set this variable to 'True' (may need to run as root).
 export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}
 
+export EG_LIST_KERNELS=${EG_LIST_KERNELS:-True}
 export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
 export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-60}
