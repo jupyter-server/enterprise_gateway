@@ -6,6 +6,8 @@ dependencies:
   - jinja2>=2.10
   - jupyter_client>=6.1
   - jupyter_core>=4.6.0
+# add this back when 6.1.0 is out
+# and than remove pip section below
 #  - notebook>=6.1.0rc1
   - paramiko>=2.1.2
   - pexpect>=4.2.0
