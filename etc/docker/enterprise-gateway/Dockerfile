@@ -1,4 +1,4 @@
-FROM jupyter/minimal-notebook
+FROM jupyter/minimal-notebook:04f7f60d34a6
 
 ENV SPARK_VER 2.4.5
 ENV SPARK_HOME /opt/spark
