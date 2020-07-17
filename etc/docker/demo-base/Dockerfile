@@ -114,11 +114,14 @@ RUN conda install --yes --quiet \
 
 USER $NB_UID
 
-RUN Rscript -e 'install.packages(c("IRkernel","versions"), repos="https://ftp.osuosl.org/pub/cran", lib="/opt/conda/lib/R/library")' \
+#Package ‘SparkR’ was removed from the CRAN repository.
+#https://cran.r-project.org/src/contrib/Archive/SparkR/
+
+RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.edu/CRAN/", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'versions::install.versions("SparkR", "2.4.1", lib="/opt/conda/lib/R/library")' && \
-    fix-permissions $ANACONDA_HOME && \
-    fix-permissions /home/$NB_USER
+            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_2.4.5.tar.gz", destfile = "SparkR_2.4.5.tar.gz")' \
+            -e 'install.packages(pkgs="SparkR_2.4.5.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
+            -e 'unlink("SparkR_2.4.5.tar.gz")'
 
 # SETUP HADOOP CONFIGS
 RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_PREFIX=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
