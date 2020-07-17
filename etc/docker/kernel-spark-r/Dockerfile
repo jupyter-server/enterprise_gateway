@@ -13,8 +13,7 @@ ENV PATH $PATH:$SPARK_HOME/bin
 
 RUN apt-get update && apt-get install -y \
     openjdk-8-jdk \
-    libssl-dev \
-    libssl1.0.0:amd64
+    libssl-dev
 
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
 
