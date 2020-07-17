@@ -1,5 +1,5 @@
 # Ubuntu 18.04.1 LTS Bionic
-FROM jupyter/scipy-notebook
+FROM jupyter/scipy-notebook:04f7f60d34a6
 
 ENV PATH=$PATH:$CONDA_DIR/bin
 

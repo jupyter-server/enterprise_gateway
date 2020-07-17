@@ -1,5 +1,5 @@
 # Ubuntu:Bionic
-FROM jupyter/tensorflow-notebook
+FROM jupyter/tensorflow-notebook:04f7f60d34a6
 
 ENV KERNEL_LANGUAGE python
 
