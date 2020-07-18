@@ -9,9 +9,9 @@ The following sample kernelspecs are currently available on Distributed mode:
 Install the `python_distributed` kernelspec on all nodes.
 
 ``` Bash
-wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0rc1/jupyter_enterprise_gateway_kernelspecs-2.2.0rc1.tar.gz
+wget https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0rc2/jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc1.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
 ```
 
 The `python_distributed` kernelspec uses `DistributedProcessProxy` which is responsible for the launch and management of kernels distributed across and explicitly defined set of hosts using ssh. Hosts are determined via a round-robin algorithm (that we should make pluggable someday).
