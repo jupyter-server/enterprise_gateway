@@ -135,11 +135,11 @@ RUN ls -la /usr/hdp/current/hadoop/etc/hadoop/*-env.sh && \
 
 # Install Toree
 RUN cd /tmp && \
-    curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.3.0-incubating/toree-pip/toree-0.3.0.tar.gz && \
+    curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.4.0-incubating/toree-pip/toree-0.4.0.tar.gz && \
     pip install --upgrade setuptools --user && \
-    pip install /tmp/toree-0.3.0.tar.gz && \
+    pip install /tmp/toree-0.4.0.tar.gz && \
     jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark $SPARK_VER" --interpreters=Scala && \
-    rm -f /tmp/toree-0.3.0.tar.gz && \
+    rm -f /tmp/toree-0.4.0.tar.gz && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
@@ -187,4 +187,3 @@ EXPOSE 50010 50020 50070 50075 50090 8020 9000 \
 49707 2122
 
 USER $NB_USER
-
