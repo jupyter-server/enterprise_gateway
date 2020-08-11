@@ -189,6 +189,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             eg_max_kernels=self.max_kernels,
             eg_env_process_whitelist=self.env_process_whitelist,
             eg_env_whitelist=self.env_whitelist,
+            eg_kernel_headers=self.kernel_headers,
             eg_list_kernels=self.list_kernels,
             eg_authorized_users=self.authorized_users,
             eg_unauthorized_users=self.unauthorized_users,

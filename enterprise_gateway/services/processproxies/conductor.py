@@ -10,7 +10,7 @@ import signal
 import socket
 import subprocess
 
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import localinterfaces
 
 from .processproxy import RemoteProcessProxy
 
@@ -49,7 +49,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self._update_launch_info(kernel_cmd, **kwargs)
         # Enable stderr PIPE for the run command
         kwargs.update({'stderr': subprocess.PIPE})
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
         self.env = kwargs.get('env')

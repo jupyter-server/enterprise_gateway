@@ -335,7 +335,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         if 'KG_AUTH_TOKEN' in env:
             del env['KG_AUTH_TOKEN']
 
-        self.log.debug("Launching kernel: {} with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
+        self.log.debug("Launching kernel: '{}' with command: {}".format(self.kernel_spec.display_name, kernel_cmd))
+
         proxy = await self.process_proxy.launch_process(kernel_cmd, **kwargs)
         return proxy
 
