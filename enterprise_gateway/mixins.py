@@ -6,6 +6,7 @@ from distutils.util import strtobool
 from http.client import responses
 import json
 import os
+import ssl
 import traceback
 
 from tornado import web
@@ -257,6 +258,17 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default('client_ca')
     def client_ca_default(self):
         return os.getenv(self.client_ca_env, os.getenv('KG_CLIENT_CA'))
+
+    ssl_version_env = 'EG_SSL_VERSION'
+    ssl_version_default_value = ssl.PROTOCOL_TLSv1_2
+    ssl_version = Integer(None, config=True, allow_none=True,
+                          help="""Sets the SSL version to use for the web socket
+                          connection. (EG_SSL_VERSION env var)""")
+
+    @default('ssl_version')
+    def ssl_version_default(self):
+        ssl_from_env = os.getenv(self.ssl_version_env, os.getenv('KG_SSL_VERSION'))
+        return ssl_from_env if ssl_from_env is None else int(ssl_from_env)
 
     max_age_env = 'EG_MAX_AGE'
     max_age = Unicode(config=True,

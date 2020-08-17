@@ -41,6 +41,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.keyfile, '/test/fake.key')
         self.assertEqual(app.certfile, '/test/fake.crt')
         self.assertEqual(app.client_ca, '/test/fake_ca.crt')
+        self.assertEqual(app.ssl_version, 3)
 
     def test_config_env_vars_bc(self):
         """B/C env vars should be honored for traitlets."""
@@ -61,6 +62,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['KG_KEYFILE'] = '/test/fake.key'
         os.environ['KG_CERTFILE'] = '/test/fake.crt'
         os.environ['KG_CLIENT_CA'] = '/test/fake_ca.crt'
+        os.environ['KG_SSL_VERSION'] = '3'
 
         self._assert_envs_to_traitlets()
 
@@ -83,8 +85,18 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ['EG_KEYFILE'] = '/test/fake.key'
         os.environ['EG_CERTFILE'] = '/test/fake.crt'
         os.environ['EG_CLIENT_CA'] = '/test/fake_ca.crt'
+        os.environ['EG_SSL_VERSION'] = '3'
 
         self._assert_envs_to_traitlets()
+
+    def test_ssl_options(self):
+        app = EnterpriseGatewayApp()
+        ssl_options = app._build_ssl_options()
+        self.assertIsNone(ssl_options)
+        app = EnterpriseGatewayApp()
+        os.environ['EG_CERTFILE'] = '/test/fake.crt'
+        ssl_options = app._build_ssl_options()
+        self.assertEqual(ssl_options['ssl_version'], 5)
 
 
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
