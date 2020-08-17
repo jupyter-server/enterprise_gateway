@@ -9,6 +9,7 @@ import logging
 import os
 import signal
 import socket
+import ssl
 import sys
 import time
 import weakref
@@ -51,7 +52,8 @@ aliases.update({
     'port_retries': 'EnterpriseGatewayApp.port_retries',
     'keyfile': 'EnterpriseGatewayApp.keyfile',
     'certfile': 'EnterpriseGatewayApp.certfile',
-    'client-ca': 'EnterpriseGatewayApp.client_ca'
+    'client-ca': 'EnterpriseGatewayApp.client_ca',
+    'ssl_version': 'EnterpriseGatewayApp.ssl_version'
 })
 
 
@@ -214,19 +216,13 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             ssl_options['keyfile'] = self.keyfile
         if self.client_ca:
             ssl_options['ca_certs'] = self.client_ca
+        if self.ssl_version:
+            ssl_options['ssl_version'] = self.ssl_version
         if not ssl_options:
             # None indicates no SSL config
             ssl_options = None
         else:
-            # SSL may be missing, so only import it if it's to be used
-            import ssl
-            # PROTOCOL_TLS selects the highest ssl/tls protocol version that both the client and
-            # server support. When PROTOCOL_TLS is not available use PROTOCOL_SSLv23.
-            # PROTOCOL_TLS is new in version 2.7.13, 3.5.3 and 3.6
-            ssl_options.setdefault(
-                'ssl_version',
-                getattr(ssl, 'PROTOCOL_TLS', ssl.PROTOCOL_SSLv23)
-            )
+            ssl_options.setdefault('ssl_version', self.ssl_version_default_value)
             if ssl_options.get('ca_certs', False):
                 ssl_options.setdefault('cert_reqs', ssl.CERT_REQUIRED)
 
