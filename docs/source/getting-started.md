@@ -94,15 +94,16 @@ conda uninstall jupyter_enterprise_gateway
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided deep integration with various resource managers. Having said that, Enterprise Gateway also supports running in a pseudo-distributed mode utilizing for example both YARN client or Spark Standalone modes. We've also recently added Kubernetes, Docker Swarm and IBM Spectrum Conductor integrations.
 
-Please follow the links below to learn specific details about how to enable/configure the different modes of depoloying your kernels:
+Please follow the links below to learn specific details about how to enable/configure the different modes of deploying your kernels:
 
-* [Distributed](kernel-distributed.html)
-* [YARN Cluster Mode](kernel-yarn-cluster-mode.html)
-* [YARN Client Mode](kernel-yarn-client-mode.html)
-* [Standalone](kernel-spark-standalone.html)
-* [Kubernetes](kernel-kubernetes.html)
-* [Docker Swarm](kernel-docker.html)
-* [IBM Spectrum Conducto](kernel-conductor.html)
+* [Distributed](kernel-distributed.md)
+* [YARN Cluster Mode](kernel-yarn-cluster-mode.md)
+* [YARN Client Mode](kernel-yarn-client-mode.md)
+* [Spark Standalone](kernel-spark-standalone.md)
+* [Kubernetes](kernel-kubernetes.md)
+* [Docker Swarm](kernel-docker.md)
+* [IBM Spectrum Conductor](kernel-conductor.md)
+* [Standalone Remote Kernel Execution](kernel-library.md)
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
 

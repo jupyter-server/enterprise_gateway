@@ -31,9 +31,9 @@ dependencies:
 
   # Documentation Requirements
   - sphinx_rtd_theme
-  - sphinx=1.8.3
+  - sphinx>=3
   - recommonmark
-  #- sphinx-markdown-tables
+  - sphinx-markdown-tables
 
   - pip:
-    - notebook>=6.1.0rc1
+    - notebook>=6.1.0
