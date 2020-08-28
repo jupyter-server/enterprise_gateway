@@ -86,7 +86,7 @@ make kernelspecs
 ```
 
 Note: Because the scala launcher requires a jar file, `make kernelspecs` requires the use of `sbt` to build the 
-scala launcher jar. Please consult the [sbt site](http://www.scala-sbt.org/) for directions to 
+scala launcher jar. Please consult the [sbt site](https://www.scala-sbt.org/) for directions to 
 install/upgrade `sbt` on your platform. We currently prefer the use of 1.0.3.
 
 ### Build distribution files

@@ -1,4 +1,4 @@
-This image is responsible for contacting the configured [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) instance within a Kubernetes or Docker Swarm cluster and pulling the set of kernel-based images to the node on which it is running.
+This image is responsible for contacting the configured [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) instance within a Kubernetes or Docker Swarm cluster and pulling the set of kernel-based images to the node on which it is running.
 
 # What it Gives You
 * The ability to add new nodes and have kernel images on those nodes automatically populated.
@@ -17,4 +17,4 @@ There are a few points of configuration listed below - all of which are environm
 * `KIP_NUM_RETRIES` (`3`)
 * `KIP_PULL_POLICY` (`IfNotPresent`)
 
-For more information, check our [repo](https://github.com/jupyter/enterprise_gateway) and [docs](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/).
+For more information, check our [repo](https://github.com/jupyter/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

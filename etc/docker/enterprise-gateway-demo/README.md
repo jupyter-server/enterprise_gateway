@@ -1,4 +1,4 @@
-Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), this image adds support for [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.  
+Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), this image adds support for [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.  
 
 # What it Gives You
 * [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) base functionality
