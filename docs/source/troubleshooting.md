@@ -1,7 +1,7 @@
 ## Troubleshooting
 
 This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
-instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.html) page.
+instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.md) page.
 
 - **None of the scenarios on this page match or resolve my issue, what do I do next?**
 

@@ -138,7 +138,7 @@ make itest
 
 ### Build the docker images
 
-The following can be used to build all docker images used within the project.  See [docker images](docker.html) for specific details.
+The following can be used to build all docker images used within the project.  See [docker images](docker.md) for specific details.
 
 ```
 make docker-images

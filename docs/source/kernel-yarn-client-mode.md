@@ -4,7 +4,7 @@ By default, Jupyter Enterprise Gateway provides feature parity with Jupyter Kern
 
 Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 
-Please note also the YARN client mode can be considered as a [Distributed](./kernel-distributed.html) mode. It just happen to use spark-submit form different nodes in the cluster but uses `DistributedProcessProxy`.
+Please note also the YARN client mode can be considered as a [Distributed](./kernel-distributed.md) mode. It just happen to use spark-submit form different nodes in the cluster but uses `DistributedProcessProxy`.
 
 The following sample kernelspecs are currently available on YARN client:
 
