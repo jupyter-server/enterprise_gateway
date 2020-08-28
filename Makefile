@@ -45,6 +45,9 @@ clean: ## Make a clean source tree
 	-find . -name target -type d -exec rm -fr {} +
 	-find . -name __pycache__  -type d -exec rm -fr {} +
 	-find enterprise_gateway -name '*.pyc' -exec rm -fr {} +
+	-find website -name '.sass-cache' -type d -exec rm -fr {} +
+	-find website -name '_site' -type d -exec rm -fr {} +
+	-find website -name 'build' -type d -exec rm -fr {} +
 	-$(SA) $(ENV) && make -C docs clean
 	-$(SA) $(ENV) && make -C etc clean
 
