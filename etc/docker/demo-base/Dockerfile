@@ -26,7 +26,7 @@ ENV SHELL=/bin/bash \
 ENV HOME=/home/$NB_USER \
     PATH=$ANACONDA_HOME/bin:$HADOOP_PREFIX/bin:$JAVA_HOME/bin:$SPARK_HOME/bin:$PATH
 
-ENV SPARK_VER 2.4.1
+ENV SPARK_VER 2.4.6
 ENV HADOOP_VER 2.7.7
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
@@ -85,11 +85,10 @@ RUN mkdir /home/$NB_USER/work && \
     fix-permissions /home/$NB_USER
 
 # DOWNLOAD HADOOP AND SPARK
-RUN curl -sL http://www.us.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
-RUN curl -sL https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current
-
+RUN curl -sL https://archive.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current && \
+    curl -sL https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current && \
 # SETUP SPARK AND HADOOP SYMLINKS
-RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-${SPARK_VER}-bin-hadoop2.7 spark2-client
+    cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-${SPARK_VER}-bin-hadoop2.7 spark2-client
 
 # INSTALL MINI-CONDA AND PYTHON PACKAGES
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O ~/miniconda.sh && \
@@ -117,9 +116,9 @@ USER $NB_UID
 
 RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.edu/CRAN/", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_2.4.5.tar.gz", destfile = "SparkR_2.4.5.tar.gz")' \
-            -e 'install.packages(pkgs="SparkR_2.4.5.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
-            -e 'unlink("SparkR_2.4.5.tar.gz")'
+            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_2.4.6.tar.gz", destfile = "SparkR_2.4.6.tar.gz")' \
+            -e 'install.packages(pkgs="SparkR_2.4.6.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
+            -e 'unlink("SparkR_2.4.6.tar.gz")'
 
 # SETUP HADOOP CONFIGS
 RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_PREFIX=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
@@ -138,7 +137,7 @@ RUN cd /tmp && \
     curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.3.0-incubating/toree-pip/toree-0.3.0.tar.gz && \
     pip install --upgrade setuptools --user && \
     pip install /tmp/toree-0.3.0.tar.gz && \
-    jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark 2.4.1" --interpreters=Scala && \
+    jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark 2.4.6" --interpreters=Scala && \
     rm -f /tmp/toree-0.3.0.tar.gz && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER

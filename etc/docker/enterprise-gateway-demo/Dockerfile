@@ -28,11 +28,11 @@ USER $NB_USER
 # Copy toree jar from install to scala kernelspec lib directory
 # Add YARN_CONF_DIR to each env stanza, Add alternate-sigint to vanilla toree
 RUN mkdir -p /tmp/byok/kernels && \
-	cp /usr/local/share/jupyter/kernels/spark_2.4.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_cluster/lib && \
-	cp /usr/local/share/jupyter/kernels/spark_2.4.1_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_client/lib && \
+	cp /usr/local/share/jupyter/kernels/spark_2.4.6_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_cluster/lib && \
+	cp /usr/local/share/jupyter/kernels/spark_2.4.6_scala/lib/*.jar /usr/local/share/jupyter/kernels/spark_scala_yarn_client/lib && \
 	cd /usr/local/share/jupyter/kernels && \
 	for dir in spark_*; do cat $dir/kernel.json | sed s/'"env": {'/'"env": {|    "YARN_CONF_DIR": "\/usr\/hdp\/current\/hadoop\/etc\/hadoop",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json $dir/kernel.json; done && \
-	cat spark_2.4.1_scala/kernel.json | sed s/'"__TOREE_OPTS__": "",'/'"__TOREE_OPTS__": "--alternate-sigint USR2",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json spark_2.4.1_scala/kernel.json && \
+	cat spark_2.4.6_scala/kernel.json | sed s/'"__TOREE_OPTS__": "",'/'"__TOREE_OPTS__": "--alternate-sigint USR2",'/ | tr '|' '\n' > xkernel.json; mv xkernel.json spark_2.4.6_scala/kernel.json && \
 	touch /usr/local/share/jupyter/enterprise-gateway.log && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log
 
