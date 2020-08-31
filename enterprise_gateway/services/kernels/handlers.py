@@ -30,18 +30,14 @@ class MainKernelHandler(TokenAuthorizationMixin,
 
     @gen.coroutine
     def post(self):
-        """Overrides the super class method to honor the max number of allowed
-        kernels configuration setting and to support custom kernel environment
-        variables for every request.
+        """Overrides the super class method to manage env in the request body.
 
-        Delegates the request to the super class implementation if no limit is
-        set or if the maximum is not reached. Otherwise, responds with an
-        error.
+        Max kernel limits are now enforced in RemoteMappingKernelManager.start_kernel().
 
         Raises
         ------
         tornado.web.HTTPError
-            403 Forbidden if the limit is reached
+            403 Forbidden if either max kernel limit is reached (total or per user, if configured)
         """
         max_kernels = self.settings['eg_max_kernels']
         if max_kernels is not None:
