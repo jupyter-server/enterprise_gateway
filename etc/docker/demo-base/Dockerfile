@@ -92,13 +92,11 @@ RUN curl -sL https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SP
 RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-${SPARK_VER}-bin-hadoop2.7 spark2-client
 
 # INSTALL MINI-CONDA AND PYTHON PACKAGES
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -f -b -p $ANACONDA_HOME && \
     rm ~/miniconda.sh && \
     conda clean -tipsy && \
-    rm -rf /home/$NB_USER/.cache/yarn && \
-    fix-permissions $ANACONDA_HOME && \
-    fix-permissions /home/$NB_USER
+    rm -rf /home/$NB_USER/.cache/yarn
 
 USER root
 
