@@ -247,7 +247,7 @@ but it failed with a "Kernel error" and a SSHException.**
 - **PySpark 2.4.x fails on Python 3.8**
 
    PySpark 2.4.x fails on Python 3.8 as described in [SPARK-29536](https://issues.apache.org/jira/browse/SPARK-29536).
-   Use Python 3.7.x as the issue only seem to have been resolved on Spark 3.0.
+   Use Python 3.7.x as the issue only seems to have been resolved on Spark 3.0.
 
 - **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
 
