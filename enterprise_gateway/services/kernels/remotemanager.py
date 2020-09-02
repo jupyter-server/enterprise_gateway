@@ -86,8 +86,36 @@ def new_kernel_id(**kwargs):
     return kernel_id
 
 
+class TrackPendingRequests():
+    """Simple class to track (increment/decrement) pending kernel start requests, both total and per user.
+
+       This tracking is necessary due to an inherent race condition that occurs now that kernel startup is
+       asynchronous.  As a result, multiple/simultaneous requests must be considered, in addition all existing
+       kernel sessions.
+    """
+
+    _pending_requests_all = 0
+    _pending_requests_user = {}
+
+    def increment(self, username: str) -> None:
+        self._pending_requests_all += 1
+        cur_val = int(self._pending_requests_user.get(username, 0))
+        self._pending_requests_user[username] = (cur_val + 1)
+
+    def decrement(self, username: str) -> None:
+        self._pending_requests_all -= 1
+        cur_val = int(self._pending_requests_user.get(username))
+        self._pending_requests_user[username] = (cur_val - 1)
+
+    def get_counts(self, username):
+        return self._pending_requests_all, int(self._pending_requests_user.get(username, 0))
+
+
 class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy. """
+
+    pending_requests = TrackPendingRequests()  # Used to enforce max-kernel limits
+
     def _kernel_manager_class_default(self):
         return 'enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager'
 
@@ -114,9 +142,47 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-        kernel_id = await super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs)
+
+        # Check max kernel limits
+        self._enforce_kernel_limits(username)
+
+        RemoteMappingKernelManager.pending_requests.increment(username)
+        try:
+            kernel_id = await super(RemoteMappingKernelManager, self).start_kernel(*args, **kwargs)
+        finally:
+            RemoteMappingKernelManager.pending_requests.decrement(username)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         return kernel_id
+
+    def _enforce_kernel_limits(self, username: str) -> None:
+        """ If MaxKernels or MaxKernelsPerUser are configured, enforce the respective values. """
+
+        if self.parent.max_kernels is not None or self.parent.max_kernels_per_user >= 0:
+            pending_all, pending_user = RemoteMappingKernelManager.pending_requests.get_counts(username)
+
+            # Enforce overall limit...
+            if self.parent.max_kernels is not None:
+                active_and_pending = len(self.list_kernels()) + pending_all
+                if active_and_pending >= self.parent.max_kernels:
+                    error_message = "A max kernels limit has been set to {} and there are " \
+                                    "currently {} active and pending {}.". \
+                        format(self.parent.max_kernels, active_and_pending,
+                               "kernel" if active_and_pending == 1 else "kernels")
+                    self.log.error(error_message)
+                    raise web.HTTPError(403, error_message)
+
+            # Enforce per-user limit...
+            if self.parent.max_kernels_per_user >= 0:
+                if self.parent.kernel_session_manager:
+                    active_and_pending = self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                    if active_and_pending >= self.parent.max_kernels_per_user:
+                        error_message = "A max kernels per user limit has been set to {} and user '{}' " \
+                                        "currently has {} active and pending {}.".\
+                            format(self.parent.max_kernels_per_user, username, active_and_pending,
+                                   "kernel" if active_and_pending == 1 else "kernels")
+                        self.log.error(error_message)
+                        raise web.HTTPError(403, error_message)
+        return
 
     def remove_kernel(self, kernel_id):
         """ Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session. """
