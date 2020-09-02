@@ -1,7 +1,6 @@
 ARG HUB_ORG
-ARG TAG
 
-FROM $HUB_ORG/demo-base:$TAG
+FROM $HUB_ORG/demo-base:2.4.1
 
 ENV NB_USER="jovyan"
 
