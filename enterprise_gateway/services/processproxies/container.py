@@ -21,8 +21,8 @@ default_kernel_gid = '100'  # users group is the default
 # These could be enforced via a PodSecurityPolicy, but those affect
 # all pods so the cluster admin would need to configure those for
 # all applications.
-uid_blacklist = os.getenv("EG_UID_BLACKLIST", "0").split(',')
-gid_blacklist = os.getenv("EG_GID_BLACKLIST", "0").split(',')
+prohibited_uids = os.getenv("EG_PROHIBITED_UIDS", "0").split(',')
+prohibited_gids = os.getenv("EG_PROHIBITED_GIDS", "0").split(',')
 
 mirror_working_dirs = bool((os.getenv('EG_MIRROR_WORKING_DIRS', 'false').lower() == 'true'))
 
@@ -61,7 +61,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             if 'KERNEL_WORKING_DIR' in kwargs['env']:
                 del kwargs['env']['KERNEL_WORKING_DIR']
 
-        self._enforce_uid_gid_blacklists(**kwargs)
+        self._enforce_prohibited_ids(**kwargs)
 
         await super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
@@ -75,18 +75,18 @@ class ContainerProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _enforce_uid_gid_blacklists(self, **kwargs):
-        """Determine UID and GID with which to launch container and ensure they do not appear in blacklist."""
+    def _enforce_prohibited_ids(self, **kwargs):
+        """Determine UID and GID with which to launch container and ensure they are not prohibited."""
         kernel_uid = kwargs['env'].get('KERNEL_UID', default_kernel_uid)
         kernel_gid = kwargs['env'].get('KERNEL_GID', default_kernel_gid)
 
-        if kernel_uid in uid_blacklist:
+        if kernel_uid in prohibited_uids:
             http_status_code = 403
-            error_message = "Kernel's UID value of '{}' has been denied via EG_UID_BLACKLIST!".format(kernel_uid)
+            error_message = "Kernel's UID value of '{}' has been denied via EG_PROHIBITED_UIDS!".format(kernel_uid)
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
-        elif kernel_gid in gid_blacklist:
+        elif kernel_gid in prohibited_gids:
             http_status_code = 403
-            error_message = "Kernel's GID value of '{}' has been denied via EG_GID_BLACKLIST!".format(kernel_gid)
+            error_message = "Kernel's GID value of '{}' has been denied via EG_PROHIBITED_GIDS!".format(kernel_gid)
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
 
         # Ensure the kernel's env has what it needs in case they came from defaults

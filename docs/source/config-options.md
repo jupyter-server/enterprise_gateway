@@ -331,12 +331,6 @@ The following environment variables can be used to influence functionality and a
     Indicates whether tunneling (via ssh) of the kernel and communication ports
     is enabled (True) or not (False).
 
-  EG_GID_BLACKLIST=0
-    Containers only.  A comma-separated list of group ids (GID) whose values are not
-    allowed to be referenced by KERNEL_GID.  This defaults to the root group id (0).
-    Attempts to launch a kernel where KERNEL_GID's value is in this list will result
-    in an exception indicating error 403 (Forbidden).  See also EG_UID_BLACKLIST.
-
   EG_KERNEL_CLUSTER_ROLE=kernel-controller or cluster-admin
     Kubernetes only.  The role to use when binding with the kernel service account.
     The enterprise-gateway.yaml script creates the cluster role 'kernel-controller'
@@ -365,15 +359,6 @@ The following environment variables can be used to influence functionality and a
     **Experimental** The location in which the kernel session information is persisted.
     By default, this is located in the configured JupyterDataDir.  See also
     EG_KERNEL_SESSION_PERSISTENCE.
-
-  EG_LOCAL_IP_BLACKLIST=''
-    A comma-separated list of local IPv4 addresses (or regular expressions) that
-    should not be used when determining the response address used to convey connection
-    information back to Enterprise Gateway from a remote kernel.  In some cases, other
-    network interfaces (e.g., docker with 172.17.0.*) can interfere - leading to
-    connection failures during kernel startup.
-    Example: EG_LOCAL_IP_BLACKLIST=172.17.0.*,192.168.0.27 will eliminate the use of
-    all addresses in 172.17.0 as well as 192.168.0.27
       
   EG_MAX_PORT_RANGE_RETRIES=5
     The number of attempts made to locate an available port within the specified
@@ -398,6 +383,27 @@ The following environment variables can be used to influence functionality and a
     deployment. This value is then used within Enterprise Gateway to coordinate kernel
     configurations. Should this value not be set during deployment, Enterprise Gateway
     will default its value to namespace 'default'.
+
+  EG_PROHIBITED_GIDS=0
+    Containers only.  A comma-separated list of group ids (GID) whose values are not
+    allowed to be referenced by KERNEL_GID.  This defaults to the root group id (0).
+    Attempts to launch a kernel where KERNEL_GID's value is in this list will result
+    in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_UIDS.
+
+  EG_PROHIBITED_LOCAL_IPS=''
+    A comma-separated list of local IPv4 addresses (or regular expressions) that
+    should not be used when determining the response address used to convey connection
+    information back to Enterprise Gateway from a remote kernel.  In some cases, other
+    network interfaces (e.g., docker with 172.17.0.*) can interfere - leading to
+    connection failures during kernel startup.
+    Example: EG_PROHIBITED_LOCAL_IPS=172.17.0.*,192.168.0.27 will eliminate the use of
+    all addresses in 172.17.0 as well as 192.168.0.27
+
+  EG_PROHIBITED_UIDS=0
+    Containers only.  A comma-separated list of user ids (UID) whose values are not
+    allowed to be referenced by KERNEL_UID.  This defaults to the root user id (0).
+    Attempts to launch a kernel where KERNEL_UID's value is in this list will result
+    in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_GIDS.
       
   EG_SHARED_NAMESPACE=False
     Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
@@ -407,12 +413,6 @@ The following environment variables can be used to influence functionality and a
   EG_SSH_PORT=22
     The port number used for ssh operations for installations choosing to
     configure the ssh server on a port other than the default 22.
-
-  EG_UID_BLACKLIST=0
-    Containers only.  A comma-separated list of user ids (UID) whose values are not
-    allowed to be referenced by KERNEL_UID.  This defaults to the root user id (0).
-    Attempts to launch a kernel where KERNEL_UID's value is in this list will result
-    in an exception indicating error 403 (Forbidden).  See also EG_GID_BLACKLIST.
 ```
 ### Environment variables that assist in troubleshooting
 The following environment variables may be useful for troubleshooting:
