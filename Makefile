@@ -13,7 +13,7 @@ ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
 VERSION?=2.3.0.dev1
-SPARK_VERSION?=2.4.1
+SPARK_VERSION?=2.4.6
 
 ifeq (dev, $(findstring dev, $(VERSION)))
     TAG:=dev
@@ -66,7 +66,7 @@ docs: ## Make HTML documentation
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
-	make VERSION=$(VERSION) TAG=$(TAG) -C  etc $@
+	make VERSION=$(VERSION) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C  etc $@
 
 install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
@@ -129,7 +129,7 @@ docker-images enterprise-gateway-demo nb2kg kernel-images enterprise-gateway ker
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 demo-base:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 # Here for doc purposes
 clean-images: ## Remove docker images (includes kernel-based images)
