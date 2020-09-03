@@ -1,6 +1,7 @@
 ARG HUB_ORG
+ARG SPARK_VERSION
 
-FROM $HUB_ORG/demo-base:2.4.1
+FROM $HUB_ORG/demo-base:$SPARK_VERSION
 
 ENV NB_USER="jovyan"
 
