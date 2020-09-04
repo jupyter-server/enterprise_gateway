@@ -125,7 +125,9 @@ docker-images:  ## Build docker images (includes kernel-based images)
 kernel-images: ## Build kernel-based docker images
 
 # Actual working targets...
-docker-images enterprise-gateway-demo nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
+docker-images: demo-base enterprise-gateway-demo nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller
+
+enterprise-gateway-demo nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 demo-base:
