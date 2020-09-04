@@ -83,8 +83,8 @@ $(foreach kernelspec,$(KERNELSPECS),$(eval $(call BUILD_KERNELSPEC,$(kernelspec)
 kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	-rm -rf kernel-launchers/scala/lib
 	mkdir -p kernel-launchers/scala/lib
-	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) -Dspark_version=$(SPARK_VERSION) package; cp target/scala-2.11/*.jar ../lib)
-	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.4.0-incubating/toree-assembly-0.4.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.4.0-incubating.jar
+	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) -Dspark_version=$(SPARK_VERSION) package; cp target/scala-2.12/*.jar ../lib)
+	curl -L https://repository.apache.org/content/repositories/orgapachetoree-1019/org/apache/toree/toree-assembly/0.5.0-incubating/toree-assembly-0.5.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.5.0-incubating.jar
 
 KERNEL_IMAGE_FILE:=../dist/jupyter_enterprise_gateway_kernel_image_files-$(VERSION).tar.gz
 kernel_image_files: ../build/kernel_image_files
