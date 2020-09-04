@@ -92,7 +92,7 @@ class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.4.1_scala")  # scala_kubernetes for k8s
+    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.4.6_scala")  # scala_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):

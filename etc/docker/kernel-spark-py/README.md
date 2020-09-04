@@ -1,4 +1,4 @@
-This image enables the use of an IPython kernel launched from [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is built on the base image [elyra/kernel-py](https://hub.docker.com/r/elyra/kernel-py/), and adds [Apache Spark 2.4.1](https://spark.apache.org/docs/2.4.1/).  Note: The ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.
+This image enables the use of an IPython kernel launched from [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes cluster.  It is built on the base image [elyra/kernel-py](https://hub.docker.com/r/elyra/kernel-py/), and adds [Apache Spark 2.4.6](https://spark.apache.org/docs/2.4.6/).  Note: The ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.
 
 # What it Gives You
 * IPython kernel support 
