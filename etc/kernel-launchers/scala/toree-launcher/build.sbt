@@ -6,7 +6,6 @@
 name := "toree-launcher"
 
 version := sys.props.getOrElse("version", default = "1.0").replaceAll("dev[0-9]", "SNAPSHOT")
-val sparkVersion = sys.props.getOrElse("spark_version", default = "2.4.6")
 
 scalaVersion := "2.11.12"
 
@@ -14,6 +13,5 @@ resolvers += "Typesafe Repo" at "https://repo.typesafe.com/typesafe/releases/"
 /* resolvers += "Sonatype Repository" at "https://oss.sonatype.org/content/repositories/releases/" */
 resolvers += "Sonatype Maven Central Mirror" at "https://maven-central.storage-download.googleapis.com/maven2/"
 
-libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10" // Apache v2
 libraryDependencies += "org.apache.toree" % "toree-assembly" % "0.3.0-incubating" /*from "https://archive.apache.org/dist/incubator/toree/0.3.0-incubating/toree/toree-assembly-0.3.0-incubating.jar"*/
