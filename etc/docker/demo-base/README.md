@@ -1,7 +1,7 @@
 # What this image Gives You
 * Ubuntu base image : bionic
-* Hadoop 2.7.7 
-* Apache Spark 2.4.1
+* Hadoop 2.7.7
+* Apache Spark 2.4.6
 * Java 1.8 runtime
 * Mini-conda latest (python 3.7) with R packages
 * Toree 0.3.0-incubating
