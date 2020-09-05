@@ -1,5 +1,5 @@
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: enterprise-gateway-controller
@@ -17,7 +17,7 @@ rules:
     resources: ["rolebindings"]
     verbs: ["get", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   # Referenced by EG_KERNEL_CLUSTER_ROLE in the Deployment
