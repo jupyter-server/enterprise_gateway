@@ -144,7 +144,7 @@ spec:
           value: "python_kubernetes"
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
-        image: elyra/enterprise-gateway:2.2.0
+        image: elyra/enterprise-gateway:dev
         # Use IfNotPresent policy so that dev-based systems don't automatically
         # update. This provides more control.  Since formal tags will be release-specific
         # this policy should be sufficient for them as well.
@@ -180,7 +180,7 @@ spec:
     spec:
       containers:
       - name: kernel-image-puller 
-        image: elyra/kernel-image-puller:2.2.0
+        image: elyra/kernel-image-puller:dev
         env:
           - name: KIP_GATEWAY_HOST
             value: "http://enterprise-gateway.enterprise-gateway:8888"
