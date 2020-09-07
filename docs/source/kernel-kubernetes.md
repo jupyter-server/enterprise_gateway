@@ -550,9 +550,9 @@ From anywhere with Helm cluster access, create the service and deployment by run
 ```bash
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm/enterprise-gateway
 ```
-the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.2.0rc2) page:
+the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.2.0) page:
 ```bash
-helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0rc2/jupyter_enterprise_gateway_helm-2.2.0rc2.tgz
+helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0/jupyter_enterprise_gateway_helm-2.2.0.tgz
 ```
 ##### Configuration
 
