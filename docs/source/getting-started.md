@@ -1,6 +1,6 @@
 ## Getting started
 
-Jupyter Enterprise Gateway requires Python (Python 3.3 or greater, or Python 2.7) and is intended to be installed on a node (typically the master node) of a managed cluster.  Although its design center is for running kernels in [Apache Spark 2.x](http://spark.apache.org/docs/latest/index.html) clusters, clusters configured without Apache Spark are also acceptable.
+Jupyter Enterprise Gateway requires Python (Python 3.3 or greater, or Python 2.7) and is intended to be installed on a node (typically the master node) of a managed cluster.  Although its design center is for running kernels in [Apache Spark 2.x](https://spark.apache.org/docs/latest/index.html) clusters, clusters configured without Apache Spark are also acceptable.
 
 The following Resource Managers are supported with the Jupyter Enterprise Gateway:
 
@@ -32,7 +32,7 @@ Jupyter Enterprise Gateway exposes the following features and functionality:
 * Secure communication from client to kernel
 * Persistent kernel sessions (see [Roadmap](roadmap.html#project-roadmap))
 * Configuration profiles (see [Roadmap](roadmap.html#project-roadmap))
-* Feature parity with [Jupyter Kernel Gateway's](http://jupyter-kernel-gateway.readthedocs.io/en/latest/) websocket-mode.
+* Feature parity with [Jupyter Kernel Gateway's](https://jupyter-kernel-gateway.readthedocs.io/en/latest/) websocket-mode.
 * A CLI for launching the enterprise gateway server: `jupyter enterprisegateway OPTIONS`
 * A Python 2.7 and 3.3+ compatible implementation
 
@@ -53,13 +53,13 @@ Note that Enterprise Gateway also supports local kernels by default.  However, H
 
 ### Installing Enterprise Gateway
 
-For new users, we **highly recommend** [installing Anaconda](http://www.anaconda.com/download).
-Anaconda conveniently installs Python, the [Jupyter Notebook](http://jupyter.readthedocs.io/en/latest/install.html), the [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) and other commonly used
+For new users, we **highly recommend** [installing Anaconda](https://www.anaconda.com/download).
+Anaconda conveniently installs Python, the [Jupyter Notebook](https://jupyter.readthedocs.io/en/latest/install.html), the [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) and other commonly used
 packages for scientific computing and data science.
 
 Use the following installation steps:
 
-* Download [Anaconda](http://www.anaconda.com/download). We recommend downloading Anaconda’s
+* Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda’s
 latest Python version (currently Python 2.7 and Python 3.6).
 
 * Install the version of Anaconda which you downloaded, following the instructions on the download page.
@@ -94,15 +94,16 @@ conda uninstall jupyter_enterprise_gateway
 
 To leverage the full distributed capabilities of Spark, Jupyter Enterprise Gateway has provided deep integration with various resource managers. Having said that, Enterprise Gateway also supports running in a pseudo-distributed mode utilizing for example both YARN client or Spark Standalone modes. We've also recently added Kubernetes, Docker Swarm and IBM Spectrum Conductor integrations.
 
-Please follow the links below to learn specific details about how to enable/configure the different modes of depoloying your kernels:
+Please follow the links below to learn specific details about how to enable/configure the different modes of deploying your kernels:
 
-* [Distributed](kernel-distributed.html)
-* [YARN Cluster Mode](kernel-yarn-cluster-mode.html)
-* [YARN Client Mode](kernel-yarn-client-mode.html)
-* [Standalone](kernel-spark-standalone.html)
-* [Kubernetes](kernel-kubernetes.html)
-* [Docker Swarm](kernel-docker.html)
-* [IBM Spectrum Conducto](kernel-conductor.html)
+* [Distributed](kernel-distributed.md)
+* [YARN Cluster Mode](kernel-yarn-cluster-mode.md)
+* [YARN Client Mode](kernel-yarn-client-mode.md)
+* [Spark Standalone](kernel-spark-standalone.md)
+* [Kubernetes](kernel-kubernetes.md)
+* [Docker Swarm](kernel-docker.md)
+* [IBM Spectrum Conductor](kernel-conductor.md)
+* [Standalone Remote Kernel Execution](kernel-library.md)
 
 In each of the resource manager sections, we set the `KERNELS_FOLDER` to `/usr/local/share/jupyter/kernels` since that's one of the default locations searched by the Jupyter framework.  Co-locating kernelspecs hierarchies in the same parent folder is recommended, although not required.
 

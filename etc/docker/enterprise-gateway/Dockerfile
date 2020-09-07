@@ -1,6 +1,8 @@
 FROM jupyter/minimal-notebook:04f7f60d34a6
 
-ENV SPARK_VER 2.4.5
+ARG SPARK_VERSION
+
+ENV SPARK_VER $SPARK_VERSION
 ENV SPARK_HOME /opt/spark
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 

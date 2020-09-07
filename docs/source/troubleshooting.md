@@ -1,7 +1,7 @@
 ## Troubleshooting
 
 This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
-instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.html) page.
+instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.md) page.
 
 - **None of the scenarios on this page match or resolve my issue, what do I do next?**
 
@@ -243,6 +243,11 @@ but it failed with a "Kernel error" and a SSHException.**
    This is usually seen when you are trying to use more resources then what is available for your kernel.
    To address this issue, increase the amount of memory available for your YARN application or another
    Resource Manager managing the kernel.
+
+- **PySpark 2.4.x fails on Python 3.8**
+
+   PySpark 2.4.x fails on Python 3.8 as described in [SPARK-29536](https://issues.apache.org/jira/browse/SPARK-29536).
+   Use Python 3.7.x as the issue only seems to have been resolved on Spark 3.0.
 
 - **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
 

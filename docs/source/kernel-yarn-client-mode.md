@@ -4,7 +4,7 @@ By default, Jupyter Enterprise Gateway provides feature parity with Jupyter Kern
 
 Having said that, even if you are not leveraging the full distributed capabilities of Jupyter Enterprise Gateway, client mode can still help mitigate resource starvation by enabling a pseudo-distributed mode, where kernels are started in different nodes of the cluster utilizing a round-robin algorithm. In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for vanilla Jupyter Notebook.
 
-Please note also the YARN client mode can be considered as a [Distributed](./kernel-distributed.html) mode. It just happen to use spark-submit form different nodes in the cluster but uses `DistributedProcessProxy`.
+Please note also the YARN client mode can be considered as a [Distributed](./kernel-distributed.md) mode. It just happen to use spark-submit form different nodes in the cluster but uses `DistributedProcessProxy`.
 
 The following sample kernelspecs are currently available on YARN client:
 
@@ -73,7 +73,7 @@ After making any necessary adjustments such as updating SPARK_HOME or other envi
 
 ### Scala Kernel (Apache Toree kernel)
 
-We have tested the latest version of [Apache Toree](http://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
+We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
 Follow the steps below to install/configure the Toree kernel:
 
@@ -87,11 +87,11 @@ KERNELS_FOLDER=/usr/local/share/jupyter/kernels
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_scala_yarn_client/ spark_scala_yarn_client/
 ```
 
-For more information about the Scala kernel, please visit the [Apache Toree](http://toree.apache.org/) page.
+For more information about the Scala kernel, please visit the [Apache Toree](https://toree.apache.org/) page.
 
 ### Installing support for Python (IPython kernel)
 
-The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](http://ipython.readthedocs.io/en/stable/).
+The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](https://ipython.readthedocs.io/en/stable/).
 
 **Update the IPython Kernelspecs**
 
@@ -103,7 +103,7 @@ KERNELS_FOLDER=/usr/local/share/jupyter/kernels
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz --strip 1 --directory $KERNELS_FOLDER/spark_python_yarn_client/ spark_python_yarn_client/
 ```
 
-For more information about the IPython kernel, please visit the [IPython kernel](http://ipython.readthedocs.io/en/stable/) page.
+For more information about the IPython kernel, please visit the [IPython kernel](https://ipython.readthedocs.io/en/stable/) page.
 
 ### Installing support for R (IRkernel)
 

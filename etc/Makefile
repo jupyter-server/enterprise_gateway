@@ -82,8 +82,8 @@ $(foreach kernelspec,$(KERNELSPECS),$(eval $(call BUILD_KERNELSPEC,$(kernelspec)
 kernel-launchers/scala/lib: $(TOREE_LAUNCHER_FILES)
 	-rm -rf kernel-launchers/scala/lib
 	mkdir -p kernel-launchers/scala/lib
-	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) package; cp target/scala-2.11/*.jar ../lib)
-	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.3.0-incubating/toree-assembly-0.3.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.3.0-incubating.jar
+	@(cd kernel-launchers/scala/toree-launcher; sbt -Dversion=$(VERSION) -Dspark_version=$(SPARK_VERSION) package; cp target/scala-2.11/*.jar ../lib)
+	curl -L https://repository.apache.org/content/repositories/releases/org/apache/toree/toree-assembly/0.4.0-incubating/toree-assembly-0.4.0-incubating.jar --output ./kernel-launchers/scala/lib/toree-assembly-0.4.0-incubating.jar
 
 KERNEL_IMAGE_FILE:=../dist/jupyter_enterprise_gateway_kernel_image_files-$(VERSION).tar.gz
 kernel_image_files: ../build/kernel_image_files
@@ -150,7 +150,7 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
-	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} -t $(HUB_ORG)/$1:$(TAG) .)
+	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endef

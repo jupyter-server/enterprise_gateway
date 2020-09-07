@@ -140,7 +140,7 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: enterprise-gateway-controller
@@ -155,7 +155,7 @@ rules:
     resources: ["rolebindings"]
     verbs: ["get", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: enterprise-gateway-controller
@@ -175,7 +175,7 @@ roleRef:
 The `enterprise-gateway.yaml` file also defines the minimally viable roles for a kernel pod - most of which are required for Spark support.  Since kernels, by default, reside within their own namespace created upon their launch, a cluster role is used within a namespace-scoped role binding created when the kernel's namespace is created. The name of the kernel cluster role is `kernel-controller` and, when Enterprise Gateway creates the namespace and role binding, is also the name of the role binding instance.
 
 ```yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kernel-controller
@@ -209,7 +209,7 @@ metadata:
     app: enterprise-gateway
     component: kernel
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kernel-controller
@@ -392,7 +392,7 @@ There are a number of items worth noting:
 
     Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces.  To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`).  This identifier also applies to those kernels launched within `spark-on-kubernetes`.
-1. Kernel pods use the specified `securityContext`.  If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used.  Similarly for `KERNEL_GID`, whose default is `100` (the users group).  In addition, Enterprise Gateway enforces a blacklist for each of the UID and GID values.  By default, this list is initialized to the 0 (root) UID and GID.  Administrators can configure the `EG_UID_BLACKLIST` and `EG_GID_BLACKLIST` environment variables via the enterprise-gateway.yaml file with comma-separated values to alter the set of user and group ids to be prevented.
+1. Kernel pods use the specified `securityContext`.  If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used.  Similarly for `KERNEL_GID`, whose default is `100` (the users group).  In addition, Enterprise Gateway enforces a lists of prohibited UID and GID values.  By default, this list is initialized to the 0 (root) UID and GID.  Administrators can configure the `EG_PROHIBITED_UIDS` and `EG_PROHIBITED_GIDS` environment variables via the enterprise-gateway.yaml file with comma-separated values to alter the set of user and group ids to be prevented.
 1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml` as `${kernel_namespace}` and `${kernel_service_account_name}`, respectively.
 1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.

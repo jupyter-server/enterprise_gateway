@@ -76,7 +76,7 @@ After making any necessary adjustments such as updating SPARK_HOME or other envi
 
 ### Scala Kernel (Apache Toree kernel)
 
-We have tested the latest version of [Apache Toree](http://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
+We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
 Follow the steps below to install/configure the Toree kernel:
 
@@ -91,11 +91,11 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz --strip 1 --dir
 mv $KERNELS_FOLDER/spark_scala_yarn_client $KERNELS_FOLDER/spark_scala_spark_standalone
 ```
 
-For more information about the Scala kernel, please visit the [Apache Toree](http://toree.apache.org/) page.
+For more information about the Scala kernel, please visit the [Apache Toree](https://toree.apache.org/) page.
 
 ### Installing support for Python (IPython kernel)
 
-The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](http://ipython.readthedocs.io/en/stable/).
+The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](https://ipython.readthedocs.io/en/stable/).
 
 **Update the IPython Kernelspecs**
 
@@ -108,7 +108,7 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.2.0rc2.tar.gz --strip 1 --dir
 mv $KERNELS_FOLDER/spark_python_yarn_client $KERNELS_FOLDER/spark_python_spark_standalone
 ```
 
-For more information about the IPython kernel, please visit the [IPython kernel](http://ipython.readthedocs.io/en/stable/) page.
+For more information about the IPython kernel, please visit the [IPython kernel](https://ipython.readthedocs.io/en/stable/) page.
 
 ### Installing support for R (IRkernel)
 

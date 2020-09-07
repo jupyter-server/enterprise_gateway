@@ -63,20 +63,20 @@ remote_pwd = None
 # when determining the response address.  For example, on systems with many network interfaces,
 # some may have their IPs appear the local interfaces list (e.g., docker's 172.17.0.* is an example)
 # that should not be used.  This env can be used to indicate such IPs.
-local_ip_blacklist = os.getenv('EG_LOCAL_IP_BLACKLIST', '').split(',')
+prohibited_local_ips = os.getenv('EG_PROHIBITED_LOCAL_IPS', '').split(',')
 
 
 def _get_local_ip():
-    """Honor the blacklist-ed IPs, locating the first not in the list."""
+    """Honor the prohibited IPs, locating the first not in the list."""
     for ip in localinterfaces.public_ips():
-        is_blacklisted = False
-        for blacklisted_ip in local_ip_blacklist:  # exhaust blacklist, applying regexs
-            if re.match(blacklisted_ip, ip):
-                is_blacklisted = True
+        is_prohibited = False
+        for prohibited_ip in prohibited_local_ips:  # exhaust prohibited list, applying regexs
+            if re.match(prohibited_ip, ip):
+                is_prohibited = True
                 break
-        if not is_blacklisted:
+        if not is_prohibited:
             return ip
-    return localinterfaces.public_ips()[0]  # all were blacklisted, so go with the first
+    return localinterfaces.public_ips()[0]  # all were prohibited, so go with the first
 
 
 local_ip = _get_local_ip()
@@ -192,7 +192,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             env_dict.pop(k, None)
 
         self._enforce_authorization(**kwargs)
-        self._enforce_limits(**kwargs)
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get('env')))
 
@@ -469,25 +468,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                         "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request.". \
             format(kernel_username, differentiator_clause, kernel_clause)
         self.log_and_raise(http_status_code=403, reason=error_message)
-
-    def _enforce_limits(self, **kwargs):
-        """Enforces any limits that may be imposed by the configuration."""
-
-        # if kernels-per-user is configured, ensure that this next kernel is still within the limit.  If this
-        # is due to a restart, skip enforcement since we're re-using that id.
-        max_kernels_per_user = self.kernel_manager.max_kernels_per_user
-        if max_kernels_per_user >= 0 and not self.kernel_manager.restarting:
-            env_dict = kwargs.get('env')
-            username = env_dict['KERNEL_USERNAME']
-
-            # Per user limits are only meaningful if a session manager exists.
-            if self.kernel_manager.kernel_session_manager:
-                current_kernel_count = self.kernel_manager.kernel_session_manager.active_sessions(username)
-                if current_kernel_count >= max_kernels_per_user:
-                    error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
-                                    "active {}.".format(max_kernels_per_user, username, current_kernel_count,
-                                                        "kernel" if max_kernels_per_user == 1 else "kernels")
-                    self.log_and_raise(http_status_code=403, reason=error_message)
 
     def get_process_info(self):
         """Captures the base information necessary for kernel persistence relative to process proxies.
