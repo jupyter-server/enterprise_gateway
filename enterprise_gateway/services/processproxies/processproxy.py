@@ -19,15 +19,19 @@ import subprocess
 import sys
 import time
 
-from enum import Enum
-from socket import timeout, socket, gethostbyname, gethostname, AF_INET, SOCK_STREAM, SHUT_RDWR, SHUT_WR
-from tornado import web
+from asyncio import Event
 from calendar import timegm
+#from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Cipher import AES
+from enum import Enum
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from notebook import _tz
+from socket import timeout, socket, gethostbyname, gethostname, AF_INET, SOCK_STREAM, SHUT_RDWR, SHUT_WR
+from tornado import web
+from traitlets.config import SingletonConfigurable
 from zmq.ssh import tunnel
-from Cryptodome.Cipher import AES
 
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
@@ -44,6 +48,7 @@ socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'true')
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 response_ip = os.getenv('EG_RESPONSE_IP', None)
+response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -92,6 +97,107 @@ class KernelChannel(Enum):
     HEARTBEAT = "HB"
     CONTROL = "CONTROL"
     COMMUNICATION = "EG_COMM"  # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
+
+
+class ResponseManager(SingletonConfigurable):
+    """Singleton that manages the responses from each kernel launcher at startup.
+
+     This singleton does the following:
+     1. Acquires a public and private key at startup to encrypt and decrypt the
+        received responses.  The public key is sent to the launcher during startup
+        and is used by the launcher to encrypt the repsonse, while the private key
+        remains in the server and is used to decrypt the response.
+     2. Creates a single socket per the configuration settings that is listened on.
+     3. On receipt, it decrypts the response and posts the response payload to a
+        queue identified by the kernel_id embedded in the response.
+     """
+
+    # This value matters, any smaller and payload cannot be encrypted.
+    KEY_SIZE = 3072  # Larger values take much longer to generate.
+    _instance = None
+
+    def __init__(self, *args, **kwargs):
+        super(ResponseManager, self).__init__(*args, **kwargs)
+        self._private_key = RSA.generate(ResponseManager.KEY_SIZE)
+        self._public_key = self._private_key.publickey()
+
+        # Create response socket...
+        #self._prepare_response_socket()
+
+        # TODO - create queue/event facility
+        self._connections = {}
+        self._events = {}
+
+    @property
+    def public_key(self) -> bytes:
+        return self._public_key
+
+    @property
+    def response_address(self) -> str:
+        return self._response_address
+
+    def register_event(self, kernel_id: str) -> None:
+        self._events[kernel_id] = Event()
+
+    def remove_event(self, kernel_id: str) -> Event:
+        self._connections.pop(kernel_id)
+        return self._events.pop(kernel_id)
+
+    # async def get_connection_info(self, kernel_id: str) -> dict:
+    #    connection_info = await self._events[kernel_id]
+
+    def prepare_response_socket(self):
+        """Prepares the response socket on which connection info arrives from remote kernel launcher."""
+        s = socket(AF_INET, SOCK_STREAM)
+
+        try:
+            s.bind((local_ip, response_port))
+        except Exception as ex:
+            raise RuntimeError(f"Failed to bind to port '{response_port}' for response address due to: '{ex}'")
+
+        port = s.getsockname()[1]
+        s.listen(1)
+        s.settimeout(socket_timeout)
+        self._response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
+        self.log.debug("Response socket launched on '{}' using {}s timeout".
+                       format(self.response_address, socket_timeout))
+        self._response_socket = s
+
+    async def get_connection_info(self, kernel_id: str) -> dict:
+        loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
+
+        async def get_info(conn, kernel_id):
+            data = ''
+            while True:
+                buffer = await loop.sock_recv(conn, 1024)
+                if not buffer:  # send is complete, process payload
+                    self.log.debug("Received Payload '{}'".format(data))
+                    payload = self._decrypt(kernel_id, data)
+                    self.log.debug("Decrypted Payload '{}'".format(payload))
+                    connect_info = json.loads(payload)
+                    self.log.debug("Connect Info received from the launcher is as follows '{}'".
+                                   format(connect_info))
+                    # self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
+                    #                format(self.assigned_host, self.assigned_ip))  # FIXME
+                    break
+                data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+            conn.close()
+            return connect_info
+
+        conn, addr = await loop.sock_accept(self._response_socket)
+        connection_info = await get_info(conn, kernel_id)
+        return connection_info
+
+    def _decrypt(self, kernel_id, data):
+        """Decrypts `data` using the kernel_id as the key."""
+        key = kernel_id[0:16]
+        cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
+        payload = cipher.decrypt(base64.b64decode(data))
+        payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
+        return payload
+
+
+ResponseManager.instance()
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -655,7 +761,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_port = 0
         self.tunneled_connect_info = None    # Contains the destination connection info when tunneling in use
         self.tunnel_processes = {}
-        self._prepare_response_socket()
+        self.response_manager = ResponseManager.instance()  # FIXME
+        self.response_manager.prepare_response_socket()
+        self.kernel_manager.response_address = self.response_manager.response_address
 
     async def launch_process(self, kernel_cmd, **kwargs):
         # Pass along port-range info to kernels...
@@ -698,16 +806,16 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 self.local_proc = None
                 self.log_and_raise(http_status_code=500, reason=error_message)
 
-    def _prepare_response_socket(self):
-        """Prepares the response socket on which connection info arrives from remote kernel launcher."""
-        s = self.select_socket(local_ip)
-        port = s.getsockname()[1]
-        s.listen(1)
-        s.settimeout(socket_timeout)
-        self.kernel_manager.response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
-        self.log.debug("Response socket launched on '{}' using {}s timeout".
-                       format(self.kernel_manager.response_address, socket_timeout))
-        self.response_socket = s
+    # def _prepare_response_socket(self):
+    #     """Prepares the response socket on which connection info arrives from remote kernel launcher."""
+    #     s = self.select_socket(local_ip)
+    #     port = s.getsockname()[1]
+    #     s.listen(1)
+    #     s.settimeout(socket_timeout)
+    #     self.kernel_manager.response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
+    #     self.log.debug("Response socket launched on '{}' using {}s timeout".
+    #                    format(self.kernel_manager.response_address, socket_timeout))
+    #     self.response_socket = s
 
     def _tunnel_to_kernel(self, connection_info, server, port=ssh_port, key=None):
         """Tunnel connections to a kernel over SSH
@@ -811,52 +919,73 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
         return payload
 
+    # async def receive_connection_info(self):
+    #     """Monitors the response address for connection info sent by the remote kernel launcher."""
+    #     # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
+    #     ready_to_connect = False
+    #     loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
+    #
+    #     async def get_info(conn):
+    #         data = ''
+    #         while True:
+    #             buffer = await loop.sock_recv(conn, 1024)
+    #             if not buffer:  # send is complete, process payload
+    #                 self.log.debug("Received Payload '{}'".format(data))
+    #                 payload = self._decrypt(data)
+    #                 self.log.debug("Decrypted Payload '{}'".format(payload))
+    #                 connect_info = json.loads(payload)
+    #                 self.log.debug("Connect Info received from the launcher is as follows '{}'".
+    #                                format(connect_info))
+    #                 self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
+    #                                format(self.assigned_host, self.assigned_ip))
+    #
+    #                 self._setup_connection_info(connect_info)
+    #                 break
+    #             data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+    #         conn.close()
+    #
+    #     async def get_response():
+    #         conn, addr = await loop.sock_accept(self.response_socket)
+    #         await get_info(conn)
+    #
+    #     if self.response_socket:
+    #         try:
+    #             await get_response()
+    #             ready_to_connect = True
+    #         except Exception as e:
+    #             if type(e) is timeout:
+    #                 self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
+    #                                .format(self.kernel_id, self.assigned_host))
+    #             else:
+    #                 error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
+    #                     "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
+    #                 self.kill()
+    #                 self.log_and_raise(http_status_code=500, reason=error_message)
+    #     else:
+    #         error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
+    #             format(self.kernel_id)
+    #         self.log_and_raise(http_status_code=500, reason=error_message)
+    #
+    #     return ready_to_connect
+
     async def receive_connection_info(self):
         """Monitors the response address for connection info sent by the remote kernel launcher."""
         # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
         ready_to_connect = False
-        loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
 
-        async def get_info(conn):
-            data = ''
-            while True:
-                buffer = await loop.sock_recv(conn, 1024)
-                if not buffer:  # send is complete, process payload
-                    self.log.debug("Received Payload '{}'".format(data))
-                    payload = self._decrypt(data)
-                    self.log.debug("Decrypted Payload '{}'".format(payload))
-                    connect_info = json.loads(payload)
-                    self.log.debug("Connect Info received from the launcher is as follows '{}'".
-                                   format(connect_info))
-                    self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
-                                   format(self.assigned_host, self.assigned_ip))
-
-                    self._setup_connection_info(connect_info)
-                    break
-                data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
-            conn.close()
-
-        async def get_response():
-            conn, addr = await loop.sock_accept(self.response_socket)
-            await get_info(conn)
-
-        if self.response_socket:
-            try:
-                await get_response()
-                ready_to_connect = True
-            except Exception as e:
-                if type(e) is timeout:
-                    self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
-                                   .format(self.kernel_id, self.assigned_host))
-                else:
-                    error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
-                        "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
-                    self.kill()
-                    self.log_and_raise(http_status_code=500, reason=error_message)
-        else:
-            error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
-                format(self.kernel_id)
-            self.log_and_raise(http_status_code=500, reason=error_message)
+        try:
+            connect_info = await self.response_manager.get_connection_info(self.kernel_id)
+            self._setup_connection_info(connect_info)
+            ready_to_connect = True
+        except Exception as e:
+            if type(e) is timeout:
+                self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
+                               .format(self.kernel_id, self.assigned_host))
+            else:
+                error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
+                    "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
+                self.kill()
+                self.log_and_raise(http_status_code=500, reason=error_message)
 
         return ready_to_connect
 
