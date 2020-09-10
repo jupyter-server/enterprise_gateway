@@ -284,6 +284,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         super(RemoteKernelManager, self).__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None
+        self.public_key = None
         self.sigint_value = None
         self.kernel_id = None
         self.user_overrides = {}
@@ -365,10 +366,12 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         """ Replace templated args (e.g. {response_address}, {port_range}, or {kernel_id}). """
         cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
 
-        if self.response_address or self.port_range or self.kernel_id:
+        if self.response_address or self.port_range or self.kernel_id or self.public_key:
             ns = self._launch_args.copy()
             if self.response_address:
                 ns['response_address'] = self.response_address
+            if self.public_key:
+                ns['public_key'] = self.public_key
             if self.port_range:
                 ns['port_range'] = self.port_range
             if self.kernel_id:

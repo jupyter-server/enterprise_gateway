@@ -21,7 +21,7 @@ import time
 
 from asyncio import Event
 from calendar import timegm
-#from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.Cipher import PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Cipher import AES
 from enum import Enum
@@ -116,21 +116,23 @@ class ResponseManager(SingletonConfigurable):
     KEY_SIZE = 3072  # Larger values take much longer to generate.
     _instance = None
 
-    def __init__(self, *args, **kwargs):
-        super(ResponseManager, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(ResponseManager, self).__init__(**kwargs)
         self._private_key = RSA.generate(ResponseManager.KEY_SIZE)
         self._public_key = self._private_key.publickey()
+        self._public_pem = self._public_key.export_key('PEM')
 
         # Create response socket...
-        #self._prepare_response_socket()
+        # self._prepare_response_socket()
 
         # TODO - create queue/event facility
         self._connections = {}
         self._events = {}
 
     @property
-    def public_key(self) -> bytes:
-        return self._public_key
+    def public_key(self) -> str:
+        """Provides the string-form of public key PEM"""
+        return self._public_pem.decode()
 
     @property
     def response_address(self) -> str:
@@ -171,14 +173,12 @@ class ResponseManager(SingletonConfigurable):
             while True:
                 buffer = await loop.sock_recv(conn, 1024)
                 if not buffer:  # send is complete, process payload
-                    self.log.debug("Received Payload '{}'".format(data))
-                    payload = self._decrypt(kernel_id, data)
-                    self.log.debug("Decrypted Payload '{}'".format(payload))
+                    self.log.debug("Received payload '{}'".format(data))
+                    payload = self._decrypt(data)
+                    self.log.debug("Decrypted payload '{}'".format(payload))
                     connect_info = json.loads(payload)
-                    self.log.debug("Connect Info received from the launcher is as follows '{}'".
+                    self.log.debug("Connection info received from the launcher is as follows {}".
                                    format(connect_info))
-                    # self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
-                    #                format(self.assigned_host, self.assigned_ip))  # FIXME
                     break
                 data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
             conn.close()
@@ -188,12 +188,11 @@ class ResponseManager(SingletonConfigurable):
         connection_info = await get_info(conn, kernel_id)
         return connection_info
 
-    def _decrypt(self, kernel_id, data):
+    def _decrypt(self, data):
         """Decrypts `data` using the kernel_id as the key."""
-        key = kernel_id[0:16]
-        cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
+        cipher = PKCS1_OAEP.new(key=self._private_key)
         payload = cipher.decrypt(base64.b64decode(data))
-        payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
+        payload = payload.decode("utf-8")
         return payload
 
 
@@ -763,7 +762,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes = {}
         self.response_manager = ResponseManager.instance()  # FIXME
         self.response_manager.prepare_response_socket()
-        self.kernel_manager.response_address = self.response_manager.response_address
+        self.kernel_manager.response_address = self.response_manager.response_address  # Let RKM get ResponseManager directly
+        self.kernel_manager.public_key = self.response_manager.public_key
 
     async def launch_process(self, kernel_cmd, **kwargs):
         # Pass along port-range info to kernels...
@@ -911,14 +911,14 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # `max_keep_alive_interval`.
         return cull_idle_timeout + 60 if cull_idle_timeout > 0 else max_keep_alive_interval
 
-    def _decrypt(self, data):
-        """Decrypts `data` using the kernel_id as the key."""
-        key = self.kernel_id[0:16]
-        cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
-        payload = cipher.decrypt(base64.b64decode(data))
-        payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
-        return payload
-
+    # def _decrypt(self, data):
+    #     """Decrypts `data` using the kernel_id as the key."""
+    #     key = self.kernel_id[0:16]
+    #     cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
+    #     payload = cipher.decrypt(base64.b64decode(data))
+    #     payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
+    #     return payload
+    #
     # async def receive_connection_info(self):
     #     """Monitors the response address for connection info sent by the remote kernel launcher."""
     #     # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
@@ -995,6 +995,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         configure port variables for the 5 kernel and (possibly) the launcher communication port.  If
         tunneling is enabled, these ports will be tunneled with the original port information recorded.
         """
+
+        self.log.debug("Host assigned to the kernel is: '{}' '{}'".format(self.assigned_host, self.assigned_ip))
 
         connect_info['ip'] = self.assigned_ip  # Set connection to IP address of system where the kernel was launched
 

@@ -11,7 +11,8 @@ from multiprocessing import Process
 from random import random
 from threading import Thread
 
-from Cryptodome.Cipher import AES
+from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.PublicKey import RSA
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
@@ -150,38 +151,17 @@ def prepare_gateway_socket(lower_port, upper_port):
     return sock
 
 
-def _encrypt(connection_info, conn_file):
-    # Block size for cipher obj can be 16, 24, or 32. 16 matches 128 bit.
-    BLOCK_SIZE = 16
+def _encrypt(connection_info, public_key):
+    """Encrypt the connection information using the public key passed from the server."""
+    logger.info("len PK: {}".format(len(public_key)))
+    imported_public_key = RSA.importKey(public_key)
 
-    # Ensure that the length of the data that will be encrypted is a
-    # multiple of BLOCK_SIZE by padding with '%' on the right.
-    PADDING = '%'
-    pad = lambda s: s.decode("utf-8") + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
-
-    # Encrypt connection_info whose length is a multiple of BLOCK_SIZE using
-    # AES cipher and then encode the resulting byte array using Base64.
-    encryptAES = lambda c, s: base64.b64encode(c.encrypt(pad(s).encode('utf-8')))
-
-    # Create a key using first 16 chars of the kernel-id that is burnt in
-    # the name of the connection file.
-    bn = os.path.basename(conn_file)
-    if (bn.find("kernel-") == -1):
-        logger.error("Invalid connection file name '{}'".format(conn_file))
-        raise RuntimeError("Invalid connection file name '{}'".format(conn_file))
-
-    tokens = bn.split("kernel-")
-    kernel_id = tokens[1]
-    key = kernel_id[0:16]
-    # print("AES Encryption Key '{}'".format(key))
-
-    # Creates the cipher obj using the key.
-    cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
-    payload = encryptAES(cipher, connection_info)
+    cipher = PKCS1_OAEP.new(key=imported_public_key)
+    payload = base64.b64encode(cipher.encrypt(connection_info.encode('utf-8')))
     return payload
 
 
-def return_connection_info(connection_file, response_addr, lower_port, upper_port):
+def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key, include_pid):
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error("Invalid format for response address '{}'. "
@@ -200,21 +180,28 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
         cf_json = json.load(fp)
         fp.close()
 
-    # add process and process group ids into connection info
-    pid = os.getpid()
-    cf_json['pid'] = str(pid)
-    cf_json['pgid'] = str(os.getpgid(pid))
+    # add process and process group ids into connection info if requested
+    if include_pid:
+        pid = os.getpid()
+        cf_json['pid'] = pid
+        cf_json['pgid'] = os.getpgid(pid)
 
     # prepare socket address for handling signals
     gateway_sock = prepare_gateway_socket(lower_port, upper_port)
     cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    cf_json['kernel_id'] = kernel_id
+
+    # we must keep the payload small to fit the encryption key size,
+    # so strip kernel_name and ip (EG adds correct value via discovery)
+    cf_json.pop('kernel_name')
+    cf_json.pop('ip')
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding='utf-8')
         logger.debug("JSON Payload '{}".format(json_content))
-        payload = _encrypt(json_content, connection_file)
+        payload = _encrypt(json_content, public_key)
         logger.debug("Encrypted Payload '{}".format(payload))
         s.send(payload)
     finally:
@@ -362,25 +349,37 @@ if __name__ == "__main__":
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+                        help='Public key used to encrypt connection information')
     parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', nargs='?',
                         default='none', help='the initialization mode of the spark context: lazy, eager or none')
     parser.add_argument('--RemoteProcessProxy.cluster-type', dest='cluster_type', nargs='?',
                         default='spark', help='the kind of cluster to initialize: spark, dask, or none')
+    parser.add_argument('--RemoteProcessProxy.include-pid', dest='include_pid', action='store_true',
+                        default=False, help='include pid information in response (default = false)')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
     kernel_id = arguments['kernel_id']
+    public_key = arguments['public_key']
     lower_port, upper_port = _validate_port_range(arguments['port_range'])
     spark_init_mode = arguments['init_mode']
     cluster_type = arguments['cluster_type']
+    include_pid = arguments['include_pid']
     ip = "0.0.0.0"
 
     if connection_file is None and kernel_id is None:
         raise RuntimeError("At least one of the parameters: 'connection_file' or "
                            "'--RemoteProcessProxy.kernel-id' must be provided!")
+
+    if kernel_id is None:
+        raise RuntimeError("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
+
+    if public_key is None:
+        raise RuntimeError("Parameter '--RemoteProcessProxy.public-key' must be provided!")
 
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
@@ -392,7 +391,8 @@ if __name__ == "__main__":
         write_connection_file(fname=connection_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
-            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
+            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port,
+                                                    kernel_id, public_key, include_pid)
             if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
                 gateway_listener_process.start()
