@@ -19,17 +19,19 @@ import subprocess
 import sys
 import time
 
-from asyncio import Event
+from asyncio import Event, TimeoutError
 from calendar import timegm
 from Cryptodome.Cipher import PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
-from Cryptodome.Cipher import AES
 from enum import Enum
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from notebook import _tz
-from socket import timeout, socket, gethostbyname, gethostname, AF_INET, SOCK_STREAM, SHUT_RDWR, SHUT_WR
+from socket import gethostbyname, gethostname, socket, timeout,\
+    AF_INET, SO_REUSEADDR, SOCK_STREAM, SOL_SOCKET, SHUT_RDWR, SHUT_WR
 from tornado import web
+from tornado.locks import Event
+from tornado.ioloop import PeriodicCallback
 from traitlets.config import SingletonConfigurable
 from zmq.ssh import tunnel
 
@@ -44,7 +46,7 @@ env_pop_list = ['EG_REMOTE_PWD', 'LS_COLORS']
 default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
-socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '5.0'))
+socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '0.05'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'true')
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 response_ip = os.getenv('EG_RESPONSE_IP', None)
@@ -123,9 +125,10 @@ class ResponseManager(SingletonConfigurable):
         self._public_pem = self._public_key.export_key('PEM')
 
         # Create response socket...
-        # self._prepare_response_socket()
+        self._prepare_response_socket()
+        self._connection_processor = None
 
-        # TODO - create queue/event facility
+        # Create event facility...
         self._connections = {}
         self._events = {}
 
@@ -141,16 +144,16 @@ class ResponseManager(SingletonConfigurable):
     def register_event(self, kernel_id: str) -> None:
         self._events[kernel_id] = Event()
 
-    def remove_event(self, kernel_id: str) -> Event:
-        self._connections.pop(kernel_id)
-        return self._events.pop(kernel_id)
+    async def get_connection_info(self, kernel_id: str) -> dict:
+        await asyncio.wait_for(self._events[kernel_id].wait(), 0.1)  # FIXME - make timeout "configurable"?
+        self._events.pop(kernel_id)
+        return self._connections.pop(kernel_id)
 
-    # async def get_connection_info(self, kernel_id: str) -> dict:
-    #    connection_info = await self._events[kernel_id]
-
-    def prepare_response_socket(self):
+    def _prepare_response_socket(self):
         """Prepares the response socket on which connection info arrives from remote kernel launcher."""
         s = socket(AF_INET, SOCK_STREAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        #s.setblocking(False)
 
         try:
             s.bind((local_ip, response_port))
@@ -158,17 +161,27 @@ class ResponseManager(SingletonConfigurable):
             raise RuntimeError(f"Failed to bind to port '{response_port}' for response address due to: '{ex}'")
 
         port = s.getsockname()[1]
-        s.listen(1)
+        s.listen(128)
         s.settimeout(socket_timeout)
-        self._response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
-        self.log.debug("Response socket launched on '{}' using {}s timeout".
-                       format(self.response_address, socket_timeout))
         self._response_socket = s
+        self._response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
+        self.log.debug("Response address configured: '{}', using {}s timeout".
+                       format(self.response_address, socket_timeout))
 
-    async def get_connection_info(self, kernel_id: str) -> dict:
-        loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
+    def start_response_manager(self) -> None:
+        if self._connection_processor is None:
+            self._connection_processor = PeriodicCallback(self._process_connections, 0.1, 0.1)
+            self._connection_processor.start()
 
-        async def get_info(conn, kernel_id):
+    def stop_response_manager(self) -> None:
+        if self._connection_processor is not None:
+            self._connection_processor.stop()
+            self._connection_processor = None
+
+    async def _process_connections(self) -> None:
+        loop = asyncio.get_event_loop()
+
+        async def get_info(conn):
             data = ''
             while True:
                 buffer = await loop.sock_recv(conn, 1024)
@@ -176,17 +189,16 @@ class ResponseManager(SingletonConfigurable):
                     self.log.debug("Received payload '{}'".format(data))
                     payload = self._decrypt(data)
                     self.log.debug("Decrypted payload '{}'".format(payload))
-                    connect_info = json.loads(payload)
-                    self.log.debug("Connection info received from the launcher is as follows {}".
-                                   format(connect_info))
+                    self._post_connection(json.loads(payload))
                     break
                 data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
             conn.close()
-            return connect_info
 
-        conn, addr = await loop.sock_accept(self._response_socket)
-        connection_info = await get_info(conn, kernel_id)
-        return connection_info
+        try:
+            conn, addr = await loop.sock_accept(self._response_socket)
+            await get_info(conn)
+        except timeout:
+            pass
 
     def _decrypt(self, data):
         """Decrypts `data` using the kernel_id as the key."""
@@ -194,6 +206,19 @@ class ResponseManager(SingletonConfigurable):
         payload = cipher.decrypt(base64.b64decode(data))
         payload = payload.decode("utf-8")
         return payload
+
+    def _post_connection(self, connection_info: dict) -> None:
+        kernel_id = connection_info.get('kernel_id')
+        if kernel_id is None:
+            self.log.error("No kernel id found in response!  Kernel launch will fail.")
+            return
+        if kernel_id not in self._events:
+            self.log.error("Kernel id '{}' has not been registered and will not be processed!")
+            return
+
+        self.log.debug("Connection info received for kernel '{}': {}".format(kernel_id, connection_info))
+        self._connections[kernel_id] = connection_info
+        self._events[kernel_id].set()
 
 
 ResponseManager.instance()
@@ -761,8 +786,9 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunneled_connect_info = None    # Contains the destination connection info when tunneling in use
         self.tunnel_processes = {}
         self.response_manager = ResponseManager.instance()  # FIXME
-        self.response_manager.prepare_response_socket()
-        self.kernel_manager.response_address = self.response_manager.response_address  # Let RKM get ResponseManager directly
+        self.response_manager.start_response_manager()  # FIXME - explore starting this at initialization
+        self.response_manager.register_event(self.kernel_id)
+        self.kernel_manager.response_address = self.response_manager.response_address  # FIXME Let RKM get ResponseManager directly
         self.kernel_manager.public_key = self.response_manager.public_key
 
     async def launch_process(self, kernel_cmd, **kwargs):
@@ -978,12 +1004,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             self._setup_connection_info(connect_info)
             ready_to_connect = True
         except Exception as e:
-            if type(e) is timeout:
+            if type(e) is timeout or type(e) is TimeoutError:
                 self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
                                .format(self.kernel_id, self.assigned_host))
             else:
                 error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
-                    "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
+                    "on host '{}': {}, {}".format(self.kernel_id, self.assigned_host, e)
                 self.kill()
                 self.log_and_raise(http_status_code=500, reason=error_message)
 

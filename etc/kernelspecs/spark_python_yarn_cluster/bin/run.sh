@@ -19,7 +19,6 @@ fi
 
 PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 
-set -x
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
      "${SPARK_OPTS}" \
@@ -27,4 +26,3 @@ eval exec \
      "${PROG_HOME}/scripts/launch_ipykernel.py" \
      "${LAUNCH_OPTS}" \
      "$@"
-set +x
