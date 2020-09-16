@@ -53,6 +53,8 @@ ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 response_ip = os.getenv('EG_RESPONSE_IP', None)
 response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
 
+connection_interval = poll_interval/100.0  # already polling, so make connection timeout a fraction of outer poll
+
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
 max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
@@ -143,7 +145,7 @@ class ResponseManager(SingletonConfigurable):
 
     @property
     def public_key(self) -> str:
-        """Provides the string-form of public key PEM with header/footer/newlines stipped."""
+        """Provides the string-form of public key PEM with header/footer/newlines stripped."""
         return self._public_pem.decode()\
             .replace('-----BEGIN PUBLIC KEY-----', '')\
             .replace('-----END PUBLIC KEY-----', '')\
@@ -154,10 +156,13 @@ class ResponseManager(SingletonConfigurable):
         return self._response_address
 
     def register_event(self, kernel_id: str) -> None:
+        """Register kernel_id so its connection information can be processed."""
         self._events[kernel_id] = Event()
 
     async def get_connection_info(self, kernel_id: str) -> dict:
-        await asyncio.wait_for(self._events[kernel_id].wait(), poll_interval)  # FIXME look at using Futures
+        """Performs a timeout wait on the event, returning the conenction information on completion."""
+        await asyncio.wait_for(self._events[kernel_id].wait(), connection_interval)
+        # clear the entries
         self._events.pop(kernel_id)
         return self._connections.pop(kernel_id)
 
@@ -181,6 +186,7 @@ class ResponseManager(SingletonConfigurable):
                        format(self.response_address, socket_timeout))
 
     def _start_response_manager(self) -> None:
+        """If not already started, creates and starts the periodic callback to process connections."""
         if self._response_socket is None:
             self._prepare_response_socket()
 
@@ -189,6 +195,7 @@ class ResponseManager(SingletonConfigurable):
             self._connection_processor.start()
 
     def stop_response_manager(self) -> None:
+        """Stops the connection processor."""
         if self._connection_processor is not None:
             self._connection_processor.stop()
             self._connection_processor = None
@@ -197,6 +204,7 @@ class ResponseManager(SingletonConfigurable):
             self._response_socket = None
 
     async def _process_connections(self) -> None:
+        """Checks the socket for data, if found, decrypts the payload and posts to 'wait map'."""
         loop = asyncio.get_event_loop()
         data = ''
         try:
@@ -249,7 +257,7 @@ class ResponseManager(SingletonConfigurable):
         return connection_info
 
     def _post_connection(self, connection_info: dict) -> None:
-        """Posts connection information into "waiting area" based on kernel_id value."""
+        """Posts connection information into "wait map" based on kernel_id value."""
         kernel_id = connection_info.get('kernel_id')
         if kernel_id is None:
             self.log.error("No kernel id found in response!  Kernel launch will fail.")
@@ -260,7 +268,7 @@ class ResponseManager(SingletonConfigurable):
 
         self.log.debug("Connection info received for kernel '{}': {}".format(kernel_id, connection_info))
         self._connections[kernel_id] = connection_info
-        self._events[kernel_id].set()
+        self._events[kernel_id].set()  # set event to complete
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
