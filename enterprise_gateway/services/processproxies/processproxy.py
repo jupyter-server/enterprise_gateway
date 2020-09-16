@@ -31,7 +31,6 @@ from notebook import _tz
 from socket import gethostbyname, gethostname, socket, timeout,\
     AF_INET, SO_REUSEADDR, SOCK_STREAM, SOL_SOCKET, SHUT_RDWR, SHUT_WR
 from tornado import web
-from tornado.locks import Event
 from tornado.ioloop import PeriodicCallback
 from traitlets.config import SingletonConfigurable
 from zmq.ssh import tunnel
@@ -53,7 +52,7 @@ ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 response_ip = os.getenv('EG_RESPONSE_IP', None)
 response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
 
-connection_interval = poll_interval/100.0  # already polling, so make connection timeout a fraction of outer poll
+connection_interval = poll_interval / 100.0  # already polling, so make connection timeout a fraction of outer poll
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -199,7 +198,7 @@ class ResponseManager(SingletonConfigurable):
         if self._connection_processor is not None:
             self._connection_processor.stop()
             self._connection_processor = None
- 
+
         if self._response_socket is not None:
             self._response_socket = None
 
@@ -834,7 +833,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes = {}
         self.response_manager = ResponseManager.instance()  # This will create the key pair and socket on first use
         self.response_manager.register_event(self.kernel_id)
-        self.kernel_manager.response_address = self.response_manager.response_address  # FIXME Let RKM get ResponseManager directly
+        self.kernel_manager.response_address = self.response_manager.response_address
         self.kernel_manager.public_key = self.response_manager.public_key
 
     async def launch_process(self, kernel_cmd, **kwargs):
