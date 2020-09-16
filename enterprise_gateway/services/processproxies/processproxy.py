@@ -21,8 +21,9 @@ import time
 
 from asyncio import Event, TimeoutError
 from calendar import timegm
-from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.Cipher import PKCS1_v1_5, AES
 from Cryptodome.PublicKey import RSA
+from Cryptodome.Util.Padding import unpad
 from enum import Enum
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
@@ -105,43 +106,48 @@ class ResponseManager(SingletonConfigurable):
     """Singleton that manages the responses from each kernel launcher at startup.
 
      This singleton does the following:
-     1. Acquires a public and private key at startup to encrypt and decrypt the
+     1. Acquires a public and private RSA key pair at first use to encrypt and decrypt the
         received responses.  The public key is sent to the launcher during startup
-        and is used by the launcher to encrypt the repsonse, while the private key
-        remains in the server and is used to decrypt the response.
-     2. Creates a single socket per the configuration settings that is listened on
+        and is used by the launcher to encrypt the AES key the launcher uses to encrypt
+        the connection information, while the private key remains in the server and is
+        used to decrypt the AES key from the response - which it then uses to decrypt
+        the connection information.
+     2. Creates a single socket based on the configuration settings that is listened on
         via a periodic callback.
-     3. On receipt, it decrypts the response and posts the response payload to a
-        map identified by the kernel_id embedded in the response.
+     3. On receipt, it decrypts the response (key then connection info) and posts the
+        response payload to a map identified by the kernel_id embedded in the response.
      4. Provides a wait mechanism for callers to poll to get their connection info
         based on their registration (of kernel_id).
      """
 
-    # This value matters, any smaller and payload cannot be encrypted.
-    KEY_SIZE = 3072  # Larger values take much longer to generate.
+    KEY_SIZE = 1024  # Can be small since its only used to {en,de}crypt the AES key.
     _instance = None
 
     def __init__(self, **kwargs):
         super(ResponseManager, self).__init__(**kwargs)
+        self._response_address = None
+        self._response_socket = None
+        self._connection_processor = None
 
         # Create encryption keys...
         self._private_key = RSA.generate(ResponseManager.KEY_SIZE)
         self._public_key = self._private_key.publickey()
         self._public_pem = self._public_key.export_key('PEM')
 
-        # Response related members...
-        self._connection_processor = None
-        self._response_address = None
-        self._response_socket = None
-
         # Event facility...
         self._connections = {}
         self._events = {}
 
+        # Start the response manager (create socket, periodic callback, etc.) ...
+        self._start_response_manager()
+
     @property
     def public_key(self) -> str:
-        """Provides the string-form of public key PEM"""
-        return self._public_pem.decode()
+        """Provides the string-form of public key PEM with header/footer/newlines stipped."""
+        return self._public_pem.decode()\
+            .replace('-----BEGIN PUBLIC KEY-----', '')\
+            .replace('-----END PUBLIC KEY-----', '')\
+            .replace('\n', '')
 
     @property
     def response_address(self) -> str:
@@ -151,7 +157,7 @@ class ResponseManager(SingletonConfigurable):
         self._events[kernel_id] = Event()
 
     async def get_connection_info(self, kernel_id: str) -> dict:
-        await asyncio.wait_for(self._events[kernel_id].wait(), poll_interval)
+        await asyncio.wait_for(self._events[kernel_id].wait(), poll_interval)  # FIXME look at using Futures
         self._events.pop(kernel_id)
         return self._connections.pop(kernel_id)
 
@@ -163,7 +169,8 @@ class ResponseManager(SingletonConfigurable):
         try:
             s.bind((local_ip, response_port))
         except Exception as ex:
-            raise RuntimeError(f"Failed to bind to port '{response_port}' for response address due to: '{ex}'")
+            raise RuntimeError("Failed to bind to port '{}' for response address due to: '{}'".
+                               format(response_port, ex))
 
         port = s.getsockname()[1]
         s.listen(128)
@@ -173,7 +180,7 @@ class ResponseManager(SingletonConfigurable):
         self.log.debug("Response address configured: '{}', using {}s timeout".
                        format(self.response_address, socket_timeout))
 
-    def start_response_manager(self) -> None:
+    def _start_response_manager(self) -> None:
         if self._response_socket is None:
             self._prepare_response_socket()
 
@@ -200,21 +207,49 @@ class ResponseManager(SingletonConfigurable):
                     self.log.debug("Received payload '{}'".format(data))
                     payload = self._decrypt(data)
                     self.log.debug("Decrypted payload '{}'".format(payload))
-                    self._post_connection(json.loads(payload))
+                    self._post_connection(payload)
                     break
                 data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
             conn.close()
         except timeout:
             pass
+        except Exception as ex:
+            self.log.error("Failure occurred processing connection: {}".format(ex))
 
-    def _decrypt(self, data):
-        """Decrypts `data` using the kernel_id as the key."""
-        cipher = PKCS1_OAEP.new(key=self._private_key)
-        payload = cipher.decrypt(base64.b64decode(data))
-        payload = payload.decode("utf-8")
-        return payload
+    def _decrypt(self, data) -> dict:
+        """
+        Decrypts `data` using the RSA private key and embedded AES key.
+
+        `data` is a base64-encoded JSON string consisting of version, key, and conn_info keys
+
+        :return - dict consisting of connection information
+
+        """
+        payload_str = base64.b64decode(data).decode()
+        payload = json.loads(payload_str)
+
+        # Get the version
+        version = payload.get('version')
+        if version is None:
+            raise ValueError("Payload received from kernel does not include a version indicator!")
+        self.log.debug("Version {} payload received.".format(version))
+
+        # Decrypt the AES key using the RSA private key
+        encrypted_aes_key = base64.b64decode(payload['key'].encode())
+        cipher = PKCS1_v1_5.new(self._private_key)
+        aes_key = cipher.decrypt(encrypted_aes_key, b'\x42')
+        # Per docs, don't convey that decryption returned sentinel.  So just let
+        # things fail "naturally".
+        # Decrypt and unpad the connection information using the just-decrypted AES key
+        cipher = AES.new(aes_key, AES.MODE_ECB)
+        encrypted_connection_info = base64.b64decode(payload['conn_info'].encode())
+        connection_info_str = unpad(cipher.decrypt(encrypted_connection_info), 16).decode()
+        # and convert to usable dictionary
+        connection_info = json.loads(connection_info_str)
+        return connection_info
 
     def _post_connection(self, connection_info: dict) -> None:
+        """Posts connection information into "waiting area" based on kernel_id value."""
         kernel_id = connection_info.get('kernel_id')
         if kernel_id is None:
             self.log.error("No kernel id found in response!  Kernel launch will fail.")
@@ -226,11 +261,6 @@ class ResponseManager(SingletonConfigurable):
         self.log.debug("Connection info received for kernel '{}': {}".format(kernel_id, connection_info))
         self._connections[kernel_id] = connection_info
         self._events[kernel_id].set()
-
-
-# Create the instance at load time so the cost of creating 
-# encryption keys is amortized in startup time.
-ResponseManager.instance()
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
@@ -794,8 +824,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.comm_port = 0
         self.tunneled_connect_info = None    # Contains the destination connection info when tunneling in use
         self.tunnel_processes = {}
-        self.response_manager = ResponseManager.instance()
-        self.response_manager.start_response_manager()  # FIXME - explore starting this at initialization
+        self.response_manager = ResponseManager.instance()  # This will create the key pair and socket on first use
         self.response_manager.register_event(self.kernel_id)
         self.kernel_manager.response_address = self.response_manager.response_address  # FIXME Let RKM get ResponseManager directly
         self.kernel_manager.public_key = self.response_manager.public_key
@@ -950,7 +979,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                                .format(self.kernel_id, self.assigned_host))
             else:
                 error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
-                    "on host '{}': {}, {}".format(self.kernel_id, self.assigned_host, e)
+                    "on host '{}': {}".format(self.kernel_id, self.assigned_host, e)
                 self.kill()
                 self.log_and_raise(http_status_code=500, reason=error_message)
 

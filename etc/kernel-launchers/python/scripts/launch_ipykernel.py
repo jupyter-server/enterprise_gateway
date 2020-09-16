@@ -11,11 +11,14 @@ from multiprocessing import Process
 from random import random
 from threading import Thread
 
-from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.Cipher import PKCS1_v1_5, AES
 from Cryptodome.PublicKey import RSA
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.Padding import pad
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
+LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -151,17 +154,30 @@ def prepare_gateway_socket(lower_port, upper_port):
     return sock
 
 
-def _encrypt(connection_info, public_key):
-    """Encrypt the connection information using the public key passed from the server."""
-    logger.info("len PK: {}".format(len(public_key)))
-    imported_public_key = RSA.importKey(public_key)
+def _encrypt(connection_info_str, public_key):
+    """Encrypt the connection information using a generated AES key that is then encrypted using
+       the public key passed from the server.  Both are then returned in an encoded JSON payload.
+    """
+    aes_key = get_random_bytes(16)
+    cipher = AES.new(aes_key, mode=AES.MODE_ECB)
 
-    cipher = PKCS1_OAEP.new(key=imported_public_key)
-    payload = base64.b64encode(cipher.encrypt(connection_info.encode('utf-8')))
-    return payload
+    # Encrypt the connection info using the aes_key
+    encrypted_connection_info = cipher.encrypt(pad(connection_info_str, 16))
+    b64_connection_info = base64.b64encode(encrypted_connection_info)
+
+    # Encrypt the aes_key using the server's public key
+    imported_public_key = RSA.importKey(base64.b64decode(public_key.encode()))
+    cipher = PKCS1_v1_5.new(key=imported_public_key)
+    encrypted_key = base64.b64encode(cipher.encrypt(aes_key))
+
+    # Compose the payload and Base64 encode it
+    payload = {"version": LAUNCHER_VERSION, "key": encrypted_key.decode(), "conn_info": b64_connection_info.decode()}
+    b64_payload = base64.b64encode(json.dumps(payload).encode(encoding='utf-8'))
+    logger.info("len: {}, payload: {}".format(len(b64_payload), b64_payload))
+    return b64_payload
 
 
-def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key, include_pid):
+def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key):
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error("Invalid format for response address '{}'. "
@@ -180,21 +196,15 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
         cf_json = json.load(fp)
         fp.close()
 
-    # add process and process group ids into connection info if requested
-    if include_pid:
-        pid = os.getpid()
-        cf_json['pid'] = pid
-        cf_json['pgid'] = os.getpgid(pid)
+    # add process and process group ids into connection info
+    pid = os.getpid()
+    cf_json['pid'] = pid
+    cf_json['pgid'] = os.getpgid(pid)
 
     # prepare socket address for handling signals
     gateway_sock = prepare_gateway_socket(lower_port, upper_port)
     cf_json['comm_port'] = gateway_sock.getsockname()[1]
     cf_json['kernel_id'] = kernel_id
-
-    # we must keep the payload small to fit the encryption key size,
-    # so strip kernel_name and ip (EG adds correct value via discovery)
-    cf_json.pop('kernel_name')
-    cf_json.pop('ip')
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -357,8 +367,6 @@ if __name__ == "__main__":
                         default='none', help='the initialization mode of the spark context: lazy, eager or none')
     parser.add_argument('--RemoteProcessProxy.cluster-type', dest='cluster_type', nargs='?',
                         default='spark', help='the kind of cluster to initialize: spark, dask, or none')
-    parser.add_argument('--RemoteProcessProxy.include-pid', dest='include_pid', action='store_true',
-                        default=False, help='include pid information in response (default = false)')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
@@ -368,7 +376,6 @@ if __name__ == "__main__":
     lower_port, upper_port = _validate_port_range(arguments['port_range'])
     spark_init_mode = arguments['init_mode']
     cluster_type = arguments['cluster_type']
-    include_pid = arguments['include_pid']
     ip = "0.0.0.0"
 
     if connection_file is None and kernel_id is None:
@@ -392,7 +399,7 @@ if __name__ == "__main__":
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
             gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port,
-                                                    kernel_id, public_key, include_pid)
+                                                    kernel_id, public_key)
             if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
                 gateway_listener_process.start()
