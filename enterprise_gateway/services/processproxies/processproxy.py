@@ -103,6 +103,21 @@ class KernelChannel(Enum):
     COMMUNICATION = "EG_COMM"  # Optional channel for remote launcher to issue interrupts - NOT a ZMQ channel
 
 
+class Response(Event):
+    """Combines the event behavior with the kernel launch response."""
+
+    _response = None
+    @property
+    def response(self):
+        return self._response
+
+    @response.setter
+    def response(self, value):
+        """Set the response.  NOTE: this marks the event as set."""
+        self._response = value
+        self.set()
+
+
 class ResponseManager(SingletonConfigurable):
     """Singleton that manages the responses from each kernel launcher at startup.
 
@@ -136,8 +151,7 @@ class ResponseManager(SingletonConfigurable):
         self._public_pem = self._public_key.export_key('PEM')
 
         # Event facility...
-        self._connections = {}
-        self._events = {}
+        self._response_registry = {}
 
         # Start the response manager (create socket, periodic callback, etc.) ...
         self._start_response_manager()
@@ -156,14 +170,12 @@ class ResponseManager(SingletonConfigurable):
 
     def register_event(self, kernel_id: str) -> None:
         """Register kernel_id so its connection information can be processed."""
-        self._events[kernel_id] = Event()
+        self._response_registry[kernel_id] = Response()
 
     async def get_connection_info(self, kernel_id: str) -> dict:
         """Performs a timeout wait on the event, returning the conenction information on completion."""
-        await asyncio.wait_for(self._events[kernel_id].wait(), connection_interval)
-        # clear the entries
-        self._events.pop(kernel_id)
-        return self._connections.pop(kernel_id)
+        await asyncio.wait_for(self._response_registry[kernel_id].wait(), connection_interval)
+        return self._response_registry.pop(kernel_id).response
 
     def _prepare_response_socket(self):
         """Prepares the response socket on which connection info arrives from remote kernel launcher."""
@@ -261,13 +273,12 @@ class ResponseManager(SingletonConfigurable):
         if kernel_id is None:
             self.log.error("No kernel id found in response!  Kernel launch will fail.")
             return
-        if kernel_id not in self._events:
+        if kernel_id not in self._response_registry:
             self.log.error("Kernel id '{}' has not been registered and will not be processed!")
             return
 
         self.log.debug("Connection info received for kernel '{}': {}".format(kernel_id, connection_info))
-        self._connections[kernel_id] = connection_info
-        self._events[kernel_id].set()  # set event to complete
+        self._response_registry[kernel_id].response = connection_info
 
 
 class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
