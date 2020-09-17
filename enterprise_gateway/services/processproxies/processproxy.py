@@ -107,6 +107,7 @@ class Response(Event):
     """Combines the event behavior with the kernel launch response."""
 
     _response = None
+
     @property
     def response(self):
         return self._response
@@ -224,7 +225,7 @@ class ResponseManager(SingletonConfigurable):
                 buffer = await loop.sock_recv(conn, 1024)
                 if not buffer:  # send is complete, process payload
                     self.log.debug("Received payload '{}'".format(data))
-                    payload = self._decrypt(data)
+                    payload = self._decode_payload(data)
                     self.log.debug("Decrypted payload '{}'".format(payload))
                     self._post_connection(payload)
                     break
@@ -235,34 +236,79 @@ class ResponseManager(SingletonConfigurable):
         except Exception as ex:
             self.log.error("Failure occurred processing connection: {}".format(ex))
 
-    def _decrypt(self, data) -> dict:
+    def _decode_payload(self, data) -> dict:
         """
-        Decrypts `data` using the RSA private key and embedded AES key.
+        Decodes the payload.
 
-        `data` is a base64-encoded JSON string consisting of version, key, and conn_info keys
+        Decodes the payload, identifying the payload's version and returns a dictionary
+        representing the kernel's connection information.
 
-        :return - dict consisting of connection information
+        Version "0" payloads do not specify a kernel-id within the payload, nor do they
+        include a 'key', 'version' or 'conn_info' fields.  They are purely an AES encrypted
+        form of the base64-encoded JSON connection information, and encrypted using the
+        kernel-id as a key.  Since no kernel-id is in the payload, we will capture the keys
+        of registered kernel-ids and attempt to decrypt the payload until we find the
+        appropriate registrant.
 
+        Version "1+" payloads are a base64-encoded JSON string consisting of a 'version', 'key'
+        and 'conn_info' fields.  The 'key' field will be decrpyted using the private key to
+        reveal the AES key, which is then used to decrypt the `conn_info` field.
+
+        Once decryption has taken place, the connection information string is loaded into a
+        dictionary and returned.
         """
-        payload_str = base64.b64decode(data).decode()
-        payload = json.loads(payload_str)
 
-        # Get the version
-        version = payload.get('version')
-        if version is None:
-            raise ValueError("Payload received from kernel does not include a version indicator!")
-        self.log.debug("Version {} payload received.".format(version))
+        payload_str = base64.b64decode(data)
+        try:
+            payload = json.loads(payload_str)
+            # Get the version
+            version = payload.get('version')
+            if version is None:
+                raise ValueError("Payload received from kernel does not include a version indicator!")
+            self.log.debug("Version {} payload received.".format(version))
 
-        # Decrypt the AES key using the RSA private key
-        encrypted_aes_key = base64.b64decode(payload['key'].encode())
-        cipher = PKCS1_v1_5.new(self._private_key)
-        aes_key = cipher.decrypt(encrypted_aes_key, b'\x42')
-        # Per docs, don't convey that decryption returned sentinel.  So just let
-        # things fail "naturally".
-        # Decrypt and unpad the connection information using the just-decrypted AES key
-        cipher = AES.new(aes_key, AES.MODE_ECB)
-        encrypted_connection_info = base64.b64decode(payload['conn_info'].encode())
-        connection_info_str = unpad(cipher.decrypt(encrypted_connection_info), 16).decode()
+            if version == 1:
+                # Decrypt the AES key using the RSA private key
+                encrypted_aes_key = base64.b64decode(payload['key'].encode())
+                cipher = PKCS1_v1_5.new(self._private_key)
+                aes_key = cipher.decrypt(encrypted_aes_key, b'\x42')
+                # Per docs, don't convey that decryption returned sentinel.  So just let
+                # things fail "naturally".
+                # Decrypt and unpad the connection information using the just-decrypted AES key
+                cipher = AES.new(aes_key, AES.MODE_ECB)
+                encrypted_connection_info = base64.b64decode(payload['conn_info'].encode())
+                connection_info_str = unpad(cipher.decrypt(encrypted_connection_info), 16).decode()
+            else:
+                raise ValueError("Unexpected version indicator received: {}!".format(version))
+        except Exception as ex:
+            # Could be version "0", walk the registrant kernel-ids and attempt to decrypt using each as a key.
+            # If none are found, re-raise the triggering exception.
+            self.log.debug("decode_payload exception - {}: {}".format(ex.__class__.__name__, ex))
+            connection_info_str = None
+            for kernel_id in self._response_registry.keys():
+                aes_key = kernel_id[0:16]
+                try:
+                    cipher = AES.new(aes_key.encode('utf-8'), AES.MODE_ECB)
+                    decrypted_payload = cipher.decrypt(payload_str)
+                    # Version "0" responses use custom padding, so remove that here.
+                    connection_info_str = "".join([decrypted_payload.decode("utf-8").rsplit("}", 1)[0], "}"])
+                    # Try to load as JSON
+                    new_connection_info = json.loads(connection_info_str)
+                    # Add kernel_id into dict, then dump back to string so this can be processed as valid response
+                    new_connection_info['kernel_id'] = kernel_id
+                    connection_info_str = json.dumps(new_connection_info)
+                    self.log.warning("WARNING!!!! Legacy kernel response received for kernel_id '{}'! "
+                                     "Update kernel launchers to current version!".format(kernel_id))
+                    break  # If we're here, we made it!
+                except Exception as ex2:
+                    # Any exception fails this experiment and we continue
+                    self.log.debug("Received the following exception detecting legacy kernel response - {}: {}".
+                                   format(ex2.__class__.__name__, ex2))
+                    connection_info_str = None
+
+            if connection_info_str is None:
+                raise ex
+
         # and convert to usable dictionary
         connection_info = json.loads(connection_info_str)
         return connection_info
