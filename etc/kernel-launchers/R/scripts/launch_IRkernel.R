@@ -5,7 +5,6 @@ require("SparkR")
 require("base64enc")
 require("digest")
 require("stringr")
-require("openssl")
 
 r_libs_user <- Sys.getenv("R_LIBS_USER")
 
@@ -83,32 +82,25 @@ sparkContextFn <- local({
     }
   })
 
-encrypt <- function(json, public_key) {
+encrypt <- function(json, connection_file) {
+  # Ensure that the length of the data that will be encrypted is a
+  # multiple of 16 by padding with '%' on the right.
+  raw_payload <- str_pad(json, (str_length(json) %/% 16 + 1) * 16, side="right", pad="%")
+  message(paste("Raw Payload: ", raw_payload))
 
-  key <- public_key
-  message(paste("public_key: ", key))
+  fn <- basename(connection_file)
+  tokens <- unlist(strsplit(fn, "kernel-"))
+  key <- charToRaw(substr(tokens[2], 1, 16))
+  # message(paste("AES Encryption Key: ", rawToChar(key)))
 
-  encrypted_payload <- rsa_encrypt(json, key)
+  cipher <- AES(key, mode="ECB")
+  encrypted_payload <- cipher$encrypt(raw_payload)
   encoded_payload = base64encode(encrypted_payload)
   return(encoded_payload)
-  # # Ensure that the length of the data that will be encrypted is a
-  # # multiple of 16 by padding with '%' on the right.
-  # raw_payload <- str_pad(json, (str_length(json) %/% 16 + 1) * 16, side="right", pad="%")
-  # message(paste("Raw Payload: ", raw_payload))
-  #
-  # fn <- basename(connection_file)
-  # tokens <- unlist(strsplit(fn, "kernel-"))
-  # key <- charToRaw(substr(tokens[2], 1, 16))
-  # # message(paste("AES Encryption Key: ", rawToChar(key)))
-  #
-  # cipher <- AES(key, mode="ECB")
-  # encrypted_payload <- cipher$encrypt(raw_payload)
-  # encoded_payload = base64encode(encrypted_payload)
-  # return(encoded_payload)
 }
 
 # Return connection information
-return_connection_info <- function(connection_file, response_addr, public_key){
+return_connection_info <- function(connection_file, response_addr){
 
   response_parts <- strsplit(response_addr, ":")
 
@@ -136,7 +128,7 @@ return_connection_info <- function(connection_file, response_addr, public_key){
           message(paste("Invalid connection file name: ", connection_file))
           return(NA)
         }
-        payload <- encrypt(json, public_key)
+        payload <- encrypt(json, connection_file)
         message(paste("Encrypted Payload: ", payload))
         write_resp <- writeLines(payload, con)
     },
@@ -188,28 +180,14 @@ parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowe
        help="the range of ports impose for kernel ports")
 parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar='<ip>:<port>',
       help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
-parser$add_argument("--RemoteProcessProxy.public-key", nargs='?',
-      help="the public key used to encrypt connection information")
 parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
       help="the initialization mode of the spark context: lazy, eager or none")
-parser$add_argument('--RemoteProcessProxy.include-pid', action='store_true',
-      help='include pid information in response (default = false)')
 parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
 
 argv <- parser$parse_args()
 
 if (is.null(argv$connection_file) && is.null(argv$RemoteProcessProxy.kernel_id)){
     message("At least one of the parameters: 'connection_file' or '--RemoteProcessProxy.kernel-id' must be provided!")
-    return(NA)
-}
-
-if (is.null(argv$RemoteProcessProxy.kernel_id)){
-    message("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
-    return(NA)
-}
-
-if (is.null(argv$RemoteProcessProxy.public_key)){
-    message("Parameter '--RemoteProcessProxy.public-key' must be provided!")
     return(NA)
 }
 
@@ -264,7 +242,7 @@ if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$Remote
         Sys.sleep(0.5)
     }
 
-    return_connection_info(connection_file, argv$RemoteProcessProxy.response_address, argv$RemoteProcessProxy.public_key)
+    return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
 } else {
     # already provided
     connection_file = argv$connection_file

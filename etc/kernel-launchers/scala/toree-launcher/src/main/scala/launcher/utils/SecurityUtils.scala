@@ -32,14 +32,8 @@ object Payload {
 object SecurityUtils extends LogLike {
 
   def encrypt(publicKey: String, jsonContent: String): String = {
-    logger.info("publicKey: %s".format(publicKey))
-    // val encodedKey = Base64.decodeBase64(publicKey)
-
-
-    // val key: PublicKey = KeyFactory.getInstance(ALGORITHM)
-    //  .generatePublic(new X509EncodedKeySpec(publicKey.getBytes(StandardCharsets.UTF_8)));
-
     // Generate an AES key and encrypt the connection information...
+    logger.info("publicKey: %s".format(publicKey))
     val random: Random = new Random()
     val preKey: Array[Byte] = new Array[Byte](16)
     random.nextBytes(preKey)
@@ -60,40 +54,5 @@ object SecurityUtils extends LogLike {
     rsaCipher.init(Cipher.ENCRYPT_MODE, rsaKey)
     val key = Base64.getEncoder.encodeToString(rsaCipher.doFinal(aesKey.getEncoded()))
     Base64.getEncoder.encodeToString(Payload.createJson(key, connInfo).getBytes(StandardCharsets.UTF_8))
-    /*
-    val file = new java.io.File(profilePath)
-    val fileName = file.getName()
-    val tokens = fileName.split("kernel-")
-    val key = tokens(1).substring(0, 16)
-    val aesKey: Key = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES")
-
-    logger.info("Raw Payload: '%s'".format(clearText))
-    // logger.info("AES Key: '%s'".format(key))
-    cipher.init(Cipher.ENCRYPT_MODE, aesKey)
-    Base64.getEncoder.encodeToString(cipher.doFinal(clearText.getBytes(StandardCharsets.UTF_8)))
-     */
   }
-/*
-  private def getClearText(value: String): String = {
-    val len = value.length()
-
-    if (len % 16 == 0) {
-      // If the length of the string is already a multiple of 16, then
-      // just return it.
-      value
-    }
-    else {
-      // Ensure that the length of the data that will be encrypted is a
-      // multiple of 16 by padding with '%' on the right.
-      //
-      // Note that the padding is not needed in Scala but Python and R
-      // need padding. In order to keep things consistent across all the
-      // languages(so that EG on the receiving end can behave the same
-      // way regardless of the language), we are also padding for Scala.
-      val targetLength = (len / 16 + 1) * 16
-      val clearText = value.padTo(targetLength, "%").mkString
-      clearText
-    }
-  }
- */
 }
