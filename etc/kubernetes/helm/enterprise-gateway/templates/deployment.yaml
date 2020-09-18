@@ -76,6 +76,6 @@ spec:
           mountPath: "/usr/local/share/jupyter/kernels"
       volumes:
       - name: image-kernelspecs
-        emptydir:
+        emptyDir:
           medium: Memory
 {{- end }}
