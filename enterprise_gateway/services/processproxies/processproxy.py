@@ -254,7 +254,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                     result = self.remote_signal(signum)
         return result
 
-    async def kill(self):
+    def kill(self):
         """Terminate the process proxy process.
 
         First attempts graceful termination, then forced termination.
@@ -265,7 +265,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         result = self.terminate()  # Send -15 signal first
         i = 1
         while self.poll() is None and i <= max_poll_attempts:
-            await asyncio.sleep(poll_interval)
+            time.sleep(poll_interval)
             i = i + 1
         if i > max_poll_attempts:  # Send -9 signal if process is still alive
             if self.local_proc:
@@ -851,7 +851,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 else:
                     error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
                         "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
-                    self.kill()
+                    await asyncio.get_event_loop().run_in_executor(None, self.kill)
                     self.log_and_raise(http_status_code=500, reason=error_message)
         else:
             error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
@@ -977,7 +977,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def cleanup(self):

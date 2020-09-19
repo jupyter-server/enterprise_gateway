@@ -9,6 +9,7 @@ import re
 import signal
 import socket
 import subprocess
+import time
 
 from jupyter_client import launch_kernel, localinterfaces
 
@@ -113,7 +114,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         else:
             return super(ConductorClusterProcessProxy, self).send_signal(signum)
 
-    async def kill(self):
+    def kill(self):
         """Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
@@ -126,7 +127,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             i = 1
             state = self._query_app_state_by_driver_id(self.driver_id)
             while state not in ConductorClusterProcessProxy.final_states and i <= max_poll_attempts:
-                await asyncio.sleep(poll_interval)
+                time.sleep(poll_interval)
                 state = self._query_app_state_by_driver_id(self.driver_id)
                 i = i + 1
 
@@ -239,7 +240,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 else:
                     reason = "App {} is WAITING, but waited too long ({} secs) to get connection file". \
                         format(self.application_id, self.kernel_launch_timeout)
-            await self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 

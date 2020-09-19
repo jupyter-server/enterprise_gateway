@@ -326,7 +326,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                     reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file.  " \
                              "Check YARN logs for more information.".format(self.application_id,
                                                                             self.kernel_launch_timeout)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
