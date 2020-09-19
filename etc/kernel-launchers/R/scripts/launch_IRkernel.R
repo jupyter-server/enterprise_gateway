@@ -82,71 +82,6 @@ sparkContextFn <- local({
     }
   })
 
-encrypt <- function(json, connection_file) {
-  # Ensure that the length of the data that will be encrypted is a
-  # multiple of 16 by padding with '%' on the right.
-  raw_payload <- str_pad(json, (str_length(json) %/% 16 + 1) * 16, side="right", pad="%")
-  message(paste("Raw Payload: ", raw_payload))
-
-  fn <- basename(connection_file)
-  tokens <- unlist(strsplit(fn, "kernel-"))
-  key <- charToRaw(substr(tokens[2], 1, 16))
-  # message(paste("AES Encryption Key: ", rawToChar(key)))
-
-  cipher <- AES(key, mode="ECB")
-  encrypted_payload <- cipher$encrypt(raw_payload)
-  encoded_payload = base64encode(encrypted_payload)
-  return(encoded_payload)
-}
-
-# Return connection information
-return_connection_info <- function(connection_file, response_addr){
-
-  response_parts <- strsplit(response_addr, ":")
-
-  if (length(response_parts[[1]])!=2){
-    cat("Invalid format for response address. Assuming pull mode...")
-    return(1)
-  }
-
-  response_ip <- response_parts[[1]][1]
-  response_port <- response_parts[[1]][2]
-
-  # Read in connection file to send back to JKG
-  con <- NULL
-  tryCatch(
-    {
-        con <- socketConnection(host=response_ip, port=response_port, blocking=FALSE, server=FALSE)
-        sendme <- read_json(connection_file)
-        # Add launcher process id to returned info...
-        sendme$pid <- Sys.getpid()
-        json <- jsonlite::toJSON(sendme, auto_unbox=TRUE)
-        message(paste("JSON Payload: ", json))
-
-        fn <- basename(connection_file)
-        if (!grepl("kernel-", fn)) {
-          message(paste("Invalid connection file name: ", connection_file))
-          return(NA)
-        }
-        payload <- encrypt(json, connection_file)
-        message(paste("Encrypted Payload: ", payload))
-        write_resp <- writeLines(payload, con)
-    },
-    error=function(cond) {
-        message(paste("Unable to connect to response address", response_addr ))
-        message("Here's the original error message:")
-        message(cond)
-        # Choose a return value in case of error
-        return(NA)
-    },
-    finally={
-        if (!is.null(con)) {
-            close(con)
-        }
-    }
-  )
-}
-
 # Figure out the connection_file to use
 determine_connection_file <- function(kernel_id){
     base_file = paste("kernel-", kernel_id, sep="")
@@ -179,7 +114,9 @@ parser$add_argument("--RemoteProcessProxy.kernel-id", nargs='?',
 parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
        help="the range of ports impose for kernel ports")
 parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar='<ip>:<port>',
-      help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
+      help="the IP:port address of the system hosting the server and expecting response")
+parser$add_argument("--RemoteProcessProxy.public-key", nargs='?',
+      help="the public key used to encrypt connection information")
 parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
       help="the initialization mode of the spark context: lazy, eager or none")
 parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
@@ -188,6 +125,16 @@ argv <- parser$parse_args()
 
 if (is.null(argv$connection_file) && is.null(argv$RemoteProcessProxy.kernel_id)){
     message("At least one of the parameters: 'connection_file' or '--RemoteProcessProxy.kernel-id' must be provided!")
+    return(NA)
+}
+
+if (is.null(argv$RemoteProcessProxy.kernel_id)){
+    message("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
+    return(NA)
+}
+
+if (is.null(argv$RemoteProcessProxy.public_key)){
+    message("Parameter '--RemoteProcessProxy.public-key' must be provided!")
     return(NA)
 }
 
@@ -231,18 +178,23 @@ if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$Remote
     # will terminate the launcher, so there's no need for a timeout.
     python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
 
+    # Simplify parameters
+    response_addr <- argv$RemoteProcessProxy.response_address
+    kernel_id <- argv$RemoteProcessProxy.kernel_id
+    public_key <- argv$RemoteProcessProxy.public_key
+
     gw_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
                 paste(python_cmd,"-c \"import os, sys, imp;
                 gl = imp.load_source('setup_gateway_listener', '${listener_file}');
-                gl.setup_gateway_listener(fname='${connection_file}', parent_pid='${pid}', lower_port=${lower_port},
-                    upper_port=${upper_port})\"")))
+                gl.setup_gateway_listener(conn_filename='${connection_file}', parent_pid='${pid}',
+                lower_port=${lower_port}, upper_port=${upper_port},
+                response_addr='${response_addr}', kernel_id='${kernel_id}', public_key='${public_key}')\"")))
     system(gw_listener_cmd, wait=FALSE)
 
     while (!file.exists(connection_file)) {
         Sys.sleep(0.5)
     }
 
-    return_connection_info(connection_file, argv$RemoteProcessProxy.response_address)
 } else {
     # already provided
     connection_file = argv$connection_file

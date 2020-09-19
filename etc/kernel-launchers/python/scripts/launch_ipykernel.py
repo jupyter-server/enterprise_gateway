@@ -146,17 +146,49 @@ class WaitingForSparkSessionToBeInitialized(object):
             return getattr(self._namespace[self._spark_session_variable], name)
 
 
-def prepare_gateway_socket(lower_port, upper_port):
-    sock = _select_socket(lower_port, upper_port)
-    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
-    sock.listen(1)
-    sock.settimeout(5)
-    return sock
+def _validate_port_range(port_range):
+    # if no argument was provided, return a range of 0
+    if not port_range:
+        return 0, 0
+
+    try:
+        port_ranges = port_range.split("..")
+        lower_port = int(port_ranges[0])
+        upper_port = int(port_ranges[1])
+
+        port_range_size = upper_port - lower_port
+        if port_range_size != 0:
+            if port_range_size < min_port_range_size:
+                raise RuntimeError(
+                    "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
+                    " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
+    except ValueError as ve:
+        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
+    except IndexError as ie:
+        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
+
+    return lower_port, upper_port
+
+
+def determine_connection_file(conn_file, kid):
+    # If the directory exists, use the original file, else create a temporary file.
+    if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
+        if kid is not None:
+            basename = 'kernel-' + kid
+        else:
+            basename = os.path.splitext(os.path.basename(conn_file))[0]
+        fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
+        os.close(fd)
+        logger.debug("Using connection file '{}'.".format(conn_file))
+
+    return conn_file
 
 
 def _encrypt(connection_info_str, public_key):
     """Encrypt the connection information using a generated AES key that is then encrypted using
        the public key passed from the server.  Both are then returned in an encoded JSON payload.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
     """
     aes_key = get_random_bytes(16)
     cipher = AES.new(aes_key, mode=AES.MODE_ECB)
@@ -173,11 +205,14 @@ def _encrypt(connection_info_str, public_key):
     # Compose the payload and Base64 encode it
     payload = {"version": LAUNCHER_VERSION, "key": encrypted_key.decode(), "conn_info": b64_connection_info.decode()}
     b64_payload = base64.b64encode(json.dumps(payload).encode(encoding='utf-8'))
-    logger.info("len: {}, payload: {}".format(len(b64_payload), b64_payload))
     return b64_payload
 
 
 def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key):
+    """Returns the connection information corresponding to this kernel.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error("Invalid format for response address '{}'. "
@@ -220,22 +255,23 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
     return gateway_sock
 
 
-def determine_connection_file(conn_file, kid):
-    # If the directory exists, use the original file, else create a temporary file.
-    if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
-        if kid is not None:
-            basename = 'kernel-' + kid
-        else:
-            basename = os.path.splitext(os.path.basename(conn_file))[0]
-        fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
-        os.close(fd)
-        logger.debug("Using connection file '{}'.".format(conn_file))
+def prepare_gateway_socket(lower_port, upper_port):
+    """Prepares the socket to which the server will send signal and shutdown requests.
 
-    return conn_file
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    sock = _select_socket(lower_port, upper_port)
+    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
+    sock.listen(1)
+    sock.settimeout(5)
+    return sock
 
 
 def _select_ports(count, lower_port, upper_port):
-    """Select and return n random ports that are available and adhere to the given port range, if applicable."""
+    """Select and return n random ports that are available and adhere to the given port range, if applicable.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     ports = []
     sockets = []
     for i in range(count):
@@ -248,7 +284,10 @@ def _select_ports(count, lower_port, upper_port):
 
 
 def _select_socket(lower_port, upper_port):
-    """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
+    """Create and return a socket whose port is available and adheres to the given port range, if applicable.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     found_port = False
     retries = 0
@@ -266,37 +305,21 @@ def _select_socket(lower_port, upper_port):
 
 
 def _get_candidate_port(lower_port, upper_port):
+    """Returns a port within the given range.  If the range is zero, the zero is returned.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     range_size = upper_port - lower_port
     if range_size == 0:
         return 0
     return random.randint(lower_port, upper_port)
 
 
-def _validate_port_range(port_range):
-    # if no argument was provided, return a range of 0
-    if not port_range:
-        return 0, 0
-
-    try:
-        port_ranges = port_range.split("..")
-        lower_port = int(port_ranges[0])
-        upper_port = int(port_ranges[1])
-
-        port_range_size = upper_port - lower_port
-        if port_range_size != 0:
-            if port_range_size < min_port_range_size:
-                raise RuntimeError(
-                    "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
-                    " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size))
-    except ValueError as ve:
-        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ve))
-    except IndexError as ie:
-        raise RuntimeError("Port range validation failed for range: '{}'.  Error was: {}".format(port_range, ie))
-
-    return lower_port, upper_port
-
-
 def get_gateway_request(sock):
+    """Gets a request from the (gateway) server and returns the corresponding dictionary.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     conn = None
     data = ''
     request_info = None
@@ -319,6 +342,12 @@ def get_gateway_request(sock):
 
 
 def gateway_listener(sock, parent_pid):
+    """Waits for requests from the (gateway) server and processes each when received.  Currently,
+       these will be one of a sending a signal to the corresponding kernel process (signum) or
+       stopping the listener and exiting the kernel (shutdown).
+
+        This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     shutdown = False
     while not shutdown:
         request = get_gateway_request(sock)

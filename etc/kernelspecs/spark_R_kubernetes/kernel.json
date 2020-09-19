@@ -22,6 +22,8 @@
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.spark-context-initialization-mode",
     "lazy"
   ]

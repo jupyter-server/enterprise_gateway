@@ -1,14 +1,20 @@
+import base64
 import os
-import tempfile
 import json
 import uuid
-import signal
 import random
 import logging
-from socket import *
+import socket
+
+from Cryptodome.Cipher import PKCS1_v1_5, AES
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.Padding import pad
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from threading import Thread
+
+LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
 log_level = int(os.getenv('EG_LOG_LEVEL', '10'))
@@ -19,8 +25,93 @@ logger = logging.getLogger('gateway_listener for R launcher')
 logger.setLevel(log_level)
 
 
+def _encrypt(connection_info_str, public_key):
+    """Encrypt the connection information using a generated AES key that is then encrypted using
+       the public key passed from the server.  Both are then returned in an encoded JSON payload.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
+    aes_key = get_random_bytes(16)
+    cipher = AES.new(aes_key, mode=AES.MODE_ECB)
+
+    # Encrypt the connection info using the aes_key
+    encrypted_connection_info = cipher.encrypt(pad(connection_info_str, 16))
+    b64_connection_info = base64.b64encode(encrypted_connection_info)
+
+    # Encrypt the aes_key using the server's public key
+    imported_public_key = RSA.importKey(base64.b64decode(public_key.encode()))
+    cipher = PKCS1_v1_5.new(key=imported_public_key)
+    encrypted_key = base64.b64encode(cipher.encrypt(aes_key))
+
+    # Compose the payload and Base64 encode it
+    payload = {"version": LAUNCHER_VERSION, "key": encrypted_key.decode(), "conn_info": b64_connection_info.decode()}
+    b64_payload = base64.b64encode(json.dumps(payload).encode(encoding='utf-8'))
+    return b64_payload
+
+
+def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key, parent_pid):
+    """Returns the connection information corresponding to this kernel.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
+    response_parts = response_addr.split(":")
+    if len(response_parts) != 2:
+        logger.error("Invalid format for response address '{}'. "
+                     "Assuming 'pull' mode...".format(response_addr))
+        return
+
+    response_ip = response_parts[0]
+    try:
+        response_port = int(response_parts[1])
+    except ValueError:
+        logger.error("Invalid port component found in response address '{}'. "
+                     "Assuming 'pull' mode...".format(response_addr))
+        return
+
+    with open(connection_file) as fp:
+        cf_json = json.load(fp)
+        fp.close()
+
+    # add process and process group ids into connection info
+    cf_json['pid'] = parent_pid
+    cf_json['pgid'] = os.getpgid(parent_pid)
+
+    # prepare socket address for handling signals
+    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
+    cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    cf_json['kernel_id'] = kernel_id
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((response_ip, response_port))
+        json_content = json.dumps(cf_json).encode(encoding='utf-8')
+        logger.debug("JSON Payload '{}".format(json_content))
+        payload = _encrypt(json_content, public_key)
+        logger.debug("Encrypted Payload '{}".format(payload))
+        s.send(payload)
+    finally:
+        s.close()
+
+    return gateway_sock
+
+
+def prepare_gateway_socket(lower_port, upper_port):
+    """Prepares the socket to which the server will send signal and shutdown requests.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
+    sock = _select_socket(lower_port, upper_port)
+    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
+    sock.listen(1)
+    sock.settimeout(5)
+    return sock
+
+
 def _select_ports(count, lower_port, upper_port):
-    """Select and return n random ports that are available and adhere to the given port range, if applicable."""
+    """Select and return n random ports that are available and adhere to the given port range, if applicable.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
     ports = []
     sockets = []
     for i in range(count):
@@ -33,39 +124,42 @@ def _select_ports(count, lower_port, upper_port):
 
 
 def _select_socket(lower_port, upper_port):
-    """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
-    sock = socket(AF_INET, SOCK_STREAM)
+    """Create and return a socket whose port is available and adheres to the given port range, if applicable.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     found_port = False
     retries = 0
     while not found_port:
         try:
             sock.bind(('0.0.0.0', _get_candidate_port(lower_port, upper_port)))
             found_port = True
-        except Exception as e:
+        except Exception:
             retries = retries + 1
             if retries > max_port_range_retries:
                 raise RuntimeError(
                     "Failed to locate port within range {}..{} after {} retries!".
-                    format(lower_port, upper_port, max_port_range_retries))
+                        format(lower_port, upper_port, max_port_range_retries))
     return sock
 
 
 def _get_candidate_port(lower_port, upper_port):
+    """Returns a port within the given range.  If the range is zero, the zero is returned.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
     range_size = upper_port - lower_port
     if range_size == 0:
         return 0
     return random.randint(lower_port, upper_port)
 
 
-def prepare_gateway_socket(lower_port, upper_port):
-    sock = _select_socket(lower_port, upper_port)
-    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
-    sock.listen(1)
-    sock.settimeout(5)
-    return sock
-
-
 def get_gateway_request(sock):
+    """Gets a request from the (gateway) server and returns the corresponding dictionary.
+
+       This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
     conn = None
     data = ''
     request_info = None
@@ -78,12 +172,8 @@ def get_gateway_request(sock):
                 break
             data = data + buffer  # append what we received until we get no more...
     except Exception as e:
-        if type(e) is not timeout:
-            # fabricate shutdown.
-            logger.error("Listener encountered error '{}', shutting down...".format(e))
-            shutdown = dict() 
-            shutdown['shutdown'] = 1
-            request_info = shutdown
+        if type(e) is not socket.timeout:
+            raise e
     finally:
         if conn:
             conn.close()
@@ -92,6 +182,12 @@ def get_gateway_request(sock):
 
 
 def gateway_listener(sock, parent_pid):
+    """Waits for requests from the (gateway) server and processes each when received.  Currently,
+       these will be one of a sending a signal to the corresponding kernel process (signum) or
+       stopping the listener and exiting the kernel (shutdown).
+
+        This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
+    """
     shutdown = False
     while not shutdown:
         request = get_gateway_request(sock)
@@ -99,47 +195,28 @@ def gateway_listener(sock, parent_pid):
             signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get('signum') is not None:
                 signum = int(request.get('signum'))
-                os.kill(int(parent_pid), signum)
+                os.kill(parent_pid, signum)
             if request.get('shutdown') is not None:
                 shutdown = bool(request.get('shutdown'))
             if signum != 0:
-                logger.debug("gateway_listener got request: {}".format(request))
-        else:  # check parent
-            try:
-                os.kill(int(parent_pid), 0)
-            except OSError as e:
-                shutdown = True
-                logger.info("Listener detected parent has been shutdown.")
+                logger.info("gateway_listener got request: {}".format(request))
 
 
-def setup_gateway_listener(fname, parent_pid, lower_port, upper_port):
+def setup_gateway_listener(conn_filename, parent_pid, lower_port, upper_port, response_addr, kernel_id, public_key):
     ip = "0.0.0.0"
     key = str_to_bytes(str(uuid.uuid4()))
 
-    gateway_socket = prepare_gateway_socket(lower_port, upper_port)
-
-    gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket,parent_pid,))
-    gateway_listener_thread.start()
-
-    basename = os.path.splitext(os.path.basename(fname))[0]
-    fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
-    os.close(fd)
-
     ports = _select_ports(5, lower_port, upper_port)
 
-    conn_file, config = write_connection_file(fname=conn_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
+    write_connection_file(fname=conn_filename, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                           stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
-    try:
-        os.remove(conn_file)
-    except:
-        pass
+    if response_addr:
+        gateway_socket = return_connection_info(conn_filename, response_addr, int(lower_port), int(upper_port),
+                                                kernel_id, public_key, int(parent_pid))
+        if gateway_socket:  # socket in use, start gateway listener thread
+            gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket, int(parent_pid),))
+            gateway_listener_thread.start()
 
-    # Add in the gateway_socket and parent_pid fields...
-    config['comm_port'] = gateway_socket.getsockname()[1]
-    config['pid'] = parent_pid
-    
-    with open(fname, 'w') as f:
-        f.write(json.dumps(config, indent=2))
     return
 
 __all__ = [
