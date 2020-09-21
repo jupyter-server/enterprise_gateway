@@ -269,7 +269,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     def new_kernel_id(self, **kwargs):
         """Determines the kernel_id to use for a new kernel."""
 
-        return new_kernel_id(kernel_id_fn=super(RemoteMappingKernelManager, self).new_kernel_id, log=self.log)
+        return new_kernel_id(kernel_id_fn=super(RemoteMappingKernelManager, self).new_kernel_id, log=self.log, **kwargs)
 
 
 class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager):

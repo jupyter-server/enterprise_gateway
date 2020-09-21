@@ -4,6 +4,7 @@
 
 import os
 import time
+import uuid
 
 from tornado.testing import gen_test
 from tornado.escape import json_decode, url_escape
@@ -192,3 +193,17 @@ class TestEnterpriseGateway(TestHandlers):
             app.update_dynamic_configurables()
             self.assertEqual(app.impersonation_enabled, True)
             self.assertEqual(app.kernel_manager.cull_connected, True)
+
+    @gen_test
+    def test_kernel_id_env_var(self):
+        """Verify kernel is created with the given kernel id"""
+        expected_kernel_id = str(uuid.uuid4())
+        kernel_response = yield self.http_client.fetch(
+            self.get_url('/api/kernels'),
+            method='POST',
+            body='{"env": {"KERNEL_ID": "%s"}}' % expected_kernel_id,
+            raise_error=False
+        )
+        self.assertEqual(kernel_response.code, 201)
+        kernel = json_decode(kernel_response.body)
+        self.assertEqual(expected_kernel_id, kernel['id'])
