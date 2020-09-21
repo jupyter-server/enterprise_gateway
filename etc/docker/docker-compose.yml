@@ -25,12 +25,17 @@ services:
       - "EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-3600}"
       - "EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-['r_docker','python_docker','python_tf_docker','python_tf_gpu_docker','scala_docker']}"
       - "EG_MIRROR_WORKING_DIRS=${EG_MIRROR_WORKING_DIRS:-False}"
+      - "EG_RESPONSE_PORT=${EG_RESPONSE_PORT:-8877}"
       - "KG_PORT=${KG_PORT:-8888}"
     networks:
       - enterprise-gateway
     ports:
       - target: ${KG_PORT:-8888}
         published: ${KG_PORT:-8888}
+        protocol: tcp
+        mode: host
+      - target: ${EG_RESPONSE_PORT:-8877}
+        published: ${EG_RESPONSE_PORT:-8877}
         protocol: tcp
         mode: host
     labels:

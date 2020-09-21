@@ -26,7 +26,7 @@ def generate_kernel_pod_yaml(keywords):
     return k8s_yaml
 
 
-def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
+def launch_kubernetes_kernel(kernel_id, response_addr, public_key, spark_context_init_mode):
     # Launches a containerized kernel as a kubernetes pod.
 
     config.load_incluster_config()
@@ -40,6 +40,7 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     keywords['kernel_id'] = kernel_id
     keywords['eg_response_address'] = response_addr
+    keywords['eg_public_key'] = public_key
     keywords['kernel_spark_context_init_mode'] = spark_context_init_mode
 
     # Walk env variables looking for names prefixed with KERNEL_.  When found, set corresponding keyword value
@@ -85,6 +86,7 @@ if __name__ == '__main__':
         Usage: launch_kubernetes_kernel 
                     [--RemoteProcessProxy.kernel-id <kernel_id>]
                     [--RemoteProcessProxy.response-address <response_addr>]
+                    [--RemoteProcessProxy.public-key <public_key>]
                     [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
     """
 
@@ -93,6 +95,8 @@ if __name__ == '__main__':
                         help='Indicates the id associated with the launched kernel.')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+                        help='Public key used to encrypt connection information')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
                         nargs='?', help='Indicates whether or how a spark context should be created',
                         default='none')
@@ -100,6 +104,7 @@ if __name__ == '__main__':
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
     response_addr = arguments['response_address']
+    public_key = arguments['public_key']
     spark_context_init_mode = arguments['spark_context_init_mode']
 
-    launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode)
+    launch_kubernetes_kernel(kernel_id, response_addr, public_key, spark_context_init_mode)
