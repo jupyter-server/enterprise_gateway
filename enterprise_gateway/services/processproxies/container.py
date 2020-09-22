@@ -7,7 +7,7 @@ import os
 import signal
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import localinterfaces
 
 from .processproxy import RemoteProcessProxy
 
@@ -65,7 +65,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         await super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
 

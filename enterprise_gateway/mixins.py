@@ -327,6 +327,16 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def env_process_whitelist_default(self):
         return os.getenv(self.env_process_whitelist_env, os.getenv('KG_ENV_PROCESS_WHITELIST', '')).split(',')
 
+    kernel_headers_env = 'EG_KERNEL_HEADERS'
+    kernel_headers = List(config=True,
+                          help="""Request headers to make available to kernel launch framework.
+                          (EG_KERNEL_HEADERS env var)""")
+
+    @default('kernel_headers')
+    def kernel_headers_default(self):
+        default_headers = os.getenv(self.kernel_headers_env)
+        return default_headers.split(',') if default_headers else []
+
     # Remote hosts
     remote_hosts_env = 'EG_REMOTE_HOSTS'
     remote_hosts_default_value = 'localhost'

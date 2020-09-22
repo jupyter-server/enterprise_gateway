@@ -60,10 +60,29 @@ class MainKernelHandler(TokenAuthorizationMixin,
             # Whitelist KERNEL_* args and those allowed by configuration from client
             env.update({key: value for key, value in model['env'].items()
                         if key.startswith('KERNEL_') or key in self.env_whitelist})
+
+            # If kernel_headers are configured, fetch each of those and include in start request
+            kernel_headers = {}
+            missing_headers = []
+            kernel_header_names = self.settings['eg_kernel_headers']
+            for name in kernel_header_names:
+                if name:  # Ignore things like empty strings
+                    value = self.request.headers.get(name)
+                    if value:
+                        kernel_headers[name] = value
+                    else:
+                        missing_headers.append(name)
+
+            if len(missing_headers):
+                self.log.warning("The following headers specified in 'kernel-headers' were not found: {}".
+                                 format(missing_headers))
+
             # No way to override the call to start_kernel on the kernel manager
             # so do a temporary partial (ugh)
             orig_start = self.kernel_manager.start_kernel
-            self.kernel_manager.start_kernel = partial(self.kernel_manager.start_kernel, env=env)
+            self.kernel_manager.start_kernel = partial(self.kernel_manager.start_kernel,
+                                                       env=env,
+                                                       kernel_headers=kernel_headers)
             try:
                 yield super(MainKernelHandler, self).post()
             finally:

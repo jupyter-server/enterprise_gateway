@@ -195,6 +195,17 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get('env')))
 
+    def launch_kernel(self, cmd, **kwargs):
+        """Returns the result of launching the kernel via Popen.
+
+        This method exists to allow process proxies to perform any final preparations for
+        launch, including the removal of any arguments that are not recoginized by Popen.
+        """
+
+        # Remove kernel_headers
+        kwargs.pop('kernel_headers', None)
+        return launch_kernel(cmd, **kwargs)
+
     def cleanup(self):
         """Performs optional cleanup after kernel is shutdown.  Child classes are responsible for implementations."""
         pass
@@ -629,7 +640,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
         await super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         if hasattr(os, "getpgid"):
             try:

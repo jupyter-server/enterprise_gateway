@@ -10,7 +10,7 @@ import signal
 import socket
 import time
 
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 
 from .processproxy import RemoteProcessProxy
@@ -92,7 +92,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         await super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh - which is configured for yarn-cluster...
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
