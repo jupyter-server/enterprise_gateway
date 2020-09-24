@@ -26,6 +26,10 @@ prohibited_gids = os.getenv("EG_PROHIBITED_GIDS", "0").split(',')
 
 mirror_working_dirs = bool((os.getenv('EG_MIRROR_WORKING_DIRS', 'false').lower() == 'true'))
 
+# Get the globally-configured default images.  Defaulting to None if not set.
+default_kernel_image = os.getenv('EG_KERNEL_IMAGE')
+default_kernel_executor_image = os.getenv('EG_KERNEL_EXECUTOR_IMAGE')
+
 
 class ContainerProcessProxy(RemoteProcessProxy):
     """Kernel lifecycle management for container-based kernels."""
@@ -33,27 +37,31 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super(ContainerProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.container_name = ''
         self.assigned_node_ip = None
-        self._determine_kernel_images(proxy_config)
 
-    def _determine_kernel_images(self, proxy_config):
+    def _determine_kernel_images(self, **kwargs):
         """Determine which kernel images to use.
 
         Initialize to any defined in the process proxy override that then let those provided
         by client via env override.
         """
-        if proxy_config.get('image_name'):
-            self.kernel_image = proxy_config.get('image_name')
-        self.kernel_image = os.environ.get('KERNEL_IMAGE', self.kernel_image)
+        kernel_image = self.proxy_config.get('image_name', default_kernel_image)
+        self.kernel_image = kwargs['env'].get('KERNEL_IMAGE', kernel_image)
 
-        self.kernel_executor_image = self.kernel_image  # Default the executor image to current image
-        if proxy_config.get('executor_image_name'):
-            self.kernel_executor_image = proxy_config.get('executor_image_name')
-        self.kernel_executor_image = os.environ.get('KERNEL_EXECUTOR_IMAGE', self.kernel_executor_image)
+        if self.kernel_image is None:
+            self.log_and_raise(http_status_code=500,
+                               reason="No kernel image could be determined! Set the `image_name` in the "
+                                      "process_proxy.config stanza of the corresponding kernel.json file.")
+
+        # If no default executor image is configured, default it to current image
+        kernel_executor_image = self.proxy_config.get('executor_image_name',
+                                                      default_kernel_executor_image or self.kernel_image)
+        self.kernel_executor_image = kwargs['env'].get('KERNEL_EXECUTOR_IMAGE', kernel_executor_image)
 
     async def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within the container environment."""
         # Set env before superclass call so we see these in the debug output
 
+        self._determine_kernel_images(**kwargs)
         kwargs['env']['KERNEL_IMAGE'] = self.kernel_image
         kwargs['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
 

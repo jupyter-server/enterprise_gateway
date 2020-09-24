@@ -113,6 +113,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             The dictionary of per-kernel config settings.  If none are specified, this will be an empty dict.
         """
         self.kernel_manager = kernel_manager
+        self.proxy_config = proxy_config
         # Initialize to 0 IP primarily so restarts of remote kernels don't encounter local-only enforcement during
         # relaunch (see jupyter_client.manager.start_kernel().
         self.kernel_manager.ip = '0.0.0.0'
@@ -127,7 +128,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.lower_port = 0
         self.upper_port = 0
-        self._validate_port_range(proxy_config)
+        self._validate_port_range()
 
         # Handle authorization sets...
         # Take union of unauthorized users...
@@ -489,12 +490,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.ip = process_info['ip']
         self.kernel_manager.ip = process_info['ip']
 
-    def _validate_port_range(self, proxy_config):
+    def _validate_port_range(self):
         """Validates the port range configuration option to ensure appropriate values."""
         # Let port_range override global value - if set on kernelspec...
         port_range = self.kernel_manager.port_range
-        if proxy_config.get('port_range'):
-            port_range = proxy_config.get('port_range')
+        if self.proxy_config.get('port_range'):
+            port_range = self.proxy_config.get('port_range')
 
         try:
             port_ranges = port_range.split("..")
