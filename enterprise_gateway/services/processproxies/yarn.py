@@ -23,6 +23,10 @@ local_ip = localinterfaces.public_ips()[0]
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 yarn_shutdown_wait_time = float(os.getenv('EG_YARN_SHUTDOWN_WAIT_TIME', '15.0'))
+# cert_path: Boolean, defaults to `True`, that controls
+#            whether we verify the server's TLS certificate in yarn-api-client.
+#            Or a string, in which case it must be a path to a CA bundle(.pem file) to use.
+cert_path = os.getenv('EG_YARN_CERT_BUNDLE', True)
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
@@ -64,7 +68,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             from requests_kerberos import HTTPKerberosAuth
             auth = HTTPKerberosAuth()
 
-        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth)
+        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth, verify=cert_path)
 
         self.rm_addr = self.resource_mgr.get_active_endpoint()
 
