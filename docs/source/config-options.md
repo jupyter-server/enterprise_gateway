@@ -1,6 +1,6 @@
 ## Configuration options
 
-Jupyter Enterprise Gateway adheres to the 
+Jupyter Enterprise Gateway adheres to the
 [Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html)
 . You can configure an instance of Enterprise Gateway using:
 
@@ -337,8 +337,8 @@ The following environment variables can be used to influence functionality and a
     and conveys that name via EG_KERNEL_CLUSTER_ROLE.  Should the deployment script
     not set this valuem, Enterprise Gateway will then use 'cluster-admin'.  It is
     recommended this value be set to something other than 'cluster-admin'.
-              
-  EG_KERNEL_LAUNCH_TIMEOUT=30 
+
+  EG_KERNEL_LAUNCH_TIMEOUT=30
     The time (in seconds) Enterprise Gateway will wait for a kernel's startup
     completion status before deeming the startup a failure, at which time a second
     startup attempt will take place.  If a second timeout occurs, Enterprise
@@ -359,12 +359,12 @@ The following environment variables can be used to influence functionality and a
     **Experimental** The location in which the kernel session information is persisted.
     By default, this is located in the configured JupyterDataDir.  See also
     EG_KERNEL_SESSION_PERSISTENCE.
-      
+
   EG_MAX_PORT_RANGE_RETRIES=5
     The number of attempts made to locate an available port within the specified
     port range.  Only applies when --EnterpriseGatewayApp.port_range
     (or EG_PORT_RANGE) has been specified or is in use for the given kernel.
-            
+
   EG_MIN_PORT_RANGE_SIZE=1000
     The minimum port range size permitted when --EnterpriseGatewayApp.port_range
     (or EG_PORT_RANGE) is specified or is in use for the given kernel.  Port ranges
@@ -404,7 +404,7 @@ The following environment variables can be used to influence functionality and a
     allowed to be referenced by KERNEL_UID.  This defaults to the root user id (0).
     Attempts to launch a kernel where KERNEL_UID's value is in this list will result
     in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_GIDS.
-      
+
   EG_SHARED_NAMESPACE=False
     Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
     should reside in the same namespace as Enterprise Gateway.  This is not a recommended
@@ -413,6 +413,9 @@ The following environment variables can be used to influence functionality and a
   EG_SSH_PORT=22
     The port number used for ssh operations for installations choosing to
     configure the ssh server on a port other than the default 22.
+
+  EG_YARN_CERT_BUNDLE=<custom_truststore_path>
+    The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.
 ```
 ### Environment variables that assist in troubleshooting
 The following environment variables may be useful for troubleshooting:
@@ -431,7 +434,7 @@ The following environment variables may be useful for troubleshooting:
     indicates the level of logging used by those entities.  Level 10 (DEBUG) is
     recommended since they don't do verbose logging.
 
-  EG_MAX_POLL_ATTEMPTS=10 
+  EG_MAX_POLL_ATTEMPTS=10
     Polling is used in various places during life-cycle management operations - like
     determining if a kernel process is still alive, stopping the process, waiting
     for the process to terminate, etc.  As a result, it may be useful to adjust
@@ -447,9 +450,9 @@ The following environment variables may be useful for troubleshooting:
     to be left around in order to troubleshoot issues.  Remember to set back to 'True'
     to restore normal operation.
 
-  EG_SOCKET_TIMEOUT=5.0 
+  EG_SOCKET_TIMEOUT=5.0
     The time (in seconds) the enterprise gateway will wait on its connection
-    file socket waiting on return from a remote kernel launcher.  Upon timeout, the 
+    file socket waiting on return from a remote kernel launcher.  Upon timeout, the
     operation will be retried immediately, until the overall time limit has been
     exceeded.
 
@@ -540,7 +543,7 @@ The following kernel-specific environment variables are used by Enterprise Gatew
     provided, the value of KERNEL_IMAGE will be used.
 
   KERNEL_EXTRA_SPARK_OPTS=<from user>
-    Spark only. This variable allows users to add additional spark options to the 
+    Spark only. This variable allows users to add additional spark options to the
     current set of options specified in the corresponding kernel.json file.  This
     variable is purely optional with no default value.  In addition, it is the
     responsibility of the the user setting this value to ensure the options passed
@@ -648,22 +651,22 @@ The following kernel-specific environment variables are managed within Enterpris
 ```
 ### Dynamic Configurables
 Enterprise Gateway now supports the ability to update configuration variables without having to
-restart Enterprise Gateway.  This enables the ability to do things like enable debug logging or 
+restart Enterprise Gateway.  This enables the ability to do things like enable debug logging or
 adjust the maximum number of kernels per user, all without having to restart Enterprise Gateway.
 
 To enable dynamic configurables configure `EnterpriseGatewayApp.dynamic_config_interval` to a
 positive value (default is 0 or disabled).  Since this is the number of seconds to poll Enterprise Gateway's configuration files,
-a value greater than 60 (1 minute) is recommended.  This functionality works for most configuration 
+a value greater than 60 (1 minute) is recommended.  This functionality works for most configuration
 values, but does have the following caveats:
 1. Any configuration variables set on the command line (CLI) or via environment variables are
 NOT eligible for dynamic updates.  This is because Jupyter gives those values priority over
 file-based configuration variables.
 2. Any configuration variables tied to background processing may not reflect their update if
-the variable is not *observed* for changes.  For example, the code behind 
-`MappingKernelManager.cull_idle_timeout` may not reflect changes to the timeout period if 
+the variable is not *observed* for changes.  For example, the code behind
+`MappingKernelManager.cull_idle_timeout` may not reflect changes to the timeout period if
 that variable is not monitored (i.e., observed) for changes.
 3. Only `Configurables` registered by Enterprise Gateway are eligible for dynamic updates.
-Currently, that list consists of the following (and their subclasses): EnterpriseGatewayApp, 
+Currently, that list consists of the following (and their subclasses): EnterpriseGatewayApp,
 MappingKernelManager, KernelSpecManager, and KernelSessionManager.
 
 As a result, administrators are encouraged to configure Enterprise Gateway via configuration
@@ -671,6 +674,6 @@ files with only static values configured via the command line or environment.
 
 Note that if `EnterpriseGatewayApp.dynamic_config_interval` is configured with a positive value
 via the configuration file (i.e., is eligible for updates) and is subsequently set to 0, then
-dynamic configuration updates will be disabled until Enterprise Gateway is restarted with a 
-positive value.  Therefore, we recommend `EnterpriseGatewayApp.dynamic_config_interval` be 
+dynamic configuration updates will be disabled until Enterprise Gateway is restarted with a
+positive value.  Therefore, we recommend `EnterpriseGatewayApp.dynamic_config_interval` be
 configured via the command line or environment.
