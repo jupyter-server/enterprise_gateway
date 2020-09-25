@@ -413,6 +413,9 @@ The following environment variables can be used to influence functionality and a
   EG_SSH_PORT=22
     The port number used for ssh operations for installations choosing to
     configure the ssh server on a port other than the default 22.
+    
+  EG_YARN_CERT_BUNDLE=<custom_truststore_path>
+    The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.
 ```
 ### Environment variables that assist in troubleshooting
 The following environment variables may be useful for troubleshooting:
