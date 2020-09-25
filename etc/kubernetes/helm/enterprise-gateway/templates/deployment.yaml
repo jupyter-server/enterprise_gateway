@@ -63,6 +63,7 @@ spec:
           value: {{ .Values.kernel.defaultKernelName }}
         ports:
         - containerPort: {{ .Values.port }}
+        - containerPort: {{ .Values.response_port }}
 {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs
