@@ -49,8 +49,9 @@ poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '0.005'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'true')
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
-response_ip = os.getenv('EG_RESPONSE_IP', None)
+eg_response_ip = os.getenv('EG_RESPONSE_IP', None)
 response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
+response_addr_any = bool(os.getenv('EG_RESPONSE_ADDR_ANY', 'False').lower() == 'true')
 
 connection_interval = poll_interval / 100.0  # already polling, so make connection timeout a fraction of outer poll
 
@@ -142,7 +143,8 @@ class ResponseManager(SingletonConfigurable):
 
     def __init__(self, **kwargs):
         super(ResponseManager, self).__init__(**kwargs)
-        self._response_address = None
+        self._response_ip = None
+        self._response_port = None
         self._response_socket = None
         self._connection_processor = None
 
@@ -167,7 +169,7 @@ class ResponseManager(SingletonConfigurable):
 
     @property
     def response_address(self) -> str:
-        return self._response_address
+        return self._response_ip + ':' + str(self._response_port)
 
     def register_event(self, kernel_id: str) -> None:
         """Register kernel_id so its connection information can be processed."""
@@ -183,19 +185,24 @@ class ResponseManager(SingletonConfigurable):
         s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
+        # If response_addr_any is enabled (default disabled), we will permit the server to listen
+        # on all addresses, else we will honor a configured response IP (via env) over the local IP
+        # (which is the default).
+        # Multiple IP bindings should be configured for containerized configurations (k8s) that need to
+        # launch kernels into external YARN clusters.
+        bind_ip = (local_ip if eg_response_ip is None else eg_response_ip)
+        bind_ip = (bind_ip if response_addr_any is False else '')
+
         try:
-            s.bind((local_ip, response_port))
+            s.bind((bind_ip, response_port))
         except Exception as ex:
             raise RuntimeError("Failed to bind to port '{}' for response address due to: '{}'".
                                format(response_port, ex))
-
-        port = s.getsockname()[1]
         s.listen(128)
         s.settimeout(socket_timeout)
         self._response_socket = s
-        self._response_address = (local_ip if response_ip is None else response_ip) + ':' + str(port)
-        self.log.debug("Response address configured: '{}', using {}s timeout".
-                       format(self.response_address, socket_timeout))
+        self._response_port = response_port
+        self._response_ip = (local_ip if eg_response_ip is None else eg_response_ip)
 
     def _start_response_manager(self) -> None:
         """If not already started, creates and starts the periodic callback to process connections."""
