@@ -44,7 +44,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
     async def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a Conductor cluster environment."""
         await super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
-       
+
         self.env = kwargs.get('env')
         self.kernel_headers = kwargs.get('kernel_headers')
 
@@ -53,10 +53,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         if env_dict and 'EGO_SERVICE_CREDENTIAL' in env_dict:
             self.rest_credential = env_dict['EGO_SERVICE_CREDENTIAL']
         elif self.kernel_headers and 'Jwt-Auth-User-Payload' in self.kernel_headers:
-           kwargs.get('env')['KERNEL_NOTEBOOK_COOKIE_JAR'] = 'kernelcookie' + str(randint(0, 1000))
-           jsonKH = json.loads(self.kernel_headers['Jwt-Auth-User-Payload'])
-           self.jwt_token = jsonKH['accessToken']
-           self._performConductorJWTLogonAndRetrieval(self.jwt_token, kwargs.get('env'))
+            kwargs.get('env')['KERNEL_NOTEBOOK_COOKIE_JAR'] = 'kernelcookie' + str(randint(0, 1000))
+            jsonKH = json.loads(self.kernel_headers['Jwt-Auth-User-Payload'])
+            self.jwt_token = jsonKH['accessToken']
+            self._performConductorJWTLogonAndRetrieval(self.jwt_token, kwargs.get('env'))
         else:
             error_message = "ConductorClusterProcessProxy failed to obtain the Conductor credential."
             self.log_and_raise(http_status_code=500, reason=error_message)
@@ -68,7 +68,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
-        
+
         self.log.debug("Conductor cluster kernel launched using Conductor endpoint: {}, pid: {}, Kernel ID: {}, "
                        "cmd: '{}'".format(self.conductor_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd))
         await self.confirm_remote_startup()
@@ -84,7 +84,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kernel_cmd.insert(0, cmd)
 
         env_dict = kwargs.get('env')
-        
+
         # add SPARK_HOME, PYSPARK_PYTHON, update SPARK_OPT to contain SPARK_MASTER and EGO_SERVICE_CREDENTIAL
         env_dict['SPARK_HOME'] = env_dict['KERNEL_SPARK_HOME']
         env_dict['PYSPARK_PYTHON'] = env_dict['KERNEL_PYSPARK_PYTHON']
@@ -92,8 +92,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         user_defined_spark_opts = ''
         if 'KERNEL_SPARK_OPTS' in env_dict:
             user_defined_spark_opts = env_dict['KERNEL_SPARK_OPTS']
- 
-        #Get updated one_notebook_master_rest_url for KERNEL_NOTEBOOK_MASTER_REST and SPARK_OPTS.
+
+        # Get updated one_notebook_master_rest_url for KERNEL_NOTEBOOK_MASTER_REST and SPARK_OPTS.
         if self.jwt_token is None:
             self._update_notebook_master_rest_url(env_dict, **kwargs)
 
@@ -101,23 +101,28 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             env_dict['SPARK_OPTS'] = '--master {master} --conf spark.ego.credential={rest_cred} ' \
                                      '--conf spark.pyspark.python={pyspark_python} {spark_opts} ' \
                                      '{user_defined_spark_opts}'.\
-                format(master=env_dict['KERNEL_NOTEBOOK_MASTER_REST'], rest_cred="'"+self.rest_credential+"'",
+                format(master=env_dict['KERNEL_NOTEBOOK_MASTER_REST'], rest_cred="'" + self.rest_credential + "'",
                        pyspark_python=env_dict['PYSPARK_PYTHON'], spark_opts=env_dict['SPARK_OPTS'],
                        user_defined_spark_opts=user_defined_spark_opts)
 
     def _update_notebook_master_rest_url(self, env_dict, **kwargs):
-        """Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST, conductor_endpoint, and SPARK_OPTS."""
+        """Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST,
+        conductor_endpoint, and SPARK_OPTS.
+        """
 
         self.log.debug("Updating notebook master rest urls.")
         response = None
         # Assemble REST call
         header = 'Accept: application/json'
         authorization = 'Authorization: %s' % self.rest_credential
-        if 'KERNEL_NOTEBOOK_DATA_DIR' not in env_dict or 'KERNEL_NOTEBOOK_COOKIE_JAR' not in env_dict or 'KERNEL_CURL_SECURITY_OPT' not in env_dict:
+        if 'KERNEL_NOTEBOOK_DATA_DIR' not in env_dict or 'KERNEL_NOTEBOOK_COOKIE_JAR' not in env_dict \
+                or 'KERNEL_CURL_SECURITY_OPT' not in env_dict:
             self.log.warning("Could not find KERNEL environment variables. Not updating notebook master rest url.")
             return
-        if 'CONDUCTOR_REST_URL' not in env_dict or 'KERNEL_SIG_ID' not in env_dict or 'KERNEL_NOTEBOOK_MASTER_REST' not in env_dict:
-            self.log.warning("Could not find CONDUCTOR_REST_URL or KERNEL_SIG_ID or KERNEL_NOTEBOOK_MASTER_REST. Not updating notebook master rest url.")
+        if 'CONDUCTOR_REST_URL' not in env_dict or 'KERNEL_SIG_ID' not in env_dict \
+                or 'KERNEL_NOTEBOOK_MASTER_REST' not in env_dict:
+            self.log.warning("Could not find CONDUCTOR_REST_URL or KERNEL_SIG_ID or KERNEL_NOTEBOOK_MASTER_REST. "
+                             "Not updating notebook master rest url.")
             return
 
         cookie_jar = pjoin(env_dict['KERNEL_NOTEBOOK_DATA_DIR'], env_dict['KERNEL_NOTEBOOK_COOKIE_JAR'])
@@ -141,11 +146,18 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         outputs = response[0]['outputs']
 
-        if 'one_notebook_master_rest_url' not in outputs or not outputs['one_notebook_master_rest_url'] or 'value' not in outputs['one_notebook_master_rest_url'] or not outputs['one_notebook_master_rest_url']['value']:
-            self.log.warning("Could not get one_notebook_master_rest_url from instance group. Not updating notebook master rest url.")
+        if 'one_notebook_master_rest_url' not in outputs or not outputs['one_notebook_master_rest_url'] \
+            or 'value' not in outputs['one_notebook_master_rest_url'] \
+                or not outputs['one_notebook_master_rest_url']['value']:
+            self.log.warning("Could not get one_notebook_master_rest_url from instance group. "
+                             "Not updating notebook master rest url.")
             return
-        if 'one_notebook_master_web_submission_url' not in outputs or not outputs['one_notebook_master_web_submission_url'] or 'value' not in outputs['one_notebook_master_web_submission_url'] or not outputs['one_notebook_master_web_submission_url']['value']:
-            self.log.warning("Could not get one_notebook_master_web_submission_url from instance group. Not updating notebook master rest url.")
+        if 'one_notebook_master_web_submission_url' not in outputs \
+            or not outputs['one_notebook_master_web_submission_url'] \
+                or 'value' not in outputs['one_notebook_master_web_submission_url'] \
+                or not outputs['one_notebook_master_web_submission_url']['value']:
+            self.log.warning("Could not get one_notebook_master_web_submission_url from instance group. "
+                             "Not updating notebook master rest url.")
             return
 
         updated_one_notebook_master_rest_url = outputs['one_notebook_master_rest_url']['value']
@@ -243,9 +255,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     self.driver_id = driver_id[0]
                     self.log.debug("Driver ID: {}".format(driver_id[0]))
             # Handle Checking for submission error to report
-            matched_lines = [line for line in submission_response.split('\n') if "Application submission failed" in line]
-            if matched_lines and len(matched_lines) > 0:
-                self.log_and_raise(http_status_code=500, reason=matched_lines[0][matched_lines[0].find("Application submission failed"):])
+            err_lines = [line for line in submission_response.split('\n') if "Application submission failed" in line]
+            if err_lines and len(err_lines) > 0:
+                self.log_and_raise(http_status_code=500,
+                                   reason=err_lines[0][err_lines[0].find("Application submission failed"):])
 
     async def confirm_remote_startup(self):
         """ Confirms the application is in a started state before returning.  Should post-RUNNING states be
@@ -373,7 +386,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         url = '%s/v1/applications?driverid=%s' % (self.conductor_endpoint, driver_id)
         cmd = ['curl', '-v', '-b', cookie_jar, '-X', 'GET', '-H', header, '-H', authorization, url]
         cmd[2:2] = sslconf
-        
+
         # Perform REST call
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
@@ -489,13 +502,15 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         for HA in HA_LIST:
             portcolon = url.rfind(':')
             slash = url.find('://')
-            url = url[0:slash+3] + HA + url[portcolon:]
+            url = url[0:slash + 3] + HA + url[portcolon:]
             cmd[-1] = url
             self.log.debug(cmd)
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, universal_newlines=True)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
+                                       universal_newlines=True)
             output, stderr = process.communicate()
-            if not 'Could not resolve host' in stderr and not 'Failed connect to' in stderr and not 'Connection refused' in stderr:
-                return output,stderr
+            if 'Could not resolve host' not in stderr and 'Failed connect to' not in stderr \
+                    and 'Connection refused' not in stderr:
+                return output, stderr
         self.log_and_raise(http_status_code=500, reason='Could not connect to ascd. Verify ascd is running.')
         return 'Error', 'Error'
 
@@ -511,12 +526,17 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble JWT Auth logon REST call
         env = self.env
 
+        if env['KERNEL_IG_UUID'] is None:
+            reasonErr = 'Instance group specified is None. Check environment ' \
+                        'specified instance group is available.'
+            self.log_and_raise(http_status_code=500, reason=reasonErr)
+
         # Determine hostname of ascd_endpoint and setup the HA List
         portcolon = self.ascd_endpoint.rfind(':')
         slash = self.ascd_endpoint.find('://')
-        host = self.ascd_endpoint[slash+3:portcolon]
+        host = self.ascd_endpoint[slash + 3:portcolon]
         HA_LIST = env['KERNEL_CONDUCTOR_HA_ENDPOINTS'].split(',')
-        HA_LIST.insert(0,host)
+        HA_LIST.insert(0, host)
 
         header = 'Accept: application/json'
         authorization = 'Authorization: Bearer %s' % jwt_token
@@ -541,7 +561,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         if 'Error' in output:
             reasonErr = 'Failed to perform EGO Auth Logon. ' + output.splitlines()[0]
             self.log.warning(cmd)
-            self.log_and_raise(http_status_code=500, reason=reasonErr)        
+            self.log_and_raise(http_status_code=500, reason=reasonErr)
 
         # Get the Python path to use to make sure the right conda environment is used
         url = '%s/anaconda/instances/%s' % (self.ascd_endpoint, env['KERNEL_ANACONDA_INST_UUID'])
@@ -550,25 +570,29 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         output, stderr = self._performRestCall(cmd, url, HA_LIST)
         response = json.loads(output) if output else None
         if response is None or not response['parameters']['deploy_home']['value']:
-            reasonErr = 'Could not retrieve anaconda instance. Verify anaconda instance with id ' + env['KERNEL_ANACONDA_INST_UUID'] + ' exists'
+            reasonErr = 'Could not retrieve anaconda instance. Verify anaconda instance with id '
+            reasonErr = reasonErr + env['KERNEL_ANACONDA_INST_UUID'] + ' exists'
             self.log.warning(cmd)
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         else:
-            env_dict['KERNEL_PYSPARK_PYTHON'] = response['parameters']['deploy_home']['value'] + '/anaconda/envs/' + env['KERNEL_ANACONDA_ENV'] + '/bin/python'  
+            env_dict['KERNEL_PYSPARK_PYTHON'] = response['parameters']['deploy_home']['value'] \
+                + '/anaconda/envs/' + env['KERNEL_ANACONDA_ENV'] + '/bin/python'
 
         # Get instance group information we need
         url = '%s/instances?id=%s&fields=sparkinstancegroup,outputs' % (self.ascd_endpoint, env['KERNEL_IG_UUID'])
         cmd = ['curl', '-v', '-b', cookie_jar, '-X', 'GET', '-H', header, '-H', authorization, url]
         cmd[2:2] = sslconf
         output, stderr = self._performRestCall(cmd, url, HA_LIST)
-        response = json.loads(output) if output else None            
-        
-        if response is None or len(response) == 00 or response[0] is None:
-            reasonErr = 'Could not retrieve instance group. Verify instance group with id ' + env['KERNEL_IG_UUID'] + ' exists.'
+        response = json.loads(output) if output else None
+
+        if response is None or len(response) == 0 or response[0] is None:
+            reasonErr = 'Could not retrieve instance group. Verify instance group with id ' \
+                        + env['KERNEL_IG_UUID'] + ' exists.'
             self.log.warning(cmd)
             self.log_and_raise(http_status_code=500, reason=reasonErr)
-        elif response is None or response[0] is None or not 'value' in response[0]['outputs']['batch_master_rest_urls']:
-            reasonErr = 'Could not retrieve outputs for instance group. Verify instance group with id ' + env['KERNEL_IG_UUID'] + ' is started'
+        elif response is None or response[0] is None or 'value' not in response[0]['outputs']['batch_master_rest_urls']:
+            reasonErr = 'Could not retrieve outputs for instance group. Verify instance group with id ' \
+                + env['KERNEL_IG_UUID'] + ' is started'
             self.log.warning(cmd)
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         else:
@@ -576,4 +600,3 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             env_dict['KERNEL_NOTEBOOK_MASTER_REST'] = response[0]['outputs']['batch_master_rest_urls']['value']
             self.conductor_endpoint = response[0]['outputs']['one_batch_master_web_submission_url']['value']
         return response
-
