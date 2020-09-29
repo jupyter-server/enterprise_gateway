@@ -17,7 +17,11 @@ if [ -z "${SPARK_HOME}" ]; then
   exit 1
 fi
 
-PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+if [ -z "${KERNEL_IG_UUID}"]; then
+  PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+else
+  PROG_HOME="${SPARK_HOME}"
+fi
 
 eval exec "${IMPERSONATION_OPTS}" \
      "${SPARK_HOME}/bin/spark-submit" \
