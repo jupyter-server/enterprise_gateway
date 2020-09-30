@@ -11,7 +11,11 @@ from multiprocessing import Process
 from random import random
 from threading import Thread
 
-from Cryptodome.Cipher import AES
+try:
+    from Cryptodome.Cipher import AES
+except ImportError:
+    from Crypto.Cipher import AES
+
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
