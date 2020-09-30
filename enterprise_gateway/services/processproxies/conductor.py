@@ -56,13 +56,13 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kwargs.get('env')['KERNEL_NOTEBOOK_COOKIE_JAR'] = 'kernelcookie' + str(randint(0, 1000))
             jsonKH = json.loads(self.kernel_headers['Jwt-Auth-User-Payload'])
             self.jwt_token = jsonKH['accessToken']
-            self._performConductorJWTLogonAndRetrieval(self.jwt_token, kwargs.get('env'))
+            await asyncio.get_event_loop().run_in_executor(None, self._performConductorJWTLogonAndRetrieval, self.jwt_token, kwargs.get('env'))
         else:
             error_message = "ConductorClusterProcessProxy failed to obtain the Conductor credential."
             self.log_and_raise(http_status_code=500, reason=error_message)
 
         # dynamically update Spark submit parameters
-        self._update_launch_info(kernel_cmd, **kwargs)
+        await asyncio.get_event_loop().run_in_executor(None, self._update_launch_info, kernel_cmd, kwargs.get('env'))
         # Enable stderr PIPE for the run command
         kwargs.update({'stderr': subprocess.PIPE})
         self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
@@ -74,7 +74,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _update_launch_info(self, kernel_cmd, **kwargs):
+    def _update_launch_info(self, kernel_cmd, env_dict):
         """ Dynamically assemble the spark-submit configuration passed from NB2KG."""
         if any(arg.endswith('.sh') for arg in kernel_cmd):
             self.log.debug("kernel_cmd contains execution script")
@@ -82,8 +82,6 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kernel_dir = self.kernel_manager.kernel_spec_manager._find_spec_directory(self.kernel_manager.kernel_name)
             cmd = pjoin(kernel_dir, 'bin/run.sh')
             kernel_cmd.insert(0, cmd)
-
-        env_dict = kwargs.get('env')
 
         # add SPARK_HOME, PYSPARK_PYTHON, update SPARK_OPT to contain SPARK_MASTER and EGO_SERVICE_CREDENTIAL
         env_dict['SPARK_HOME'] = env_dict['KERNEL_SPARK_HOME']
@@ -95,7 +93,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         # Get updated one_notebook_master_rest_url for KERNEL_NOTEBOOK_MASTER_REST and SPARK_OPTS.
         if self.jwt_token is None:
-            self._update_notebook_master_rest_url(env_dict, **kwargs)
+            self._update_notebook_master_rest_url(env_dict)
 
         if "--master" not in env_dict['SPARK_OPTS']:
             env_dict['SPARK_OPTS'] = '--master {master} --conf spark.ego.credential={rest_cred} ' \
@@ -105,7 +103,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                        pyspark_python=env_dict['PYSPARK_PYTHON'], spark_opts=env_dict['SPARK_OPTS'],
                        user_defined_spark_opts=user_defined_spark_opts)
 
-    def _update_notebook_master_rest_url(self, env_dict, **kwargs):
+    def _update_notebook_master_rest_url(self, env_dict):
         """Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST,
         conductor_endpoint, and SPARK_OPTS.
         """
