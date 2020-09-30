@@ -56,7 +56,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             kwargs.get('env')['KERNEL_NOTEBOOK_COOKIE_JAR'] = 'kernelcookie' + str(randint(0, 1000))
             jsonKH = json.loads(self.kernel_headers['Jwt-Auth-User-Payload'])
             self.jwt_token = jsonKH['accessToken']
-            await asyncio.get_event_loop().run_in_executor(None, self._performConductorJWTLogonAndRetrieval, self.jwt_token, kwargs.get('env'))
+            await asyncio.get_event_loop().run_in_executor(None, self._performConductorJWTLogonAndRetrieval,
+                                                           self.jwt_token, kwargs.get('env'))
         else:
             error_message = "ConductorClusterProcessProxy failed to obtain the Conductor credential."
             self.log_and_raise(http_status_code=500, reason=error_message)

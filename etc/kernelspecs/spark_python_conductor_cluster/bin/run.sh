@@ -17,7 +17,7 @@ if [ -z "${SPARK_HOME}" ]; then
   exit 1
 fi
 
-if [ -z "${KERNEL_IG_UUID}"]; then
+if [ -z "${KERNEL_IG_UUID}" ]; then
   PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 else
   PROG_HOME="${SPARK_HOME}"
