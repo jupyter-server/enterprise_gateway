@@ -27,7 +27,11 @@ from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from notebook import _tz
 from zmq.ssh import tunnel
-from Cryptodome.Cipher import AES
+
+try:
+    from Cryptodome.Cipher import AES
+except ImportError:
+    from Crypto.Cipher import AES
 
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
