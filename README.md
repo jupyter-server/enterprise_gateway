@@ -7,7 +7,7 @@
 
 # Jupyter Enterprise Gateway
 
-[![PyPI version](https://badge.fury.io/py/jupyter_enterprise_gateway.svg)](https://badge.fury.io/py/jupyter_enterprise_gateway)
+[![PyPI version](https://badge.fury.io/py/jupyter-enterprise-gateway.svg)](https://badge.fury.io/py/jupyter-enterprise-gateway)
 [![Downloads](https://pepy.tech/badge/jupyter-enterprise-gateway/month)](https://pepy.tech/project/jupyter-enterprise-gateway/month)
 [![Build Status](https://travis-ci.org/jupyter/enterprise_gateway.svg?branch=master)](https://travis-ci.org/jupyter/enterprise_gateway)
 [![Documentation Status](https://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
