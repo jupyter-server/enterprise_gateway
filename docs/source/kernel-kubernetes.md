@@ -91,7 +91,7 @@ spec:
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
 
@@ -300,7 +300,7 @@ for the container specification and `volumes` in the pod specification):
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         image: elyra/enterprise-gateway:VERSION
         name: enterprise-gateway
         args: ["--gateway"]
