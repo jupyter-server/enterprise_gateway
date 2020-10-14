@@ -325,9 +325,10 @@ class FileKernelSessionManager(KernelSessionManager):
                 self._load_session_from_file(kernel_session_file)
 
     def load_session(self, kernel_id):
-        if kernel_id is not None:
-            kernel_session_file = "".join([kernel_id, '.json'])
-            self._load_session_from_file(kernel_session_file)
+        if self.enable_persistence:
+            if kernel_id is not None:
+                kernel_session_file = "".join([kernel_id, '.json'])
+                self._load_session_from_file(kernel_session_file)
 
     def _load_session_from_file(self, file_name):
         kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)
