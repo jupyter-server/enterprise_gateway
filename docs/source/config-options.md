@@ -149,6 +149,7 @@ EnterpriseGatewayApp options
 --EnterpriseGatewayApp.env_whitelist=<List>
     Default: []
     Environment variables allowed to be set when a client requests a new kernel.
+    Use '*' to allow all environment variables sent in the request.
     (EG_ENV_WHITELIST env var)
 --EnterpriseGatewayApp.expose_headers=<Unicode>
     Default: ''

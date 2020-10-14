@@ -57,9 +57,13 @@ class MainKernelHandler(TokenAuthorizationMixin,
             # Whitelist environment variables from current process environment
             env.update({key: value for key, value in os.environ.items()
                         if key in self.env_process_whitelist})
-            # Whitelist KERNEL_* args and those allowed by configuration from client
+            # Whitelist KERNEL_* args and those allowed by configuration from client.  If all
+            # envs are requested, just use the keys from the payload.
+            env_whitelist = self.env_whitelist
+            if env_whitelist == ['*']:
+                env_whitelist = model['env'].keys()
             env.update({key: value for key, value in model['env'].items()
-                        if key.startswith('KERNEL_') or key in self.env_whitelist})
+                        if key.startswith('KERNEL_') or key in env_whitelist})
 
             # If kernel_headers are configured, fetch each of those and include in start request
             kernel_headers = {}

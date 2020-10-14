@@ -312,7 +312,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
     env_whitelist_env = 'EG_ENV_WHITELIST'
     env_whitelist = List(config=True,
                          help="""Environment variables allowed to be set when a client requests a
-                         new kernel. (EG_ENV_WHITELIST env var)""")
+                         new kernel. Use '*' to allow all environment variables sent in the request.
+                         (EG_ENV_WHITELIST env var)""")
 
     @default('env_whitelist')
     def env_whitelist_default(self):
