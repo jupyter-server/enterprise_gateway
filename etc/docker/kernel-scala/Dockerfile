@@ -1,6 +1,8 @@
 ARG HUB_ORG
 ARG SPARK_VERSION
-FROM $HUB_ORG/spark:v$SPARK_VERSION
+
+ARG BASE_CONTAINER=$HUB_ORG/spark:v$SPARK_VERSION
+FROM $BASE_CONTAINER
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

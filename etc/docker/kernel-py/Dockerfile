@@ -1,5 +1,6 @@
 # Ubuntu 18.04.1 LTS Bionic
-FROM jupyter/scipy-notebook:04f7f60d34a6
+ARG BASE_CONTAINER=jupyter/scipy-notebook:04f7f60d34a6
+FROM $BASE_CONTAINER
 
 ENV PATH=$PATH:$CONDA_DIR/bin
 

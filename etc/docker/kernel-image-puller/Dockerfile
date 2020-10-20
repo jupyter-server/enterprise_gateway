@@ -1,4 +1,5 @@
-FROM python:3
+ARG BASE_CONTAINER=python:3
+FROM $BASE_CONTAINER
 
 WORKDIR /usr/src/app
 

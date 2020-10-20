@@ -1,5 +1,6 @@
 # Ubuntu:xenial
-FROM tensorflow/tensorflow:1.12.0-gpu-py3
+ARG BASE_CONTAINER=tensorflow/tensorflow:1.12.0-gpu-py3
+FROM $BASE_CONTAINER
 
 RUN apt-get update && apt-get install -yq \
     build-essential \
