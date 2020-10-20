@@ -1,7 +1,8 @@
 ARG HUB_ORG
 ARG SPARK_VERSION
 
-FROM ${HUB_ORG}/demo-base:${SPARK_VERSION}
+ARG BASE_CONTAINER=${HUB_ORG}/demo-base:${SPARK_VERSION}
+FROM $BASE_CONTAINER
 
 # An ARG declared before a FROM is outside of a build stage,
 # so it can’t be used in any instruction after a FROM.
