@@ -54,6 +54,33 @@ spec:
       value: "{{ kernel_namespace }}"
     image: "{{ kernel_image }}"
     name: "{{ kernel_pod_name }}"
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    resources:
+      {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+      requests:
+        {% if kernel_cpus is defined %}
+        cpu: "{{ kernel_cpus }}"
+        {% endif %}
+        {% if kernel_memory is defined %}
+        memory: "{{ kernel_memory }}"
+        {% endif %}
+        {% if kernel_gpus is defined %}
+        nvidia.com/gpu: "{{ kernel_gpus }}"
+        {% endif %}
+      {% endif %}
+      {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+      limits:
+        {% if kernel_cpus_limit is defined %}
+        cpu: "{{ kernel_cpus_limit }}"
+        {% endif %}
+        {% if kernel_memory_limit is defined %}
+        memory: "{{ kernel_memory_limit }}"
+        {% endif %}
+        {% if kernel_gpus_limit is defined %}
+        nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+        {% endif %}
+      {% endif %}
+    {% endif %}
     {% if kernel_working_dir is defined %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
