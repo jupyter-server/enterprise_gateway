@@ -452,7 +452,9 @@ When deploy kernel on Kubernetes cluster best practice should define CPU, Memory
 - `KERNEL_MEMORY_LIMIT` - MEMORY Limit
 - `KERNEL_GPUS_LIMIT` - GPUS Limit
 
-Memory and CPU unit-based on [Kubernetes Official Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) and GPU is using NVIDIA `nvidia.com/gpu` parameter
+Memory and CPU units are based on the [Kubernetes Official Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) while GPU is using the NVIDIA `nvidia.com/gpu` parameter.  The desired units should be included in the variable's value.
+
+When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:` of `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Kubernetes environment.
