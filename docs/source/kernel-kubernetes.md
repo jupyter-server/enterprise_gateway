@@ -456,6 +456,36 @@ Memory and CPU units are based on the [Kubernetes Official Documentation](https:
 
 When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
+```
+{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+  resources:
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+    requests:
+      {% if kernel_cpus is defined %}
+      cpu: "{{ kernel_cpus }}"
+      {% endif %}
+      {% if kernel_memory is defined %}
+      memory: "{{ kernel_memory }}"
+      {% endif %}
+      {% if kernel_gpus is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus }}"
+      {% endif %}
+    {% endif %}
+    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    limits:
+      {% if kernel_cpus_limit is defined %}
+      cpu: "{{ kernel_cpus_limit }}"
+      {% endif %}
+      {% if kernel_memory_limit is defined %}
+      memory: "{{ kernel_memory_limit }}"
+      {% endif %}
+      {% if kernel_gpus_limit is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+      {% endif %}
+    {% endif %}
+  {% endif %}
+```
+
 ### KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:` of `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Kubernetes environment.
 
