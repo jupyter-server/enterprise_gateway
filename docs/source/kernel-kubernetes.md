@@ -443,7 +443,7 @@ emptyDir:
 
 ### Kubernetes Resource Quotas
 
-When deploy kernel on Kubernetes cluster best practice should define CPU, Memory request and limit. All variable is passthru env when create new kernel.
+When deploying kernels on a Kubernetes cluster a best practice is to define request and limit quotas for CPUs, GPUs, and Memory.  These quotas can be defined from the client via KERNEL_-prefixed environment variables which are passed through to the kernel at startup.
 
 - `KERNEL_CPUS` - CPU Request by Kernel
 - `KERNEL_MEMORY` - MEMORY Request by Kernel
