@@ -97,7 +97,7 @@ spec:
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
-        # k8s will only pull :latest all the time.  
+        # k8s will only pull :latest all the time.
         # the following line will make sure that :VERSION is always pulled
         # You should remove this if you want to pin EG to a release tag
         imagePullPolicy: Always
@@ -415,7 +415,7 @@ volumes:
 - {{ volume }}
 {% endfor %}
 {% endif %}
-```  
+```
 
 The conditional volumes are handled by the loops inside of the yaml file. Any unconditional volumes can be added before these conditions. In the scenario where the `/dev/shm` will need to be expanded the following mount has to be added.
 
@@ -439,6 +439,51 @@ emptyDir:
 - {{ volume }}
 {% endfor %}
 {% endif %}
+```
+
+### Kubernetes Resource Quotas
+
+When deploying kernels on a Kubernetes cluster a best practice is to define request and limit quotas for CPUs, GPUs, and Memory.  These quotas can be defined from the client via KERNEL_-prefixed environment variables which are passed through to the kernel at startup.
+
+- `KERNEL_CPUS` - CPU Request by Kernel
+- `KERNEL_MEMORY` - MEMORY Request by Kernel
+- `KERNEL_GPUS` - GPUS Request by Kernel
+- `KERNEL_CPUS_LIMIT` - CPU Limit
+- `KERNEL_MEMORY_LIMIT` - MEMORY Limit
+- `KERNEL_GPUS_LIMIT` - GPUS Limit
+
+Memory and CPU units are based on the [Kubernetes Official Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) while GPU is using the NVIDIA `nvidia.com/gpu` parameter.  The desired units should be included in the variable's value.
+
+When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
+
+```
+{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+  resources:
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+    requests:
+      {% if kernel_cpus is defined %}
+      cpu: "{{ kernel_cpus }}"
+      {% endif %}
+      {% if kernel_memory is defined %}
+      memory: "{{ kernel_memory }}"
+      {% endif %}
+      {% if kernel_gpus is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus }}"
+      {% endif %}
+    {% endif %}
+    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    limits:
+      {% if kernel_cpus_limit is defined %}
+      cpu: "{{ kernel_cpus_limit }}"
+      {% endif %}
+      {% if kernel_memory_limit is defined %}
+      memory: "{{ kernel_memory_limit }}"
+      {% endif %}
+      {% if kernel_gpus_limit is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+      {% endif %}
+    {% endif %}
+  {% endif %}
 ```
 
 ### KubernetesProcessProxy
@@ -683,10 +728,10 @@ Rules:
   *
         /gateway/?(.*)   enterprise-gateway:8888 (<none>)
 Annotations:
-  kubectl.kubernetes.io/last-applied-configuration:  {"apiVersion":"extensions/v1beta1","kind":"Ingress","metadata":  
-  {"annotations":{"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/force-ssl-redirect":"false",  
-  "nginx.ingress.kubernetes.io/rewrite-target":"/$1","nginx.ingress.kubernetes.io/ssl-redirect":"false"},  
-  "name":"enterprise-gateway-ingress","namespace":"enterprise-gateway"},"spec":{"rules":[{"http":{"paths":[{  
+  kubectl.kubernetes.io/last-applied-configuration:  {"apiVersion":"extensions/v1beta1","kind":"Ingress","metadata":
+  {"annotations":{"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/force-ssl-redirect":"false",
+  "nginx.ingress.kubernetes.io/rewrite-target":"/$1","nginx.ingress.kubernetes.io/ssl-redirect":"false"},
+  "name":"enterprise-gateway-ingress","namespace":"enterprise-gateway"},"spec":{"rules":[{"http":{"paths":[{
   "backend":{"serviceName":"enterprise-gateway","servicePort":8888},"path":"/gateway/?(.*)"}]}}]}}
 
   kubernetes.io/ingress.class:                     nginx
@@ -699,9 +744,9 @@ Events:                                            <none>
 This will expose the Enterprise Gateway service at
 ```bash
 http://KUBERNETES_HOSTNAME:PORT/gateway
-```   
-where `PORT` is the ingress controller's http `NodePort` we referenced earlier.     
-**NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.  
+```
+where `PORT` is the ingress controller's http `NodePort` we referenced earlier.
+**NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.
 
 
 ### Kubernetes Tips
