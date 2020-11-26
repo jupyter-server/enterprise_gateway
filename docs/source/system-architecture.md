@@ -14,8 +14,8 @@ and the underlying kernel.  In addition to the 5 ports, is an IP address, a key,
 indicator used to interpret the key.  These eight pieces of information are conveyed to the kernel via a 
 json file, known as the connection file. 
 
-In today's JKG implementation, the IP address must be a local IP address meaning that the kernel cannot be 
-remote from the kernel gateway.  The enforcement of this restriction is down in the jupyter_client module - 
+In today's Jupyter Kernel Gateway implementation, the IP address must be a local IP address meaning that the kernel cannot be
+remote from the kernel gateway.  The enforcement of this restriction is down in the `jupyter_client` module -
 two levels below JKG.
 
 This component is the core communication mechanism between the Notebook and the kernel.  All aspects, including 
@@ -34,14 +34,12 @@ a process class.  This class supports four basic methods following its creation:
 
 As you can see, other forms of process communication can be achieved by abstracting the launch mechanism.
 
-#### Remote Kernel Spec
+#### Kernel Specifications
 The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel 
-specification, otherwise known as the *kernel spec*.  Enterprise Gateway introduces a new subclass of KernelSpec 
-named `RemoteKernelSpec`.  
+specification, otherwise known as the *kernel spec*.  Enterprise Gateway leverages the natively extensible `metadata` stanza to introduce a new stanza named `process_proxy`.
 
-The `RemoteKernelSpec` class provides support for a new (and optional) stanza within the kernelspec file.  This 
-stanza is located in the `metadata` stanza and is named `process_proxy`.  This stanza identifies 
-the class that provides the kernel's process abstraction (while allowing for future extensions).
+The `process_proxy` stanza identifies the class that provides the kernel's process abstraction
+(while allowing for future extensions).  This class then provides the kernel's lifecycle management operations relative to the managed resource or functional equivalent.
 
 Here's an example of a kernel specification that uses the `DistributedProcessProxy` class for its abstraction:
 ```json
@@ -69,19 +67,15 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
   ]
 }
 ```
-
-The `RemoteKernelSpec` class definition can be found in 
-[remotekernelspec.py](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/kernelspecs/remotekernelspec.py)
-
-See the [Process Proxy](#process-proxy) section for more details.
+See the [Process Proxy](#process-proxy) section for more details on process proxies and those provided as part of the Enterprise Gateway release.
 
 ### Remote Mapping Kernel Manager
-`RemoteMappingKernelManager` is a subclass of JKG's existing `SeedingMappingKernelManager` and provides two functions.
+`RemoteMappingKernelManager` is a subclass of Notebook's `MappingKernelManager` and provides two functions.
 1. It provides the vehicle for making the `RemoteKernelManager` class known and available.
 2. It overrides `start_kernel` to look at the target kernel's kernel spec to see if it contains a remote process proxy class entry.  If so, it records the name of the class in its member variable to be made avaiable to the kernel start logic.
 
 ### Remote Kernel Manager
-`RemoteKernelManager` is a subclass of JKG's existing `KernelGatewayIOLoopKernelManager` class and provides the 
+`RemoteKernelManager` is a subclass of jupyter_client's `IOLoopKernelManager` class and provides the
 primary integration points for remote process proxy invocations.  It implements a number of methods which allow 
 Enterprise Gateway to circumvent functionality that might otherwise be prevented.  As a result, some of these overrides may 
 not be necessary if lower layers of the Jupyter framework were modified.  For example, some methods are required 
@@ -103,7 +97,7 @@ and `RemoteProcessProxy`.
 `LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain 
 a `process_proxy` stanza will use `LocalProcessProxy`.  
 
-`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are four 
+`RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are six
 built-in subclasses of `RemoteProcessProxy` ...
 - `DistributedProcessProxy` - largely a proof of concept class, `DistributedProcessProxy` is responsible for the launch 
 and management of kernels distributed across and explicitly defined set of hosts using ssh.  Hosts are determined
@@ -144,8 +138,7 @@ def __init__(self, kernel_manager, proxy_config):
 ```
 
 where 
-* `kernel_manager` is an instance of a `RemoteKernelManager` class that is associated with the 
-corresponding `RemoteKernelSpec` instance.
+* `kernel_manager` is an instance of a `RemoteKernelManager` class.
 * `proxy_config` is a dictionary of configuration values present in the kernel spec's json file.  These
 values can be used to override or amend various global configuration values on a per-kernel basis. See
 [Process Proxy Configuration](#process-proxy-configuration) for more information.
@@ -235,9 +228,13 @@ Derived from `RemoteProcessProxy`, `YarnClusterProcessProxy` uses the `yarn-api-
 
 This process proxy is reliant on the `--EnterpriseGatewayApp.yarn_endpoint` command line option or the `EG_YARN_ENDPOINT` environment variable to determine where the YARN resource manager is located.  To accommodate increased flexibility, the endpoint definition can be defined within the process proxy stanza of the kernelspec, enabling the ability to direct specific kernels to different YARN clusters.
 
-Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, then the YARN endpoint is not required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
+In cases where the YARN cluster is configured for high availability, then the `--EnterpriseGatewayApp.alt_yarn_endpoint` command line option or the `EG_ALT_YARN_ENDPOINT` environment variable should also be defined.  When set, the underlying `yarn-api-client` library will choose the active Resource Manager between the two.
 
-See [Enabling YARN Cluster Mode Support](getting-started-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
+In cases where the YARN cluster is configured for high availability, then the `--EnterpriseGatewayApp.alt_yarn_endpoint` command line option or the `EG_ALT_YARN_ENDPOINT` environment variable should also be defined.  When set, the underlying `yarn-api-client` library will choose the active Resource Manager between the two.
+
+Note: If Enterprise Gateway is running on an edge node of the YARN cluster and has a valid `yarn-site.xml` file in HADOOP_CONF_DIR, neither of these values are required (default = None).  In such cases, the `yarn-api-client` library will choose the active Resource Manager from the configuration files.
+
+See [Enabling YARN Cluster Mode Support](kernel-yarn-cluster-mode.html#enabling-yarn-cluster-mode-support) for details.
 
 ###### DistributedProcessProxy
 Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
@@ -256,7 +253,7 @@ Like the yarn endpoint parameter the `remote_hosts` parameter can be specified w
 process proxy configuration to override the global value - enabling finer-grained kernel distributions.
 
 See 
-[Enabling YARN Client Mode or Spark Standalone Support](getting-started-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
+[Enabling YARN Client Mode or Spark Standalone Support](kernel-yarn-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
 
 ###### KubernetesProcessProxy
 With the popularity of Kubernetes within the enterprise, Enterprise Gateway now provides an implementation
@@ -267,7 +264,7 @@ cluster as a *Service* and *Deployment*.  The primary vehicle by which this is a
 file that contains the necessary metadata to define its deployment.  
 
 See 
-[Enabling Kubernetes Support](getting-started-kubernetes.html#enabling-kubernetes-support) for details.
+[Enabling Kubernetes Support](kernel-kubernetes.html#enabling-kubernetes-support) for details.
 
 ###### DockerSwarmProcessProxy
 Enterprise Gateway provides an implementation of a process proxy that communicates with the Docker Swarm resource manager via the Docker API.  When used, the kernels are launched as swarm services and can reside anywhere in the managed cluster. To leverage kernels configured in this manner, Enterprise Gateway can be deployed
@@ -276,7 +273,7 @@ either as a Docker Swarm _service_ or a traditional Docker container.
 A similar `DockerProcessProxy` implementation has also been provided.  When used, the corresponding kernel will be launched as a traditional docker container that runs local to the launching Enterprise Gateway instance.  As a result, its use has limited value.
 
 See 
-[Enabling Docker Swarm Support](getting-started-docker.html#enabling-docker-swarm-support) for details.
+[Enabling Docker Swarm Support](kernel-docker.html#enabling-docker-swarm-support) for details.
 
 ###### ConductorClusterProcessProxy
 Enterprise Gateway also provides an implementation of a process proxy 
@@ -292,7 +289,7 @@ This process proxy is reliant on the `--EnterpriseGatewayApp.conductor_endpoint`
 option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where the Conductor resource manager is 
 located.  
 
-See [Enabling IBM Spectrum Conductor Support](getting-started-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
+See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
 
 #### Process Proxy Configuration
 Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 

@@ -7,12 +7,13 @@
     }
   },
   "env": {
-    "DASK_YARN_EXE": "/home/testuser/miniconda/envs/dask-env/bin/dask-yarn",
+    "SPARK_HOME": "/usr/hdp/current/spark2-client",
+    "DASK_YARN_EXE": "/opt/conda/bin/dask-yarn",
     "DASK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --environment python:///opt/conda/bin/python --temporary-security-credentials --deploy-mode remote",
     "LAUNCH_OPTS": ""
   },
   "argv": [
-    "/usr/local/share/jupyter/kernels/spark_python_yarn_cluster/bin/run.sh",
+    "/usr/local/share/jupyter/kernels/dask_python_yarn_remote/bin/run.sh",
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",

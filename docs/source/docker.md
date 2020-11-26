@@ -25,46 +25,56 @@ By default, this container will start with enterprise gateway running as a servi
 
 We plan on producing one image per release to the [enterprise-gateway-demo docker repo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) where the image's tag reflects the corresponding release. 
 
-To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will reflect the value of the VERSION variable in the root Makefile (e.g. 2.0.0.dev2).
+To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
 
 ### elyra/nb2kg
 
 Image [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) is a simple image built on [jupyterhub/k8s-singleuser-sample](https://hub.docker.com/r/https://hub.docker.com/r/jupyterhub/k8s-singleuser-sample/) along with the latest release of [NB2KG](https://github.com/jupyter/nb2kg).  The image also sets some of the new variables that pertain to enterprise gateway (e.g., `KG_REQUEST_TIMEOUT`, `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
 
-To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the tag for this image will reflect the value of the VERSION variable in the root Makefile (e.g. 2.0.0.dev2).
+To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
 
 ## Runtime Images
+
 The following sections describe the docker images used within Kubernetes and Docker Swarm environments - all of which can be pulled from the [Enterprise Gateway organization](https://hub.docker.com/r/elyra/) on dockerhub.
 
 ### elyra/enterprise-gateway
+
 The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) contains the Enterprise Gateway server software and default kernelspec files.  For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file.  For Docker Swarm, deployment can be accomplished using [enterprise-gateway-swarm.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) although we should convert this to a docker compose yaml file at some point.
 
 We recommend that a persistent/mounted volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
 
 ### elyra/kernel-py
+
 Image [elyra/kernel-py](https://hub.docker.com/r/elyra/kernel-py/) contains the IPython kernel.  It is currently built on the [jupyter/scipy-notebook](https://hub.docker.com/r/jupyter/scipy-notebook) image with additional support necessary for remote operation.
 
 ### elyra/kernel-spark-py
+
 Image [elyra/kernel-spark-py](https://hub.docker.com/r/elyra/kernel-spark-py/) is built on [elyra/kernel-py](https://hub.docker.com/r/elyra/kernel-py) and includes the Spark 2.4 distribution for use in Kubernetes clusters. Please note that the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results. 
 
 ### elyra/kernel-tf-py
+
 Image [elyra/kernel-tf-py](https://hub.docker.com/r/elyra/kernel-tf-py/) contains the IPython kernel.  It is currently built on the [jupyter/tensorflow-notebook](https://hub.docker.com/r/jupyter/tensorflow-notebook) image with additional support necessary for remote operation.
 
 ### elyra/kernel-scala
+
 Image [elyra/kernel-scala](https://hub.docker.com/r/elyra/kernel-scala/) contains the Scala (Apache Toree) kernel and is built on [elyra/spark](https://hub.docker.com/r/elyra/spark) which is, itself, built using the scripts provided by the Spark 2.4 distribution for use in Kubernetes clusters. As a result, the ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results. 
 
 Since Toree is currently tied to Spark, creation of a *vanilla* mode Scala kernel is not high on our current set of priorities.
 
 ### elyra/kernel-r
+
 Image [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r/) contains the IRKernel and is currently built on the [jupyter/r-notebook](https://hub.docker.com/r/jupyter/r-notebook/) image.
 
 ### elyra/kernel-spark-r
+
 Image [elyra/kernel-spark-r](https://hub.docker.com/r/elyra/kernel-spark-r/) also contains the IRKernel but is built on [elyra/kernel-r](https://hub.docker.com/r/elyra/kernel-r) and includes the Spark 2.4 distribution for use in Kubernetes clusters.
 
 ## Custom Kernel Images
+
 This section presents information needed for how a custom kernel image could be built for your own uses with Enterprise Gateway.  This is typically necessary if one desires to extend the existing image with additional supporting libraries or an image that encapsulates a different set of functionality altogether.
 
 ### Extending Existing Kernel Images
+
 A common form of customization occurs when the existing kernel image is serving the fundamentals but the user wishes it be extended with additional libraries so as to prevent the need of their imports within the Notebook interactions.  Since the image already meets the [basic requirements](docker.html#requirements-for-custom-kernel-images), this is really just a matter of referencing the existing image in the `FROM` statement and installing additional libraries.  Because the EG kernel images do not run as the `root` user, you may need to switch users to perform the update.
 
 ```dockerfile
@@ -72,18 +82,19 @@ FROM elyra/kernel-py:VERSION
 
 USER root  # switch to root user to perform installation (if necessary)
 
-pip install my-libraries
+RUN pip install my-libraries
 
 USER $NB_UID  # switch back to the jovyan user 
 ```
 
 ### Bringing Your Own Kernel Image
+
 Users that do not wish to extend an existing kernel image must be cognizant of a couple things.
 1. Requirements of a kernel-based image to be used by Enterprise Gateway.
 2. Is the base image one from [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks)?
 
 #### Requirements for Custom Kernel Images
-Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.0.0`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
+Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.3.0`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
 
 ##### Bootstrap-kernel.sh
 Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
@@ -141,20 +152,34 @@ FROM tensorflow/tensorflow:1.12.0-gpu-py3
 
 USER root
 
+# Install OS dependencies required for the kernel-wrapper. Missing
+# packages can be installed later only if container is running as
+# privileged user.
+RUN apt-get update && apt-get install -yq --no-install-recommands \
+    build-essential \
+    libsm6 \
+    libxext-dev \
+    libxrender1 \
+    netcat \
+    python3-dev \
+    tzdata \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install any packages required for the kernel-wrapper.  If the image
 # does not contain the target kernel (i.e., IPython, IRkernel, etc.,
 # it should be installed as well.
 RUN pip install pycrypto
 
-# Download and extract the enterprise gateway kernel launchers and bootstrap 
+# Download and extract the enterprise gateway kernel launchers and bootstrap
 # files and deploy to /usr/local/bin. Change permissions to NB_UID:NB_GID.
 RUN curl -L https://github.com/jupyter/enterprise_gateway/releases/download/vVERSION/jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz | \
-	tar -xz -C /usr/local/bin 
+    tar -xz -C /usr/local/bin 
 
 RUN adduser --system --uid 1000 --gid 100 jovyan && \
     chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
-	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
-	chown -R jovyan:users /usr/local/bin/kernel-launchers
+    chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
+    chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 ENV NB_UID 1000
 ENV NB_GID 100

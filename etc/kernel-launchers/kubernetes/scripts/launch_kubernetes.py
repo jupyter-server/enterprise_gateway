@@ -59,7 +59,7 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     # https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
     #
     kernel_namespace = keywords['kernel_namespace']
-    k8s_objs = yaml.load_all(k8s_yaml)
+    k8s_objs = yaml.safe_load_all(k8s_yaml)
     for k8s_obj in k8s_objs:
         if k8s_obj.get('kind'):
             if k8s_obj['kind'] == 'Pod':

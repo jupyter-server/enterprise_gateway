@@ -27,7 +27,7 @@ fi
 : ${HADOOP_PREFIX:=/usr/hdp/current/hadoop}
 : ${YARN_HOST:=$HOSTNAME}
 : ${SPARK_HOME:=/usr/hdp/current/spark2-client}
-: ${SPARK_VER:=2.4.1}
+: ${SPARK_VER:=2.4.6}
 
 # Set all the hadoop envs for this shell
 $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh

@@ -2,13 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running in containers."""
 
+import abc
 import os
 import signal
-import abc
-
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import localinterfaces
 
 from .processproxy import RemoteProcessProxy
 
@@ -22,10 +21,14 @@ default_kernel_gid = '100'  # users group is the default
 # These could be enforced via a PodSecurityPolicy, but those affect
 # all pods so the cluster admin would need to configure those for
 # all applications.
-uid_blacklist = os.getenv("EG_UID_BLACKLIST", "0").split(',')
-gid_blacklist = os.getenv("EG_GID_BLACKLIST", "0").split(',')
+prohibited_uids = os.getenv("EG_PROHIBITED_UIDS", "0").split(',')
+prohibited_gids = os.getenv("EG_PROHIBITED_GIDS", "0").split(',')
 
 mirror_working_dirs = bool((os.getenv('EG_MIRROR_WORKING_DIRS', 'false').lower() == 'true'))
+
+# Get the globally-configured default images.  Defaulting to None if not set.
+default_kernel_image = os.getenv('EG_KERNEL_IMAGE')
+default_kernel_executor_image = os.getenv('EG_KERNEL_EXECUTOR_IMAGE')
 
 
 class ContainerProcessProxy(RemoteProcessProxy):
@@ -34,27 +37,31 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super(ContainerProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.container_name = ''
         self.assigned_node_ip = None
-        self._determine_kernel_images(proxy_config)
 
-    def _determine_kernel_images(self, proxy_config):
+    def _determine_kernel_images(self, **kwargs):
         """Determine which kernel images to use.
 
         Initialize to any defined in the process proxy override that then let those provided
         by client via env override.
         """
-        if proxy_config.get('image_name'):
-            self.kernel_image = proxy_config.get('image_name')
-        self.kernel_image = os.environ.get('KERNEL_IMAGE', self.kernel_image)
+        kernel_image = self.proxy_config.get('image_name', default_kernel_image)
+        self.kernel_image = kwargs['env'].get('KERNEL_IMAGE', kernel_image)
 
-        self.kernel_executor_image = self.kernel_image  # Default the executor image to current image
-        if proxy_config.get('executor_image_name'):
-            self.kernel_executor_image = proxy_config.get('executor_image_name')
-        self.kernel_executor_image = os.environ.get('KERNEL_EXECUTOR_IMAGE', self.kernel_executor_image)
+        if self.kernel_image is None:
+            self.log_and_raise(http_status_code=500,
+                               reason="No kernel image could be determined! Set the `image_name` in the "
+                                      "process_proxy.config stanza of the corresponding kernel.json file.")
 
-    def launch_process(self, kernel_cmd, **kwargs):
+        # If no default executor image is configured, default it to current image
+        kernel_executor_image = self.proxy_config.get('executor_image_name',
+                                                      default_kernel_executor_image or self.kernel_image)
+        self.kernel_executor_image = kwargs['env'].get('KERNEL_EXECUTOR_IMAGE', kernel_executor_image)
+
+    async def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within the container environment."""
         # Set env before superclass call so we see these in the debug output
 
+        self._determine_kernel_images(**kwargs)
         kwargs['env']['KERNEL_IMAGE'] = self.kernel_image
         kwargs['env']['KERNEL_EXECUTOR_IMAGE'] = self.kernel_executor_image
 
@@ -62,33 +69,32 @@ class ContainerProcessProxy(RemoteProcessProxy):
             if 'KERNEL_WORKING_DIR' in kwargs['env']:
                 del kwargs['env']['KERNEL_WORKING_DIR']
 
-        self._enforce_uid_gid_blacklists(**kwargs)
+        self._enforce_prohibited_ids(**kwargs)
 
-        super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(ContainerProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
         self.log.info("{}: kernel launched. Kernel image: {}, KernelID: {}, cmd: '{}'"
                       .format(self.__class__.__name__, self.kernel_image, self.kernel_id, kernel_cmd))
 
-        self.confirm_remote_startup()
-
+        await self.confirm_remote_startup()
         return self
 
-    def _enforce_uid_gid_blacklists(self, **kwargs):
-        """Determine UID and GID with which to launch container and ensure they do not appear in blacklist."""
+    def _enforce_prohibited_ids(self, **kwargs):
+        """Determine UID and GID with which to launch container and ensure they are not prohibited."""
         kernel_uid = kwargs['env'].get('KERNEL_UID', default_kernel_uid)
         kernel_gid = kwargs['env'].get('KERNEL_GID', default_kernel_gid)
 
-        if kernel_uid in uid_blacklist:
+        if kernel_uid in prohibited_uids:
             http_status_code = 403
-            error_message = "Kernel's UID value of '{}' has been denied via EG_UID_BLACKLIST!".format(kernel_uid)
+            error_message = "Kernel's UID value of '{}' has been denied via EG_PROHIBITED_UIDS!".format(kernel_uid)
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
-        elif kernel_gid in gid_blacklist:
+        elif kernel_gid in prohibited_gids:
             http_status_code = 403
-            error_message = "Kernel's GID value of '{}' has been denied via EG_GID_BLACKLIST!".format(kernel_gid)
+            error_message = "Kernel's GID value of '{}' has been denied via EG_PROHIBITED_GIDS!".format(kernel_gid)
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
 
         # Ensure the kernel's env has what it needs in case they came from defaults
@@ -110,7 +116,10 @@ class ContainerProcessProxy(RemoteProcessProxy):
         result = False
 
         container_status = self.get_container_status(None)
-        if container_status is None or container_status in self.get_initial_states():
+        # Do not check whether container_status is None
+        # EG couldn't restart kernels although connections exists.
+        # See https://github.com/jupyter/enterprise_gateway/issues/827
+        if container_status in self.get_initial_states():
             result = None
 
         return result
@@ -153,19 +162,19 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.kill()
         super(ContainerProcessProxy, self).cleanup()
 
-    def confirm_remote_startup(self):
+    async def confirm_remote_startup(self):
         """Confirms the container has started and returned necessary connection information."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
-            self.handle_timeout()
+            await self.handle_timeout()
 
             container_status = self.get_container_status(str(i))
             if container_status:
                 if self.assigned_host != '':
-                    ready_to_connect = self.receive_connection_info()
+                    ready_to_connect = await self.receive_connection_info()
                     self.pid = 0  # We won't send process signals for kubernetes lifecycle management
                     self.pgid = 0
             else:

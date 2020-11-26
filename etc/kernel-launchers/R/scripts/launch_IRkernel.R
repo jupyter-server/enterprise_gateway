@@ -182,8 +182,7 @@ parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar=
       help="the IP:port address of the system hosting Enterprise Gateway and expecting response")
 parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
       help="the initialization mode of the spark context: lazy, eager or none")
-parser$add_argument("--customAppName", nargs='?', default="SparkR",
-       help="the custom application name to be set")
+parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
 
 argv <- parser$parse_args()
 
@@ -253,9 +252,11 @@ if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$Remote
 # Otherwise, skip spark context creation if set to none or not provided
 if (!is.na(argv$RemoteProcessProxy.spark_context_initialization_mode)){
     if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
-        # Add custom application name (spark.app.name) spark config if available
-        if (!is.na(argv$customAppName)){
+        # Add custom application name (spark.app.name) spark config if available, else default to kernel_id
+        if (!is.null(argv$customAppName) && str_length(argv$customAppName) > 0){
             sparkConfigList[['spark.app.name']] <- argv$customAppName
+        } else {
+            sparkConfigList[['spark.app.name']] <- argv$RemoteProcessProxy.kernel_id
         }
         initialize_spark_session(argv$RemoteProcessProxy.spark_context_initialization_mode)
     }

@@ -100,8 +100,8 @@ def gateway_listener(sock, parent_pid):
             if request.get('signum') is not None:
                 signum = int(request.get('signum'))
                 os.kill(int(parent_pid), signum)
-            elif request.get('shutdown') is not None:
-                    shutdown = bool(request.get('shutdown'))
+            if request.get('shutdown') is not None:
+                shutdown = bool(request.get('shutdown'))
             if signum != 0:
                 logger.debug("gateway_listener got request: {}".format(request))
         else:  # check parent

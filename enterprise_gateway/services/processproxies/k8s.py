@@ -2,11 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running in Kubernetes clusters."""
 
-import os
-import logging
-import re
 
+import logging
+import os
+import re
 import urllib3
+
 from kubernetes import client, config
 
 from .container import ContainerProcessProxy
@@ -20,7 +21,7 @@ logging.getLogger('kubernetes').setLevel(os.environ.get('EG_KUBERNETES_LOG_LEVEL
 enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 default_kernel_service_account_name = os.environ.get('EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME', 'default')
 kernel_cluster_role = os.environ.get('EG_KERNEL_CLUSTER_ROLE', 'cluster-admin')
-shared_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
+share_gateway_namespace = bool(os.environ.get('EG_SHARED_NAMESPACE', 'False').lower() == 'true')
 
 config.load_incluster_config()
 
@@ -34,7 +35,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
-    def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd, **kwargs):
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
 
@@ -44,7 +45,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_pod_name = self._determine_kernel_pod_name(**kwargs)
         self.kernel_namespace = self._determine_kernel_namespace(**kwargs)  # will create namespace if not provided
 
-        return super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(KubernetesProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        return self
 
     def get_initial_states(self):
         """Return list of states indicating container is starting (includes running)."""
@@ -151,8 +153,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # create the namespace and record that we'll want to delete it as well.
         namespace = kwargs['env'].get('KERNEL_NAMESPACE')
         if namespace is None:
-            # check if shared namespace is configured...
-            if shared_namespace:  # if so, set to EG namespace
+            # check if share gateway namespace is configured...
+            if share_gateway_namespace:  # if so, set to EG namespace
                 namespace = enterprise_gateway_namespace
                 self.log.warning("Shared namespace has been configured.  All kernels will reside in EG namespace: {}".
                                  format(namespace))

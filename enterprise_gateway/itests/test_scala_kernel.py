@@ -53,7 +53,7 @@ class ScalaKernelBaseTestCase(TestBase):
         # Build the code list to interrupt, in this case, its a sleep call.
         interrupted_code = list()
         interrupted_code.append('println("begin")\n')
-        interrupted_code.append("Thread.sleep(30000)\n")
+        interrupted_code.append("Thread.sleep(60000)\n")
         interrupted_code.append('println("end")\n')
         interrupted_result = self.kernel.execute(interrupted_code)
 
@@ -92,7 +92,9 @@ class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
-    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", "spark_2.4.1_scala")  # scala_kubernetes for k8s
+    SPARK_VERSION = os.getenv("SPARK_VERSION")
+    DEFAULT_KERNELSPEC = "spark_{}_scala".format(SPARK_VERSION)
+    KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", DEFAULT_KERNELSPEC)  # scala_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):

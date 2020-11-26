@@ -2,22 +2,24 @@
 # Distributed under the terms of the Modified BSD License.
 """Kernel managers that operate against a remote process."""
 
+import abc
+import asyncio
+import base64
+import errno
+import getpass
+import json
+import logging
 import os
-import sys
+import paramiko
+import pexpect
+import random
 import re
 import signal
-import errno
-import abc
-import json
-import paramiko
-import logging
-import time
-import pexpect
-import getpass
 import subprocess
-import base64
-import random
+import sys
+import time
 
+from enum import Enum
 from socket import timeout, socket, gethostbyname, gethostname, AF_INET, SOCK_STREAM, SHUT_RDWR, SHUT_WR
 from tornado import web
 from calendar import timegm
@@ -25,8 +27,11 @@ from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from notebook import _tz
 from zmq.ssh import tunnel
-from enum import Enum
-from Crypto.Cipher import AES
+
+try:
+    from Cryptodome.Cipher import AES
+except ImportError:
+    from Crypto.Cipher import AES
 
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
@@ -55,28 +60,27 @@ max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 # exist just in case we find them necessary in some configurations (where the service user
 # must be different).  However, tests show that that configuration doesn't work - so there
 # might be more to do.  At any rate, we'll use these variables for now.
-remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
-remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
-
+remote_user = None
+remote_pwd = None
 
 # Allow users to specify local ips (regular expressions can be used) that should not be included
 # when determining the response address.  For example, on systems with many network interfaces,
 # some may have their IPs appear the local interfaces list (e.g., docker's 172.17.0.* is an example)
 # that should not be used.  This env can be used to indicate such IPs.
-local_ip_blacklist = os.getenv('EG_LOCAL_IP_BLACKLIST', '').split(',')
+prohibited_local_ips = os.getenv('EG_PROHIBITED_LOCAL_IPS', '').split(',')
 
 
 def _get_local_ip():
-    """Honor the blacklist-ed IPs, locating the first not in the list."""
+    """Honor the prohibited IPs, locating the first not in the list."""
     for ip in localinterfaces.public_ips():
-        is_blacklisted = False
-        for blacklisted_ip in local_ip_blacklist:  # exhaust blacklist, applying regexs
-            if re.match(blacklisted_ip, ip):
-                is_blacklisted = True
+        is_prohibited = False
+        for prohibited_ip in prohibited_local_ips:  # exhaust prohibited list, applying regexs
+            if re.match(prohibited_ip, ip):
+                is_prohibited = True
                 break
-        if not is_blacklisted:
+        if not is_prohibited:
             return ip
-    return localinterfaces.public_ips()[0]  # all were blacklisted, so go with the first
+    return localinterfaces.public_ips()[0]  # all were prohibited, so go with the first
 
 
 local_ip = _get_local_ip()
@@ -113,22 +117,26 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             The dictionary of per-kernel config settings.  If none are specified, this will be an empty dict.
         """
         self.kernel_manager = kernel_manager
+        self.proxy_config = proxy_config
         # Initialize to 0 IP primarily so restarts of remote kernels don't encounter local-only enforcement during
         # relaunch (see jupyter_client.manager.start_kernel().
         self.kernel_manager.ip = '0.0.0.0'
         self.log = kernel_manager.log
+
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
-        self.kernel_manager.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
-            replace('kernel-', '').replace('.json', '')
+        if self.kernel_manager.kernel_id is None:
+            self.kernel_manager.kernel_id = os.path.basename(self.kernel_manager.connection_file). \
+                replace('kernel-', '').replace('.json', '')
+
         self.kernel_id = self.kernel_manager.kernel_id
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.lower_port = 0
         self.upper_port = 0
-        self._validate_port_range(proxy_config)
+        self._validate_port_range()
 
         # Handle authorization sets...
         # Take union of unauthorized users...
-        self.unauthorized_users = self.kernel_manager.parent.parent.unauthorized_users
+        self.unauthorized_users = self.kernel_manager.unauthorized_users
         if proxy_config.get('unauthorized_users'):
             self.unauthorized_users = self.unauthorized_users.union(proxy_config.get('unauthorized_users').split(','))
 
@@ -136,7 +144,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         if proxy_config.get('authorized_users'):
             self.authorized_users = set(proxy_config.get('authorized_users').split(','))
         else:
-            self.authorized_users = self.kernel_manager.parent.parent.authorized_users
+            self.authorized_users = self.kernel_manager.authorized_users
 
         # Represents the local process (from popen) if applicable.  Note that we could have local_proc = None even when
         # the subclass is a LocalProcessProxy (or YarnProcessProxy).  This will happen if EG is restarted and the
@@ -150,7 +158,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.pgid = 0
 
     @abc.abstractmethod
-    def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd, **kwargs):
         """Provides basic implementation for launching the process corresponding to the process proxy.
 
         All overrides should call this method via `super()` so that basic/common operations can be
@@ -189,9 +197,19 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             env_dict.pop(k, None)
 
         self._enforce_authorization(**kwargs)
-        self._enforce_limits(**kwargs)
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get('env')))
+
+    def launch_kernel(self, cmd, **kwargs):
+        """Returns the result of launching the kernel via Popen.
+
+        This method exists to allow process proxies to perform any final preparations for
+        launch, including the removal of any arguments that are not recoginized by Popen.
+        """
+
+        # Remove kernel_headers
+        kwargs.pop('kernel_headers', None)
+        return launch_kernel(cmd, **kwargs)
 
     def cleanup(self):
         """Performs optional cleanup after kernel is shutdown.  Child classes are responsible for implementations."""
@@ -312,6 +330,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         :return: ssh client instance
         """
         ssh = None
+
+        global remote_user
+        global remote_pwd
+        if remote_user is None:
+            remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
+            remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
+
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
@@ -426,7 +451,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         # Although it may already be set in the env, just override in case it was only set via command line or config
         # Convert to string since execve() (called by Popen in base classes) wants string values.
-        env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.parent.parent.impersonation_enabled)
+        env_dict['EG_IMPERSONATION_ENABLED'] = str(self.kernel_manager.impersonation_enabled)
 
         # Ensure KERNEL_USERNAME is set
         kernel_username = KernelSessionManager.get_kernel_username(**kwargs)
@@ -449,22 +474,6 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
             format(kernel_username, differentiator_clause, kernel_clause)
         self.log_and_raise(http_status_code=403, reason=error_message)
 
-    def _enforce_limits(self, **kwargs):
-        """Enforces any limits that may be imposed by the configuration."""
-
-        # if kernels-per-user is configured, ensure that this next kernel is still within the limit.  If this
-        # is due to a restart, skip enforcement since we're re-using that id.
-        max_kernels_per_user = self.kernel_manager.parent.parent.max_kernels_per_user
-        if max_kernels_per_user >= 0 and not self.kernel_manager.restarting:
-            env_dict = kwargs.get('env')
-            username = env_dict['KERNEL_USERNAME']
-            current_kernel_count = self.kernel_manager.parent.parent.kernel_session_manager.active_sessions(username)
-            if current_kernel_count >= max_kernels_per_user:
-                error_message = "A max kernels per user limit has been set to {} and user '{}' currently has {} " \
-                                "active {}.".format(max_kernels_per_user, username, current_kernel_count,
-                                                    "kernel" if max_kernels_per_user == 1 else "kernels")
-                self.log_and_raise(http_status_code=403, reason=error_message)
-
     def get_process_info(self):
         """Captures the base information necessary for kernel persistence relative to process proxies.
 
@@ -485,12 +494,12 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.ip = process_info['ip']
         self.kernel_manager.ip = process_info['ip']
 
-    def _validate_port_range(self, proxy_config):
+    def _validate_port_range(self):
         """Validates the port range configuration option to ensure appropriate values."""
         # Let port_range override global value - if set on kernelspec...
-        port_range = self.kernel_manager.parent.parent.port_range
-        if proxy_config.get('port_range'):
-            port_range = proxy_config.get('port_range')
+        port_range = self.kernel_manager.port_range
+        if self.proxy_config.get('port_range'):
+            port_range = self.proxy_config.get('port_range')
 
         try:
             port_ranges = port_range.split("..")
@@ -632,11 +641,11 @@ class LocalProcessProxy(BaseProcessProxyABC):
         super(LocalProcessProxy, self).__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
-    def launch_process(self, kernel_cmd, **kwargs):
-        super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+    async def launch_process(self, kernel_cmd, **kwargs):
+        await super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         if hasattr(os, "getpgid"):
             try:
@@ -664,12 +673,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes = {}
         self._prepare_response_socket()
 
-    def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd, **kwargs):
         # Pass along port-range info to kernels...
         kwargs['env']['EG_MIN_PORT_RANGE_SIZE'] = str(min_port_range_size)
         kwargs['env']['EG_MAX_PORT_RANGE_RETRIES'] = str(max_port_range_retries)
 
-        super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(RemoteProcessProxy, self).launch_process(kernel_cmd, **kwargs)
         # remove connection file because a) its not necessary any longer since launchers will return
         # the connection information which will (sufficiently) remain in memory and b) launchers
         # landing on this node may want to write to this file and be denied access.
@@ -791,7 +800,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             return pexpect.spawn(cmd, env=os.environ.copy().pop('SSH_ASKPASS', None))
 
     def _get_keep_alive_interval(self, kernel_channel):
-        cull_idle_timeout = self.kernel_manager.parent.cull_idle_timeout
+        cull_idle_timeout = self.kernel_manager.cull_idle_timeout
 
         if (kernel_channel == KernelChannel.COMMUNICATION or
                 kernel_channel == KernelChannel.CONTROL or
@@ -813,36 +822,44 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
     def _decrypt(self, data):
         """Decrypts `data` using the kernel_id as the key."""
         key = self.kernel_id[0:16]
-        cipher = AES.new(key)
+        cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
         payload = cipher.decrypt(base64.b64decode(data))
         payload = "".join([payload.decode("utf-8").rsplit("}", 1)[0], "}"])  # Get rid of padding after the '}'.
         return payload
 
-    def receive_connection_info(self):
+    async def receive_connection_info(self):
         """Monitors the response address for connection info sent by the remote kernel launcher."""
         # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
         ready_to_connect = False
-        if self.response_socket:
-            conn = None
-            data = ''
-            try:
-                conn, address = self.response_socket.accept()
-                while 1:
-                    buffer = conn.recv(1024)
-                    if not buffer:  # send is complete, process payload
-                        self.log.debug("Received Payload '{}'".format(data))
-                        payload = self._decrypt(data)
-                        self.log.debug("Decrypted Payload '{}'".format(payload))
-                        connect_info = json.loads(payload)
-                        self.log.debug("Connect Info received from the launcher is as follows '{}'".
-                                       format(connect_info))
-                        self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
-                                       format(self.assigned_host, self.assigned_ip))
+        loop = asyncio.get_event_loop()  # TODO confirm if this should be IOLoop.current() or whatever
 
-                        self._setup_connection_info(connect_info)
-                        ready_to_connect = True
-                        break
-                    data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+        async def get_info(conn):
+            data = ''
+            while True:
+                buffer = await loop.sock_recv(conn, 1024)
+                if not buffer:  # send is complete, process payload
+                    self.log.debug("Received Payload '{}'".format(data))
+                    payload = self._decrypt(data)
+                    self.log.debug("Decrypted Payload '{}'".format(payload))
+                    connect_info = json.loads(payload)
+                    self.log.debug("Connect Info received from the launcher is as follows '{}'".
+                                   format(connect_info))
+                    self.log.debug("Host assigned to the Kernel is: '{}' '{}'".
+                                   format(self.assigned_host, self.assigned_ip))
+
+                    self._setup_connection_info(connect_info)
+                    break
+                data = data + buffer.decode(encoding='utf-8')  # append what we received until we get no more...
+            conn.close()
+
+        async def get_response():
+            conn, addr = await loop.sock_accept(self.response_socket)
+            await get_info(conn)
+
+        if self.response_socket:
+            try:
+                await get_response()
+                ready_to_connect = True
             except Exception as e:
                 if type(e) is timeout:
                     self.log.debug("Waiting for KernelID '{}' to send connection info from host '{}' - retrying..."
@@ -850,11 +867,8 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                 else:
                     error_message = "Exception occurred waiting for connection file response for KernelId '{}' "\
                         "on host '{}': {}".format(self.kernel_id, self.assigned_host, str(e))
-                    self.kill()
+                    await asyncio.get_event_loop().run_in_executor(None, self.kill)
                     self.log_and_raise(http_status_code=500, reason=error_message)
-            finally:
-                if conn:
-                    conn.close()
         else:
             error_message = "Unexpected runtime encountered for Kernel ID '{}' - no response socket exists!".\
                 format(self.kernel_id)
@@ -935,16 +949,19 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             "connection information is null!".format(self.kernel_id)
             self.log_and_raise(http_status_code=500, reason=error_message)
 
+        self._close_response_socket()
+        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
+
+    def _close_response_socket(self):
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             try:
+                self.log.debug("response socket still open, close it")
                 self.response_socket.shutdown(SHUT_RDWR)
                 self.response_socket.close()
             except OSError:
                 pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
-
-        self.kernel_manager._connection_file_written = True  # allows for cleanup of local files (as necessary)
 
     def _extract_pid_info(self, connect_info):
         """Extracts any PID, PGID info from the payload received on the response socket."""
@@ -952,7 +969,6 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if pid:
             try:
                 self.pid = int(pid)
-                self.log.debug("Updated pid to: {}".format(self.pid))
             except ValueError:
                 self.log.warning("pid returned from kernel launcher is not an integer: {} - ignoring.".format(pid))
                 pid = None
@@ -960,24 +976,24 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         if pgid:
             try:
                 self.pgid = int(pgid)
-                self.log.debug("Updated pgid to: {}".format(self.pgid))
             except ValueError:
                 self.log.warning("pgid returned from kernel launcher is not an integer: {} - ignoring.".format(pgid))
                 pgid = None
         if pid or pgid:  # if either process ids were updated, update the ip as well and don't use local_proc
             self.ip = self.assigned_ip
-            self.local_proc = None
+            if not BaseProcessProxyABC.ip_is_local(self.ip):  # only unset local_proc if we're remote
+                self.local_proc = None
 
-    def handle_timeout(self):
+    async def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        await asyncio.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
             error_http_code = 500
             reason = "Waited too long ({}s) to get connection file".format(self.kernel_launch_timeout)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def cleanup(self):
@@ -991,9 +1007,31 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         self.tunnel_processes.clear()
         super(RemoteProcessProxy, self).cleanup()
 
+    def _send_listener_request(self, request, shutdown_socket=False):
+        # Sends the request dictionary to the kernel listener via the comm port.  Caller is responsible for
+        # handling any exceptions.
+
+        if self.comm_port > 0:
+            sock = socket(AF_INET, SOCK_STREAM)
+            try:
+                sock.settimeout(socket_timeout)
+                sock.connect((self.comm_ip, self.comm_port))
+                sock.send(json.dumps(request).encode(encoding='utf-8'))
+            finally:
+                if shutdown_socket:
+                    try:
+                        sock.shutdown(SHUT_WR)
+                    except Exception as e2:
+                        if isinstance(e2, OSError) and e2.errno == errno.ENOTCONN:
+                            pass  # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
+                        else:
+                            self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
+                                             "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
+                                                                                      self.kernel_id, str(e2)))
+                sock.close()
+
     def send_signal(self, signum):
         """Sends `signum` via the communication port.
-
         The kernel launcher listening on its communication port will receive the signum and perform
         the necessary signal operation local to the process.
         """
@@ -1006,23 +1044,20 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             signal_request = dict()
             signal_request['signum'] = signum
 
-            sock = socket(AF_INET, SOCK_STREAM)
             try:
-                sock.settimeout(socket_timeout)
-                sock.connect((self.comm_ip, self.comm_port))
-                sock.send(json.dumps(signal_request).encode(encoding='utf-8'))
+                self._send_listener_request(signal_request)
+
                 if signum > 0:  # Polling (signum == 0) is too frequent
                     self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
-                if isinstance(e, OSError):
-                    if e.errno == errno.ECONNREFUSED and signum == 0:  # Return False since there's no process.
-                        return False
-                return super(RemoteProcessProxy, self).send_signal(signum)
-            finally:
-                sock.close()
-        else:
-            return super(RemoteProcessProxy, self).send_signal(signum)
+                if isinstance(e, OSError) and e.errno == errno.ECONNREFUSED:  # Return False since there's no process.
+                    return False
+
+                self.log.warning("An unexpected exception occurred sending signal ({}) for KernelID '{}': {}"
+                                 .format(signum, self.kernel_id, str(e)))
+
+        return super(RemoteProcessProxy, self).send_signal(signum)
 
     def shutdown_listener(self):
         """Sends a shutdown request to the kernel launcher listener."""
@@ -1034,24 +1069,14 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             shutdown_request = dict()
             shutdown_request['shutdown'] = 1
 
-            sock = socket(AF_INET, SOCK_STREAM)
             try:
-                sock.settimeout(socket_timeout)
-                sock.connect((self.comm_ip, self.comm_port))
-                sock.send(json.dumps(shutdown_request).encode(encoding='utf-8'))
+                self._send_listener_request(shutdown_request, shutdown_socket=True)
                 self.log.debug("Shutdown request sent to listener via gateway communication port.")
             except Exception as e:
-                self.log.warning("Exception occurred sending listener shutdown to {}:{} for KernelID '{}' "
-                                 "(using alternate shutdown): {}"
-                                 .format(self.comm_ip, self.comm_port, self.kernel_id, str(e)))
-            finally:
-                try:
-                    sock.shutdown(SHUT_WR)
-                except Exception as e2:
-                    self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
-                                     "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
-                                                                              self.kernel_id, str(e2)))
-                sock.close()
+                if not isinstance(e, OSError) or e.errno != errno.ECONNREFUSED:
+                    self.log.warning("An unexpected exception occurred sending listener shutdown to {}:{} for "
+                                     "KernelID '{}': {}"
+                                     .format(self.comm_ip, self.comm_port, self.kernel_id, str(e)))
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
             # this process results in the kernel (launcher) appearing to remain alive following the shutdown
@@ -1085,6 +1110,12 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
             # If this was a tunneled connection, re-establish tunnels.  Note, this will reset the
             # communication socket (comm_ip, comm_port) members as well.
             self._setup_connection_info(process_info['tunneled_connect_info'])
+
+    def log_and_raise(self, http_status_code=None, reason=None):
+        """Override log_and_raise method in order to verify that the response socket is properly closed
+        before raise exception """
+        self._close_response_socket()
+        super().log_and_raise(http_status_code, reason)
 
     @staticmethod
     def get_current_time():

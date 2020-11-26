@@ -1,5 +1,6 @@
 # Ubuntu:Bionic
-FROM jupyter/tensorflow-notebook
+ARG BASE_CONTAINER=jupyter/tensorflow-notebook:04f7f60d34a6
+FROM $BASE_CONTAINER
 
 ENV KERNEL_LANGUAGE python
 
@@ -7,7 +8,8 @@ ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
 RUN conda install --quiet --yes \
     pillow \
-    pycrypto && \
+    future \
+    pycryptodomex && \
     fix-permissions $CONDA_DIR
 
 USER root

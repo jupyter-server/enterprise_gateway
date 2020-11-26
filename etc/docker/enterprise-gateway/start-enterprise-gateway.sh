@@ -7,27 +7,38 @@
 
 # Enterprise Gateway variables
 export EG_SSH_PORT=${EG_SSH_PORT:-2122}
-export KG_IP=${KG_IP:-0.0.0.0}
-export KG_PORT=${KG_PORT:-8888}
-export KG_PORT_RETRIES=${KG_PORT_RETRIES:-0}
+
+# Kernel Gateway looks for KG_ for the following.  For the sake of consistency
+# we want to use EG_.  The following produces the default value in EG_ (unless
+# set in the env), with the ultimate override of KG_ from the env.
+export EG_IP=${EG_IP:-0.0.0.0}
+export KG_IP=${KG_IP:-${EG_IP}}
+export EG_PORT=${EG_PORT:-8888}
+export KG_PORT=${KG_PORT:-${EG_PORT}}
+export EG_PORT_RETRIES=${EG_PORT_RETRIES:-0}
+export KG_PORT_RETRIES=${KG_PORT_RETRIES:-${EG_PORT_RETRIES}}
 
 # To use tunneling set this variable to 'True' (may need to run as root).
 export EG_ENABLE_TUNNELING=${EG_ENABLE_TUNNELING:-False}
 
+export EG_LIST_KERNELS=${EG_LIST_KERNELS:-True}
 export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
 export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-60}
 export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-False}
-export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker']"}
+EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"'r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker'"}
+export EG_KERNEL_WHITELIST=`echo ${EG_KERNEL_WHITELIST} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
+export EG_DEFAULT_KERNEL_NAME=${EG_DEFAULT_KERNEL_NAME:-python_docker}
 
 
 echo "Starting Jupyter Enterprise Gateway..."
 
-jupyter enterprisegateway \
+exec jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
-	--KernelSpecManager.whitelist=${EG_KERNEL_WHITELIST} \
-	--MappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
-	--MappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
-	--MappingKernelManager.cull_connected=${EG_CULL_CONNECTED} 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
+	--KernelSpecManager.whitelist=[${EG_KERNEL_WHITELIST}] \
+	--RemoteMappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
+	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
+	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \
+	--RemoteMappingKernelManager.default_kernel_name=${EG_DEFAULT_KERNEL_NAME}
 
 

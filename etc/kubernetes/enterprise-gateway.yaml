@@ -16,7 +16,7 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: enterprise-gateway-controller
@@ -31,7 +31,7 @@ rules:
     resources: ["rolebindings"]
     verbs: ["get", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   # Referenced by EG_KERNEL_CLUSTER_ROLE below
@@ -44,7 +44,7 @@ rules:
     resources: ["pods"]
     verbs: ["get", "watch", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: enterprise-gateway-controller
@@ -81,7 +81,7 @@ spec:
 #  externalIPs:
 #  - k8s-master-public-ip
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-gateway
@@ -107,6 +107,9 @@ spec:
       serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
+        - name: EG_PORT
+          value: "8888"
+
           # Created above.
         - name: EG_NAMESPACE
           value: "enterprise-gateway"
@@ -135,7 +138,10 @@ spec:
           value: "60"
 
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
+
+        - name: EG_DEFAULT_KERNEL_NAME
+          value: "python_kubernetes"
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
@@ -144,7 +150,6 @@ spec:
         # this policy should be sufficient for them as well.
         imagePullPolicy: IfNotPresent
         name: enterprise-gateway
-        args: ["--gateway"]
         ports:
         - containerPort: 8888
 ## Uncomment to enable NFS-mounted kernelspecs
@@ -156,3 +161,37 @@ spec:
 #        nfs:
 #          server: <internal-ip-of-nfs-server>
 #          path: "/usr/local/share/jupyter/kernels"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kernel-image-puller
+  namespace: enterprise-gateway
+spec:
+  selector:
+    matchLabels:
+      name: kernel-image-puller 
+  template:
+    metadata:
+      labels:
+        name: kernel-image-puller 
+        app: enterprise-gateway
+        component: kernel-image-puller
+    spec:
+      containers:
+      - name: kernel-image-puller 
+        image: elyra/kernel-image-puller:dev
+        env:
+          - name: KIP_GATEWAY_HOST
+            value: "http://enterprise-gateway.enterprise-gateway:8888"
+          - name: KIP_INTERVAL
+            value: "300"
+          - name: KIP_PULL_POLICY
+            value: "IfNotPresent"
+        volumeMounts:
+          - name: dockersock
+            mountPath: "/var/run/docker.sock"
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock

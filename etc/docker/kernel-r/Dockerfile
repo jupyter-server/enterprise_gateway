@@ -1,5 +1,6 @@
 # Ubuntu 18.04.1 LTS Bionic
-FROM jupyter/r-notebook
+ARG BASE_CONTAINER=jupyter/r-notebook:04f7f60d34a6
+FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
     'r-argparse' && \
