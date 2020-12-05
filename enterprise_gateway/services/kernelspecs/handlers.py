@@ -52,9 +52,14 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
                             CORSMixin,
                             JSONErrorsMixin,
                             APIHandler):
+
+    @property
+    def kernel_spec_cache(self):
+        return self.settings['kernel_spec_cache']
+
     @web.authenticated
     async def get(self):
-        ksm = self.kernel_spec_manager
+        ksm = self.kernel_spec_cache
         km = self.kernel_manager
         model = {}
         model['default'] = km.default_kernel_name
@@ -96,9 +101,13 @@ class KernelSpecHandler(TokenAuthorizationMixin,
                         JSONErrorsMixin,
                         APIHandler):
 
+    @property
+    def kernel_spec_cache(self):
+        return self.settings['kernel_spec_cache']
+
     @web.authenticated
     async def get(self, kernel_name):
-        ksm = self.kernel_spec_manager
+        ksm = self.kernel_spec_cache
         kernel_name = url_unescape(kernel_name)
         kernel_user_filter = self.request.query_arguments.get('user')
         kernel_user = None

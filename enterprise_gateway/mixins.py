@@ -521,6 +521,15 @@ class EnterpriseGatewayConfigMixin(Configurable):
         """
     )
 
+    kernel_spec_cache_class = Type(
+        default_value="enterprise_gateway.services.kernelspecs.KernelSpecCache",
+        config=True,
+        help="""
+        The kernel spec cache class to use. Must be a subclass
+        of `enterprise_gateway.services.kernelspecs.KernelSpecCache`.
+        """
+    )
+
     kernel_manager_class = Type(
         klass="enterprise_gateway.services.kernels.remotemanager.RemoteMappingKernelManager",
         default_value="enterprise_gateway.services.kernels.remotemanager.RemoteMappingKernelManager",
