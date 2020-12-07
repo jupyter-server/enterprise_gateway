@@ -33,15 +33,12 @@ class KernelSpecCache(SingletonConfigurable):
     """
 
     cache_enabled_env = 'EG_KERNELSPEC_CACHE_ENABLED'
-    cache_enabled = CBool(False, config=True, help="""Enable Kernel Specification caching.""")
+    cache_enabled = CBool(False, config=True,
+                          help="""Enable Kernel Specification caching. (EG_KERNELSPEC_CACHE_ENABLED env var)""")
 
     @default('cache_enabled')
     def cache_enabled_default(self):
         return os.getenv(self.cache_enabled_env, 'false').lower() in ('true', '1')
-
-    cache_misses = 0
-
-    kernel_spec_manager = None
 
     def __init__(self, kernel_spec_manager, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -104,7 +101,7 @@ class KernelSpecCache(SingletonConfigurable):
                     pass
             if not kernelspec:
                 self.cache_misses += 1
-                self.log.debug(f"Cache miss ({KernelSpecCache.cache_misses}) for kernelspec: {kernel_name}")
+                self.log.debug(f"Cache miss ({self.cache_misses}) for kernelspec: {kernel_name}")
         return kernelspec
 
     def get_all_items(self) -> Optional[Dict[str, CacheItemType]]:
@@ -168,6 +165,7 @@ class KernelSpecCache(SingletonConfigurable):
         # kernelspec data (CacheItemType).
         self.cache_items = {}  # Maps kernel name to kernelspec
         self.observed_dirs = set()  # Tracks which directories are being watched
+        self.cache_misses = 0
 
         # Seed the cache and start the observer
         if self.cache_enabled:

@@ -40,6 +40,7 @@ from .services.sessions.handlers import default_handlers as default_session_hand
 from .services.sessions.kernelsessionmanager import FileKernelSessionManager
 from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
+from .services.kernelspecs import KernelSpecCache
 
 from .mixins import EnterpriseGatewayConfigMixin
 
@@ -75,7 +76,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [FileKernelSessionManager, RemoteMappingKernelManager]
+    classes = [KernelSpecCache, FileKernelSessionManager, RemoteMappingKernelManager]
 
     # Enable some command line shortcuts
     aliases = aliases
