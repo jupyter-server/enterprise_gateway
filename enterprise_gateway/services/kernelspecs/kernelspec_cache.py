@@ -178,12 +178,12 @@ class KernelSpecCache(SingletonConfigurable):
             for kernel_dir in self.kernel_spec_manager.kernel_dirs:
                 if kernel_dir not in self.observed_dirs:
                     if os.path.exists(kernel_dir):
-                        self.log.debug(f"KernelSpecCache: observing directory: {kernel_dir}")
+                        self.log.info(f"KernelSpecCache: observing directory: {kernel_dir}")
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(KernelSpecChangeHandler(self), kernel_dir, recursive=True)
                     else:
-                        self.log.debug(f"KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
-                                       f" and will not be observed.")
+                        self.log.warn(f"KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
+                                      f" and will not be observed.")
             self.observer.start()
 
     @staticmethod
