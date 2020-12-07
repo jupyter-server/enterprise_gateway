@@ -27,6 +27,19 @@ class TestHandlers(TestGatewayAppBase):
 
         self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
 
+    def tearDown(self):
+        """Shuts down the app after test run."""
+
+        # Clean out items added to env
+        if 'JUPYTER_PATH' in os.environ:
+            os.environ.pop('JUPYTER_PATH')
+        if 'EG_ENV_PROCESS_WHITELIST' in os.environ:
+            os.environ.pop('EG_ENV_PROCESS_WHITELIST')
+        if 'PROCESS_VAR1' in os.environ:
+            os.environ.pop('PROCESS_VAR1')
+
+        super(TestHandlers, self).tearDown()
+
     @coroutine
     def spawn_kernel(self, kernel_body='{}'):
         """Spawns a kernel using the gateway API and connects a websocket

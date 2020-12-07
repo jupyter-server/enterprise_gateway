@@ -112,6 +112,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.kernel_spec_cache = self.kernel_spec_cache_class(
             parent=self,
+            kernel_spec_manager=self.kernel_spec_manager,
+            **kwargs
         )
 
         self.kernel_manager = self.kernel_manager_class(

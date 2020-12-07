@@ -33,17 +33,19 @@ class KernelSpecCache(SingletonConfigurable):
     """
 
     cache_enabled_env = 'EG_KERNELSPEC_CACHE_ENABLED'
-    cache_enabled = CBool(True, config=True, help="""Enable Kernel Specification caching.""")
+    cache_enabled = CBool(False, config=True, help="""Enable Kernel Specification caching.""")
 
     @default('cache_enabled')
     def cache_enabled_default(self):
-        return os.getenv(self.cache_enabled_env, 'true').lower() in ('true', '1')
+        return os.getenv(self.cache_enabled_env, 'false').lower() in ('true', '1')
+
+    cache_misses = 0
 
     kernel_spec_manager = None
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, kernel_spec_manager, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.kernel_spec_manager = self.parent.kernel_spec_manager
+        self.kernel_spec_manager = kernel_spec_manager
         self._initialize()
 
     async def get_kernel_spec(self, kernel_name: str) -> KernelSpec:
@@ -94,9 +96,15 @@ class KernelSpecCache(SingletonConfigurable):
         if self.cache_enabled:
             cache_item = self.cache_items.get(kernel_name.lower())
             if cache_item:  # Convert to KernelSpec
-                kernelspec = KernelSpecCache.cache_item_to_kernel_spec(cache_item)
-            else:
-                self.log.debug(f"Cache miss for kernelspec: {kernel_name}")
+                # In certain conditions, like when the kernelspec is fetched prior to its removal from the cache,
+                # we can encounter a FileNotFoundError.  In those cases, treat as a cache miss as well.
+                try:
+                    kernelspec = KernelSpecCache.cache_item_to_kernel_spec(cache_item)
+                except FileNotFoundError:
+                    pass
+            if not kernelspec:
+                self.cache_misses += 1
+                self.log.debug(f"Cache miss ({KernelSpecCache.cache_misses}) for kernelspec: {kernel_name}")
         return kernelspec
 
     def get_all_items(self) -> Optional[Dict[str, CacheItemType]]:
@@ -110,6 +118,8 @@ class KernelSpecCache(SingletonConfigurable):
             for kernel_name in self.cache_items:
                 cache_item = self.cache_items.get(kernel_name)
                 items[kernel_name] = cache_item
+            if not items:
+                self.cache_misses += 1
         return items
 
     def put_item(self, kernel_name: str, cache_item: Union[KernelSpec, CacheItemType]) -> None:
@@ -122,7 +132,7 @@ class KernelSpecCache(SingletonConfigurable):
         If it determines the cache entry corresponds to a currently unwatched directory,
         that directory will be added to list of observed directories and scheduled accordingly.
         """
-        self.log.debug(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
+        self.log.info(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
         if self.cache_enabled:
             if type(cache_item) is KernelSpec:
                 cache_item = KernelSpecCache.kernel_spec_to_cache_item(cache_item)
@@ -132,7 +142,7 @@ class KernelSpecCache(SingletonConfigurable):
             observed_dir = os.path.dirname(resource_dir)
             if observed_dir not in self.observed_dirs:
                 # New directory to watch, schedule it...
-                self.log.debug(f"KernelSpecCache: adding watch on directory hierarchy: {observed_dir}")
+                self.log.debug(f"KernelSpecCache: observing directory: {observed_dir}")
                 self.observed_dirs.add(observed_dir)
                 self.observer.schedule(KernelSpecChangeHandler(self), observed_dir, recursive=True)
 
@@ -148,7 +158,7 @@ class KernelSpecCache(SingletonConfigurable):
         if self.cache_enabled:
             if kernel_name.lower() in self.cache_items:
                 cache_item = self.cache_items.pop(kernel_name.lower())
-                self.log.debug(f"KernelSpecCache: removed kernelspec: {kernel_name}")
+                self.log.info(f"KernelSpecCache: removed kernelspec: {kernel_name}")
         return cache_item
 
     def _initialize(self):
