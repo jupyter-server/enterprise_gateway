@@ -111,10 +111,10 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && nosetests -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && nosetests -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests.$(TEST)
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
 release: POST_SDIST=upload
