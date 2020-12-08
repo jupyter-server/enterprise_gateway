@@ -26,7 +26,6 @@ class GatewayClient(object):
     An experimental Gateway Client that is used for Enterprise Gateway
     integration tests and can be leveraged for micro service type of
     connections.
-
     """
     DEFAULT_USERNAME = os.getenv('KERNEL_USERNAME', 'bob')
     DEFAULT_GATEWAY_HOST = os.getenv('GATEWAY_HOST', 'localhost:8888')

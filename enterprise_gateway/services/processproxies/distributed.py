@@ -17,7 +17,9 @@ kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
-    """Manages the lifecycle of kernels distributed across a set of hosts."""
+    """
+    Manages the lifecycle of kernels distributed across a set of hosts.
+    """
     host_index = 0
 
     def __init__(self, kernel_manager, proxy_config):
@@ -29,7 +31,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.hosts = kernel_manager.remote_hosts  # from command line or env
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches a kernel process on a selected host."""
+        """
+        Launches a kernel process on a selected host.
+        """
         await super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.assigned_host = self._determine_next_host()

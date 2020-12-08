@@ -58,7 +58,8 @@ aliases.update({
 
 
 class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
-    """Application that provisions Jupyter kernels and proxies HTTP/Websocket
+    """
+    Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
 
     - reads command line and environment variable settings

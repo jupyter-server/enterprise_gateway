@@ -26,7 +26,9 @@ max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 
 
 class ConductorClusterProcessProxy(RemoteProcessProxy):
-    """Kernel lifecycle management for Conductor clusters."""
+    """
+    Kernel lifecycle management for Conductor clusters.
+    """
     initial_states = {'SUBMITTED', 'WAITING', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED', 'RECLAIMED'}  # Don't include FAILED state
 
@@ -42,7 +44,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.ascd_endpoint = self.conductor_endpoint
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within a Conductor cluster environment."""
+        """
+        Launches the specified process within a Conductor cluster environment.
+        """
         await super(ConductorClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.env = kwargs.get('env')
@@ -76,7 +80,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return self
 
     def _update_launch_info(self, kernel_cmd, env_dict):
-        """ Dynamically assemble the spark-submit configuration passed from NB2KG."""
+        """
+        Dynamically assemble the spark-submit configuration passed from NB2KG.
+        """
         if any(arg.endswith('.sh') for arg in kernel_cmd):
             self.log.debug("kernel_cmd contains execution script")
         else:
@@ -105,7 +111,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                        user_defined_spark_opts=user_defined_spark_opts)
 
     def _update_notebook_master_rest_url(self, env_dict):
-        """Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST,
+        """
+        Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST,
         conductor_endpoint, and SPARK_OPTS.
         """
 
@@ -169,7 +176,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.conductor_endpoint = updated_one_notebook_master_web_submission_url
 
     def poll(self):
-        """Submitting a new kernel/app will take a while to be SUBMITTED.
+        """
+        Submitting a new kernel/app will take a while to be SUBMITTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in SUBMITTED/WAITING/RUNNING state.
         :return: None if the application's ID is available and state is SUBMITTED/WAITING/RUNNING. Otherwise False.
@@ -183,7 +191,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def send_signal(self, signum):
-        """Currently only support 0 as poll and other as kill.
+        """
+        Currently only support 0 as poll and other as kill.
         :param signum
         :return:
         """
@@ -196,7 +205,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             return super(ConductorClusterProcessProxy, self).send_signal(signum)
 
     def kill(self):
-        """Kill a kernel.
+        """
+        Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
         state = None
@@ -239,7 +249,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         super(ConductorClusterProcessProxy, self).cleanup()
 
     def _parse_driver_submission_id(self, submission_response):
-        """ Parse driver id from stderr gotten back from launch_kernel
+        """
+        Parse driver id from stderr gotten back from launch_kernel
         :param submission_response
         """
         if submission_response:
@@ -260,9 +271,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                                    reason=err_lines[0][err_lines[0].find("Application submission failed"):])
 
     async def confirm_remote_startup(self):
-        """ Confirms the application is in a started state before returning.  Should post-RUNNING states be
-            unexpectedly encountered ('FINISHED', 'KILLED', 'RECLAIMED') then we must throw, otherwise the rest
-            of the gateway will believe its talking to a valid kernel.
+        """
+        Confirms the application is in a started state before returning.  Should post-RUNNING states be
+        unexpectedly encountered ('FINISHED', 'KILLED', 'RECLAIMED') then we must throw, otherwise the rest
+        of the gateway will believe its talking to a valid kernel.
         """
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
@@ -294,8 +306,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 self.detect_launch_failure()
 
     def _get_application_state(self):
-        # Gets the current application state using the application_id already obtained.  Once the assigned host
-        # has been identified, it is no longer accessed.
+        """
+        Gets the current application state using the application_id already obtained.  Once the assigned host
+        has been identified, it is no longer accessed.
+        """
         app_state = None
         apps = self._query_app_by_driver_id(self.driver_id)
 
@@ -310,7 +324,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return app_state
 
     async def handle_timeout(self):
-        """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
+        """
+        Checks to see if the kernel launch timeout has been exceeded while awaiting connection info.
+        """
         await asyncio.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
@@ -331,8 +347,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def _get_application_id(self, ignore_final_states=False):
-        # Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
-        # from scratch, do not consider kernels in final states.
+        """
+        Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
+        from scratch, do not consider kernels in final states.
+        """
         if not self.application_id:
             apps = self._query_app_by_driver_id(self.driver_id)
             state_condition = True
@@ -356,20 +374,25 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return self.application_id
 
     def get_process_info(self):
-        """Captures the base information necessary for kernel persistence relative to Conductor clusters."""
+        """
+        Captures the base information necessary for kernel persistence relative to Conductor clusters.
+        """
         process_info = super(ConductorClusterProcessProxy, self).get_process_info()
         process_info.update({'application_id': self.application_id})
         process_info.update({'rest_credential': self.rest_credential})
         return process_info
 
     def load_process_info(self, process_info):
-        """Captures the base information necessary for kernel persistence relative to Conductor clusters."""
+        """
+        Captures the base information necessary for kernel persistence relative to Conductor clusters.
+        """
         super(ConductorClusterProcessProxy, self).load_process_info(process_info)
         self.application_id = process_info['application_id']
         self.rest_credential = process_info['rest_credential']
 
     def _query_app_by_driver_id(self, driver_id):
-        """Retrieve application by using driver ID.
+        """
+        Retrieve application by using driver ID.
         :param driver_id: as the unique driver id for query
         :return: The JSON object of an application. None if driver_id is not found.
         """
@@ -401,7 +424,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return response
 
     def _query_app_by_id(self, app_id):
-        """Retrieve an application by application ID.
+        """
+        Retrieve an application by application ID.
         :param app_id
         :return: The JSON object of an application. None if app_id is not found.
         """
@@ -430,7 +454,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return response
 
     def _query_app_state_by_driver_id(self, driver_id):
-        """Return the state of an application.
+        """
+        Return the state of an application.
         :param driver_id:
         :return:
         """
@@ -443,7 +468,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return response
 
     def _get_driver_by_app_id(self, app_id):
-        """Get driver info from application ID.
+        """
+        Get driver info from application ID.
         :param app_id
         :return: The JSON response driver information of the corresponding application. None if app_id is not found.
         """
@@ -459,7 +485,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return response
 
     def _kill_app_by_driver_id(self, driver_id):
-        """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
+        """
+        Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
         :param driver_id
         :return: The JSON response of killing the application. None if driver is not found.
         """
@@ -514,7 +541,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return 'Error', 'Error'
 
     def _performConductorJWTLogonAndRetrieval(self, jwt_token, env_dict):
-        """Authenticate to Conductor with a JWT Token and setup the kernel environment variables.
+        """
+        Authenticate to Conductor with a JWT Token and setup the kernel environment variables.
         :param jwt_token: JWT Token to authenticate with to Conductor
         :param env_dict: Environment Dictionary of this Kernel launch
         :return: None

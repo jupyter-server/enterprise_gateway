@@ -32,14 +32,17 @@ default_kernel_executor_image = os.getenv('EG_KERNEL_EXECUTOR_IMAGE')
 
 
 class ContainerProcessProxy(RemoteProcessProxy):
-    """Kernel lifecycle management for container-based kernels."""
+    """
+    Kernel lifecycle management for container-based kernels.
+    """
     def __init__(self, kernel_manager, proxy_config):
         super(ContainerProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.container_name = ''
         self.assigned_node_ip = None
 
     def _determine_kernel_images(self, **kwargs):
-        """Determine which kernel images to use.
+        """
+        Determine which kernel images to use.
 
         Initialize to any defined in the process proxy override that then let those provided
         by client via env override.
@@ -58,7 +61,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.kernel_executor_image = kwargs['env'].get('KERNEL_EXECUTOR_IMAGE', kernel_executor_image)
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within the container environment."""
+        """
+        Launches the specified process within the container environment.
+        """
         # Set env before superclass call so we see these in the debug output
 
         self._determine_kernel_images(**kwargs)

@@ -19,12 +19,16 @@ client = DockerClient.from_env()
 
 
 class DockerSwarmProcessProxy(ContainerProcessProxy):
-    """Kernel lifecycle management for kernels in Docker Swarm."""
+    """
+    Kernel lifecycle management for kernels in Docker Swarm.
+    """
     def __init__(self, kernel_manager, proxy_config):
         super(DockerSwarmProcessProxy, self).__init__(kernel_manager, proxy_config)
 
     def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within a Docker Swarm environment."""
+        """
+        Launches the specified process within a Docker Swarm environment.
+        """
         # Convey the network to the docker launch script
         kwargs['env']['EG_DOCKER_NETWORK'] = docker_network
         kwargs['env']['EG_DOCKER_MODE'] = 'swarm'
