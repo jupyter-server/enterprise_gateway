@@ -27,7 +27,7 @@ class ScalaKernelBaseTestCase(TestBase):
 
         self.kernel.execute("var x = 123")
         original_value = int(self.kernel.execute("x"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         self.assertTrue(self.kernel.restart())
 
@@ -44,7 +44,7 @@ class ScalaKernelBaseTestCase(TestBase):
 
         self.kernel.execute("var x = 123")
         original_value = int(self.kernel.execute("x"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
         # the next cell execution.
@@ -66,7 +66,7 @@ class ScalaKernelBaseTestCase(TestBase):
         # Increment the pre-interrupt variable and ensure its value is correct
         self.kernel.execute("var y = x + 1")
         interrupted_value = int(self.kernel.execute("y"))  # This will only return the value.
-        self.assertEquals(interrupted_value, 124)
+        self.assertEqual(interrupted_value, 124)
 
 
 class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
