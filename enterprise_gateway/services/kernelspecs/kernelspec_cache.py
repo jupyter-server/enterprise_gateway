@@ -101,7 +101,8 @@ class KernelSpecCache(SingletonConfigurable):
                     pass
             if not kernelspec:
                 self.cache_misses += 1
-                self.log.debug(f"Cache miss ({self.cache_misses}) for kernelspec: {kernel_name}")
+                self.log.debug("Cache miss ({misses}) for kernelspec: {kernel_name}".
+                               format(misses=self.cache_misses, kernel_name=kernel_name))
         return kernelspec
 
     def get_all_items(self) -> Optional[Dict[str, CacheItemType]]:
@@ -129,7 +130,7 @@ class KernelSpecCache(SingletonConfigurable):
         If it determines the cache entry corresponds to a currently unwatched directory,
         that directory will be added to list of observed directories and scheduled accordingly.
         """
-        self.log.info(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
+        self.log.info("KernelSpecCache: adding/updating kernelspec: {kernel_name}".format(kernel_name=kernel_name))
         if self.cache_enabled:
             if type(cache_item) is KernelSpec:
                 cache_item = KernelSpecCache.kernel_spec_to_cache_item(cache_item)
@@ -139,7 +140,7 @@ class KernelSpecCache(SingletonConfigurable):
             observed_dir = os.path.dirname(resource_dir)
             if observed_dir not in self.observed_dirs:
                 # New directory to watch, schedule it...
-                self.log.debug(f"KernelSpecCache: observing directory: {observed_dir}")
+                self.log.debug("KernelSpecCache: observing directory: {observed_dir}".format(observed_dir=observed_dir))
                 self.observed_dirs.add(observed_dir)
                 self.observer.schedule(KernelSpecChangeHandler(self), observed_dir, recursive=True)
 
@@ -155,7 +156,7 @@ class KernelSpecCache(SingletonConfigurable):
         if self.cache_enabled:
             if kernel_name.lower() in self.cache_items:
                 cache_item = self.cache_items.pop(kernel_name.lower())
-                self.log.info(f"KernelSpecCache: removed kernelspec: {kernel_name}")
+                self.log.info("KernelSpecCache: removed kernelspec: {kernel_name}".format(kernel_name=kernel_name))
         return cache_item
 
     def _initialize(self):
@@ -176,12 +177,13 @@ class KernelSpecCache(SingletonConfigurable):
             for kernel_dir in self.kernel_spec_manager.kernel_dirs:
                 if kernel_dir not in self.observed_dirs:
                     if os.path.exists(kernel_dir):
-                        self.log.info(f"KernelSpecCache: observing directory: {kernel_dir}")
+                        self.log.info("KernelSpecCache: observing directory: {kernel_dir}".
+                                      format(kernel_dir=kernel_dir))
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(KernelSpecChangeHandler(self), kernel_dir, recursive=True)
                     else:
-                        self.log.warn(f"KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
-                                      f" and will not be observed.")
+                        self.log.warn("KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
+                                      " and will not be observed.".format(kernel_dir=kernel_dir))
             self.observer.start()
 
     @staticmethod
@@ -245,8 +247,8 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
             kernelspec = self.kernel_spec_cache.kernel_spec_manager.get_kernel_spec(kernel_name)
             self.kernel_spec_cache.put_item(kernel_name, kernelspec)
         except Exception as e:
-            self.log.warning(f"The following xception occurred creating cache entry for: {event.src_resource_dir} "
-                             f"- continuing...  ({e})")
+            self.log.warning("The following exception occurred creating cache entry for: {src_resource_dir} "
+                             "- continuing...  ({e})".format(src_resource_dir=event.src_resource_dir, e=e))
 
     def on_deleted(self, event):
         """Fires when a watched file is deleted, triggering a removal of the corresponding item from the cache."""
@@ -264,8 +266,8 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
             kernelspec = self.kernel_spec_cache.kernel_spec_manager.get_kernel_spec(kernel_name)
             self.kernel_spec_cache.put_item(kernel_name, kernelspec)
         except Exception as e:
-            self.log.warning(f"The following exception occurred updating cache entry for: {event.src_resource_dir} "
-                             f"- continuing...  ({e})")
+            self.log.warning("The following exception occurred updating cache entry for: {src_resource_dir} "
+                             "- continuing...  ({e})".format(src_resource_dir=event.src_src_resource_dir, e=e))
 
     def on_moved(self, event):
         """Fires when a watched file is moved.

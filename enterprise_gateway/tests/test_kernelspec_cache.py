@@ -77,7 +77,7 @@ def _install_kernelspec(kernels_dir, kernel_name):
 def _modify_kernelspec(kernelspec_dir, kernel_name):
     json_file = os.path.join(kernelspec_dir, 'kernel.json')
     kernel_json = kernelspec_json.copy()
-    kernel_json['display_name'] = f"{kernel_name} modified!"
+    kernel_json['display_name'] = "{kernel_name} modified!".format(kernel_name=kernel_name)
     with open(json_file, 'w') as f:
         json.dump(kernel_json, f)
 
