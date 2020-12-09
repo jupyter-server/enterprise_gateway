@@ -55,9 +55,6 @@ jobs:
     - name: Log current Enterprise Gateway version
       run: |
         jupyter enterprisegateway --help
-    - name: Lint code
-      run: |
-        flake8 enterprise_gateway
     - name: Run tests
       uses: nick-invision/retry@v1.0.0
       with:
