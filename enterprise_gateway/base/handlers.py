@@ -14,7 +14,8 @@ class APIVersionHandler(TokenAuthorizationMixin,
                         CORSMixin,
                         JSONErrorsMixin,
                         APIHandler):
-    """Extends the notebook server base API handler with token auth, CORS, and
+    """"
+    Extends the notebook server base API handler with token auth, CORS, and
     JSON errors to produce version information for notebook and gateway.
     """
     def get(self):
@@ -25,7 +26,8 @@ class APIVersionHandler(TokenAuthorizationMixin,
 
 
 class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
-    """Catches all requests and responds with 404 JSON messages.
+    """
+    Catches all requests and responds with 404 JSON messages.
 
     Installed as the fallback error for all unhandled requests.
 

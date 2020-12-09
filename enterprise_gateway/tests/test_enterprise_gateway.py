@@ -25,7 +25,9 @@ class TestEnterpriseGateway(TestHandlers):
 
     @gen_test
     def test_max_kernels_per_user(self):
-        """Number of kernels should be limited per user."""
+        """
+        Number of kernels should be limited per user.
+        """
 
         self.get_app()
         self.app.max_kernels_per_user = 1
@@ -73,7 +75,9 @@ class TestEnterpriseGateway(TestHandlers):
 
     @gen_test
     def test_authorization(self):
-        """Verify authorized users can start a kernel, unauthorized users cannot"""
+        """
+        Verify authorized users can start a kernel, unauthorized users cannot
+        """
 
         self.get_app()
         self.app.authorized_users = {'bob', 'alice', 'bad_guy'}
@@ -98,7 +102,9 @@ class TestEnterpriseGateway(TestHandlers):
 
     @gen_test
     def test_port_range(self):
-        """Verify port-range behaviors are correct"""
+        """
+        Verify port-range behaviors are correct
+        """
 
         app = self.get_app()
         self.app.port_range = "10000..10999"  # range too small
@@ -196,7 +202,9 @@ class TestEnterpriseGateway(TestHandlers):
 
     @gen_test
     def test_kernel_id_env_var(self):
-        """Verify kernel is created with the given kernel id"""
+        """
+        Verify kernel is created with the given kernel id
+        """
         expected_kernel_id = str(uuid.uuid4())
         kernel_response = yield self.http_client.fetch(
             self.get_url('/api/kernels'),

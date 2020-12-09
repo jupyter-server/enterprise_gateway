@@ -14,7 +14,9 @@ from tornado.escape import json_encode, json_decode, url_escape
 
 
 class TestHandlers(TestGatewayAppBase):
-    """Base class for jupyter-websocket mode tests that spawn kernels."""
+    """
+    Base class for jupyter-websocket mode tests that spawn kernels.
+    """
 
     def setup_app(self):
         """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.

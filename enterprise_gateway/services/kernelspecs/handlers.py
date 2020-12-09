@@ -12,16 +12,19 @@ from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
 
 def key_exists(obj, chain):
-    """Ensures every entry in the chain array exists as a key in nested dictionaries of obj,
-    returning the value of the last key"""
+    """
+    Ensures every entry in the chain array exists as a key in nested dictionaries of obj,
+    returning the value of the last key
+    """
     _key = chain.pop(0)
     if _key in obj:
         return key_exists(obj[_key], chain) if chain else obj[_key]
 
 
 def apply_user_filter(kernelspec_model, global_authorized_list, global_unauthorized_list, kernel_user=None):
-    """If authorization lists are configured - either within the kernelspec or globally, ensure
-       the user is authorized for the given kernelspec.
+    """
+    If authorization lists are configured - either within the kernelspec or globally, ensure
+    the user is authorized for the given kernelspec.
     """
     if kernel_user:
         # Check the unauthorized list of the kernelspec, then the globally-configured unauthorized list - the
