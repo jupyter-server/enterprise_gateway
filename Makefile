@@ -8,7 +8,7 @@
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
     push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
-SA:=source activate
+SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
@@ -111,10 +111,10 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && nosetests -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && nosetests -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests.$(TEST)
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests.$(TEST)
 endif
 
 release: POST_SDIST=upload
