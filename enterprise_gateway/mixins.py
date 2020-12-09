@@ -17,7 +17,9 @@ from traitlets.config import Configurable
 
 
 class CORSMixin(object):
-    """Mixes CORS headers into tornado.web.RequestHandlers."""
+    """
+    Mixes CORS headers into tornado.web.RequestHandlers.
+    """
     SETTINGS_TO_HEADERS = {
         'eg_allow_credentials': 'Access-Control-Allow-Credentials',
         'eg_allow_headers': 'Access-Control-Allow-Headers',
@@ -28,7 +30,8 @@ class CORSMixin(object):
     }
 
     def set_default_headers(self):
-        """Sets the CORS headers as the default for all responses.
+        """
+        Sets the CORS headers as the default for all responses.
 
         Disables CSP configured by the notebook package. It's not necessary
         for a programmatic API.
@@ -44,7 +47,8 @@ class CORSMixin(object):
         self.clear_header('Content-Security-Policy')
 
     def options(self):
-        """Override the notebook implementation to return the headers
+        """
+        Override the notebook implementation to return the headers
         configured in `set_default_headers instead of the hardcoded set
         supported by the handler base class in the notebook project.
         """

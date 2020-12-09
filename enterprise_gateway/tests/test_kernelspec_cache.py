@@ -89,9 +89,9 @@ other_kernelspec_location = pytest.fixture(lambda env_jupyter_path: mkdir(env_ju
 @pytest.fixture
 def setup_kernelspecs(environ, kernelspec_location):
     # Only populate factory info
-    _install_kernelspec(kernelspec_location, 'test1')
-    _install_kernelspec(kernelspec_location, 'test2')
-    _install_kernelspec(kernelspec_location, 'test3')
+    _install_kernelspec(str(kernelspec_location), 'test1')
+    _install_kernelspec(str(kernelspec_location), 'test2')
+    _install_kernelspec(str(kernelspec_location), 'test3')
 
 
 @pytest.fixture
@@ -137,7 +137,7 @@ async def tests_add_spec(kernel_spec_cache, kernelspec_location, other_kernelspe
     assert str(kernelspec_location) in kernel_spec_cache.observed_dirs \
         if kernel_spec_cache.cache_enabled else True
 
-    _install_kernelspec(other_kernelspec_location, 'added')
+    _install_kernelspec(str(other_kernelspec_location), 'added')
     kspec = await kernel_spec_cache.get_kernel_spec('added')
 
     # Ensure new location has been added to observed_dirs
@@ -149,7 +149,7 @@ async def tests_add_spec(kernel_spec_cache, kernelspec_location, other_kernelspe
     assert kernel_spec_cache.cache_misses == (1 if kernel_spec_cache.cache_enabled else 0)
 
     # Add another to an existing observed directory, no cache miss here
-    _install_kernelspec(kernelspec_location, 'added2')
+    _install_kernelspec(str(kernelspec_location), 'added2')
     await asyncio.sleep(0.5)  # sleep for a half-second to allow cache to add item (no cache miss in this case)
     kspec = await kernel_spec_cache.get_kernel_spec('added2')
 

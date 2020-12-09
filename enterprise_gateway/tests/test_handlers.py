@@ -14,7 +14,9 @@ from tornado.escape import json_encode, json_decode, url_escape
 
 
 class TestHandlers(TestGatewayAppBase):
-    """Base class for jupyter-websocket mode tests that spawn kernels."""
+    """
+    Base class for jupyter-websocket mode tests that spawn kernels.
+    """
 
     def setup_app(self):
         """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.
@@ -248,7 +250,7 @@ class TestDefaults(TestHandlers):
         except Exception as ex:
             self.assertEqual(ex.code, 401)
         else:
-            self.assert_(False, 'no exception raised')
+            self.assertTrue(False, 'no exception raised')
 
         # Now request the websocket with the token
         ws_req = HTTPRequest(ws_url, headers={'Authorization': 'token fake-token'})
@@ -399,7 +401,7 @@ class TestDefaults(TestHandlers):
             if(msg['msg_type'] == 'kernel_info_reply'):
                 break
         else:
-            self.assert_(False, 'never received kernel_info_reply')
+            self.assertTrue(False, 'never received kernel_info_reply')
         ws.close()
 
     @gen_test

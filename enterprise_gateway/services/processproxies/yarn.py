@@ -30,7 +30,9 @@ cert_path = os.getenv('EG_YARN_CERT_BUNDLE', True)
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
-    """Kernel lifecycle management for YARN clusters."""
+    """
+    Kernel lifecycle management for YARN clusters.
+    """
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED', 'FAILED'}
 
@@ -87,7 +89,9 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within a YARN cluster environment."""
+        """
+        Launches the specified process within a YARN cluster environment.
+        """
 
         # checks to see if the queue resource is available
         # if not available, kernel startup is not attempted

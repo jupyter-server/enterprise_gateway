@@ -25,7 +25,7 @@ class PythonKernelBaseTestCase(TestBase):
 
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("print(x)"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         self.assertTrue(self.kernel.restart())
 
@@ -42,7 +42,7 @@ class PythonKernelBaseTestCase(TestBase):
 
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("print(x)"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
         # the next cell execution.
@@ -66,7 +66,7 @@ class PythonKernelBaseTestCase(TestBase):
         # Increment the pre-interrupt variable and ensure its value is correct
         self.kernel.execute("y = x + 1")
         interrupted_value = int(self.kernel.execute("print(y)"))  # This will only return the value.
-        self.assertEquals(interrupted_value, 124)
+        self.assertEqual(interrupted_value, 124)
 
     def test_scope(self):
         # Ensure global variable is accessible in function.
@@ -79,7 +79,7 @@ class PythonKernelBaseTestCase(TestBase):
         scope_code.append("\n")
         scope_code.append("scope()\n")
         result = self.kernel.execute(scope_code)
-        self.assertEquals(result, str(42))
+        self.assertEqual(result, str(42))
 
 
 class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
