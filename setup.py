@@ -61,7 +61,8 @@ Apache Spark, Kubernetes and others..
         'requests>=2.7,<3.0',
         'tornado>=4.2.0',
         'traitlets>=4.3.3',
-        'yarn-api-client>=1.0',
+        'watchdog>=1.0.1',
+        'yarn-api-client>=1.0'
     ],
     python_requires='>=3.5',
     classifiers=[
