@@ -8,7 +8,7 @@
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
     push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
-SA:=source activate
+SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
