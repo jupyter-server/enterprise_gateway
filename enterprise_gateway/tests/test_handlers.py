@@ -29,6 +29,19 @@ class TestHandlers(TestGatewayAppBase):
 
         self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
 
+    def tearDown(self):
+        """Shuts down the app after test run."""
+
+        # Clean out items added to env
+        if 'JUPYTER_PATH' in os.environ:
+            os.environ.pop('JUPYTER_PATH')
+        if 'EG_ENV_PROCESS_WHITELIST' in os.environ:
+            os.environ.pop('EG_ENV_PROCESS_WHITELIST')
+        if 'PROCESS_VAR1' in os.environ:
+            os.environ.pop('PROCESS_VAR1')
+
+        super(TestHandlers, self).tearDown()
+
     @coroutine
     def spawn_kernel(self, kernel_body='{}'):
         """Spawns a kernel using the gateway API and connects a websocket
@@ -237,7 +250,7 @@ class TestDefaults(TestHandlers):
         except Exception as ex:
             self.assertEqual(ex.code, 401)
         else:
-            self.assert_(False, 'no exception raised')
+            self.assertTrue(False, 'no exception raised')
 
         # Now request the websocket with the token
         ws_req = HTTPRequest(ws_url, headers={'Authorization': 'token fake-token'})
@@ -388,7 +401,7 @@ class TestDefaults(TestHandlers):
             if(msg['msg_type'] == 'kernel_info_reply'):
                 break
         else:
-            self.assert_(False, 'never received kernel_info_reply')
+            self.assertTrue(False, 'never received kernel_info_reply')
         ws.close()
 
     @gen_test

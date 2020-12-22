@@ -3,7 +3,7 @@
 """Tornado handlers for kernel specs."""
 import json
 
-import notebook.kernelspecs.handlers as notebook_kernelspecs_resources_handlers
+from notebook.base.handlers import IPythonHandler
 from notebook.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
 from notebook.utils import maybe_future, url_unescape
 from tornado import web
@@ -55,9 +55,14 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
                             CORSMixin,
                             JSONErrorsMixin,
                             APIHandler):
+
+    @property
+    def kernel_spec_cache(self):
+        return self.settings['kernel_spec_cache']
+
     @web.authenticated
     async def get(self):
-        ksm = self.kernel_spec_manager
+        ksm = self.kernel_spec_cache
         km = self.kernel_manager
         model = {}
         model['default'] = km.default_kernel_name
@@ -99,9 +104,13 @@ class KernelSpecHandler(TokenAuthorizationMixin,
                         JSONErrorsMixin,
                         APIHandler):
 
+    @property
+    def kernel_spec_cache(self):
+        return self.settings['kernel_spec_cache']
+
     @web.authenticated
     async def get(self, kernel_name):
-        ksm = self.kernel_spec_manager
+        ksm = self.kernel_spec_cache
         kernel_name = url_unescape(kernel_name)
         kernel_user_filter = self.request.query_arguments.get('user')
         kernel_user = None
@@ -126,16 +135,43 @@ class KernelSpecHandler(TokenAuthorizationMixin,
         self.finish(json.dumps(model))
 
 
+class KernelSpecResourceHandler(TokenAuthorizationMixin,
+                                CORSMixin,
+                                JSONErrorsMixin,
+                                web.StaticFileHandler,
+                                IPythonHandler):
+    SUPPORTED_METHODS = ('GET', 'HEAD')
+
+    @property
+    def kernel_spec_cache(self):
+        return self.settings['kernel_spec_cache']
+
+    def initialize(self):
+        web.StaticFileHandler.initialize(self, path='')
+
+    @web.authenticated
+    async def get(self, kernel_name, path, include_body=True):
+        ksm = self.kernel_spec_cache
+        try:
+            kernelspec = await maybe_future(ksm.get_kernel_spec(kernel_name))
+            self.root = kernelspec.resource_dir
+        except KeyError as e:
+            raise web.HTTPError(404,
+                                u'Kernel spec %s not found' % kernel_name) from e
+        self.log.debug("Serving kernel resource from: %s", self.root)
+        return await web.StaticFileHandler.get(self, path, include_body=include_body)
+
+    @web.authenticated
+    def head(self, kernel_name, path):
+        return self.get(kernel_name, path, include_body=False)
+
+
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 
 # Extends the default handlers from the notebook package with token auth, CORS
 # and JSON errors.
 default_handlers = [
     (r"/api/kernelspecs", MainKernelSpecHandler),
-    (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler)
+    (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler),
+    (r"/kernelspecs/%s/(?P<path>.*)" % kernel_name_regex, KernelSpecResourceHandler),
 ]
-
-for path, cls in notebook_kernelspecs_resources_handlers.default_handlers:
-    # Everything should have CORS and token auth
-    bases = (TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, cls)
-    default_handlers.append((path, type(cls.__name__, bases, {})))
