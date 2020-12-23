@@ -8,8 +8,8 @@ from setuptools import setup
 here = os.path.abspath(os.path.dirname(__file__))
 
 v = sys.version_info
-if v[:2] < (3, 5):
-    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.5 or above."
+if v[:2] < (3, 6):
+    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.6 or above."
     print(error, file=sys.stderr)
     sys.exit(1)
 
@@ -64,7 +64,7 @@ Apache Spark, Kubernetes and others..
         'watchdog==0.10.3',  # 0.10.4 (latest) is broken on MacOS
         'yarn-api-client>=1.0',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
