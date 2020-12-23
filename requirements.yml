@@ -17,6 +17,7 @@ dependencies:
   - requests>=2.7,<3.0
   - tornado>=4.2.0
   - traitlets>=4.2.0
+  - watchdog
   - yarn-api-client>=1.0
 
   # Test Requirements
@@ -24,7 +25,6 @@ dependencies:
   - nose
   - pytest
   - websocket-client
-  - watchdog
 
   # Code Style
   - flake8
