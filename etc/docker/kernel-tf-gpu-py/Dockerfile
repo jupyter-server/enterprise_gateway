@@ -1,5 +1,5 @@
 # Ubuntu:xenial
-ARG BASE_CONTAINER=tensorflow/tensorflow:1.12.0-gpu-py3
+ARG BASE_CONTAINER=tensorflow/tensorflow:2.4.0-gpu-jupyter
 FROM $BASE_CONTAINER
 
 RUN apt-get update && apt-get install -yq \
