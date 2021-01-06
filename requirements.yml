@@ -7,7 +7,7 @@ dependencies:
   - jinja2>=2.10
   - jupyter_client>=6.1
   - jupyter_core>=4.6.0
-  - notebook>=6.1.0
+  - notebook>=6.1.0,<6.1.6
   - paramiko>=2.1.2
   - pexpect>=4.2.0
   - pip
