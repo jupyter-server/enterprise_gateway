@@ -119,7 +119,7 @@ If your base image is not from docker-stacks, it is recommended that you NOT run
 Aside from configuring the image user, all other aspects of customization are the same.  In this case, we'll use the tensorflow-gpu image and convert it to be usable via Enterprise Gateway as a custom kernel image.  Note that because this image didn't have `wget` we used `curl` to download the supporting kernel-image files.
 
 ```dockerfile
-FROM tensorflow/tensorflow:1.12.0-gpu-py3
+FROM tensorflow/tensorflow:2.4.0-gpu-jupyter
 
 USER root
 
