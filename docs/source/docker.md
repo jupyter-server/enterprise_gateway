@@ -1,37 +1,8 @@
 ## Docker Images
 
-The project produces three docker images to make both testing and general usage easier:
-1. elyra/demo-base
-1. elyra/enterprise-gateway-demo
-1. elyra/nb2kg
-
-All images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter/enterprise_gateway/tree/master/etc/docker).
+All docker images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter/enterprise_gateway/tree/master/etc/docker).
 
 Local images can also be built via `make docker-images`.
-
-### elyra/demo-base
-
-The [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) image is considered the base image upon which [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is built.  It consist of a Hadoop (YARN) installation that includes Spark, Java, miniconda and various kernel installations.
-
-The primary use of this image is to quickly build elyra/enterprise-gateway images for testing and development purposes.  To build a local image, run `make demo-base`.
-
-As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
-
-### elyra/enterprise-gateway-demo
-
-Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) also includes the various example kernelspecs contained in the repository.
-
-By default, this container will start with enterprise gateway running as a service user named `jovyan`.  This user is enabled for `sudo` so that it can emulate other users where necessary.  Other users included in this image are `elyra`, `bob` and `alice` (names commonly used in security-based examples).
-
-We plan on producing one image per release to the [enterprise-gateway-demo docker repo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) where the image's tag reflects the corresponding release. 
-
-To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
-
-### elyra/nb2kg
-
-Image [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) is a simple image built on [jupyterhub/k8s-singleuser-sample](https://hub.docker.com/r/https://hub.docker.com/r/jupyterhub/k8s-singleuser-sample/) along with the latest release of [NB2KG](https://github.com/jupyter/nb2kg).  The image also sets some of the new variables that pertain to enterprise gateway (e.g., `KG_REQUEST_TIMEOUT`, `KG_HTTP_USER`, `KERNEL_USERNAME`, etc.).
-
-To build a local image, run `make docker-image-nb2kg`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
 
 ## Runtime Images
 
@@ -225,3 +196,25 @@ cp -r python_kubernetes python_myCustomKernel
 - If using a whitelist (`EG_KERNEL_WHITELIST`), be sure to update it with the new kernelspec directory name (e.g., `python_myCustomKernel`) and restart/redeploy Enterprise Gateway.  
 - Launch or refresh your Notebook session and confirm `My Custom Kernel` appears in the _new kernel_ drop-down.
 - Create a new notebook using `My Custom Kernel`.
+
+## Ancillary Docker Images
+
+The project produces two docker images to make testing easier: [elyra/demo-base](docker.html#elyra-demo-base) and [elyra/enterprise-gateway-demo](docker.html#elyra-enterprise-gateway-demo).
+
+### elyra/demo-base
+
+The [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) image is considered the base image upon which [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is built.  It consist of a Hadoop (YARN) installation that includes Spark, Java, miniconda and various kernel installations.
+
+The primary use of this image is to quickly build elyra/enterprise-gateway images for testing and development purposes.  To build a local image, run `make demo-base`.
+
+As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
+
+### elyra/enterprise-gateway-demo
+
+Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) also includes the various example kernelspecs contained in the repository.
+
+By default, this container will start with enterprise gateway running as a service user named `jovyan`.  This user is enabled for `sudo` so that it can emulate other users where necessary.  Other users included in this image are `elyra`, `bob` and `alice` (names commonly used in security-based examples).
+
+We plan on producing one image per release to the [enterprise-gateway-demo docker repo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) where the image's tag reflects the corresponding release. 
+
+To build a local image, run `make docker-image-enterprise-gateway-demo`.  Because this is a development build, the tag for this image will not reflect the value of the VERSION variable in the root Makefile but will be 'dev'.
