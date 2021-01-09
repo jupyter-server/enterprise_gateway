@@ -48,8 +48,7 @@ instructions for setting up a debug environment on our [Debugging Jupyter Enterp
     examples for how to go about validating their configuration.
     3. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place.  These
     should be covered in our [Getting Started](getting-started.html#configuring-resource-managers) topics.
-    4. If using a Notebook as your front-end, ensure that the 
-    [NB2KG extension](getting-started.html#connecting-a-notebook-to-enterprise-gateway) is properly configured.
+    4. If using a Notebook server as your front-end, ensure that the Gateway configuration options or NB2KG extension settings are properly configured.
     Once the notebook has started, a refresh on the tree view should issue the same `kernelspecs` request in step 1 and
     the drop-down menu items for available kernels should reflect an entry for each kernelspec returned.
     5. **Always** consult your Enterprise Gateway log file.  If you have not redirected `stdout` and `stderr` to a

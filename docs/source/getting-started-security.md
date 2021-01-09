@@ -3,14 +3,14 @@
 Jupyter Enterprise Gateway does not currently perform user _authentication_ but, instead, assumes that all users
 issuing requests have been previously authenticated.  Recommended applications for this are 
 [Apache Knox](https://knox.apache.org/) or perhaps even [Jupyter Hub](https://jupyterhub.readthedocs.io/en/latest/) 
-(e.g., if nb2kg-enabled notebook servers were spawned targeting an Enterprise Gateway cluster).
+(e.g., if gateway-enabled notebook servers were spawned targeting an Enterprise Gateway cluster).
 
 This section introduces some of the security features inherent in Enterprise Gateway (with more to come).
 
 **KERNEL_USERNAME**
 
 In order to convey the name of the authenicated user, `KERNEL_USERNAME` should be sent in the kernel creation request 
-via the `env:` entry.  This will occur automatically within NB2KG since it propagates all environment variables 
+via the `env:` entry.  This will occur automatically within the gateway-enabled Notebook server since it propagates all environment variables 
 prefixed with `KERNEL_`.  If the request does not include a `KERNEL_USERNAME` entry, one will be added to the kernel's
 launch environment with the value of the gateway user.
 
@@ -156,19 +156,18 @@ options with the command:
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
 	```
 
-2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is NB2KG
-serverextension.
+2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
 
-	During Jupyter notebook server startup, export the following environment variables where NB2KG will access
+	During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
 	during runtime:
 
 	```bash
-	export KG_CLIENT_CERT=${PATH_TO_PEM_FILE}
-	export KG_CLIENT_KEY=${PATH_TO_KEY_FILE}
-	export KG_CLIENT_CA=${PATH_TO_SELFSIGNED_CA}
+	export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
+	export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
+	export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
 	```
 
-	Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
+	Note: If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
 
 #### Using Enterprise Gateway configuration file
 You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
@@ -193,4 +192,4 @@ from the configuration file, modify the corresponding parameter to the appropria
 4. Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
 provides better readability and debuggability.
 
-After configuring the above, the communication between NB2KG and Enterprise Gateway is SSL enabled.
+After configuring the above, the communication between gateway-enabled Notebook Server and Enterprise Gateway is SSL enabled.

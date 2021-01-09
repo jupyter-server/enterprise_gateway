@@ -674,7 +674,7 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 
 However, if using Helm, see the section above about how to set the `k8sMasterPublicIP`.
 
-The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
+The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook server will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `JUPYTER_GATEWAY_URL=<externalIP>:8888` else you'll set `JUPYTER_GATEWAY_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
 ### Setting up a Kubernetes Ingress for use with Enterprise Gateway
 

@@ -7,6 +7,6 @@ This image enables the use of a Scala ([Apache Toree](https://toree.apache.org/)
 # Basic Use
 Deploy [enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) per its instructions and configured to the appropriate environment.
 
-Launch a Jupyter Notebook application using NB2KG (see [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) against  the Enterprise Gateway instance and pick either of the python-related kernels.
+Launch a gateway-enabled Jupyter Notebook application against  the Enterprise Gateway instance and pick the desired kernel to use in your notebook.
 
 For more information, check our [repo](https://github.com/jupyter/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

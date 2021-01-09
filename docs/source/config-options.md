@@ -573,14 +573,14 @@ The following kernel-specific environment variables are used by Enterprise Gatew
     Spark only. This variable allows users to add additional spark options to the
     current set of options specified in the corresponding kernel.json file.  This
     variable is purely optional with no default value.  In addition, it is the
-    responsibility of the the user setting this value to ensure the options passed
+    responsibility of the user setting this value to ensure the options passed
     are appropriate relative to the target environment.  Because this variable contains
     space-separate values, it requires appropriate quotation.  For example, to use with
-    the elyra/nb2kg docker image, the environment variable would look something like
+    the notebook docker image jupyterhub/k8s-singleuser-sample , the environment variable would look something like
     this:
 
     docker run ... -e KERNEL_EXTRA_SPARK_OPTS=\"--conf spark.driver.memory=2g
-    --conf spark.executor.memory=2g\" ... elyra/nb2kg
+    --conf spark.executor.memory=2g\" ... jupyterhub/k8s-singleuser-sample
 
   KERNEL_ID=<from user> or <system generated>
     This value represents the identifier used by the Jupyter framework to identify
@@ -646,8 +646,7 @@ The following kernel-specific environment variables are used by Enterprise Gatew
 
   KERNEL_WORKING_DIR=<from user> or None
     Containers only.  This value should model the directory in which the active
-    notebook file is running.  NB2KG versions >= 0.4.0 will automatically pass this
-    value.  It is intended to be used in conjunction with appropriate volume
+    notebook file is running.   It is intended to be used in conjunction with appropriate volume
     mounts in the kernel container such that the user's notebook filesystem exists
     in the container and enables the sharing of resources used within the notebook.
     As a result, the primary use case for this is for Jupyter Hub users running in
