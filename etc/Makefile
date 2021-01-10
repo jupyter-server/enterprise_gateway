@@ -108,7 +108,7 @@ PUSHED_IMAGES := demo-base enterprise-gateway-demo enterprise-gateway kernel-ima
 docker-images: $(DOCKER_IMAGES)
 kernel-images: $(KERNEL_IMAGES)
 
-push-images: push-demo-base push-enterprise-gateway-demo push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-tf-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-image-puller
+push-images: push-enterprise-gateway-demo push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-tf-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-image-puller
 
 clean-images: clean-enterprise-gateway-demo clean-demo-base clean-enterprise-gateway clean-kernel-image-puller clean-kernel-images
 clean-kernel-images: clean-kernel-py clean-kernel-spark-py clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala
