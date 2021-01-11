@@ -134,7 +134,7 @@ demo-base:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 # Here for doc purposes
-clean-images: ## Remove docker images (includes kernel-based images)
+clean-images: clean-demo-base ## Remove docker images (includes kernel-based images)
 clean-kernel-images: ## Remove kernel-based images
 
 clean-images clean-enterprise-gateway-demo clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-image-puller:
@@ -143,6 +143,7 @@ clean-images clean-enterprise-gateway-demo clean-kernel-images clean-enterprise-
 clean-demo-base:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(SPARK_VERSION) -C etc $@
 
+push-images: push-demo-base
 push-images push-enterprise-gateway-demo push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
