@@ -111,10 +111,10 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests
+	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
+	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
 release: POST_SDIST=upload
@@ -173,21 +173,21 @@ ITEST_OPTIONS?=
 
 ITEST_YARN_PORT?=8888
 ITEST_YARN_HOST?=localhost:$(ITEST_YARN_PORT)
-ITEST_YARN_TESTS?=enterprise_gateway.itests
+ITEST_YARN_TESTS?=enterprise_gateway/itests
 
 ITEST_KERNEL_LAUNCH_TIMEOUT=120
 
 LOG_LEVEL=INFO
 
 itest-yarn-debug: ## Run integration tests (optionally) against docker demo (YARN) container with print statements
-	make LOG_LEVEL=DEBUG TEST_DEBUG_OPTS="--nocapture --nologcapture --logging-level=10" itest-yarn
+	make LOG_LEVEL=DEBUG TEST_DEBUG_OPTS="--log-level=10" itest-yarn
 
 PREP_ITEST_YARN?=1
 itest-yarn: ## Run integration tests (optionally) against docker demo (YARN) container
 ifeq (1, $(PREP_ITEST_YARN))
 	make itest-yarn-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) nosetests -v $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
 	@echo "Run \`docker logs itest-yarn\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
@@ -201,7 +201,7 @@ itest-yarn-prep:
 # This should get cleaned up once docker support is more mature
 ITEST_DOCKER_PORT?=8889
 ITEST_DOCKER_HOST?=localhost:$(ITEST_DOCKER_PORT)
-ITEST_DOCKER_TESTS?=enterprise_gateway.itests.test_r_kernel.TestRKernelLocal enterprise_gateway.itests.test_python_kernel.TestPythonKernelLocal enterprise_gateway.itests.test_scala_kernel.TestScalaKernelLocal
+ITEST_DOCKER_TESTS?=enterprise_gateway/itests/test_r_kernel.py::TestRKernelLocal enterprise_gateway/itests/test_python_kernel.py::TestPythonKernelLocal enterprise_gateway/itests/test_scala_kernel.py::TestScalaKernelLocal
 ITEST_DOCKER_KERNELS=PYTHON_KERNEL_LOCAL_NAME=python_docker SCALA_KERNEL_LOCAL_NAME=scala_docker R_KERNEL_LOCAL_NAME=R_docker
 
 itest-docker-debug: ## Run integration tests (optionally) against docker container with print statements
@@ -212,7 +212,7 @@ itest-docker: ## Run integration tests (optionally) against docker swarm
 ifeq (1, $(PREP_ITEST_DOCKER))
 	make itest-docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) nosetests -v $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60

@@ -3,9 +3,9 @@
 """Tornado handlers for kernel specs."""
 import json
 
-from notebook.base.handlers import IPythonHandler
-from notebook.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
-from notebook.utils import maybe_future, url_unescape
+from jupyter_server.base.handlers import JupyterHandler
+from jupyter_server.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
+from jupyter_server.utils import ensure_async, url_unescape
 from tornado import web
 from ...base.handlers import APIHandler
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
@@ -75,7 +75,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
             if kernel_user:
                 self.log.debug("Searching kernels for user '%s' " % kernel_user)
 
-        kspecs = await maybe_future(ksm.get_all_specs())
+        kspecs = await ensure_async(ksm.get_all_specs())
 
         list_kernels_found = []
         for kernel_name, kernel_info in kspecs.items():
@@ -117,7 +117,7 @@ class KernelSpecHandler(TokenAuthorizationMixin,
         if kernel_user_filter:
             kernel_user = kernel_user_filter[0].decode("utf-8")
         try:
-            spec = await maybe_future(ksm.get_kernel_spec(kernel_name))
+            spec = await ensure_async(ksm.get_kernel_spec(kernel_name))
         except KeyError:
             raise web.HTTPError(404, u'Kernel spec %s not found' % kernel_name)
         if is_kernelspec_model(spec):
@@ -139,7 +139,7 @@ class KernelSpecResourceHandler(TokenAuthorizationMixin,
                                 CORSMixin,
                                 JSONErrorsMixin,
                                 web.StaticFileHandler,
-                                IPythonHandler):
+                                JupyterHandler):
     SUPPORTED_METHODS = ('GET', 'HEAD')
 
     @property
@@ -153,7 +153,7 @@ class KernelSpecResourceHandler(TokenAuthorizationMixin,
     async def get(self, kernel_name, path, include_body=True):
         ksm = self.kernel_spec_cache
         try:
-            kernelspec = await maybe_future(ksm.get_kernel_spec(kernel_name))
+            kernelspec = await ensure_async(ksm.get_kernel_spec(kernel_name))
             self.root = kernelspec.resource_dir
         except KeyError as e:
             raise web.HTTPError(404,
@@ -168,7 +168,7 @@ class KernelSpecResourceHandler(TokenAuthorizationMixin,
 
 kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
 
-# Extends the default handlers from the notebook package with token auth, CORS
+# Extends the default handlers from the jupyter_server package with token auth, CORS
 # and JSON errors.
 default_handlers = [
     (r"/api/kernelspecs", MainKernelSpecHandler),

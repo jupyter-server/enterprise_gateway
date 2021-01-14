@@ -15,7 +15,7 @@ from jupyter_client import localinterfaces
 
 from .processproxy import RemoteProcessProxy
 
-from notebook.utils import url_unescape
+from jupyter_server.utils import url_unescape
 
 from random import randint
 
