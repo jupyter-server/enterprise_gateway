@@ -20,20 +20,21 @@ KERNEL_SESSIONS_DIR_NAME = "kernel_sessions"
 
 
 class KernelSessionManager(LoggingConfigurable):
-    """ KernelSessionManager is used to save and load kernel sessions from persistent storage.
+    """
+    KernelSessionManager is used to save and load kernel sessions from persistent storage.
 
-        KernelSessionManager provides the basis for an HA solution.  It loads the complete set of persisted kernel
-        sessions during construction.  Following construction the parent object calls start_sessions to allow
-        Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive'
-        are marked for deletion and the in-memory dictionary is updated - and the entire collection is written
-        to store (file or database).
+    KernelSessionManager provides the basis for an HA solution.  It loads the complete set of persisted kernel
+    sessions during construction.  Following construction the parent object calls start_sessions to allow
+    Enterprise Gateway to validate that all loaded sessions are still valid.  Those that it cannot 'revive'
+    are marked for deletion and the in-memory dictionary is updated - and the entire collection is written
+    to store (file or database).
 
-        As kernels are created and destroyed, the KernelSessionManager is called upon to keep kernel session
-        state consistent.
+    As kernels are created and destroyed, the KernelSessionManager is called upon to keep kernel session
+    state consistent.
 
-        NOTE: This class is essentially an abstract base class that requires its `load_sessions` and `save_sessions`
-        have implementations in subclasses.  abc.MetaABC is not used due to conflicts with derivation of
-        LoggingConfigurable - which seemed more important.
+    NOTE: This class is essentially an abstract base class that requires its `load_sessions` and `save_sessions`
+    have implementations in subclasses.  abc.MetaABC is not used due to conflicts with derivation of
+    LoggingConfigurable - which seemed more important.
     """
 
     # Session Persistence
@@ -65,7 +66,8 @@ class KernelSessionManager(LoggingConfigurable):
         self._sessionsByUser = dict()
 
     def create_session(self, kernel_id, **kwargs):
-        """Creates a session associated with this kernel.
+        """
+        Creates a session associated with this kernel.
 
         All items associated with the active kernel's state are saved.
 
@@ -93,7 +95,9 @@ class KernelSessionManager(LoggingConfigurable):
         self._save_session(kernel_id, kernel_session)
 
     def refresh_session(self, kernel_id):
-        """Refreshes the session from its persisted state. Called on kernel restarts."""
+        """
+        Refreshes the session from its persisted state. Called on kernel restarts.
+        """
         self.log.debug("Refreshing kernel session for id: {}".format(kernel_id))
         km = self.kernel_manager.get_kernel(kernel_id)
 
@@ -128,7 +132,8 @@ class KernelSessionManager(LoggingConfigurable):
             return self._start_session(kernel_session)
 
     def start_sessions(self):
-        """ Attempt to start persisted sessions.
+        """
+        Attempt to start persisted sessions.
 
         Determines if session startup was successful.  If unsuccessful, the session is removed
         from persistent storage.
@@ -164,7 +169,9 @@ class KernelSessionManager(LoggingConfigurable):
         return True
 
     def delete_session(self, kernel_id):
-        """Removes saved session associated with kernel_id from dictionary and persisted storage."""
+        """
+        Removes saved session associated with kernel_id from dictionary and persisted storage.
+        """
         self._delete_sessions([kernel_id])
 
         if self.enable_persistence:
@@ -240,7 +247,8 @@ class KernelSessionManager(LoggingConfigurable):
         raise NotImplementedError("KernelSessionManager.save_session(kernel_id) requires an implementation!")
 
     def active_sessions(self, username):
-        """ Returns the number of active sessions for the given username.
+        """
+        Returns the number of active sessions for the given username.
 
         Parameters
         ----------
@@ -257,7 +265,8 @@ class KernelSessionManager(LoggingConfigurable):
 
     @staticmethod
     def get_kernel_username(**kwargs):
-        """ Returns the kernel's logical username from env dict.
+        """
+        Returns the kernel's logical username from env dict.
 
         Checks the process env for KERNEL_USERNAME.  If set, that value is returned, else KERNEL_USERNAME is
         initialized to the current user and that value is returned.
@@ -325,9 +334,10 @@ class FileKernelSessionManager(KernelSessionManager):
                 self._load_session_from_file(kernel_session_file)
 
     def load_session(self, kernel_id):
-        if kernel_id is not None:
-            kernel_session_file = "".join([kernel_id, '.json'])
-            self._load_session_from_file(kernel_session_file)
+        if self.enable_persistence:
+            if kernel_id is not None:
+                kernel_session_file = "".join([kernel_id, '.json'])
+                self._load_session_from_file(kernel_session_file)
 
     def _load_session_from_file(self, file_name):
         kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)

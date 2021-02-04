@@ -14,7 +14,9 @@ from tornado.escape import json_encode, json_decode, url_escape
 
 
 class TestHandlers(TestGatewayAppBase):
-    """Base class for jupyter-websocket mode tests that spawn kernels."""
+    """
+    Base class for jupyter-websocket mode tests that spawn kernels.
+    """
 
     def setup_app(self):
         """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.
@@ -26,6 +28,19 @@ class TestHandlers(TestGatewayAppBase):
         os.environ['PROCESS_VAR1'] = "process_var1_override"
 
         self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
+
+    def tearDown(self):
+        """Shuts down the app after test run."""
+
+        # Clean out items added to env
+        if 'JUPYTER_PATH' in os.environ:
+            os.environ.pop('JUPYTER_PATH')
+        if 'EG_ENV_PROCESS_WHITELIST' in os.environ:
+            os.environ.pop('EG_ENV_PROCESS_WHITELIST')
+        if 'PROCESS_VAR1' in os.environ:
+            os.environ.pop('PROCESS_VAR1')
+
+        super(TestHandlers, self).tearDown()
 
     @coroutine
     def spawn_kernel(self, kernel_body='{}'):
@@ -235,7 +250,7 @@ class TestDefaults(TestHandlers):
         except Exception as ex:
             self.assertEqual(ex.code, 401)
         else:
-            self.assert_(False, 'no exception raised')
+            self.assertTrue(False, 'no exception raised')
 
         # Now request the websocket with the token
         ws_req = HTTPRequest(ws_url, headers={'Authorization': 'token fake-token'})
@@ -380,13 +395,13 @@ class TestDefaults(TestHandlers):
         }))
 
         # Assert the reply comes back. Test will timeout if this hangs.
-        for _ in range(3):
+        for _ in range(4):
             msg = yield ws.read_message()
             msg = json_decode(msg)
             if(msg['msg_type'] == 'kernel_info_reply'):
                 break
         else:
-            self.assert_(False, 'never received kernel_info_reply')
+            self.assertTrue(False, 'never received kernel_info_reply')
         ws.close()
 
     @gen_test
@@ -662,3 +677,43 @@ class TestRelativeBaseURL(TestHandlers):
             method='GET'
         )
         self.assertEqual(response.code, 200)
+
+
+class TestWildcardEnvs(TestHandlers):
+    """Base class for jupyter-websocket mode tests that spawn kernels."""
+
+    def setup_app(self):
+        """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.
+        """
+        super().setup_app()
+        # overwrite env_whitelist
+        self.app.env_whitelist = ['*']
+
+    @gen_test
+    def test_kernel_wildcard_env(self):
+        """Kernel should start with environment vars defined in the request."""
+        # Note: Since env_whitelist == '*', all values should be present.
+        kernel_body = json.dumps({
+            'name': 'python',
+            'env': {
+                'KERNEL_FOO': 'kernel-foo-value',
+                'OTHER_VAR1': 'other-var1-value',
+                'OTHER_VAR2': 'other-var2-value',
+                'TEST_VAR': 'test-var-value'
+            }
+        })
+        ws = yield self.spawn_kernel(kernel_body)
+        req = self.execute_request('import os; '
+                                   'print(os.getenv("KERNEL_FOO"), '
+                                   'os.getenv("OTHER_VAR1"), '
+                                   'os.getenv("OTHER_VAR2"), '
+                                   'os.getenv("TEST_VAR"))')
+        ws.write_message(json_encode(req))
+        content = yield self.await_stream(ws)
+        self.assertEqual(content['name'], 'stdout')
+        self.assertIn('kernel-foo-value', content['text'])
+        self.assertIn('other-var1-value', content['text'])
+        self.assertIn('other-var2-value', content['text'])
+        self.assertIn('test-var-value', content['text'])
+
+        ws.close()

@@ -19,4 +19,4 @@ client = NotebookClient(nb=test_notebook, kernel_manager_class=RemoteKernelManag
 client.execute()
 ```
 
-The above code will execute the notebook on a kernel using the configured `ProcessProxy` (defaults to Kubernetes).
+The above code will execute the notebook on a kernel using the configured `ProcessProxy`.

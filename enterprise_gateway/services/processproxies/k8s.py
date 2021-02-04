@@ -2,7 +2,6 @@
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running in Kubernetes clusters."""
 
-
 import logging
 import os
 import re
@@ -27,7 +26,9 @@ config.load_incluster_config()
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
-    """Kernel lifecycle management for Kubernetes kernels."""
+    """
+    Kernel lifecycle management for Kubernetes kernels.
+    """
     def __init__(self, kernel_manager, proxy_config):
         super(KubernetesProcessProxy, self).__init__(kernel_manager, proxy_config)
 

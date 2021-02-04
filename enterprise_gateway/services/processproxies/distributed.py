@@ -10,8 +10,6 @@ import signal
 from subprocess import STDOUT
 from socket import gethostbyname
 
-from jupyter_client import launch_kernel
-
 from .processproxy import RemoteProcessProxy, BaseProcessProxyABC
 
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
@@ -19,7 +17,9 @@ kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
-    """Manages the lifecycle of kernels distributed across a set of hosts."""
+    """
+    Manages the lifecycle of kernels distributed across a set of hosts.
+    """
     host_index = 0
 
     def __init__(self, kernel_manager, proxy_config):
@@ -31,7 +31,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.hosts = kernel_manager.remote_hosts  # from command line or env
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches a kernel process on a selected host."""
+        """
+        Launches a kernel process on a selected host.
+        """
         await super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.assigned_host = self._determine_next_host()
@@ -64,7 +66,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
-            self.local_proc = launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kwargs)
+            self.local_proc = self.launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kwargs)
             result_pid = str(self.local_proc.pid)
         else:
             # launch remote command via ssh
@@ -146,7 +148,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                      "log ({}:{}) for more information.".\
                 format(self.kernel_launch_timeout, self.assigned_host, self.kernel_log)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=500, reason=timeout_message)
 
     def cleanup(self):

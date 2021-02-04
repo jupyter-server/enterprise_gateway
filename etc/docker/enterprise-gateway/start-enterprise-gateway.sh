@@ -26,7 +26,8 @@ export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
 export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-60}
 export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-False}
-export EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"['r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker']"}
+EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"'r_docker','python_docker','python_tf_docker','scala_docker','spark_r_docker','spark_python_docker','spark_scala_docker'"}
+export EG_KERNEL_WHITELIST=`echo ${EG_KERNEL_WHITELIST} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
 export EG_DEFAULT_KERNEL_NAME=${EG_DEFAULT_KERNEL_NAME:-python_docker}
 
 
@@ -34,7 +35,7 @@ echo "Starting Jupyter Enterprise Gateway..."
 
 exec jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
-	--KernelSpecManager.whitelist=${EG_KERNEL_WHITELIST} \
+	--KernelSpecManager.whitelist=[${EG_KERNEL_WHITELIST}] \
 	--RemoteMappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
 	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \

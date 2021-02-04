@@ -40,6 +40,7 @@ from .services.sessions.handlers import default_handlers as default_session_hand
 from .services.sessions.kernelsessionmanager import FileKernelSessionManager
 from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
+from .services.kernelspecs import KernelSpecCache
 
 from .mixins import EnterpriseGatewayConfigMixin
 
@@ -58,7 +59,8 @@ aliases.update({
 
 
 class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
-    """Application that provisions Jupyter kernels and proxies HTTP/Websocket
+    """
+    Application that provisions Jupyter kernels and proxies HTTP/Websocket
     traffic to the kernels.
 
     - reads command line and environment variable settings
@@ -75,7 +77,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [FileKernelSessionManager, RemoteMappingKernelManager]
+    classes = [KernelSpecCache, FileKernelSessionManager, RemoteMappingKernelManager]
 
     # Enable some command line shortcuts
     aliases = aliases
@@ -108,6 +110,12 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.kernel_spec_manager = self.kernel_spec_manager_class(
             parent=self,
+        )
+
+        self.kernel_spec_cache = self.kernel_spec_cache_class(
+            parent=self,
+            kernel_spec_manager=self.kernel_spec_manager,
+            **kwargs
         )
 
         self.kernel_manager = self.kernel_manager_class(
@@ -181,6 +189,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             session_manager=self.session_manager,
             contents_manager=self.contents_manager,
             kernel_spec_manager=self.kernel_spec_manager,
+            kernel_spec_cache=self.kernel_spec_cache,
             eg_auth_token=self.auth_token,
             eg_allow_credentials=self.allow_credentials,
             eg_allow_headers=self.allow_headers,
@@ -191,6 +200,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             eg_max_kernels=self.max_kernels,
             eg_env_process_whitelist=self.env_process_whitelist,
             eg_env_whitelist=self.env_whitelist,
+            eg_kernel_headers=self.kernel_headers,
             eg_list_kernels=self.list_kernels,
             eg_authorized_users=self.authorized_users,
             eg_unauthorized_users=self.unauthorized_users,

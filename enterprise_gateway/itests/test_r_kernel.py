@@ -25,7 +25,7 @@ class RKernelBaseTestCase(TestBase):
 
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("write(x,stdout())"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         self.assertTrue(self.kernel.restart())
 
@@ -42,7 +42,7 @@ class RKernelBaseTestCase(TestBase):
 
         self.kernel.execute("x = 123")
         original_value = int(self.kernel.execute("write(x,stdout())"))  # This will only return the value.
-        self.assertEquals(original_value, 123)
+        self.assertEqual(original_value, 123)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
         # the next cell execution.
@@ -56,7 +56,7 @@ class RKernelBaseTestCase(TestBase):
         interrupted_result = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
-        self.assertEquals(interrupted_result.strip(), 'begin')
+        self.assertEqual(interrupted_result.strip(), 'begin')
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
@@ -64,7 +64,7 @@ class RKernelBaseTestCase(TestBase):
         # Increment the pre-interrupt variable and ensure its value is correct
         self.kernel.execute("y = x + 1")
         interrupted_value = int(self.kernel.execute("write(y,stdout())"))  # This will only return the value.
-        self.assertEquals(interrupted_value, 124)
+        self.assertEqual(interrupted_value, 124)
 
 
 class RKernelBaseSparkTestCase(RKernelBaseTestCase):

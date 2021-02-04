@@ -1,4 +1,5 @@
-FROM ubuntu:bionic
+ARG BASE_CONTAINER=ubuntu:bionic
+FROM $BASE_CONTAINER
 
 MAINTAINER akchinSTC
 

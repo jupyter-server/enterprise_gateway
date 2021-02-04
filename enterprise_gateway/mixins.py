@@ -17,7 +17,9 @@ from traitlets.config import Configurable
 
 
 class CORSMixin(object):
-    """Mixes CORS headers into tornado.web.RequestHandlers."""
+    """
+    Mixes CORS headers into tornado.web.RequestHandlers.
+    """
     SETTINGS_TO_HEADERS = {
         'eg_allow_credentials': 'Access-Control-Allow-Credentials',
         'eg_allow_headers': 'Access-Control-Allow-Headers',
@@ -28,7 +30,8 @@ class CORSMixin(object):
     }
 
     def set_default_headers(self):
-        """Sets the CORS headers as the default for all responses.
+        """
+        Sets the CORS headers as the default for all responses.
 
         Disables CSP configured by the notebook package. It's not necessary
         for a programmatic API.
@@ -44,7 +47,8 @@ class CORSMixin(object):
         self.clear_header('Content-Security-Policy')
 
     def options(self):
-        """Override the notebook implementation to return the headers
+        """
+        Override the notebook implementation to return the headers
         configured in `set_default_headers instead of the hardcoded set
         supported by the handler base class in the notebook project.
         """
@@ -312,7 +316,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
     env_whitelist_env = 'EG_ENV_WHITELIST'
     env_whitelist = List(config=True,
                          help="""Environment variables allowed to be set when a client requests a
-                         new kernel. (EG_ENV_WHITELIST env var)""")
+                         new kernel. Use '*' to allow all environment variables sent in the request.
+                         (EG_ENV_WHITELIST env var)""")
 
     @default('env_whitelist')
     def env_whitelist_default(self):
@@ -326,6 +331,16 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default('env_process_whitelist')
     def env_process_whitelist_default(self):
         return os.getenv(self.env_process_whitelist_env, os.getenv('KG_ENV_PROCESS_WHITELIST', '')).split(',')
+
+    kernel_headers_env = 'EG_KERNEL_HEADERS'
+    kernel_headers = List(config=True,
+                          help="""Request headers to make available to kernel launch framework.
+                          (EG_KERNEL_HEADERS env var)""")
+
+    @default('kernel_headers')
+    def kernel_headers_default(self):
+        default_headers = os.getenv(self.kernel_headers_env)
+        return default_headers.split(',') if default_headers else []
 
     # Remote hosts
     remote_hosts_env = 'EG_REMOTE_HOSTS'
@@ -507,6 +522,15 @@ class EnterpriseGatewayConfigMixin(Configurable):
         help="""
         The kernel spec manager class to use. Must be a subclass
         of `jupyter_client.kernelspec.KernelSpecManager`.
+        """
+    )
+
+    kernel_spec_cache_class = Type(
+        default_value="enterprise_gateway.services.kernelspecs.KernelSpecCache",
+        config=True,
+        help="""
+        The kernel spec cache class to use. Must be a subclass
+        of `enterprise_gateway.services.kernelspecs.KernelSpecCache`.
         """
     )
 

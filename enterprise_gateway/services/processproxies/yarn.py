@@ -10,7 +10,7 @@ import signal
 import socket
 import time
 
-from jupyter_client import launch_kernel, localinterfaces
+from jupyter_client import localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 
 from .processproxy import RemoteProcessProxy
@@ -23,10 +23,16 @@ local_ip = localinterfaces.public_ips()[0]
 poll_interval = float(os.getenv('EG_POLL_INTERVAL', '0.5'))
 max_poll_attempts = int(os.getenv('EG_MAX_POLL_ATTEMPTS', '10'))
 yarn_shutdown_wait_time = float(os.getenv('EG_YARN_SHUTDOWN_WAIT_TIME', '15.0'))
+# cert_path: Boolean, defaults to `True`, that controls
+#            whether we verify the server's TLS certificate in yarn-api-client.
+#            Or a string, in which case it must be a path to a CA bundle(.pem file) to use.
+cert_path = os.getenv('EG_YARN_CERT_BUNDLE', True)
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
-    """Kernel lifecycle management for YARN clusters."""
+    """
+    Kernel lifecycle management for YARN clusters.
+    """
     initial_states = {'NEW', 'SUBMITTED', 'ACCEPTED', 'RUNNING'}
     final_states = {'FINISHED', 'KILLED', 'FAILED'}
 
@@ -64,7 +70,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             from requests_kerberos import HTTPKerberosAuth
             auth = HTTPKerberosAuth()
 
-        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth)
+        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth, verify=cert_path)
 
         self.rm_addr = self.resource_mgr.get_active_endpoint()
 
@@ -83,7 +89,9 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within a YARN cluster environment."""
+        """
+        Launches the specified process within a YARN cluster environment.
+        """
 
         # checks to see if the queue resource is available
         # if not available, kernel startup is not attempted
@@ -92,7 +100,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         await super(YarnClusterProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh - which is configured for yarn-cluster...
-        self.local_proc = launch_kernel(kernel_cmd, **kwargs)
+        self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
         self.ip = local_ip
 
@@ -326,7 +334,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                     reason = "App {} is RUNNING, but waited too long ({} secs) to get connection file.  " \
                              "Check YARN logs for more information.".format(self.application_id,
                                                                             self.kernel_launch_timeout)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 

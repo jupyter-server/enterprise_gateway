@@ -148,7 +148,7 @@ Note that because the Apache Toree kernel, and its supporting libraries, will be
 
 #### Sample kernelspecs
 
-We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter/enterprise_gateway/releases) (e.g. [jupyter_enterprise_gateway_kernelspecs-2.2.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0/jupyter_enterprise_gateway_kernelspecs-2.2.0.tar.gz)) that can be extracted and modified to fit your configuration.
+We provide sample kernel configuration and launcher tar files as part of [each release](https://github.com/jupyter/enterprise_gateway/releases) (e.g. [jupyter_enterprise_gateway_kernelspecs-2.4.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.4.0/jupyter_enterprise_gateway_kernelspecs-2.4.0.tar.gz)) that can be extracted and modified to fit your configuration.
 
 For information about how to build your own kernel-based docker image for use by Enterprise Gateway see [Custom kernel images](docker.html#custom-kernel-images).
 
@@ -225,22 +225,3 @@ jupyter notebook \
   --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager \
   --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
 ```
-
-For your convenience, we have also built a docker image ([elyra/nb2kg](docker.html#elyra-nb2kg)) with Jupyter Notebook, Jupyter Lab and NB2KG which can be launched by the command below:
-
-```bash
-docker run -t --rm \
-  -e KG_URL='http://<master ip>:8888' \
-  -e KG_HTTP_USER=guest \
-  -e KG_HTTP_PASS=guest-password \
-  -e VALIDATE_KG_CERT='false' \
-  -e LOG_LEVEL=DEBUG \
-  -p 8888:8888 \
-  -v ${HOME}/notebooks/:/tmp/notebooks \
-  -w /tmp/notebooks \
-  elyra/nb2kg
-```
-
-Notebook files residing in `${HOME}/notebooks` can then be accessed via `http://localhost:8888`.  
-
-To invoke Jupyter Lab, simply add `lab` to the endpoint: `http://localhost:8888/lab`

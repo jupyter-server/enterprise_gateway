@@ -1,5 +1,8 @@
 # Ubuntu:Bionic
-FROM jupyter/tensorflow-notebook:04f7f60d34a6
+# TensorFlow 2.4.0
+ARG BASE_CONTAINER=jupyter/tensorflow-notebook:703d8b2dcb88
+
+FROM $BASE_CONTAINER
 
 ENV KERNEL_LANGUAGE python
 

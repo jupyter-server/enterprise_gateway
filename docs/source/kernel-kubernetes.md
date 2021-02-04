@@ -91,13 +91,13 @@ spec:
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
-        # k8s will only pull :latest all the time.  
+        # k8s will only pull :latest all the time.
         # the following line will make sure that :VERSION is always pulled
         # You should remove this if you want to pin EG to a release tag
         imagePullPolicy: Always
@@ -300,7 +300,7 @@ for the container specification and `volumes` in the pod specification):
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         image: elyra/enterprise-gateway:VERSION
         name: enterprise-gateway
         args: ["--gateway"]
@@ -415,7 +415,7 @@ volumes:
 - {{ volume }}
 {% endfor %}
 {% endif %}
-```  
+```
 
 The conditional volumes are handled by the loops inside of the yaml file. Any unconditional volumes can be added before these conditions. In the scenario where the `/dev/shm` will need to be expanded the following mount has to be added.
 
@@ -439,6 +439,51 @@ emptyDir:
 - {{ volume }}
 {% endfor %}
 {% endif %}
+```
+
+### Kubernetes Resource Quotas
+
+When deploying kernels on a Kubernetes cluster a best practice is to define request and limit quotas for CPUs, GPUs, and Memory.  These quotas can be defined from the client via KERNEL_-prefixed environment variables which are passed through to the kernel at startup.
+
+- `KERNEL_CPUS` - CPU Request by Kernel
+- `KERNEL_MEMORY` - MEMORY Request by Kernel
+- `KERNEL_GPUS` - GPUS Request by Kernel
+- `KERNEL_CPUS_LIMIT` - CPU Limit
+- `KERNEL_MEMORY_LIMIT` - MEMORY Limit
+- `KERNEL_GPUS_LIMIT` - GPUS Limit
+
+Memory and CPU units are based on the [Kubernetes Official Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) while GPU is using the NVIDIA `nvidia.com/gpu` parameter.  The desired units should be included in the variable's value.
+
+When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
+
+```
+{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+  resources:
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+    requests:
+      {% if kernel_cpus is defined %}
+      cpu: "{{ kernel_cpus }}"
+      {% endif %}
+      {% if kernel_memory is defined %}
+      memory: "{{ kernel_memory }}"
+      {% endif %}
+      {% if kernel_gpus is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus }}"
+      {% endif %}
+    {% endif %}
+    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    limits:
+      {% if kernel_cpus_limit is defined %}
+      cpu: "{{ kernel_cpus_limit }}"
+      {% endif %}
+      {% if kernel_memory_limit is defined %}
+      memory: "{{ kernel_memory_limit }}"
+      {% endif %}
+      {% if kernel_gpus_limit is defined %}
+      nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+      {% endif %}
+    {% endif %}
+  {% endif %}
 ```
 
 ### KubernetesProcessProxy
@@ -478,7 +523,7 @@ By default, _vanilla_ kernels use a value of `none` for the spark context initia
 
 When the kernel is intended to target _Spark-on-kubernetes_, its launch is very much like kernels launched in YARN _cluster mode_, albeit with a completely different set of parameters.  Here's an example `SPARK_OPTS` string value which best conveys the idea:
 ```
-  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.2.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
+  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.4.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
 ```
 Note that each of the labels previously discussed are also applied to the _driver_ and _executor_ pods.
 
@@ -550,9 +595,9 @@ From anywhere with Helm cluster access, create the service and deployment by run
 ```bash
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm/enterprise-gateway
 ```
-the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.2.0) page:
+the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.4.0) page:
 ```bash
-helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.2.0/jupyter_enterprise_gateway_helm-2.2.0.tgz
+helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.4.0/jupyter_enterprise_gateway_helm-2.4.0.tgz
 ```
 ##### Configuration
 
@@ -629,7 +674,7 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`).  If you a
 
 However, if using Helm, see the section above about how to set the `k8sMasterPublicIP`.
 
-The value of the `KG_URL` used by `NB2KG` will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `KG_URL=<externalIP>:8888` else you'll set `KG_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
+The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook server will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `JUPYTER_GATEWAY_URL=<externalIP>:8888` else you'll set `JUPYTER_GATEWAY_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
 ### Setting up a Kubernetes Ingress for use with Enterprise Gateway
 
@@ -683,10 +728,10 @@ Rules:
   *
         /gateway/?(.*)   enterprise-gateway:8888 (<none>)
 Annotations:
-  kubectl.kubernetes.io/last-applied-configuration:  {"apiVersion":"extensions/v1beta1","kind":"Ingress","metadata":  
-  {"annotations":{"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/force-ssl-redirect":"false",  
-  "nginx.ingress.kubernetes.io/rewrite-target":"/$1","nginx.ingress.kubernetes.io/ssl-redirect":"false"},  
-  "name":"enterprise-gateway-ingress","namespace":"enterprise-gateway"},"spec":{"rules":[{"http":{"paths":[{  
+  kubectl.kubernetes.io/last-applied-configuration:  {"apiVersion":"extensions/v1beta1","kind":"Ingress","metadata":
+  {"annotations":{"kubernetes.io/ingress.class":"nginx","nginx.ingress.kubernetes.io/force-ssl-redirect":"false",
+  "nginx.ingress.kubernetes.io/rewrite-target":"/$1","nginx.ingress.kubernetes.io/ssl-redirect":"false"},
+  "name":"enterprise-gateway-ingress","namespace":"enterprise-gateway"},"spec":{"rules":[{"http":{"paths":[{
   "backend":{"serviceName":"enterprise-gateway","servicePort":8888},"path":"/gateway/?(.*)"}]}}]}}
 
   kubernetes.io/ingress.class:                     nginx
@@ -699,9 +744,9 @@ Events:                                            <none>
 This will expose the Enterprise Gateway service at
 ```bash
 http://KUBERNETES_HOSTNAME:PORT/gateway
-```   
-where `PORT` is the ingress controller's http `NodePort` we referenced earlier.     
-**NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.  
+```
+where `PORT` is the ingress controller's http `NodePort` we referenced earlier.
+**NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.
 
 
 ### Kubernetes Tips
