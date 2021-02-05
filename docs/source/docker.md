@@ -71,7 +71,7 @@ Custom kernel images require some support files from the Enterprise Gateway repo
 Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
 
 ##### Kernel Launcher
-The kernel launcher, as discussed [here](system-architecture.html#kernel-launchers) does a number of things.  In paricular, it creates the connection ports and conveys that connection information back to Enterprise Gateway via the socket identified by the response address parameter.  Although not a requirement for container-based usage, it is recommended that the launcher be written in the same language as the kernel.  (This is more of a requirement when used in applications like YARN.)
+The kernel launcher, as discussed [here](system-architecture.html#kernel-launchers) does a number of things.  In particular, it creates the connection ports and conveys that connection information back to Enterprise Gateway via the socket identified by the response address parameter.  Although not a requirement for container-based usage, it is recommended that the launcher be written in the same language as the kernel.  (This is more of a requirement when used in applications like YARN.)
 
 #### About Jupyter Docker-stacks Images
 Most of what is presented assumes the base image for your custom image is derived from the [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks) repository.  As a result, it's good to cover what makes up those assumptions so you can build your own image independently from the docker-stacks repository.
@@ -189,7 +189,9 @@ cp -r python_kubernetes python_myCustomKernel
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```

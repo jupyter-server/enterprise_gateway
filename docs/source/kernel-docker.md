@@ -92,8 +92,8 @@ As always, kernels are launched by virtue of the `argv:` stanza in their respect
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
-    "--RemoteProcessProxy.spark-context-initialization-mode",
-    "none"
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```
@@ -119,8 +119,8 @@ Running containers in Docker Swarm versus traditional Docker are different enoug
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
-    "--RemoteProcessProxy.spark-context-initialization-mode",
-    "none"
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```

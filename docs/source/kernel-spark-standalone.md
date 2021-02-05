@@ -67,7 +67,9 @@ After that, you should have a kernel.json that looks similar to the one below:
      "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```
