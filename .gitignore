@@ -71,9 +71,14 @@ target/
 _site/
 .sass-cache/
 
-
 # Debug-related
 .kube/
 
-# vscode
+# vscode ide stuff
+*.code-workspace
+.history/
 .vscode/
+
+# jetbrains ide stuff
+*.iml
+.idea/

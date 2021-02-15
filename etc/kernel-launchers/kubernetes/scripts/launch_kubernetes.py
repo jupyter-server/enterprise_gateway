@@ -26,7 +26,7 @@ def generate_kernel_pod_yaml(keywords):
     return k8s_yaml
 
 
-def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
+def launch_kubernetes_kernel(kernel_id, port_range, response_addr, spark_context_init_mode):
     # Launches a containerized kernel as a kubernetes pod.
 
     config.load_incluster_config()
@@ -37,9 +37,10 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
     # Factory values...
     # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
     # value since this is used to locate the kernel launch script within the image.
-    keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    keywords['kernel_id'] = kernel_id
+    keywords['eg_port_range'] = port_range
     keywords['eg_response_address'] = response_addr
+    keywords['kernel_id'] = kernel_id
+    keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     keywords['kernel_spark_context_init_mode'] = spark_context_init_mode
 
     # Walk env variables looking for names prefixed with KERNEL_.  When found, set corresponding keyword value
@@ -82,7 +83,7 @@ def launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode):
 
 if __name__ == '__main__':
     """
-        Usage: launch_kubernetes_kernel 
+        Usage: launch_kubernetes_kernel
                     [--RemoteProcessProxy.kernel-id <kernel_id>]
                     [--RemoteProcessProxy.response-address <response_addr>]
                     [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
@@ -91,6 +92,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
@@ -99,7 +102,8 @@ if __name__ == '__main__':
 
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
+    port_range = arguments['port_range']
     response_addr = arguments['response_address']
     spark_context_init_mode = arguments['spark_context_init_mode']
 
-    launch_kubernetes_kernel(kernel_id, response_addr, spark_context_init_mode)
+    launch_kubernetes_kernel(kernel_id, port_range, response_addr, spark_context_init_mode)
