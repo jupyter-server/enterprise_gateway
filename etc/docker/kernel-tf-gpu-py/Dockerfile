@@ -1,6 +1,8 @@
 # Ubuntu:xenial
-ARG BASE_CONTAINER=tensorflow/tensorflow:1.12.0-gpu-py3
+ARG BASE_CONTAINER=tensorflow/tensorflow:2.4.0-gpu-jupyter
 FROM $BASE_CONTAINER
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -yq \
     build-essential \
@@ -10,10 +12,9 @@ RUN apt-get update && apt-get install -yq \
     netcat \
     python3-dev \
     tzdata \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install future pycryptodomex
+    unzip && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install future pycryptodomex
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

@@ -2,9 +2,9 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help build clean nuke dev dev-http docs install sdist test release clean-images clean-enterprise-gateway \
-    clean-nb2kg clean-demo-base clean-kernel-images clean-enterprise-gateway \
+    clean-demo-base clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
-    clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-nb2kg push-demo-base \
+    clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-demo-base \
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
     push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
@@ -111,10 +111,10 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway.tests.$(TEST)
+	$(SA) $(ENV) && pytest -v $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
 release: POST_SDIST=upload
@@ -125,25 +125,26 @@ docker-images:  ## Build docker images (includes kernel-based images)
 kernel-images: ## Build kernel-based docker images
 
 # Actual working targets...
-docker-images: demo-base enterprise-gateway-demo nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller
+docker-images: demo-base enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller
 
-enterprise-gateway-demo nb2kg kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
+enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 demo-base:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
 
 # Here for doc purposes
-clean-images: ## Remove docker images (includes kernel-based images)
+clean-images: clean-demo-base ## Remove docker images (includes kernel-based images)
 clean-kernel-images: ## Remove kernel-based images
 
-clean-images clean-enterprise-gateway-demo clean-nb2kg clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-image-puller:
+clean-images clean-enterprise-gateway-demo clean-kernel-images clean-enterprise-gateway clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py clean-kernel-tf-gpu-py clean-kernel-image-puller:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
 clean-demo-base:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(SPARK_VERSION) -C etc $@
 
-push-images push-enterprise-gateway-demo push-nb2kg push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller:
+push-images: push-demo-base
+push-images push-enterprise-gateway-demo push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller:
 	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) TAG=$(TAG) -C etc $@
 
 push-demo-base:

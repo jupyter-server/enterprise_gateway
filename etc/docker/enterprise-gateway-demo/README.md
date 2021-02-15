@@ -9,11 +9,11 @@ Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), this imag
 
 **elyra/enterprise-gateway-demo** can be used as a combined YARN cluster in which the kernels run locally in YARN-cluster mode, or combined with a different instance of itself or an [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) instance to more easily view that kernels are running remotely.
 
-Prior to using either mode, we recommend you create a local docker network.  This better isolates the container(s) and avoids port collisions that might come into play if you're using [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) on the same host.  Here's a simple way to create a docker network...
+Prior to using either mode, we recommend you create a local docker network.  This better isolates the container(s) and avoids port collisions that might come into play if you're using a gateway-enabled Notebook image on the same host.  Here's a simple way to create a docker network...
 
 `docker network create -d bridge jeg`
 
-Once created, you just add `--net jeg` to the enterprise gateway run commands.  Using `--net jeg` when creating instances of [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) are not necessary.
+Once created, you just add `--net jeg` to the enterprise gateway run commands.  Using `--net jeg` when creating instances of the gateway-enabled Notebook image are not necessary.
 
 ### Combined Mode
 
@@ -58,10 +58,10 @@ or
 
 `-v <host_kernels_directory>:/tmp/byok/kernels`
 
-To confirm Enterprise Gateway is detecting the new kernelspecs, monitor the log (`docker logs -f <container_name>`) and issue a refresh from the nb2kg-enabled Notebook instance.  Each refresh of the notebook's tree view triggers a refresh of the set of kernelspecs in Enterprise Gateway.
+To confirm Enterprise Gateway is detecting the new kernelspecs, monitor the log (`docker logs -f <container_name>`) and issue a refresh from the gateway-enabled Notebook instance.  Each refresh of the notebook's tree view triggers a refresh of the set of kernelspecs in Enterprise Gateway.
 
 # Connecting a client notebook
-You can use any NB2KG-enabled notebook server to hit the running docker container.  We recommend using our [elyra/nb2kg](https://hub.docker.com/r/elyra/nb2kg/) image. 
+You can use any gateway-enabled notebook server to hit the running docker container. 
 
 Note: Given the size of the enterprise-gateway-demo when combined with a YARN/Spark installation, it is recommended that you have at least 4GB of memory allocated for your docker image in order to run kernels (particularly the Toree/Scala kernel).
 

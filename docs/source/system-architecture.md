@@ -218,7 +218,7 @@ Error 500 (`Internal Server Error`).
 
 Kernel launch timeout expiration is expressed via the environment variable `KERNEL_LAUNCH_TIMEOUT`.  If this 
 value does not exist, it defaults to the Enterprise Gateway process environment variable `EG_KERNEL_LAUNCH_TIMEOUT` - which 
-defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from `NB2KG`, the launch 
+defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from the Notebook server, the launch 
 timeout can be specified as a client attribute of the Notebook session.
 
 ###### YarnClusterProcessProxy
