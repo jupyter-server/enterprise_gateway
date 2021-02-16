@@ -82,13 +82,6 @@ def launch_kubernetes_kernel(kernel_id, port_range, response_addr, spark_context
 
 
 if __name__ == '__main__':
-    """
-        Usage: launch_kubernetes_kernel
-                    [--RemoteProcessProxy.kernel-id <kernel_id>]
-                    [--RemoteProcessProxy.response-address <response_addr>]
-                    [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
-    """
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
