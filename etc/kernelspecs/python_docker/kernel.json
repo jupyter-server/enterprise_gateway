@@ -16,6 +16,8 @@
     "/usr/local/share/jupyter/kernels/python_docker/scripts/launch_docker.py",
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}",
     "--RemoteProcessProxy.response-address",
     "{response_address}"
   ]
