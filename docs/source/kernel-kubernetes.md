@@ -523,7 +523,7 @@ By default, _vanilla_ kernels use a value of `none` for the spark context initia
 
 When the kernel is intended to target _Spark-on-kubernetes_, its launch is very much like kernels launched in YARN _cluster mode_, albeit with a completely different set of parameters.  Here's an example `SPARK_OPTS` string value which best conveys the idea:
 ```
-  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.4.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
+  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.5.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
 ```
 Note that each of the labels previously discussed are also applied to the _driver_ and _executor_ pods.
 
@@ -595,9 +595,9 @@ From anywhere with Helm cluster access, create the service and deployment by run
 ```bash
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm/enterprise-gateway
 ```
-the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.4.0) page:
+the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.5.0) page:
 ```bash
-helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.4.0/jupyter_enterprise_gateway_helm-2.4.0.tgz
+helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_helm-2.5.0.tgz
 ```
 ##### Configuration
 
