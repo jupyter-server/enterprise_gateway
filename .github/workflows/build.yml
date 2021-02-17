@@ -1,4 +1,4 @@
-name: Jupyter Enterprise Gateway Tests
+name: Builds
 on:
   push:
     branches: '*'
@@ -65,12 +65,7 @@ jobs:
     - name: Run integration tests
       run: |
         SA="source $CONDA_HOME/bin/activate" make itest-yarn
-    - name: Code coverage
-      if: success()
-      run: |
-        codecov
     - name: Collect logs
-      if: failure()
       run: |
         python --version
         pip --version
