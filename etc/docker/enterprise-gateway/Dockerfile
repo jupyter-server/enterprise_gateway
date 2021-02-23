@@ -1,4 +1,5 @@
-ARG BASE_CONTAINER=jupyter/minimal-notebook:04f7f60d34a6
+ARG BASE_CONTAINER=jupyter/minimal-notebook:703d8b2dcb88
+
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION

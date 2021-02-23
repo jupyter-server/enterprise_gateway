@@ -26,6 +26,8 @@ class SuperTokenAuthHandler(object):
 
 class TestableTokenAuthHandler(TokenAuthorizationMixin, SuperTokenAuthHandler):
     """Implementation that uses the TokenAuthorizationMixin for testing."""
+    __test__ = False
+
     def __init__(self, token=''):
         self.settings = {'eg_auth_token': token}
         self.arguments = {}
@@ -115,6 +117,8 @@ class TestTokenAuthMixin(unittest.TestCase):
 
 class TestableJSONErrorsHandler(JSONErrorsMixin):
     """Implementation that uses the JSONErrorsMixin for testing."""
+    __test__ = False
+
     def __init__(self):
         self.headers = {}
         self.response = None

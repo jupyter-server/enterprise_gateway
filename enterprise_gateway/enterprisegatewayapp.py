@@ -14,11 +14,7 @@ import sys
 import time
 import weakref
 
-# Install the pyzmq ioloop. This has to be done before anything else from
-# tornado is imported.
 from zmq.eventloop import ioloop
-ioloop.install()
-
 from tornado import httpserver
 from tornado import web
 from tornado.log import enable_pretty_logging
@@ -26,8 +22,8 @@ from tornado.log import enable_pretty_logging
 from traitlets.config import Configurable
 from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
-from notebook.notebookapp import random_ports
-from notebook.utils import url_path_join
+from jupyter_server.serverapp import random_ports
+from jupyter_server.utils import url_path_join
 
 from ._version import __version__
 
@@ -175,7 +171,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         Adds the various managers and web-front configuration values to the
         Tornado settings for reference by the handlers.
         """
-        # Enable the same pretty logging the notebook uses
+        # Enable the same pretty logging the server uses
         enable_pretty_logging()
 
         # Configure the tornado logging level too
@@ -204,7 +200,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             eg_list_kernels=self.list_kernels,
             eg_authorized_users=self.authorized_users,
             eg_unauthorized_users=self.unauthorized_users,
-            # Also set the allow_origin setting used by notebook so that the
+            # Also set the allow_origin setting used by jupyter_server so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin,
             # Always allow remote access (has been limited to localhost >= notebook 5.6)

@@ -53,17 +53,20 @@ Apache Spark, Kubernetes and others..
         'jupyter_client>=6.1',
         'jupyter_core>=4.6.0',
         'kubernetes>=4.0.0',
-        'notebook>=6.1.0',
+        'jupyter_server>=1.2',
         'paramiko>=2.1.2',
         'pexpect>=4.2.0',
         'pycryptodomex>=3.9.7',
         'pyzmq>=17.0.0',
         'requests>=2.7,<3.0',
-        'tornado>=4.2.0',
+        'tornado>=6.1',
         'traitlets>=4.3.3',
         'watchdog==0.10.3',  # 0.10.4 (latest) is broken on MacOS
         'yarn-api-client>=1.0',
     ],
+    extras_require = {
+        'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
+    },
     python_requires='>=3.6',
     classifiers=[
         'Intended Audience :: Developers',
