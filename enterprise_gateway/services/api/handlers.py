@@ -3,8 +3,8 @@
 """Tornado handlers for kernel specs."""
 import os
 
-from notebook.utils import maybe_future
-from tornado import gen, web
+from jupyter_server.utils import ensure_async
+from tornado import web
 from ...mixins import CORSMixin
 
 
@@ -25,14 +25,13 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
         """
         web.StaticFileHandler.initialize(self, path=os.path.dirname(__file__))
 
-    @gen.coroutine
-    def get(self):
+    async def get(self):
         """Handler for a get on a specific handler
         """
         resource_name, content_type = self.get_resource_metadata()
         self.set_header('Content-Type', content_type)
         res = web.StaticFileHandler.get(self, resource_name)
-        yield maybe_future(res)
+        await ensure_async(res)
 
     def options(self, **kwargs):
         """Method for properly handling CORS pre-flight"""

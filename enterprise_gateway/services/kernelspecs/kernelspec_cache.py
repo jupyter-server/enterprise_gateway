@@ -7,7 +7,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileMovedEvent
 
 from jupyter_client.kernelspec import KernelSpec
-from notebook.utils import maybe_future
+from jupyter_server.utils import ensure_async
 from traitlets.config import SingletonConfigurable
 from traitlets.traitlets import CBool, default
 from typing import Dict, Optional, Union
@@ -56,7 +56,7 @@ class KernelSpecCache(SingletonConfigurable):
         """
         kernelspec = self.get_item(kernel_name)
         if not kernelspec:
-            kernelspec = await maybe_future(self.kernel_spec_manager.get_kernel_spec(kernel_name))
+            kernelspec = await ensure_async(self.kernel_spec_manager.get_kernel_spec(kernel_name))
             if kernelspec:
                 self.put_item(kernel_name, kernelspec)
         return kernelspec
@@ -77,7 +77,7 @@ class KernelSpecCache(SingletonConfigurable):
         """
         kernelspecs = self.get_all_items()
         if not kernelspecs:
-            kernelspecs = await maybe_future(self.kernel_spec_manager.get_all_specs())
+            kernelspecs = await ensure_async(self.kernel_spec_manager.get_all_specs())
             if kernelspecs:
                 self.put_all_items(kernelspecs)
         return kernelspecs
@@ -182,8 +182,8 @@ class KernelSpecCache(SingletonConfigurable):
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(KernelSpecChangeHandler(self), kernel_dir, recursive=True)
                     else:
-                        self.log.warn("KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
-                                      " and will not be observed.".format(kernel_dir=kernel_dir))
+                        self.log.warning("KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
+                                         " and will not be observed.".format(kernel_dir=kernel_dir))
             self.observer.start()
 
     @staticmethod

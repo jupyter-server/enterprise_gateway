@@ -16,6 +16,8 @@
     "/usr/local/share/jupyter/kernels/scala_kubernetes/scripts/launch_kubernetes.py",
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
     "--RemoteProcessProxy.public-key",

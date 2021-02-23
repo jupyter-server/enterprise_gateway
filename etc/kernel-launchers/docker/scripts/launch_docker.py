@@ -12,7 +12,7 @@ remove_container = bool(os.getenv('EG_REMOVE_CONTAINER', 'True').lower() == 'tru
 swarm_mode = bool(os.getenv('EG_DOCKER_MODE', 'swarm').lower() == 'swarm')
 
 
-def launch_docker_kernel(kernel_id, response_addr, public_key, spark_context_init_mode):
+def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode):
     # Launches a containerized kernel.
 
     # Can't proceed if no image was specified.
@@ -34,8 +34,9 @@ def launch_docker_kernel(kernel_id, response_addr, public_key, spark_context_ini
 
     # Capture env parameters...
     param_env = dict()
-    param_env['EG_RESPONSE_ADDRESS'] = response_addr
+    param_env['EG_PORT_RANGE'] = port_range
     param_env['EG_PUBLIC_KEY'] = public_key
+    param_env['EG_RESPONSE_ADDRESS'] = response_addr
     param_env['KERNEL_SPARK_CONTEXT_INIT_MODE'] = spark_context_init_mode
 
     # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and ENV_WHITELIST)
@@ -91,17 +92,11 @@ def launch_docker_kernel(kernel_id, response_addr, public_key, spark_context_ini
 
 
 if __name__ == '__main__':
-    """
-        Usage: launch_docker_kernel 
-                    [--RemoteProcessProxy.kernel-id <kernel_id>]
-                    [--RemoteProcessProxy.response-address <response_addr>]
-                    [--RemoteProcessProxy.public-key <public_key>]
-                    [--RemoteProcessProxy.spark-context-initialization-mode <mode>]
-    """
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
     parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
@@ -112,8 +107,9 @@ if __name__ == '__main__':
 
     arguments = vars(parser.parse_args())
     kernel_id = arguments['kernel_id']
+    port_range = arguments['port_range']
     response_addr = arguments['response_address']
     public_key = arguments['public_key']
     spark_context_init_mode = arguments['spark_context_init_mode']
 
-    launch_docker_kernel(kernel_id, response_addr, public_key, spark_context_init_mode)
+    launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode)

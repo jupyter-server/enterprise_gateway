@@ -10,7 +10,7 @@ import uuid
 from tornado import web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
-from notebook.services.kernels.kernelmanager import AsyncMappingKernelManager
+from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from traitlets import directional_link, log as traitlets_log
 

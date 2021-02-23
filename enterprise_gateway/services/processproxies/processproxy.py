@@ -27,7 +27,7 @@ from Cryptodome.Util.Padding import unpad
 from enum import Enum
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
-from notebook import _tz
+from jupyter_server import _tz
 from socket import gethostbyname, gethostname, socket, timeout,\
     AF_INET, SO_REUSEADDR, SOCK_STREAM, SOL_SOCKET, SHUT_RDWR, SHUT_WR
 from tornado import web
