@@ -84,7 +84,7 @@ install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
 			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
-bdist:
+bdist: lint
 	make $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)

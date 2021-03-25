@@ -26,6 +26,8 @@
     "{port_range}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.spark-context-initialization-mode",
     "eager"
   ]

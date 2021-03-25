@@ -4,6 +4,8 @@ image: elyra/enterprise-gateway:dev
 imagePullPolicy: IfNotPresent
 # The primary port on which Enterprise Gateway is servicing requests.
 port: 8888
+# The  port on which Enterprise Gateway will receive kernel connection info responses.
+response_port: 8877
 # Update to deploy multiple replicas of EG.
 replicas: 1
 # Log output level.

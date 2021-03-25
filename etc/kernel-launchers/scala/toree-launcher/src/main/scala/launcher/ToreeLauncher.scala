@@ -32,6 +32,7 @@ object ToreeLauncher extends LogLike {
   var portLowerBound : Int = -1
   var portUpperBound : Int = -1
   var responseAddress : String = _
+  var publicKey : String = _
   var alternateSigint : String = _
   var initMode : String = "lazy"
   var toreeArgs = ArrayBuffer[String]()
@@ -126,6 +127,11 @@ object ToreeLauncher extends LogLike {
           i += 1
           kernelId = args(i).trim
 
+        // Public key doesn't apply to toree, consume here
+        case "--RemoteProcessProxy.public-key" =>
+          i += 1
+          publicKey = args(i).trim
+
         // All other arguments should pass-thru to toree
         case _ => toreeArgs += args(i).trim
       }
@@ -189,6 +195,16 @@ object ToreeLauncher extends LogLike {
       sys.exit(-1)
     }
 
+    if (kernelId == null) {
+      logger.error("Parameter '--RemoteProcessProxy.kernel-id' must be provided - exiting!")
+      sys.exit(-1)
+    }
+
+    if (publicKey == null) {
+      logger.error("Parameter '--RemoteProcessProxy.public-key' must be provided - exiting!")
+      sys.exit(-1)
+    }
+
     if (!pathExists(profilePath)) {
       profilePath = determineConnectionFile(profilePath, kernelId)
 
@@ -204,20 +220,23 @@ object ToreeLauncher extends LogLike {
         sys.exit(-1)
       }
 
-      // Now need to also return the PID info in connection JSON
-      val connectionJson = Json.parse(content)
+      var connectionJson = Json.parse(content)
 
-      val pidJson = connectionJson.as[JsObject] ++ Json.obj("pid" -> getPID)
+      // Now need to also return the PID info in connection JSON
+      connectionJson = connectionJson.as[JsObject] ++ Json.obj("pid" -> getPID)
+
+      // Add kernelId
+      connectionJson = connectionJson.as[JsObject] ++ Json.obj("kernel_id" -> kernelId)
 
       // Enterprise Gateway wants to establish socket communication. Create socket and
       // convey port number back to gateway.
       gatewaySocket = SocketUtils.findSocket(this.portLowerBound, this.portUpperBound)
-      val gsJson = pidJson ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
-      val jsonContent = Json.toJson(gsJson).toString()
+      connectionJson = connectionJson.as[JsObject] ++ Json.obj("comm_port" -> gatewaySocket.getLocalPort)
+      val jsonContent = Json.toJson(connectionJson).toString()
 
       if (responseAddress != null){
         logger.info("JSON Payload: '%s'".format(jsonContent))
-        val payload = SecurityUtils.encrypt(profilePath, jsonContent)
+        val payload = SecurityUtils.encrypt(publicKey, jsonContent)
         logger.info("Encrypted Payload: '%s'".format(payload))
         SocketUtils.writeToSocket(responseAddress, payload)
       }

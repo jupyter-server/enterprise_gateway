@@ -124,7 +124,7 @@ In that case, the image should ensure the availability of the kernel libraries a
 The launch of containerized kernels via Enterprise Gateway is two-fold.
 
 1. First, there's the argv section in the kernelspec that is processed by the server. In these cases, the command that is invoked is a python script using the target container's api (kubernetes, docker, or docker swarm) that is responsible for converting any necessary "parameters" to environment variables, etc. that are used during the actual container creation.
-2. The command that is run in the container is the actual kernel launcher script. This launcher is responsible for taking the response address (which is now an env variable) and returning the kernel's connection information back on that response address to Enterprise Gateway. The kernel launcher does additional things - but primarily listens for interrupt and shutdown requests, which it then passes along to the actual (embedded) kernel.
+2. The command that is run in the container is actually the kernel launcher script. This script is responsible for taking the response address (which is now an env variable) and returning the kernel's connection information back on that response address to Enterprise Gateway. The kernel launcher does additional things - but primarily listens for interrupt and shutdown requests, which it then passes along to the actual (embedded) kernel.
 
 So container environments have two launches - one to launch the container itself, the other to launch the kernel (within the container).
 

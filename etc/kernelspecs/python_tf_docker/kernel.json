@@ -19,6 +19,8 @@
     "--RemoteProcessProxy.port-range",
     "{port_range}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }

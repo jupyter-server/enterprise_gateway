@@ -3,7 +3,7 @@
 Below are sections presenting details of the Enterprise Gateway internals and other related items. While we will attempt to maintain its consistency, the ultimate answers are in the code itself.
 
 ### Enterprise Gateway Process Proxy Extensions
-Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support remote kernel sessions on behalf of multiple users within resource managed frameworks such as [Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) or [Kubernetes](https://kubernetes.io/).  Enterprise Gateway introduces these capabilities by extending the existing class hierarchies for `KernelManager` and `MultiKernelManager` classes, along with an additional abstraction known as a *process proxy*.
+Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additional abilities to support remote kernel sessions on behalf of multiple users within resource-managed frameworks such as [Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) or [Kubernetes](https://kubernetes.io/).  Enterprise Gateway introduces these capabilities by extending the existing class hierarchies for `AsyncKernelManager` and `AsyncMultiKernelManager` classes, along with an additional abstraction known as a *process proxy*.
 
 #### Overview
 At its basic level, a running kernel consists of two components for its communication - a set of ports and a process.
@@ -63,7 +63,9 @@ Here's an example of a kernel specification that uses the `DistributedProcessPro
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```
@@ -341,11 +343,13 @@ There are four primary tasks of a kernel launcher:
 3. Invocation of the target kernel
 4. Listen for interrupt and shutdown requests from Enterprise Gateway and carry out the action when appropriate
 
-Kernel launchers are minimally invoked with two parameters (both of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}` and a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`.  
+Kernel launchers are minimally invoked with three parameters (all of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}`, a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`, and a public-key used by the launcher to encrypt an AES key that encrypts the kernel's connection information back to the server and respresented by the placeholder `{public_key}`.  
 
 The kernel's id is identified by the parameter `--RemoteProcessProxy.kernel-id`.  Its value (`{kernel_id}`) is essentially used to build a connection file to pass to the to-be-launched kernel, along with any other things - like log files, etc. 
 
-The response address is identified by the parameter `--RemoteProcessProxy.response-address`.  Its value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points back to the Enterprise Gateway server - which is listening for a response on the provided port.
+The response address is identified by the parameter `--RemoteProcessProxy.response-address`.  Its value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points back to the Enterprise Gateway server - which is listening for a response on the provided port.  The port's default value is `8877`, but can be specified via the environment variable `EG_RESPONSE_PORT`.
+
+The public key is identified by the parameter `--RemoteProcessProxy.public-key`.  Its value (`{public_key}`) is used to encrypt an AES key created by the launcher to encrypt the kernel's connection information.  The server, upon receipt of the response, uses the corresponding private key to decrypt the AES key, which it then uses to decrypt the connection information.  Both the public and private keys are ephemeral; created upon Enterprise Gateway's startup.  They can be ephemeral because they are only needed during a kernel's startup and never again.
 
 Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
@@ -368,7 +372,9 @@ Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterp
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
-    "{response_address}"
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```
@@ -407,4 +413,4 @@ Theoretically speaking, enabling a kernel for use in other frameworks amounts to
 3. If the process proxy corresponds to a remote process, derive the process proxy class from 
 `RemoteProcessProxy` and implement `confirm_remote_startup()` and `handle_timeout()`.
 4. Insert invocation of a launcher (if necessary) which builds the connection file and 
-returns its contents on the `{response_address}` socket.
+returns its contents on the `{response_address}` socket and following the encryption protocol set forth in the other launchers.

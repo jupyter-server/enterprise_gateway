@@ -41,6 +41,8 @@ spec:
         env:
         - name: EG_PORT
           value: !!str {{ .Values.port }}
+        - name: EG_RESPONSE_PORT
+          value: !!str {{ .Values.response_port }}
         - name: EG_NAMESPACE
           value: {{ .Release.Namespace }}
         - name: EG_KERNEL_CLUSTER_ROLE
@@ -61,6 +63,7 @@ spec:
           value: {{ .Values.kernel.defaultKernelName }}
         ports:
         - containerPort: {{ .Values.port }}
+        - containerPort: {{ .Values.response_port }}
 {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs

@@ -11,14 +11,14 @@ from multiprocessing import Process
 from random import random
 from threading import Thread
 
-try:
-    from Cryptodome.Cipher import AES
-except ImportError:
-    from Crypto.Cipher import AES
-
+from Cryptodome.Cipher import PKCS1_v1_5, AES
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.Padding import pad
 from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
+LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 # Minimum port range size and max retries
 min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
@@ -146,139 +146,6 @@ class WaitingForSparkSessionToBeInitialized(object):
             return getattr(self._namespace[self._spark_session_variable], name)
 
 
-def prepare_gateway_socket(lower_port, upper_port):
-    sock = _select_socket(lower_port, upper_port)
-    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
-    sock.listen(1)
-    sock.settimeout(5)
-    return sock
-
-
-def _encrypt(connection_info, conn_file):
-    # Block size for cipher obj can be 16, 24, or 32. 16 matches 128 bit.
-    BLOCK_SIZE = 16
-
-    # Ensure that the length of the data that will be encrypted is a
-    # multiple of BLOCK_SIZE by padding with '%' on the right.
-    PADDING = '%'
-    pad = lambda s: s.decode("utf-8") + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
-
-    # Encrypt connection_info whose length is a multiple of BLOCK_SIZE using
-    # AES cipher and then encode the resulting byte array using Base64.
-    encryptAES = lambda c, s: base64.b64encode(c.encrypt(pad(s).encode('utf-8')))
-
-    # Create a key using first 16 chars of the kernel-id that is burnt in
-    # the name of the connection file.
-    bn = os.path.basename(conn_file)
-    if (bn.find("kernel-") == -1):
-        logger.error("Invalid connection file name '{}'".format(conn_file))
-        raise RuntimeError("Invalid connection file name '{}'".format(conn_file))
-
-    tokens = bn.split("kernel-")
-    kernel_id = tokens[1]
-    key = kernel_id[0:16]
-    # print("AES Encryption Key '{}'".format(key))
-
-    # Creates the cipher obj using the key.
-    cipher = AES.new(key.encode('utf-8'), AES.MODE_ECB)
-    payload = encryptAES(cipher, connection_info)
-    return payload
-
-
-def return_connection_info(connection_file, response_addr, lower_port, upper_port):
-    response_parts = response_addr.split(":")
-    if len(response_parts) != 2:
-        logger.error("Invalid format for response address '{}'. "
-                     "Assuming 'pull' mode...".format(response_addr))
-        return
-
-    response_ip = response_parts[0]
-    try:
-        response_port = int(response_parts[1])
-    except ValueError:
-        logger.error("Invalid port component found in response address '{}'. "
-                     "Assuming 'pull' mode...".format(response_addr))
-        return
-
-    with open(connection_file) as fp:
-        cf_json = json.load(fp)
-        fp.close()
-
-    # add process and process group ids into connection info
-    pid = os.getpid()
-    cf_json['pid'] = str(pid)
-    cf_json['pgid'] = str(os.getpgid(pid))
-
-    # prepare socket address for handling signals
-    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
-    cf_json['comm_port'] = gateway_sock.getsockname()[1]
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.connect((response_ip, response_port))
-        json_content = json.dumps(cf_json).encode(encoding='utf-8')
-        logger.debug("JSON Payload '{}".format(json_content))
-        payload = _encrypt(json_content, connection_file)
-        logger.debug("Encrypted Payload '{}".format(payload))
-        s.send(payload)
-    finally:
-        s.close()
-
-    return gateway_sock
-
-
-def determine_connection_file(conn_file, kid):
-    # If the directory exists, use the original file, else create a temporary file.
-    if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
-        if kid is not None:
-            basename = 'kernel-' + kid
-        else:
-            basename = os.path.splitext(os.path.basename(conn_file))[0]
-        fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
-        os.close(fd)
-        logger.debug("Using connection file '{}'.".format(conn_file))
-
-    return conn_file
-
-
-def _select_ports(count, lower_port, upper_port):
-    """Select and return n random ports that are available and adhere to the given port range, if applicable."""
-    ports = []
-    sockets = []
-    for i in range(count):
-        sock = _select_socket(lower_port, upper_port)
-        ports.append(sock.getsockname()[1])
-        sockets.append(sock)
-    for sock in sockets:
-        sock.close()
-    return ports
-
-
-def _select_socket(lower_port, upper_port):
-    """Create and return a socket whose port is available and adheres to the given port range, if applicable."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    found_port = False
-    retries = 0
-    while not found_port:
-        try:
-            sock.bind(('0.0.0.0', _get_candidate_port(lower_port, upper_port)))
-            found_port = True
-        except Exception:
-            retries = retries + 1
-            if retries > max_port_range_retries:
-                raise RuntimeError(
-                    "Failed to locate port within range {}..{} after {} retries!".
-                    format(lower_port, upper_port, max_port_range_retries))
-    return sock
-
-
-def _get_candidate_port(lower_port, upper_port):
-    range_size = upper_port - lower_port
-    if range_size == 0:
-        return 0
-    return random.randint(lower_port, upper_port)
-
-
 def _validate_port_range(port_range):
     # if no argument was provided, return a range of 0
     if not port_range:
@@ -303,7 +170,156 @@ def _validate_port_range(port_range):
     return lower_port, upper_port
 
 
+def determine_connection_file(conn_file, kid):
+    # If the directory exists, use the original file, else create a temporary file.
+    if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
+        if kid is not None:
+            basename = 'kernel-' + kid
+        else:
+            basename = os.path.splitext(os.path.basename(conn_file))[0]
+        fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
+        os.close(fd)
+        logger.debug("Using connection file '{}'.".format(conn_file))
+
+    return conn_file
+
+
+def _encrypt(connection_info_str, public_key):
+    """Encrypt the connection information using a generated AES key that is then encrypted using
+       the public key passed from the server.  Both are then returned in an encoded JSON payload.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    aes_key = get_random_bytes(16)
+    cipher = AES.new(aes_key, mode=AES.MODE_ECB)
+
+    # Encrypt the connection info using the aes_key
+    encrypted_connection_info = cipher.encrypt(pad(connection_info_str, 16))
+    b64_connection_info = base64.b64encode(encrypted_connection_info)
+
+    # Encrypt the aes_key using the server's public key
+    imported_public_key = RSA.importKey(base64.b64decode(public_key.encode()))
+    cipher = PKCS1_v1_5.new(key=imported_public_key)
+    encrypted_key = base64.b64encode(cipher.encrypt(aes_key))
+
+    # Compose the payload and Base64 encode it
+    payload = {"version": LAUNCHER_VERSION, "key": encrypted_key.decode(), "conn_info": b64_connection_info.decode()}
+    b64_payload = base64.b64encode(json.dumps(payload).encode(encoding='utf-8'))
+    return b64_payload
+
+
+def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key):
+    """Returns the connection information corresponding to this kernel.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    response_parts = response_addr.split(":")
+    if len(response_parts) != 2:
+        logger.error("Invalid format for response address '{}'. "
+                     "Assuming 'pull' mode...".format(response_addr))
+        return
+
+    response_ip = response_parts[0]
+    try:
+        response_port = int(response_parts[1])
+    except ValueError:
+        logger.error("Invalid port component found in response address '{}'. "
+                     "Assuming 'pull' mode...".format(response_addr))
+        return
+
+    with open(connection_file) as fp:
+        cf_json = json.load(fp)
+        fp.close()
+
+    # add process and process group ids into connection info
+    pid = os.getpid()
+    cf_json['pid'] = pid
+    cf_json['pgid'] = os.getpgid(pid)
+
+    # prepare socket address for handling signals
+    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
+    cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    cf_json['kernel_id'] = kernel_id
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((response_ip, response_port))
+        json_content = json.dumps(cf_json).encode(encoding='utf-8')
+        logger.debug("JSON Payload '{}".format(json_content))
+        payload = _encrypt(json_content, public_key)
+        logger.debug("Encrypted Payload '{}".format(payload))
+        s.send(payload)
+    finally:
+        s.close()
+
+    return gateway_sock
+
+
+def prepare_gateway_socket(lower_port, upper_port):
+    """Prepares the socket to which the server will send signal and shutdown requests.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    sock = _select_socket(lower_port, upper_port)
+    logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
+    sock.listen(1)
+    sock.settimeout(5)
+    return sock
+
+
+def _select_ports(count, lower_port, upper_port):
+    """Select and return n random ports that are available and adhere to the given port range, if applicable.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    ports = []
+    sockets = []
+    for i in range(count):
+        sock = _select_socket(lower_port, upper_port)
+        ports.append(sock.getsockname()[1])
+        sockets.append(sock)
+    for sock in sockets:
+        sock.close()
+    return ports
+
+
+def _select_socket(lower_port, upper_port):
+    """Create and return a socket whose port is available and adheres to the given port range, if applicable.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    found_port = False
+    retries = 0
+    while not found_port:
+        try:
+            sock.bind(('0.0.0.0', _get_candidate_port(lower_port, upper_port)))
+            found_port = True
+        except Exception:
+            retries = retries + 1
+            if retries > max_port_range_retries:
+                raise RuntimeError(
+                    "Failed to locate port within range {}..{} after {} retries!".
+                    format(lower_port, upper_port, max_port_range_retries))
+    return sock
+
+
+def _get_candidate_port(lower_port, upper_port):
+    """Returns a port within the given range.  If the range is zero, the zero is returned.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
+    range_size = upper_port - lower_port
+    if range_size == 0:
+        return 0
+    return random.randint(lower_port, upper_port)
+
+
 def get_gateway_request(sock):
+    """Gets a request from the (gateway) server and returns the corresponding dictionary.
+
+       This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     conn = None
     data = ''
     request_info = None
@@ -326,6 +342,12 @@ def get_gateway_request(sock):
 
 
 def gateway_listener(sock, parent_pid):
+    """Waits for requests from the (gateway) server and processes each when received.  Currently,
+       these will be one of a sending a signal to the corresponding kernel process (signum) or
+       stopping the listener and exiting the kernel (shutdown).
+
+        This code also exists in the R kernel-launcher's gateway_listener.py script.
+    """
     shutdown = False
     while not shutdown:
         request = get_gateway_request(sock)
@@ -366,6 +388,8 @@ if __name__ == "__main__":
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
     parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+                        help='Public key used to encrypt connection information')
     parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
     parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', nargs='?',
@@ -377,6 +401,7 @@ if __name__ == "__main__":
     connection_file = arguments['connection_file']
     response_addr = arguments['response_address']
     kernel_id = arguments['kernel_id']
+    public_key = arguments['public_key']
     lower_port, upper_port = _validate_port_range(arguments['port_range'])
     spark_init_mode = arguments['init_mode']
     cluster_type = arguments['cluster_type']
@@ -385,6 +410,12 @@ if __name__ == "__main__":
     if connection_file is None and kernel_id is None:
         raise RuntimeError("At least one of the parameters: 'connection_file' or "
                            "'--RemoteProcessProxy.kernel-id' must be provided!")
+
+    if kernel_id is None:
+        raise RuntimeError("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
+
+    if public_key is None:
+        raise RuntimeError("Parameter '--RemoteProcessProxy.public-key' must be provided!")
 
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
@@ -396,7 +427,8 @@ if __name__ == "__main__":
         write_connection_file(fname=connection_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
-            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port)
+            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port,
+                                                    kernel_id, public_key)
             if gateway_socket:  # socket in use, start gateway listener thread
                 gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
                 gateway_listener_process.start()

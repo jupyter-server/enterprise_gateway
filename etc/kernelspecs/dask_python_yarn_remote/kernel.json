@@ -18,6 +18,8 @@
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.port-range",
     "{port_range}",
     "--RemoteProcessProxy.cluster-type",
