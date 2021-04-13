@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import time
+import warnings
 
 from asyncio import Event, TimeoutError
 from calendar import timegm
@@ -586,18 +587,35 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         global remote_user
         global remote_pwd
         if remote_user is None:
-            remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
-            remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
+            use_gss = os.getenv("EG_REMOTE_GSS_SSH", None)
+            remote_pwd = os.getenv("EG_REMOTE_PWD")  # this should use password-less ssh
+            remote_user = os.getenv("EG_REMOTE_USER", getpass.getuser())
+
+            if use_gss and (remote_pwd or remote_user):
+                warnings.warn(
+                    "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or `EG_REMOTE_USER` is set. "
+                    "Those options are mutually exclusive, you configuration may be incorrect. "
+                    "EG_REMOTE_GSS_SSH will take priority."
+                )
 
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
             host_ip = gethostbyname(host)
-            if remote_pwd:
-                ssh.connect(host_ip, port=ssh_port, username=remote_user, password=remote_pwd)
+            if use_gss:
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(host_ip, port=ssh_port, gss_auth=True)
             else:
-                ssh.connect(host_ip, port=ssh_port, username=remote_user)
+                ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+                if remote_pwd:
+                    ssh.connect(
+                        host_ip,
+                        port=ssh_port,
+                        username=remote_user,
+                        password=remote_pwd,
+                    )
+                else:
+                    ssh.connect(host_ip, port=ssh_port, username=remote_user)
         except Exception as e:
             http_status_code = 500
             current_host = gethostbyname(gethostname())
