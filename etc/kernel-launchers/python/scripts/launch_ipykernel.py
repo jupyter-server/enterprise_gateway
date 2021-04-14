@@ -8,7 +8,7 @@ import tempfile
 import uuid
 from future.utils import raise_from
 from multiprocessing import Process
-from random import random
+import random
 from threading import Thread
 
 from Cryptodome.Cipher import PKCS1_v1_5, AES
