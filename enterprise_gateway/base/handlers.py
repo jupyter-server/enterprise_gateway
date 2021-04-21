@@ -3,11 +3,15 @@
 """Tornado handlers for the base of the API."""
 
 import json
+import contextvars
 import notebook._version
 from notebook.base.handlers import APIHandler
 from tornado import web
 from ..mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from .._version import __version__
+
+
+_current_request_var: contextvars.ContextVar = contextvars.ContextVar("current_request")
 
 
 class APIVersionHandler(TokenAuthorizationMixin,
@@ -17,6 +21,9 @@ class APIVersionHandler(TokenAuthorizationMixin,
     """Extends the notebook server base API handler with token auth, CORS, and
     JSON errors to produce version information for notebook and gateway.
     """
+    def prepare(self):
+        _current_request_var.set(self.request)
+
     def get(self):
         # not authenticated, so give as few info as possible
         # to be backwards compatibile, use only 'version' for the notebook version
@@ -36,6 +43,13 @@ class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
     """
     def prepare(self):
         raise web.HTTPError(404)
+
+
+def get_current_request():
+    """
+    Get :class:`tornado.httputil.HTTPServerRequest` that is being currently being processed.
+    """
+    return _current_request_var.get()
 
 
 default_handlers = [
