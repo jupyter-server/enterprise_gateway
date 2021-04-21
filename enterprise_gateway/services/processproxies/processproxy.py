@@ -349,7 +349,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         kernel_manager : RemoteKernelManager
             The kernel manager instance tied to this process proxy.  This drives the process proxy method calls.
 
-        proxy_config: dict
+        proxy_config : dict
             The dictionary of per-kernel config settings.  If none are specified, this will be an empty dict.
         """
         self.kernel_manager = kernel_manager
