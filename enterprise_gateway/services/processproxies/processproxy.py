@@ -586,8 +586,8 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
 
         global remote_user
         global remote_pwd
+        use_gss = os.getenv("EG_REMOTE_GSS_SSH", None)
         if remote_user is None:
-            use_gss = os.getenv("EG_REMOTE_GSS_SSH", None)
             remote_pwd = os.getenv("EG_REMOTE_PWD")  # this should use password-less ssh
             remote_user = os.getenv("EG_REMOTE_USER", getpass.getuser())
 
