@@ -392,8 +392,20 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.ip = None
         self.pid = 0
         self.pgid = 0
-        self.remote_user = None
-        self.remote_pwd = None
+        _remote_user = os.getenv("EG_REMOTE_USER")
+        self.remote_pwd = os.getenv("EG_REMOTE_PWD")
+        self.use_gss = os.getenv("EG_REMOTE_GSS_SSH")
+        if self.use_gss:
+            if self.remote_pwd or _remote_user:
+                warnings.warn(
+                    "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or "
+                    "`EG_REMOTE_USER` is set. "
+                    "Those options are mutually exclusive, you configuration may be incorrect. "
+                    "EG_REMOTE_GSS_SSH will take priority."
+                )
+            self.remote_user = None
+        else:
+            self.remote_user = _remote_user if _remote_user else getpass.getuser()
 
     @abc.abstractmethod
     async def launch_process(self, kernel_cmd, **kwargs):
@@ -579,25 +591,11 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         """
         ssh = None
 
-        use_gss = os.getenv("EG_REMOTE_GSS_SSH", None)
-        if self.remote_user is None:
-            self.remote_pwd = os.getenv(
-                "EG_REMOTE_PWD"
-            )  # this should use password-less ssh
-            self.remote_user = os.getenv("EG_REMOTE_USER", getpass.getuser())
-
-            if use_gss and (self.remote_pwd or self.remote_user):
-                warnings.warn(
-                    "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or `EG_REMOTE_USER` is set. "
-                    "Those options are mutually exclusive, you configuration may be incorrect. "
-                    "EG_REMOTE_GSS_SSH will take priority."
-                )
-
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
             host_ip = gethostbyname(host)
-            if use_gss:
+            if self.use_gss:
                 self.log.debug("Connecting to remote host via GSS.")
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(host_ip, port=ssh_port, gss_auth=True)
@@ -630,6 +628,9 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (
                     " provided" if self.remote_pwd else "-less SSH"
+                )
+                error_message = error_message + "and EG_REMOTE_GSS_SSH={}".format(
+                    self.use_gss
                 )
 
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
