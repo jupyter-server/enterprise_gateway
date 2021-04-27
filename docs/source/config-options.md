@@ -1,7 +1,7 @@
 ## Configuration options
 
-Jupyter Enterprise Gateway adheres to the
-[Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html)
+Jupyter Enterprise Gateway adheres to
+[Jupyter's common configuration approach](https://jupyter.readthedocs.io/en/latest/use/config.html)
 . You can configure an instance of Enterprise Gateway using:
 
 1. A configuration file (recommended)
