@@ -16,6 +16,9 @@ num_retries = int(os.getenv("KIP_NUM_RETRIES", "3"))
 interval = int(os.getenv("KIP_INTERVAL", "300"))
 log_level = os.getenv("KIP_LOG_LEVEL", "INFO")
 
+# Add authentication token support to KIP
+auth_token = os.getenv("KIP_AUTH_TOKEN", None)
+
 POLICY_IF_NOT_PRESENT = "IfNotPresent"
 POLICY_ALYWAYS = "Always"
 policies = (POLICY_IF_NOT_PRESENT, POLICY_ALYWAYS)
@@ -31,6 +34,8 @@ def get_kernelspecs():
     """Fetches the set of kernelspecs from the gateway, returning a dict of configured kernel specs"""
     end_point = '{}/api/kernelspecs'.format(gateway_host)
     logger.info("Fetching kernelspecs from '{}' ...".format(end_point))
+    if auth_token:
+        end_point += '?token={}'.format(auth_token)
     resp = requests.get(end_point)
     if not resp.ok:
         raise requests.exceptions.HTTPError('Gateway server response: {}'.format(resp.status_code))
