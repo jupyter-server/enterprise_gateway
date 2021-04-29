@@ -14,6 +14,10 @@ logLevel: DEBUG
 mirrorWorkingDirs: false
 # Master public IP on which to expose EG.
 k8sMasterPublicIP:
+# Authorization token required for all requests. This value is used to set the authentication token used
+# by the Enterprise Gateway (and thus required on all web requests) but also passed to the kernel image
+# puller so it can add it to its requests to the gateway
+authToken:
 
 kernel:
   # Kernel cluster role created by this chart.

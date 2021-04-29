@@ -39,6 +39,9 @@ spec:
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         env:
+        # Authorization token required for all requests
+        - name: EG_AUTH_TOKEN   
+          value: {{ .Values.authToken }}
         - name: EG_PORT
           value: !!str {{ .Values.port }}
         - name: EG_RESPONSE_PORT

@@ -29,6 +29,9 @@ spec:
           value: !!str {{ .Values.kip.interval }}
         - name: KIP_PULL_POLICY
           value: {{ .Values.kip.pullPolicy }}
+        # Authorization token required for all requests (the token should be the same as EG_AUTH_TOKEN)
+        - name: KIP_AUTH_TOKEN   
+          value: {{ .Values.authToken }}
         volumeMounts:
         - name: dockersock
           mountPath: "/var/run/docker.sock"
