@@ -103,9 +103,9 @@ spec:
           value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
-          # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
-        - name: EG_AUTH_TOKEN
-          value:
+        # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
+        #- name: EG_AUTH_TOKEN
+        #  value: <configured-auth-token>
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
