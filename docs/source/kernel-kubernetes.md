@@ -103,8 +103,7 @@ spec:
           value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
-
-        # Authorization token required for all requests
+          # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
         - name: EG_AUTH_TOKEN
           value:
 
@@ -275,7 +274,7 @@ spec:
             value: "300"
           - name: KIP_PULL_POLICY
             value: "IfNotPresent"
-          # Authorization token required for all requests (should match EG_AUTH_TOKEN)
+          # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
           - name: KIP_AUTH_TOKEN
             value:
         volumeMounts:

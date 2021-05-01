@@ -39,9 +39,6 @@ spec:
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         env:
-        # Authorization token required for all requests
-        - name: EG_AUTH_TOKEN   
-          value: {{ .Values.authToken }}
         - name: EG_PORT
           value: !!str {{ .Values.port }}
         - name: EG_RESPONSE_PORT
@@ -64,6 +61,11 @@ spec:
           value: {{ toJson .Values.kernel.whitelist | squote }}
         - name: EG_DEFAULT_KERNEL_NAME
           value: {{ .Values.kernel.defaultKernelName }}
+        # Optional authorization token passed in all requests
+        {{- if .Values.authToken }}
+        - name: EG_AUTH_TOKEN   
+          value: {{ .Values.authToken }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.port }}
         - containerPort: {{ .Values.response_port }}
