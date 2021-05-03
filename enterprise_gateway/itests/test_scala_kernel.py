@@ -13,11 +13,11 @@ class ScalaKernelBaseTestCase(TestBase):
         result = self.kernel.execute('import java.net._; \
                                       val localhost: InetAddress = InetAddress.getLocalHost; \
                                       val localIpAddress: String = localhost.getHostName')
-        self.assertRegexpMatches(result, self.get_expected_hostname())
+        self.assertRegex(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute('println("Hello World")')
-        self.assertRegexpMatches(result, 'Hello World')
+        self.assertRegex(result, 'Hello World')
 
     def test_restart(self):
 
@@ -32,7 +32,7 @@ class ScalaKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("var y = x + 1")
-        self.assertRegexpMatches(error_result, 'Compile Error')
+        self.assertRegex(error_result, 'Compile Error')
 
     def test_interrupt(self):
 
@@ -58,7 +58,7 @@ class ScalaKernelBaseTestCase(TestBase):
         interrupted_result = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
-        self.assertRegexpMatches(interrupted_result, 'java.lang.InterruptedException')
+        self.assertRegex(interrupted_result, 'java.lang.InterruptedException')
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
@@ -76,19 +76,19 @@ class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
 
     def test_get_application_id(self):
         result = self.kernel.execute('sc.applicationId')
-        self.assertRegexpMatches(result, self.get_expected_application_id())
+        self.assertRegex(result, self.get_expected_application_id())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, self.get_expected_spark_version())
+        self.assertRegex(result, self.get_expected_spark_version())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('sc.getConf.get("spark.master")')
-        self.assertRegexpMatches(result, self.get_expected_spark_master())
+        self.assertRegex(result, self.get_expected_spark_master())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('sc.getConf.get("spark.submit.deployMode")')
-        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
+        self.assertRegex(result, self.get_expected_deploy_mode())
 
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
@@ -99,8 +99,7 @@ class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestScalaKernelLocal, cls).setUpClass()
-        print('>>>')
-        print('Starting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -109,7 +108,8 @@ class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestScalaKernelLocal, cls).tearDownClass()
-        print('Shutting down Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
@@ -120,8 +120,7 @@ class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseSparkTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestScalaKernelClient, cls).setUpClass()
-        print('>>>')
-        print('Starting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -130,7 +129,8 @@ class TestScalaKernelClient(unittest.TestCase, ScalaKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestScalaKernelClient, cls).tearDownClass()
-        print('Shutting down Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
@@ -141,8 +141,7 @@ class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseSparkTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestScalaKernelCluster, cls).setUpClass()
-        print('>>>')
-        print('Starting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Scala kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -151,7 +150,8 @@ class TestScalaKernelCluster(unittest.TestCase, ScalaKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestScalaKernelCluster, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 

@@ -212,14 +212,15 @@ itest-docker: ## Run integration tests (optionally) against docker swarm
 ifeq (1, $(PREP_ITEST_DOCKER))
 	make itest-docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
 itest-docker-prep:
-	@-docker service rm itest-docker
+	@-docker service rm enterprise-gateway_enterprise-gateway enterprise-gateway_enterprise-gateway-proxy
+	@-docker swarm leave --force
 	# Check if swarm mode is active, if not attempt to create the swarm
 	@(docker info | grep -q 'Swarm: active'; if [ $$? -eq 1 ]; then docker swarm init; fi;)
-	@echo "Starting enterprise-gateway swarm service (run \`docker service logs itest-docker\` to see service log)..."
-	@KG_PORT=${ITEST_DOCKER_PORT} EG_NAME=itest-docker etc/docker/enterprise-gateway-swarm.sh
-	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker service logs itest-docker |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
+	@echo "Starting enterprise-gateway swarm service (run \`docker service logs enterprise-gateway_enterprise-gateway\` to see service log)..."
+	@KG_PORT=${ITEST_DOCKER_PORT} EG_DOCKER_NETWORK=enterprise-gateway docker stack deploy -c etc/docker/docker-compose.yml enterprise-gateway
+	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker service logs enterprise-gateway_enterprise-gateway 2>&1 |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
