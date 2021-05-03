@@ -9,9 +9,18 @@ from jupyter_server.utils import ensure_async, url_unescape
 from tornado import web
 from ...base.handlers import APIHandler
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+from .kernelspec_cache import KernelSpecCache
+from traitlets import Set
+from typing import List, Tuple, Union, Optional, Dict, TypedDict
 
 
-def key_exists(obj, chain):
+class KernelSpecModel(TypedDict):
+    name: str
+    spec: Dict
+    resources: Dict
+
+
+def key_exists(obj: Dict[str, object], chain: List[str]) -> Optional[object]:
     """
     Ensures every entry in the chain array exists as a key in nested dictionaries of obj,
     returning the value of the last key
@@ -21,7 +30,10 @@ def key_exists(obj, chain):
         return key_exists(obj[_key], chain) if chain else obj[_key]
 
 
-def apply_user_filter(kernelspec_model, global_authorized_list, global_unauthorized_list, kernel_user=None):
+def apply_user_filter(kernelspec_model: KernelSpecModel,
+                      global_authorized_list: Set,
+                      global_unauthorized_list: Set,
+                      kernel_user: str = None) -> Optional[KernelSpecModel]:
     """
     If authorization lists are configured - either within the kernelspec or globally, ensure
     the user is authorized for the given kernelspec.
@@ -57,11 +69,11 @@ class MainKernelSpecHandler(TokenAuthorizationMixin,
                             APIHandler):
 
     @property
-    def kernel_spec_cache(self):
+    def kernel_spec_cache(self) -> KernelSpecCache:
         return self.settings['kernel_spec_cache']
 
     @web.authenticated
-    async def get(self):
+    async def get(self) -> None:
         ksm = self.kernel_spec_cache
         km = self.kernel_manager
         model = {}
@@ -105,11 +117,11 @@ class KernelSpecHandler(TokenAuthorizationMixin,
                         APIHandler):
 
     @property
-    def kernel_spec_cache(self):
+    def kernel_spec_cache(self) -> KernelSpecCache:
         return self.settings['kernel_spec_cache']
 
     @web.authenticated
-    async def get(self, kernel_name):
+    async def get(self, kernel_name: str) -> None:
         ksm = self.kernel_spec_cache
         kernel_name = url_unescape(kernel_name)
         kernel_user_filter = self.request.query_arguments.get('user')
@@ -143,14 +155,14 @@ class KernelSpecResourceHandler(TokenAuthorizationMixin,
     SUPPORTED_METHODS = ('GET', 'HEAD')
 
     @property
-    def kernel_spec_cache(self):
+    def kernel_spec_cache(self) -> KernelSpecCache:
         return self.settings['kernel_spec_cache']
 
-    def initialize(self):
+    def initialize(self) -> None:
         web.StaticFileHandler.initialize(self, path='')
 
     @web.authenticated
-    async def get(self, kernel_name, path, include_body=True):
+    async def get(self, kernel_name: str, path: str, include_body: bool = True) -> None:
         ksm = self.kernel_spec_cache
         try:
             kernelspec = await ensure_async(ksm.get_kernel_spec(kernel_name))
@@ -162,15 +174,15 @@ class KernelSpecResourceHandler(TokenAuthorizationMixin,
         return await web.StaticFileHandler.get(self, path, include_body=include_body)
 
     @web.authenticated
-    def head(self, kernel_name, path):
+    def head(self, kernel_name: str, path: str) -> None:
         return self.get(kernel_name, path, include_body=False)
 
 
-kernel_name_regex = r"(?P<kernel_name>[\w\.\-%]+)"
+kernel_name_regex: str = r"(?P<kernel_name>[\w\.\-%]+)"
 
 # Extends the default handlers from the jupyter_server package with token auth, CORS
 # and JSON errors.
-default_handlers = [
+default_handlers: List[tuple] = [
     (r"/api/kernelspecs", MainKernelSpecHandler),
     (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler),
     (r"/kernelspecs/%s/(?P<path>.*)" % kernel_name_regex, KernelSpecResourceHandler),
