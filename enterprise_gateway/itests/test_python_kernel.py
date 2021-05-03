@@ -11,11 +11,11 @@ class PythonKernelBaseTestCase(TestBase):
 
     def test_get_hostname(self):
         result = self.kernel.execute("import subprocess; subprocess.check_output(['hostname'])")
-        self.assertRegexpMatches(result, self.get_expected_hostname())
+        self.assertRegex(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute("print('Hello World')")
-        self.assertRegexpMatches(result, 'Hello World')
+        self.assertRegex(result, 'Hello World')
 
     def test_restart(self):
 
@@ -30,7 +30,7 @@ class PythonKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("y = x + 1")
-        self.assertRegexpMatches(error_result, 'NameError')
+        self.assertRegex(error_result, 'NameError')
 
     def test_interrupt(self):
 
@@ -58,7 +58,7 @@ class PythonKernelBaseTestCase(TestBase):
         interrupted_result = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
-        self.assertRegexpMatches(interrupted_result, 'KeyboardInterrupt')
+        self.assertRegex(interrupted_result, 'KeyboardInterrupt')
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
@@ -89,19 +89,19 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
 
     def test_get_application_id(self):
         result = self.kernel.execute("sc.getConf().get('spark.app.id')")
-        self.assertRegexpMatches(result, self.get_expected_application_id())
+        self.assertRegex(result, self.get_expected_application_id())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
-        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
+        self.assertRegex(result, self.get_expected_deploy_mode())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute("sc.getConf().get('spark.master')")
-        self.assertRegexpMatches(result, self.get_expected_spark_master())
+        self.assertRegex(result, self.get_expected_spark_master())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sc.version")
-        self.assertRegexpMatches(result, self.get_expected_spark_version())
+        self.assertRegex(result, self.get_expected_spark_version())
 
     def test_run_pi_example(self):
         # Build the example code...
@@ -117,7 +117,7 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
         pi_code.append("count = sc.parallelize(range(1, n + 1), partitions).map(f).reduce(add)\n")
         pi_code.append("print(\"Pi is roughly %f\" % (4.0 * count / n))\n")
         result = self.kernel.execute(pi_code)
-        self.assertRegexpMatches(result, 'Pi is roughly 3.14*')
+        self.assertRegex(result, 'Pi is roughly 3.14*')
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
@@ -126,8 +126,7 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPythonKernelLocal, cls).setUpClass()
-        print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -136,7 +135,7 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestPythonKernelLocal, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
@@ -148,8 +147,7 @@ class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPythonKernelDistributed, cls).setUpClass()
-        print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -158,7 +156,7 @@ class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestPythonKernelDistributed, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
@@ -170,8 +168,7 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseSparkTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPythonKernelClient, cls).setUpClass()
-        print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -180,7 +177,7 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestPythonKernelClient, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
@@ -192,8 +189,7 @@ class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseSparkTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestPythonKernelCluster, cls).setUpClass()
-        print('>>>')
-        print('Starting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -202,7 +198,8 @@ class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestPythonKernelCluster, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
