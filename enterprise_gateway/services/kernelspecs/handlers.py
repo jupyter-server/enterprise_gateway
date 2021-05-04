@@ -11,13 +11,7 @@ from ...base.handlers import APIHandler
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from .kernelspec_cache import KernelSpecCache
 from traitlets import Set
-from typing import List, Optional, Dict, TypedDict
-
-
-class KernelSpecModel(TypedDict):
-    name: str
-    spec: Dict
-    resources: Dict
+from typing import List, Optional, Dict
 
 
 def key_exists(obj: Dict[str, object], chain: List[str]) -> Optional[object]:
@@ -30,10 +24,10 @@ def key_exists(obj: Dict[str, object], chain: List[str]) -> Optional[object]:
         return key_exists(obj[_key], chain) if chain else obj[_key]
 
 
-def apply_user_filter(kernelspec_model: KernelSpecModel,
+def apply_user_filter(kernelspec_model: Dict[str, object],
                       global_authorized_list: Set,
                       global_unauthorized_list: Set,
-                      kernel_user: str = None) -> Optional[KernelSpecModel]:
+                      kernel_user: str = None) -> Optional[Dict[str, object]]:
     """
     If authorization lists are configured - either within the kernelspec or globally, ensure
     the user is authorized for the given kernelspec.
