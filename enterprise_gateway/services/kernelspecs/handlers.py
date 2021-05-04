@@ -11,7 +11,7 @@ from ...base.handlers import APIHandler
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 from .kernelspec_cache import KernelSpecCache
 from traitlets import Set
-from typing import List, Tuple, Union, Optional, Dict, TypedDict
+from typing import List, Optional, Dict, TypedDict
 
 
 class KernelSpecModel(TypedDict):
