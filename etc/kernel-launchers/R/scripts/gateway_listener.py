@@ -17,7 +17,7 @@ from threading import Thread
 LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
 max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
-log_level = int(os.getenv('EG_LOG_LEVEL', '10'))
+log_level = os.getenv('EG_LOG_LEVEL', 10)
 
 logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
 
