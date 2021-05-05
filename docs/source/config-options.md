@@ -339,7 +339,7 @@ RemoteMappingKernelManager(AsyncMappingKernelManager) options
 
 ```
 
-### Addtional supported environment variables
+### Additional supported environment variables
 The following environment variables can be used to influence functionality and are not tied to command-line options:
 ```text
   EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME=default
@@ -460,6 +460,8 @@ The following environment variables can be used to influence functionality and a
 
   EG_REMOTE_GSS_SSH=None
     Use gss instead of EG_REMOTE_USER and EG_REMOTE_PWD to connect to remote host via SSH.
+    Case insensitive. 'True' to enable, 'False', '' or unset to disable.
+    Any other value will error.
 
   EG_YARN_CERT_BUNDLE=<custom_truststore_path>
     The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.

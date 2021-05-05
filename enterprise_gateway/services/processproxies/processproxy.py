@@ -394,7 +394,13 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.pgid = 0
         _remote_user = os.getenv("EG_REMOTE_USER")
         self.remote_pwd = os.getenv("EG_REMOTE_PWD")
-        self.use_gss = os.getenv("EG_REMOTE_GSS_SSH")
+        self._use_gss_raw = os.getenv("EG_REMOTE_GSS_SSH", "False")
+        if self._use_gss_raw.lower() not in ("", "true", "false"):
+            raise ValueError(
+                "Invalid Value for EG_REMOTE_GSS_SSH expected one of "
+                '"", "True", "False", got {!r}'.format(self._use_gss_raw)
+            )
+        self.use_gss = self._use_gss_raw == "true"
         if self.use_gss:
             if self.remote_pwd or _remote_user:
                 warnings.warn(
@@ -629,8 +635,10 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
                 error_message = error_message_prefix + (
                     " provided" if self.remote_pwd else "-less SSH"
                 )
-                error_message = error_message + "and EG_REMOTE_GSS_SSH={}".format(
-                    self.use_gss
+                error_message = (
+                    error_message + "and EG_REMOTE_GSS_SSH={!r} ({})".format(
+                        self._use_gss_raw, self.use_gss
+                    )
                 )
 
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
