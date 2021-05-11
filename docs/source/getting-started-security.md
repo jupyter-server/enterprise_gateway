@@ -129,7 +129,7 @@ Please perform necessary steps to validate all hosts before enabling SSH tunneli
 ### Using  Generic Security Service (Kerberos)
 
 Jupyter Enterprise Gateway has support for SSH connections using GSS (for example Kerberos), which enables its deployment
-without use of ssh key, the `EG_REMOTE_GSS_SSH` environment variable can be used to control this behavior.
+without the use of an ssh key.  The `EG_REMOTE_GSS_SSH` environment variable can be used to control this behavior.
 
 See [list of additional supported environment variables](config-options.html#additional-supported-environment-variables).
 
