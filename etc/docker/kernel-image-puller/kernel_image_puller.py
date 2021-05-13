@@ -166,8 +166,8 @@ if __name__ == "__main__":
     logger.info("KIP_NUM_PULLERS: {}".format(num_pullers))
     logger.info("KIP_NUM_RETRIES: {}".format(num_retries))
     logger.info("KIP_PULL_POLICY: {}".format(policy))
-    logger.info("KIP_LOG_LEVEL: {}\n".format(log_level))
-    logger.info("KIP_AUTH_TOKEN: {}\n".format(auth_token))
+    logger.info("KIP_LOG_LEVEL: {}".format(log_level))
+    logger.info("KIP_AUTH_TOKEN: {}".format(auth_token))
 
     # Create an empty queue and start the puller threads.  The number of puller threads is configurable.
     name_queue = queue.Queue()
