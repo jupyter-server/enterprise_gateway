@@ -149,6 +149,10 @@ spec:
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
 
+        # Optional authorization token passed in all requests
+        #- name: EG_AUTH_TOKEN   
+        #  value: <configured-auth-token>
+
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
         # Use IfNotPresent policy so that dev-based systems don't automatically

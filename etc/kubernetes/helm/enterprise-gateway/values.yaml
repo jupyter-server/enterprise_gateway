@@ -14,6 +14,8 @@ logLevel: DEBUG
 mirrorWorkingDirs: false
 # Master public IP on which to expose EG.
 k8sMasterPublicIP:
+# Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
+authToken:
 
 kernel:
   # Kernel cluster role created by this chart.
