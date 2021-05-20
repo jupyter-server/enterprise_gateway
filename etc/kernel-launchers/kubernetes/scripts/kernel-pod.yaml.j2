@@ -38,20 +38,24 @@ spec:
   {% endif %}
   containers:
   - env:
+    - name: EG_PORT_RANGE
+      value: "{{ eg_port_range }}"
     - name: EG_RESPONSE_ADDRESS
       value: "{{ eg_response_address }}"
-    - name: KERNEL_LANGUAGE
-      value: "{{ kernel_language }}"
-    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
-      value: "{{ kernel_spark_context_init_mode }}"
-    - name: KERNEL_NAME
-      value: "{{ kernel_name }}"
-    - name: KERNEL_USERNAME
-      value: "{{ kernel_username }}"
+    - name: EG_PUBLIC_KEY
+      value: "{{ eg_public_key }}"
     - name: KERNEL_ID
       value: "{{ kernel_id }}"
+    - name: KERNEL_LANGUAGE
+      value: "{{ kernel_language }}"
+    - name: KERNEL_NAME
+      value: "{{ kernel_name }}"
     - name: KERNEL_NAMESPACE
       value: "{{ kernel_namespace }}"
+    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
+      value: "{{ kernel_spark_context_init_mode }}"
+    - name: KERNEL_USERNAME
+      value: "{{ kernel_username }}"
     image: "{{ kernel_image }}"
     name: "{{ kernel_pod_name }}"
     {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}

@@ -14,6 +14,9 @@ spec:
   - name: http
     port: {{ .Values.port }}
     targetPort: {{ .Values.port }}
+  - name: response
+    port: {{ .Values.response_port }}
+    targetPort: {{ .Values.response_port }}
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP

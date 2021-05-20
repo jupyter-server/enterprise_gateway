@@ -73,6 +73,9 @@ spec:
   - name: http
     port: 8888
     targetPort: 8888
+  - name: response
+    port: 8877
+    targetPort: 8877
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
@@ -110,6 +113,9 @@ spec:
         - name: EG_PORT
           value: "8888"
 
+        - name: EG_RESPONSE_PORT
+          value: "8877"
+
           # Created above.
         - name: EG_NAMESPACE
           value: "enterprise-gateway"
@@ -143,6 +149,10 @@ spec:
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
 
+        # Optional authorization token passed in all requests
+        #- name: EG_AUTH_TOKEN   
+        #  value: <configured-auth-token>
+
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
         # Use IfNotPresent policy so that dev-based systems don't automatically
@@ -152,6 +162,7 @@ spec:
         name: enterprise-gateway
         ports:
         - containerPort: 8888
+        - containerPort: 8877
 ## Uncomment to enable NFS-mounted kernelspecs
 #        volumeMounts:
 #        - name: kernelspecs

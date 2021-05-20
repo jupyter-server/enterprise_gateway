@@ -3,18 +3,19 @@
 """Tornado handlers for session CRUD."""
 
 import tornado
-import notebook.services.sessions.handlers as notebook_handlers
+import jupyter_server.services.sessions.handlers as jupyter_server_handlers
+from jupyter_server.utils import ensure_async
 from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
 
 
 class SessionRootHandler(TokenAuthorizationMixin,
                          CORSMixin,
                          JSONErrorsMixin,
-                         notebook_handlers.SessionRootHandler):
-    """Extends the notebook root session handler with token auth, CORS, and
+                         jupyter_server_handlers.SessionRootHandler):
+    """Extends the jupyter_server root session handler with token auth, CORS, and
     JSON errors.
     """
-    def get(self):
+    async def get(self):
         """Overrides the super class method to honor the kernel listing
         configuration setting.
 
@@ -26,11 +27,11 @@ class SessionRootHandler(TokenAuthorizationMixin,
         if 'eg_list_kernels' not in self.settings or not self.settings['eg_list_kernels']:
             raise tornado.web.HTTPError(403, 'Forbidden')
         else:
-            super(SessionRootHandler, self).get()
+            await ensure_async(super(SessionRootHandler, self).get())
 
 
 default_handlers = []
-for path, cls in notebook_handlers.default_handlers:
+for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists
         default_handlers.append((path, globals()[cls.__name__]))

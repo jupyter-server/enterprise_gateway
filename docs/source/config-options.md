@@ -1,7 +1,7 @@
 ## Configuration options
 
-Jupyter Enterprise Gateway adheres to the
-[Jupyter common configuration approach](https://jupyter.readthedocs.io/en/latest/projects/config.html)
+Jupyter Enterprise Gateway adheres to
+[Jupyter's common configuration approach](https://jupyter.readthedocs.io/en/latest/use/config.html)
 . You can configure an instance of Enterprise Gateway using:
 
 1. A configuration file (recommended)
@@ -432,6 +432,16 @@ The following environment variables can be used to influence functionality and a
     Attempts to launch a kernel where KERNEL_UID's value is in this list will result
     in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_GIDS.
 
+  EG_RESPONSE_IP=None
+    Experimental.  The IP address to use to formulate the response address (with 
+    `EG_RESPONSE_PORT`).  By default, the server's IP is used.  However, we may find 
+    it necessary to use a different IP in cases where the target kernels are external
+    to the Enterprise Gateway server (for example).  It's value may also need to be 
+    set in cases where the computed (default) is not correct for the current topology.
+
+  EG_RESPONSE_PORT=8877
+    The single response port used to receive connection information from launched kernels.
+
   EG_SHARED_NAMESPACE=False
     Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
     should reside in the same namespace as Enterprise Gateway.  This is not a recommended
@@ -504,8 +514,8 @@ The following environment variables are managed by Enterprise Gateway and listed
     This value is set during each kernel launch and resides in the environment of
     the kernel launch process. Its value represents the address to which the remote
     kernel's connection information should be sent.  Enterprise Gateway is listening
-    on that socket and will close the socket once the remote kernel launcher has
-    conveyed the appropriate information.
+    on that socket and will associate that connnection information with the responding
+    kernel.
 ```
 
 ### Per-kernel Configuration Overrides

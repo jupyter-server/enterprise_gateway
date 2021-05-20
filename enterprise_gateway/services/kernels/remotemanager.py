@@ -10,7 +10,7 @@ import uuid
 from tornado import web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
-from notebook.services.kernels.kernelmanager import AsyncMappingKernelManager
+from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from traitlets import directional_link, log as traitlets_log
 
@@ -297,6 +297,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         super(RemoteKernelManager, self).__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None
+        self.public_key = None
         self.sigint_value = None
         self.kernel_id = None
         self.user_overrides = {}
@@ -381,10 +382,12 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         """
         cmd = super(RemoteKernelManager, self).format_kernel_cmd(extra_arguments)
 
-        if self.response_address or self.port_range or self.kernel_id:
+        if self.response_address or self.port_range or self.kernel_id or self.public_key:
             ns = self._launch_args.copy()
             if self.response_address:
                 ns['response_address'] = self.response_address
+            if self.public_key:
+                ns['public_key'] = self.public_key
             if self.port_range:
                 ns['port_range'] = self.port_range
             if self.kernel_id:

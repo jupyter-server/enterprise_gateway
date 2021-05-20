@@ -36,6 +36,9 @@ spec:
   - name: http
     port: 8888
     targetPort: 8888
+  - name: response
+    port: 8877
+    targetPort: 8877
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
@@ -69,6 +72,12 @@ spec:
       serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
+        - name: EG_PORT
+          value: "8888"
+
+        - name: EG_RESPONSE_PORT
+          value: "8877"
+
           # Created above.
         - name: EG_NAMESPACE
           value: "enterprise-gateway"
@@ -94,6 +103,9 @@ spec:
           value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
+        # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
+        #- name: EG_AUTH_TOKEN
+        #  value: <configured-auth-token>
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
@@ -105,6 +117,7 @@ spec:
         args: ["--gateway"]
         ports:
         - containerPort: 8888
+        - containerPort: 8877
 ```
 #### Namespaces
 A best practice for Kubernetes applications running in an enterprise is to isolate applications via namespaces.  Since Enterprise Gateway also requires isolation at the kernel level, it makes sense to use a namespace for each kernel, by default.
@@ -231,6 +244,8 @@ Because kernels now reside within containers and its typical for the first refer
 
 The Kernel Image Puller can be configured for the interval at which it checks for new kernelspecs (`KIP_INTERVAL`), the number of puller threads it will utilize per node (`KIP_NUM_PULLERS`), the number of retries it will attempt for a given image (`KIP_NUM_RETRIES`), and the pull policy (`KIP_PULL_POLICY`) - which essentially dictates whether it will attempt to pull images that its already encoutnered (`Always`) vs. only pulling the image if it hasn't seen it yet (`IfNotPresent`).
 
+If the Enterprise Gateway defines an authentication token (`EG_AUTH_TOKEN`) then that same token should be configured here as (`KIP_AUTH_TOKEN`) so that the puller can correctly authenticate its requests.
+
 Here's what the Kernel Image Puller looks like in the yaml...
 ```yaml
 apiVersion: apps/v1
@@ -259,6 +274,9 @@ spec:
             value: "300"
           - name: KIP_PULL_POLICY
             value: "IfNotPresent"
+          # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
+          - name: KIP_AUTH_TOKEN
+            value:
         volumeMounts:
           - name: dockersock
             mountPath: "/var/run/docker.sock"
@@ -348,41 +366,50 @@ There are essentially two kinds of kernels (independent of language) launched wi
 
 When _vanilla_ kernels are launched, Enterprise Gateway is responsible for creating the corresponding pod. On the other hand, _spark-on-kubernetes_ kernels are launched via `spark-submit` with a specific `master` URI - which then creates the corresponding pod(s) (including executor pods).  Images can be launched using both forms provided they have the appropriate support for Spark installed.
 
-Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml)) serves as a template where each of the tags surrounded with `${}` represent variables that are substituted at the time of the kernel's launch.  All `${kernel_xxx}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
+Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2)) serves as a template where each of the tags surrounded with `{{` and `}}` represent variables that are substituted at the time of the kernel's launch.  All `{{ kernel_xxx }}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ${kernel_username}-${kernel_id}
-  namespace: ${kernel_namespace}
+  name: "{{ kernel_pod_name }}"
+  namespace: "{{ kernel_namespace }}"
   labels:
-    kernel_id: ${kernel_id}
+    kernel_id: "{{ kernel_id }}"
     app: enterprise-gateway
     component: kernel
 spec:
   restartPolicy: Never
-  serviceAccountName: ${kernel_service_account_name}
+  serviceAccountName: "{{ kernel_service_account_name }}"
+  {% if kernel_uid is defined or kernel_gid is defined %}
   securityContext:
-    runAsUser: ${kernel_uid}
-    runAsGroup: ${kernel_gid}
+    {% if kernel_uid is defined %}
+    runAsUser: {{ kernel_uid | int }}
+    {% endif %}
+    {% if kernel_gid is defined %}
+    runAsGroup: {{ kernel_gid | int }}
+    {% endif %}
+    fsGroup: 100
+  {% endif %}
   containers:
   - env:
     - name: EG_RESPONSE_ADDRESS
-      value: ${eg_response_address}
+      value: "{{ eg_response_address }}"
+    - name: EG_PUBLIC_KEY
+      value: "{{ eg_public_key }}"
     - name: KERNEL_LANGUAGE
-      value: ${kernel_language}
+      value: "{{ kernel_language }}"
     - name: KERNEL_SPARK_CONTEXT_INIT_MODE
-      value: ${kernel_spark_context_init_mode}
+      value: "{{ kernel_spark_context_init_mode }}"
     - name: KERNEL_NAME
-      value: ${kernel_name}
+      value: "{{ kernel_name }}"
     - name: KERNEL_USERNAME
-      value: ${kernel_username}
+      value: "{{ kernel_username }}"
     - name: KERNEL_ID
-      value: ${kernel_id}
+      value: "{{ kernel_id }}"
     - name: KERNEL_NAMESPACE
-      value: ${kernel_namespace}
-    image: ${kernel_image}
-    name: ${kernel_username}-${kernel_id}
+      value: "{{ kernel_namespace }}"
+    image: "{{ kernel_image }}"
+    name: "{{ kernel_pod_name }}"
 ```
 There are a number of items worth noting:
 1. Kernel pods can be identified in three ways using `kubectl`:
@@ -393,7 +420,7 @@ There are a number of items worth noting:
     Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces.  To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`).  This identifier also applies to those kernels launched within `spark-on-kubernetes`.
 1. Kernel pods use the specified `securityContext`.  If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used.  Similarly for `KERNEL_GID`, whose default is `100` (the users group).  In addition, Enterprise Gateway enforces a lists of prohibited UID and GID values.  By default, this list is initialized to the 0 (root) UID and GID.  Administrators can configure the `EG_PROHIBITED_UIDS` and `EG_PROHIBITED_GIDS` environment variables via the enterprise-gateway.yaml file with comma-separated values to alter the set of user and group ids to be prevented.
-1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml` as `${kernel_namespace}` and `${kernel_service_account_name}`, respectively.
+1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod.  In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject.  Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml.j2` as `{{ kernel_namespace }}` and `{{ kernel_service_account_name }}`, respectively.
 1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
 
@@ -514,8 +541,8 @@ As always, kernels are launched by virtue of the `argv:` stanza in their respect
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
-    "--RemoteProcessProxy.spark-context-initialization-mode",
-    "none"
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
   ]
 }
 ```
@@ -523,7 +550,7 @@ By default, _vanilla_ kernels use a value of `none` for the spark context initia
 
 When the kernel is intended to target _Spark-on-kubernetes_, its launch is very much like kernels launched in YARN _cluster mode_, albeit with a completely different set of parameters.  Here's an example `SPARK_OPTS` string value which best conveys the idea:
 ```
-  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.4.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
+  "SPARK_OPTS": "--master k8s://https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT} --deploy-mode cluster --name ${KERNEL_USERNAME}-${KERNEL_ID} --conf spark.kubernetes.driver.label.app=enterprise-gateway --conf spark.kubernetes.driver.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.executor.label.app=enterprise-gateway --conf spark.kubernetes.executor.label.kernel_id=${KERNEL_ID} --conf spark.kubernetes.driver.docker.image=${KERNEL_IMAGE} --conf spark.kubernetes.executor.docker.image=kubespark/spark-executor-py:v2.5.0-kubernetes-0.5.0 --conf spark.kubernetes.submission.waitAppCompletion=false",
 ```
 Note that each of the labels previously discussed are also applied to the _driver_ and _executor_ pods.
 
@@ -536,6 +563,8 @@ For these invocations, the `argv:` is nearly identical to non-kubernetes configu
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.spark-context-initialization-mode",
     "lazy"
   ]
@@ -595,9 +624,9 @@ From anywhere with Helm cluster access, create the service and deployment by run
 ```bash
 helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gateway etc/kubernetes/helm/enterprise-gateway
 ```
-the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.4.0) page:
+the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter/enterprise_gateway/releases/tag/v2.5.0) page:
 ```bash
-helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.4.0/jupyter_enterprise_gateway_helm-2.4.0.tgz
+helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_helm-2.5.0.tgz
 ```
 ##### Configuration
 

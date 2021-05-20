@@ -20,8 +20,12 @@
     "/usr/local/share/jupyter/kernels/spark_R_kubernetes/bin/run.sh",
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.spark-context-initialization-mode",
     "lazy"
   ]
