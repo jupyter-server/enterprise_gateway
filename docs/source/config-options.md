@@ -458,7 +458,7 @@ The following environment variables can be used to influence functionality and a
     The username to use when connecting to remote hosts (default to `getpass.getuser()`
     when not set).
 
-  EG_REMOTE_GSS_SSH=None
+  EG_REMOTE_GSS_SSH=False
     Use gss instead of EG_REMOTE_USER and EG_REMOTE_PWD to connect to remote host via SSH.
     Case insensitive. 'True' to enable, 'False', '' or unset to disable.
     Any other value will error.
