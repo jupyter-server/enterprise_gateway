@@ -149,7 +149,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-
+        self.connection_dir=os.path.join(os.path.expanduser('~'+username),".local/share/jupyter/runtime/")
         # Check max kernel limits
         self._enforce_kernel_limits(username)
 
