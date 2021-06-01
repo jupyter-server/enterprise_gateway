@@ -126,7 +126,7 @@ USER root
 # Install OS dependencies required for the kernel-wrapper. Missing
 # packages can be installed later only if container is running as
 # privileged user.
-RUN apt-get update && apt-get install -yq --no-install-recommands \
+RUN apt-get update && apt-get install -yq --no-install-recommends \
     build-essential \
     libsm6 \
     libxext-dev \
