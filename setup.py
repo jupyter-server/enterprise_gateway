@@ -58,7 +58,7 @@ Apache Spark, Kubernetes and others..
         'requests>=2.7,<3.0',
         'tornado>=6.1',
         'traitlets>=4.3.3',
-        'watchdog==0.10.3',  # 0.10.4 (latest) is broken on MacOS
+        'watchdog>=2.1.3',
         'yarn-api-client>=1.0',
     ],
     extras_require = {
