@@ -13,6 +13,7 @@ import time
 from jupyter_client import localinterfaces
 from yarn_api_client.resource_manager import ResourceManager
 
+from ..sessions.kernelsessionmanager import KernelSessionManager
 from .processproxy import RemoteProcessProxy
 
 # Default logging level of yarn-api and underlying connectionpool produce too much noise - raise to warning only.
@@ -57,23 +58,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             = proxy_config.get('yarn_endpoint_security_enabled',
                                kernel_manager.yarn_endpoint_security_enabled)
 
-        endpoints = None
-        if self.yarn_endpoint:
-            endpoints = [self.yarn_endpoint]
-
-            # Only check alternate if "primary" is set.
-            if self.alt_yarn_endpoint:
-                endpoints.append(self.alt_yarn_endpoint)
-
-        auth = None
-        if self.yarn_endpoint_security_enabled:
-            from requests_kerberos import HTTPKerberosAuth
-            auth = HTTPKerberosAuth()
-
-        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth, verify=cert_path)
-
-        self.rm_addr = self.resource_mgr.get_active_endpoint()
-
         # YARN applications tend to take longer than the default 5 second wait time.  Rather than
         # require a command-line option for those using YARN, we'll adjust based on a local env that
         # defaults to 15 seconds.  Note: we'll only adjust if the current wait time is shorter than
@@ -88,10 +72,42 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # and retry at fixed interval before pronouncing as not feasible to launch.
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
+    def _initialize_resource_manager(self, **kwargs):
+        """Initialize the Hadoop YARN Resource Manager instance used for this kernel's lifecycle."""
+
+        endpoints = None
+        if self.yarn_endpoint:
+            endpoints = [self.yarn_endpoint]
+
+            # Only check alternate if "primary" is set.
+            if self.alt_yarn_endpoint:
+                endpoints.append(self.alt_yarn_endpoint)
+
+        if self.yarn_endpoint_security_enabled:
+            from requests_kerberos import HTTPKerberosAuth
+            auth = HTTPKerberosAuth()
+        else:
+            # If we have the appropriate version of yarn-api-client, use its SimpleAuth class.
+            # This allows EG to continue to issue requests against the YARN api when anonymous
+            # access is not allowed. (Default is to allow anonymous access.)
+            try:
+                from yarn_api_client.auth import SimpleAuth
+                kernel_username = KernelSessionManager.get_kernel_username(**kwargs)
+                auth = SimpleAuth(kernel_username)
+                self.log.debug(f"Using SimpleAuth with '{kernel_username}' against endpoints: {endpoints}")
+            except ImportError:
+                auth = None
+
+        self.resource_mgr = ResourceManager(service_endpoints=endpoints, auth=auth, verify=cert_path)
+
+        self.rm_addr = self.resource_mgr.get_active_endpoint()
+
     async def launch_process(self, kernel_cmd, **kwargs):
         """
         Launches the specified process within a YARN cluster environment.
         """
+
+        self._initialize_resource_manager(**kwargs)
 
         # checks to see if the queue resource is available
         # if not available, kernel startup is not attempted
