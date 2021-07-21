@@ -14,16 +14,6 @@ from traitlets import Set
 from typing import List, Optional, Dict
 
 
-def key_exists(obj: Dict[str, object], chain: List[str]) -> Optional[object]:
-    """
-    Ensures every entry in the chain array exists as a key in nested dictionaries of obj,
-    returning the value of the last key
-    """
-    _key = chain.pop(0)
-    if _key in obj:
-        return key_exists(obj[_key], chain) if chain else obj[_key]
-
-
 def apply_user_filter(kernelspec_model: Dict[str, object],
                       global_authorized_list: Set,
                       global_unauthorized_list: Set,
@@ -35,24 +25,29 @@ def apply_user_filter(kernelspec_model: Dict[str, object],
     if kernel_user:
         # Check the unauthorized list of the kernelspec, then the globally-configured unauthorized list - the
         # semantics of which are a union of the two lists.
-        if key_exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'unauthorized_users']):
+        try:
             # Check if kernel_user in kernelspec_model
-            unauthorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['unauthorized_users']
+            unauthorized_list = kernelspec_model["spec"]["metadata"]["process_proxy"]["config"]["unauthorized_users"]
+        except KeyError:
+            pass
+        else:
             if kernel_user in unauthorized_list:
                 return None
-        if global_unauthorized_list and kernel_user in global_unauthorized_list:
+        if kernel_user in global_unauthorized_list:
             return None
 
         # Check the authorized list of the kernelspec, then the globally-configured authorized list -
         # but only if the kernelspec list doesn't exist.  This is because the kernelspec set of authorized
         # users may be a subset of globally authorized users and is, essentially, used as a denial to those
         # not defined in the kernelspec's list.
-        if key_exists(kernelspec_model, ['spec', 'metadata', 'process_proxy', 'config', 'authorized_users']):
-            authorized_list = kernelspec_model['spec']['metadata']['process_proxy']['config']['authorized_users']
-            if authorized_list and kernel_user not in authorized_list:
+        try:
+            authorized_list = kernelspec_model["spec"]["metadata"]["process_proxy"]["config"]["authorized_users"]
+        except KeyError:
+            if kernel_user not in global_authorized_list:
                 return None
-        elif global_authorized_list and kernel_user not in global_authorized_list:
-            return None
+        else:
+            if kernel_user not in authorized_list:
+                return None
 
     return kernelspec_model
 
