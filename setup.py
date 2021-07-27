@@ -50,7 +50,7 @@ Apache Spark, Kubernetes and others..
         'docker>=3.5.0',
         'future',
         'jinja2>=2.10',
-        'jupyter_client>=6.1',
+        'jupyter_client~=6.1',
         'jupyter_core>=4.6.0',
         'kubernetes>=4.0.0',
         'jupyter_server>=1.2',
@@ -58,10 +58,10 @@ Apache Spark, Kubernetes and others..
         'pexpect>=4.2.0',
         'pycryptodomex>=3.9.7',
         'pyzmq>=17.0.0',
-        'requests>=2.7,<3.0',
+        'requests~=2.7',
         'tornado>=6.1',
         'traitlets>=4.3.3',
-        'watchdog==0.10.3',  # 0.10.4 (latest) is broken on MacOS
+        'watchdog>=2.1.3',
         'yarn-api-client>=1.0',
     ],
     extras_require = {
