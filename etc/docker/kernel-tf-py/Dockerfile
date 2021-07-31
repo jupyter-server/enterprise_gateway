@@ -9,6 +9,7 @@ ENV KERNEL_LANGUAGE python
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
 RUN conda install --quiet --yes \
+    ipykernel \
     pillow \
     future \
     pycryptodomex && \
