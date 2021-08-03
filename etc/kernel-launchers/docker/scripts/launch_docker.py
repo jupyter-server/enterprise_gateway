@@ -50,6 +50,7 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
     # setup common args
     kwargs = dict()
     kwargs['name'] = container_name
+    kwargs['hostname'] = container_name
     kwargs['user'] = user
     kwargs['labels'] = labels
 
@@ -78,7 +79,6 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
         volumes = {'/usr/local/share/jupyter/kernels': {'bind': '/usr/local/share/jupyter/kernels', 'mode': 'ro'}}
 
         # finish args setup
-        kwargs['hostname'] = container_name
         kwargs['environment'] = param_env
         kwargs['remove'] = remove_container
         kwargs['network'] = docker_network

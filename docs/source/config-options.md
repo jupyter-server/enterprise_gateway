@@ -339,7 +339,7 @@ RemoteMappingKernelManager(AsyncMappingKernelManager) options
 
 ```
 
-### Addtional supported environment variables
+### Additional supported environment variables
 The following environment variables can be used to influence functionality and are not tied to command-line options:
 ```text
   EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME=default
@@ -450,6 +450,18 @@ The following environment variables can be used to influence functionality and a
   EG_SSH_PORT=22
     The port number used for ssh operations for installations choosing to
     configure the ssh server on a port other than the default 22.
+
+  EG_REMOTE_PWD=None
+    The password to use to ssh to remote hosts
+
+  EG_REMOTE_USER=None
+    The username to use when connecting to remote hosts (default to `getpass.getuser()`
+    when not set).
+
+  EG_REMOTE_GSS_SSH=False
+    Use gss instead of EG_REMOTE_USER and EG_REMOTE_PWD to connect to remote host via SSH.
+    Case insensitive. 'True' to enable, 'False', '' or unset to disable.
+    Any other value will error.
 
   EG_YARN_CERT_BUNDLE=<custom_truststore_path>
     The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.

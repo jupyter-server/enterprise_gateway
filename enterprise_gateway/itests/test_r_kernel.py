@@ -11,11 +11,11 @@ class RKernelBaseTestCase(TestBase):
 
     def test_get_hostname(self):
         result = self.kernel.execute('system("hostname", intern=TRUE)')
-        self.assertRegexpMatches(result, self.get_expected_hostname())
+        self.assertRegex(result, self.get_expected_hostname())
 
     def test_hello_world(self):
         result = self.kernel.execute('print("Hello World", quote = FALSE)')
-        self.assertRegexpMatches(result, 'Hello World')
+        self.assertRegex(result, 'Hello World')
 
     def test_restart(self):
 
@@ -30,7 +30,7 @@ class RKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("y = x + 1")
-        self.assertRegexpMatches(error_result, 'Error in eval')
+        self.assertRegex(error_result, 'Error in eval')
 
     def test_interrupt(self):
 
@@ -74,19 +74,19 @@ class RKernelBaseSparkTestCase(RKernelBaseTestCase):
 
     def test_get_application_id(self):
         result = self.kernel.execute('SparkR:::callJMethod(SparkR:::callJMethod(sc, "sc"), "applicationId")')
-        self.assertRegexpMatches(result, self.get_expected_application_id())
+        self.assertRegex(result, self.get_expected_application_id())
 
     def test_get_spark_version(self):
         result = self.kernel.execute("sparkR.version()")
-        self.assertRegexpMatches(result, self.get_expected_spark_version())
+        self.assertRegex(result, self.get_expected_spark_version())
 
     def test_get_resource_manager(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
-        self.assertRegexpMatches(result, self.get_expected_spark_master())
+        self.assertRegex(result, self.get_expected_spark_master())
 
     def test_get_deploy_mode(self):
         result = self.kernel.execute('unlist(sparkR.conf("spark.submit.deployMode"))')
-        self.assertRegexpMatches(result, self.get_expected_deploy_mode())
+        self.assertRegex(result, self.get_expected_deploy_mode())
 
 
 class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
@@ -95,8 +95,7 @@ class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestRKernelLocal, cls).setUpClass()
-        print('>>>')
-        print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -105,7 +104,8 @@ class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelLocal, cls).tearDownClass()
-        print('Shutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
@@ -115,9 +115,7 @@ class TestRKernelClient(unittest.TestCase, RKernelBaseSparkTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestRKernelClient, cls).setUpClass()
-        print('>>>')
-        print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -126,7 +124,8 @@ class TestRKernelClient(unittest.TestCase, RKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelClient, cls).tearDownClass()
-        print('Shutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
@@ -137,8 +136,7 @@ class TestRKernelCluster(unittest.TestCase, RKernelBaseSparkTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestRKernelCluster, cls).setUpClass()
-        print('>>>')
-        print('Starting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nStarting R kernel using {} kernelspec'.format(cls.KERNELSPEC))
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -147,7 +145,8 @@ class TestRKernelCluster(unittest.TestCase, RKernelBaseSparkTestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestRKernelCluster, cls).tearDownClass()
-        print('Shutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 

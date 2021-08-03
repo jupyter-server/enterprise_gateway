@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import time
+import warnings
 
 from asyncio import Event, TimeoutError
 from calendar import timegm
@@ -61,13 +62,6 @@ max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
 
 # Number of seconds in 100 years as the max keep-alive interval value.
 max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
-
-# These envs are not documented and should default to current user and None, respectively.  These
-# exist just in case we find them necessary in some configurations (where the service user
-# must be different).  However, tests show that that configuration doesn't work - so there
-# might be more to do.  At any rate, we'll use these variables for now.
-remote_user = None
-remote_pwd = None
 
 # Allow users to specify local ips (regular expressions can be used) that should not be included
 # when determining the response address.  For example, on systems with many network interfaces,
@@ -355,7 +349,7 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         kernel_manager : RemoteKernelManager
             The kernel manager instance tied to this process proxy.  This drives the process proxy method calls.
 
-        proxy_config: dict
+        proxy_config : dict
             The dictionary of per-kernel config settings.  If none are specified, this will be an empty dict.
         """
         self.kernel_manager = kernel_manager
@@ -398,6 +392,26 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         self.ip = None
         self.pid = 0
         self.pgid = 0
+        _remote_user = os.getenv("EG_REMOTE_USER")
+        self.remote_pwd = os.getenv("EG_REMOTE_PWD")
+        self._use_gss_raw = os.getenv("EG_REMOTE_GSS_SSH", "False")
+        if self._use_gss_raw.lower() not in ("", "true", "false"):
+            raise ValueError(
+                "Invalid Value for EG_REMOTE_GSS_SSH expected one of "
+                '"", "True", "False", got {!r}'.format(self._use_gss_raw)
+            )
+        self.use_gss = self._use_gss_raw == "true"
+        if self.use_gss:
+            if self.remote_pwd or _remote_user:
+                warnings.warn(
+                    "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or "
+                    "`EG_REMOTE_USER` is set. "
+                    "Those options are mutually exclusive, you configuration may be incorrect. "
+                    "EG_REMOTE_GSS_SSH will take priority."
+                )
+            self.remote_user = None
+        else:
+            self.remote_user = _remote_user if _remote_user else getpass.getuser()
 
     @abc.abstractmethod
     async def launch_process(self, kernel_cmd, **kwargs):
@@ -583,31 +597,49 @@ class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
         """
         ssh = None
 
-        global remote_user
-        global remote_pwd
-        if remote_user is None:
-            remote_user = os.getenv('EG_REMOTE_USER', getpass.getuser())
-            remote_pwd = os.getenv('EG_REMOTE_PWD')  # this should use password-less ssh
-
         try:
             ssh = paramiko.SSHClient()
             ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
             host_ip = gethostbyname(host)
-            if remote_pwd:
-                ssh.connect(host_ip, port=ssh_port, username=remote_user, password=remote_pwd)
+            if self.use_gss:
+                self.log.debug("Connecting to remote host via GSS.")
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(host_ip, port=ssh_port, gss_auth=True)
             else:
-                ssh.connect(host_ip, port=ssh_port, username=remote_user)
+                ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+                if self.remote_pwd:
+                    self.log.debug(
+                        "Connecting to remote host with username and password."
+                    )
+                    ssh.connect(
+                        host_ip,
+                        port=ssh_port,
+                        username=self.remote_user,
+                        password=self.remote_pwd,
+                    )
+                else:
+                    self.log.debug("Connecting to remote host with ssh key.")
+                    ssh.connect(host_ip, port=ssh_port, username=self.remote_user)
         except Exception as e:
             http_status_code = 500
             current_host = gethostbyname(gethostname())
-            error_message = "Exception '{}' occurred when creating a SSHClient at {} connecting " \
-                            "to '{}:{}' with user '{}', message='{}'.".\
-                format(type(e).__name__, current_host, host, ssh_port, remote_user, e)
+            error_message = (
+                "Exception '{}' occurred when creating a SSHClient at {} connecting "
+                "to '{}:{}' with user '{}', message='{}'.".format(
+                    type(e).__name__, current_host, host, ssh_port, self.remote_user, e
+                )
+            )
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 http_status_code = 403
                 error_message_prefix = "Failed to authenticate SSHClient with password"
-                error_message = error_message_prefix + (" provided" if remote_pwd else "-less SSH")
+                error_message = error_message_prefix + (
+                    " provided" if self.remote_pwd else "-less SSH"
+                )
+                error_message = (
+                    error_message + "and EG_REMOTE_GSS_SSH={!r} ({})".format(
+                        self._use_gss_raw, self.use_gss
+                    )
+                )
 
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         return ssh
@@ -1266,12 +1298,23 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                         sock.shutdown(SHUT_WR)
                     except Exception as e2:
                         if isinstance(e2, OSError) and e2.errno == errno.ENOTCONN:
-                            pass  # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
+                            # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
+                            self.log.debug(
+                                "ERROR: OSError(ENOTCONN) raised on socket shutdown, "
+                                "listener likely not connected. Cannot send {request}",
+                                request=request,
+                            )
                         else:
                             self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
                                              "for KernelID '{}' (ignored): {}".format(self.comm_ip, self.comm_port,
                                                                                       self.kernel_id, str(e2)))
                 sock.close()
+        else:
+            self.log.debug(
+                "Invalid comm port, not sending request '{}' to comm_port '{}'.",
+                request,
+                self.comm_port,
+            )
 
     def send_signal(self, signum):
         """
@@ -1285,17 +1328,20 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
         # using anything other than the socket-based signal (via signal_addr) will not work.
 
         if self.comm_port > 0:
-            signal_request = dict()
-            signal_request['signum'] = signum
 
             try:
-                self._send_listener_request(signal_request)
+                self._send_listener_request({"signum": signum})
 
                 if signum > 0:  # Polling (signum == 0) is too frequent
                     self.log.debug("Signal ({}) sent via gateway communication port.".format(signum))
                 return None
             except Exception as e:
-                if isinstance(e, OSError) and e.errno == errno.ECONNREFUSED:  # Return False since there's no process.
+                if (
+                    isinstance(e, OSError) and e.errno == errno.ECONNREFUSED
+                ):  # Return False since there's no process.
+                    self.log.debug(
+                        "ERROR: ECONNREFUSED, no process listening, cannot send signal."
+                    )
                     return False
 
                 self.log.warning("An unexpected exception occurred sending signal ({}) for KernelID '{}': {}"

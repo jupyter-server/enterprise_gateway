@@ -43,9 +43,6 @@ Apache Spark, Kubernetes and others..
         'enterprise_gateway.services.processproxies',
         'enterprise_gateway.services.sessions'
     ],
-    scripts=[
-        'scripts/jupyter-enterprisegateway'
-    ],
     install_requires=[
         'docker>=3.5.0',
         'future',
@@ -83,7 +80,7 @@ if 'setuptools' in sys.modules:
     # setupstools turns entrypoint scripts into executables on windows
     setup_args['entry_points'] = {
         'console_scripts': [
-            'jupyter-enterprisegateway = enterprise_gateway:launch_instance'
+            'jupyter-enterprisegateway = enterprise_gateway.enterprisegatewayapp:launch_instance'
         ]
     }
     # Don't bother installing the .py scripts if if we're using entrypoints

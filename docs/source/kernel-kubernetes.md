@@ -103,6 +103,9 @@ spec:
           value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
         - name: EG_DEFAULT_KERNEL_NAME
           value: "python_kubernetes"
+        # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
+        #- name: EG_AUTH_TOKEN
+        #  value: <configured-auth-token>
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:VERSION
@@ -241,6 +244,8 @@ Because kernels now reside within containers and its typical for the first refer
 
 The Kernel Image Puller can be configured for the interval at which it checks for new kernelspecs (`KIP_INTERVAL`), the number of puller threads it will utilize per node (`KIP_NUM_PULLERS`), the number of retries it will attempt for a given image (`KIP_NUM_RETRIES`), and the pull policy (`KIP_PULL_POLICY`) - which essentially dictates whether it will attempt to pull images that its already encoutnered (`Always`) vs. only pulling the image if it hasn't seen it yet (`IfNotPresent`).
 
+If the Enterprise Gateway defines an authentication token (`EG_AUTH_TOKEN`) then that same token should be configured here as (`KIP_AUTH_TOKEN`) so that the puller can correctly authenticate its requests.
+
 Here's what the Kernel Image Puller looks like in the yaml...
 ```yaml
 apiVersion: apps/v1
@@ -269,6 +274,9 @@ spec:
             value: "300"
           - name: KIP_PULL_POLICY
             value: "IfNotPresent"
+          # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
+          - name: KIP_AUTH_TOKEN
+            value:
         volumeMounts:
           - name: dockersock
             mountPath: "/var/run/docker.sock"
