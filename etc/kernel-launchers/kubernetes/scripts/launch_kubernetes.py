@@ -19,8 +19,9 @@ def generate_kernel_pod_yaml(keywords):
     - substitute template variables with keywords items.
     """
     j_env = Environment(loader=FileSystemLoader(os.path.dirname(__file__)), trim_blocks=True, lstrip_blocks=True)
-    # jinja2 template substitutes template variables with None though keywords doesn't contain corresponding item.
-    # Therfore, no need to check if any are left unsubstituted. Kubernetes API server will validate the pod spec instead.
+    # jinja2 template substitutes template variables with None though keywords doesn't
+    # contain corresponding item. Therefore, no need to check if any are left unsubstituted.
+    # Kubernetes API server will validate the pod spec instead.
     k8s_yaml = j_env.get_template(KERNEL_POD_TEMPLATE_PATH).render(**keywords)
 
     return k8s_yaml
@@ -37,9 +38,9 @@ def launch_kubernetes_kernel(kernel_id, port_range, response_addr, public_key, s
     # Factory values...
     # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
     # value since this is used to locate the kernel launch script within the image.
-    keywords['eg_port_range'] = port_range
-    keywords['eg_public_key'] = public_key
-    keywords['eg_response_address'] = response_addr
+    keywords['port_range'] = port_range
+    keywords['public_key'] = public_key
+    keywords['response_address'] = response_addr
     keywords['kernel_id'] = kernel_id
     keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     keywords['kernel_spark_context_init_mode'] = spark_context_init_mode
@@ -84,23 +85,38 @@ def launch_kubernetes_kernel(kernel_id, port_range, response_addr, public_key, s
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+    parser.add_argument('--kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
-    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
+    parser.add_argument('--port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
-    parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
+    parser.add_argument('--response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+    parser.add_argument('--public-key', dest='public_key', nargs='?',
                         help='Public key used to encrypt connection information')
-    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
-                        nargs='?', help='Indicates whether or how a spark context should be created',
+    parser.add_argument('--spark-context-initialization-mode', dest='spark_context_init_mode',
+                        nargs='?', help='Indicates whether or how a spark context should be created')
+
+    # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
+    # This means that the default value for --spark-context-initialization-mode (none) will need to come from
+    # the mirrored args' default until deprecated item has been removed.
+    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='rpp_kernel_id', nargs='?',
+                        help='Indicates the id associated with the launched kernel. (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='rpp_port_range', nargs='?',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.response-address', dest='rpp_response_address', nargs='?',
+                        metavar='<ip>:<port>',
+                        help='Connection address (<ip>:<port>) for returning connection file (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='rpp_public_key', nargs='?',
+                        help='Public key used to encrypt connection information (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='rpp_spark_context_init_mode',
+                        nargs='?', help='Indicates whether or how a spark context should be created (deprecated)',
                         default='none')
 
     arguments = vars(parser.parse_args())
-    kernel_id = arguments['kernel_id']
-    port_range = arguments['port_range']
-    response_addr = arguments['response_address']
-    public_key = arguments['public_key']
-    spark_context_init_mode = arguments['spark_context_init_mode']
+    kernel_id = arguments['kernel_id'] or arguments['rpp_kernel_id']
+    port_range = arguments['port_range'] or arguments['rpp_port_range']
+    response_addr = arguments['response_address'] or arguments['rpp_response_address']
+    public_key = arguments['public_key'] or arguments['rpp_public_key']
+    spark_context_init_mode = arguments['spark_context_init_mode'] or arguments['rpp_spark_context_init_mode']
 
     launch_kubernetes_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode)

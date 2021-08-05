@@ -15,15 +15,15 @@ from Cryptodome.Cipher import PKCS1_v1_5, AES
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
-from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 
 LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
-# Minimum port range size and max retries
-min_port_range_size = int(os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000'))
-max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
-log_level = os.getenv('EG_LOG_LEVEL', '10')
+# Minimum port range size and max retries, let EG_ env values act as the default for b/c purposes
+min_port_range_size = int(os.getenv('MIN_PORT_RANGE_SIZE', os.getenv('EG_MIN_PORT_RANGE_SIZE', '1000')))
+max_port_range_retries = int(os.getenv('MAX_PORT_RANGE_RETRIES', os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5')))
+
+log_level = os.getenv('LOG_LEVEL', os.getenv('EG_LOG_LEVEL', '10'))
 log_level = int(log_level) if log_level.isdigit() else log_level
 
 logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
@@ -189,7 +189,7 @@ def _encrypt(connection_info_str, public_key):
     """Encrypt the connection information using a generated AES key that is then encrypted using
        the public key passed from the server.  Both are then returned in an encoded JSON payload.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     aes_key = get_random_bytes(16)
     cipher = AES.new(aes_key, mode=AES.MODE_ECB)
@@ -212,7 +212,7 @@ def _encrypt(connection_info_str, public_key):
 def return_connection_info(connection_file, response_addr, lower_port, upper_port, kernel_id, public_key):
     """Returns the connection information corresponding to this kernel.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
@@ -238,8 +238,8 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
     cf_json['pgid'] = os.getpgid(pid)
 
     # prepare socket address for handling signals
-    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
-    cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    comm_sock = prepare_comm_socket(lower_port, upper_port)
+    cf_json['comm_port'] = comm_sock.getsockname()[1]
     cf_json['kernel_id'] = kernel_id
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -253,13 +253,13 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
     finally:
         s.close()
 
-    return gateway_sock
+    return comm_sock
 
 
-def prepare_gateway_socket(lower_port, upper_port):
+def prepare_comm_socket(lower_port, upper_port):
     """Prepares the socket to which the server will send signal and shutdown requests.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     sock = _select_socket(lower_port, upper_port)
     logger.info("Signal socket bound to host: {}, port: {}".format(sock.getsockname()[0], sock.getsockname()[1]))
@@ -271,7 +271,7 @@ def prepare_gateway_socket(lower_port, upper_port):
 def _select_ports(count, lower_port, upper_port):
     """Select and return n random ports that are available and adhere to the given port range, if applicable.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     ports = []
     sockets = []
@@ -287,7 +287,7 @@ def _select_ports(count, lower_port, upper_port):
 def _select_socket(lower_port, upper_port):
     """Create and return a socket whose port is available and adheres to the given port range, if applicable.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     found_port = False
@@ -308,7 +308,7 @@ def _select_socket(lower_port, upper_port):
 def _get_candidate_port(lower_port, upper_port):
     """Returns a port within the given range.  If the range is zero, the zero is returned.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     range_size = upper_port - lower_port
     if range_size == 0:
@@ -316,10 +316,10 @@ def _get_candidate_port(lower_port, upper_port):
     return random.randint(lower_port, upper_port)
 
 
-def get_gateway_request(sock):
-    """Gets a request from the (gateway) server and returns the corresponding dictionary.
+def get_server_request(sock):
+    """Gets a request from the server and returns the corresponding dictionary.
 
-       This code also exists in the R kernel-launcher's gateway_listener.py script.
+       This code also exists in the R kernel-launcher's server_listener.py script.
     """
     conn = None
     data = ''
@@ -342,16 +342,16 @@ def get_gateway_request(sock):
     return request_info
 
 
-def gateway_listener(sock, parent_pid):
-    """Waits for requests from the (gateway) server and processes each when received.  Currently,
+def server_listener(sock, parent_pid):
+    """Waits for requests from the server and processes each when received.  Currently,
        these will be one of a sending a signal to the corresponding kernel process (signum) or
        stopping the listener and exiting the kernel (shutdown).
 
-        This code also exists in the R kernel-launcher's gateway_listener.py script.
+        This code also exists in the R kernel-launcher's server_listener.py script.
     """
     shutdown = False
     while not shutdown:
-        request = get_gateway_request(sock)
+        request = get_server_request(sock)
         if request:
             signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get('signum') is not None:
@@ -360,7 +360,7 @@ def gateway_listener(sock, parent_pid):
             if request.get('shutdown') is not None:
                 shutdown = bool(request.get('shutdown'))
             if signum != 0:
-                logger.info("gateway_listener got request: {}".format(request))
+                logger.info("server_listener got request: {}".format(request))
 
 
 def start_ipython(namespace, cluster_type="spark", **kwargs):
@@ -384,43 +384,60 @@ def start_ipython(namespace, cluster_type="spark", **kwargs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('connection_file', nargs='?', help='Connection file to write connection info')
-    parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
-                        metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+
+    parser.add_argument('--response-address', dest='response_address', nargs='?', metavar='<ip>:<port>',
+                        help='Connection address (<ip>:<port>) for returning connection file')
+    parser.add_argument('--kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
-    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+    parser.add_argument('--public-key', dest='public_key', nargs='?',
                         help='Public key used to encrypt connection information')
-    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
-                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
-    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='init_mode', nargs='?',
-                        default='none', help='the initialization mode of the spark context: lazy, eager or none')
-    parser.add_argument('--RemoteProcessProxy.cluster-type', dest='cluster_type', nargs='?',
-                        default='spark', help='the kind of cluster to initialize: spark, dask, or none')
+    parser.add_argument('--port-range', dest='port_range', nargs='?', metavar='<lowerPort>..<upperPort>',
+                        help='Port range to impose for kernel ports')
+    parser.add_argument('--spark-context-initialization-mode', dest='init_mode', nargs='?',
+                        help='the initialization mode of the spark context: lazy, eager or none')
+    parser.add_argument('--cluster-type', dest='cluster_type', nargs='?',
+                        help='the kind of cluster to initialize: spark, dask, or none')
+    # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
+    # This means that the default values for --spark-context-initialization-mode (none) and --cluster-type (spark)
+    # will need to come from the mirrored args' default until deprecated items have been removed.
+    parser.add_argument('connection_file', nargs='?', help='Connection file to write connection info (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.response-address', dest='rpp_response_address', nargs='?',
+                        metavar='<ip>:<port>',
+                        help='Connection address (<ip>:<port>) for returning connection file (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='rpp_kernel_id', nargs='?',
+                        help='Indicates the id associated with the launched kernel. (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='rpp_public_key', nargs='?',
+                        help='Public key used to encrypt connection information (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='rpp_port_range', nargs='?',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='rpp_init_mode', nargs='?',
+                        default='none',
+                        help='the initialization mode of the spark context: lazy, eager or none (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.cluster-type', dest='rpp_cluster_type', nargs='?',
+                        default='spark', help='the kind of cluster to initialize: spark, dask, or none (deprecated)')
 
     arguments = vars(parser.parse_args())
     connection_file = arguments['connection_file']
-    response_addr = arguments['response_address']
-    kernel_id = arguments['kernel_id']
-    public_key = arguments['public_key']
-    lower_port, upper_port = _validate_port_range(arguments['port_range'])
-    spark_init_mode = arguments['init_mode']
-    cluster_type = arguments['cluster_type']
+    response_addr = arguments['response_address'] or arguments['rpp_response_address']
+    kernel_id = arguments['kernel_id'] or arguments['rpp_kernel_id']
+    public_key = arguments['public_key'] or arguments['rpp_public_key']
+    lower_port, upper_port = _validate_port_range(arguments['port_range'] or arguments['rpp_port_range'])
+    spark_init_mode = arguments['init_mode'] or arguments['rpp_init_mode']
+    cluster_type = arguments['cluster_type'] or arguments['rpp_cluster_type']
     ip = "0.0.0.0"
 
     if connection_file is None and kernel_id is None:
-        raise RuntimeError("At least one of the parameters: 'connection_file' or "
-                           "'--RemoteProcessProxy.kernel-id' must be provided!")
+        raise RuntimeError("At least one of the parameters: 'connection_file' or '--kernel-id' must be provided!")
 
     if kernel_id is None:
-        raise RuntimeError("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
+        raise RuntimeError("Parameter '--kernel-id' must be provided!")
 
     if public_key is None:
-        raise RuntimeError("Parameter '--RemoteProcessProxy.public-key' must be provided!")
+        raise RuntimeError("Parameter '--public-key' must be provided!")
 
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
-        key = str_to_bytes(str(uuid.uuid4()))
+        key = str(uuid.uuid4()).encode()  # convert to bytes
         connection_file = determine_connection_file(connection_file, kernel_id)
 
         ports = _select_ports(5, lower_port, upper_port)
@@ -428,11 +445,11 @@ if __name__ == "__main__":
         write_connection_file(fname=connection_file, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                               stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
         if response_addr:
-            gateway_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port,
-                                                    kernel_id, public_key)
-            if gateway_socket:  # socket in use, start gateway listener thread
-                gateway_listener_process = Process(target=gateway_listener, args=(gateway_socket, os.getpid(),))
-                gateway_listener_process.start()
+            comm_socket = return_connection_info(connection_file, response_addr, lower_port, upper_port,
+                                                 kernel_id, public_key)
+            if comm_socket:  # socket in use, start server listener process
+                server_listener_process = Process(target=server_listener, args=(comm_socket, os.getpid(),))
+                server_listener_process.start()
 
     # Initialize the kernel namespace for the given cluster type
     if cluster_type == 'spark' and spark_init_mode == 'none':
