@@ -43,10 +43,10 @@ def apply_user_filter(kernelspec_model: Dict[str, object],
         try:
             authorized_list = kernelspec_model["spec"]["metadata"]["process_proxy"]["config"]["authorized_users"]
         except KeyError:
-            if kernel_user not in global_authorized_list:
+            if global_authorized_list and kernel_user not in global_authorized_list:
                 return None
         else:
-            if kernel_user not in authorized_list:
+            if authorized_list and kernel_user not in authorized_list:
                 return None
 
     return kernelspec_model
