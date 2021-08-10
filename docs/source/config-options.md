@@ -440,8 +440,14 @@ The following environment variables can be used to influence functionality and a
     set in cases where the computed (default) is not correct for the current topology.
 
   EG_RESPONSE_PORT=8877
-    The single response port used to receive connection information from launched kernels.
+    The single response port used to receive connection information 
+    from launched kernels.
 
+  EG_RESPONSE_PORT_RETRIES=10
+    The number of retries to attempt when the original response port
+    (EG_RESPONSE_PORT) is found to be in-use.  This value should be 
+    set to 0 (zero) if no port retries are desired.
+    
   EG_SHARED_NAMESPACE=False
     Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
     should reside in the same namespace as Enterprise Gateway.  This is not a recommended
