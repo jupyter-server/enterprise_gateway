@@ -1,6 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running in containers."""
+"""Code related to managing kernels running based on k8s custom resource."""
 
 import abc
 import signal
@@ -17,10 +17,6 @@ config.load_incluster_config()
 
 
 class CustomResourceProxy(RemoteProcessProxy):
-    """
-    Kernel lifecycle management for custom resource based kernels.
-    """
-
     group = version = plural = None
     custom_resource_template_name = None
     kernel_resource_name = None
@@ -30,11 +26,6 @@ class CustomResourceProxy(RemoteProcessProxy):
         self.assigned_node_ip = None
 
     async def launch_process(self, kernel_cmd, **kwargs):
-        """
-        Launches the specified process within the custom resource environment.
-        """
-        # Set env before superclass call so we see these in the debug output
-
         kwargs['env']['KERNEL_CRD_NAME'] = self.kernel_resource_name
         kwargs['env']['KERNEL_CRD_GROUP'] = self.group
         kwargs['env']['KERNEL_CRD_VERSION'] = self.version
@@ -53,17 +44,6 @@ class CustomResourceProxy(RemoteProcessProxy):
         return self
 
     def poll(self):
-        """Determines if custom resource is still active.
-
-        Submitting a new kernel to the custom resource manager will take a while to be Running.
-        Thus kernel ID will probably not be available immediately for poll.
-        So will regard the container as active when no status is available or one of the initial
-        phases.
-
-        Returns
-        -------
-        None if the container cannot be found or its in an initial state. Otherwise False.
-        """
         result = False
 
         resource_status = self.get_resource_status(None)
@@ -74,13 +54,6 @@ class CustomResourceProxy(RemoteProcessProxy):
         return result
 
     def send_signal(self, signum):
-        """Send signal `signum` to custom resource.
-
-        Parameters
-        ----------
-        signum : int
-            The signal number to send.  Zero is used to determine heartbeat.
-        """
         if signum == 0:
             return self.poll()
         elif signum == signal.SIGKILL:
@@ -89,12 +62,6 @@ class CustomResourceProxy(RemoteProcessProxy):
             return super(CustomResourceProxy, self).send_signal(signum)
 
     def kill(self):
-        """Kills a custom resource kernel.
-
-        Returns
-        -------
-        None if the container is gracefully terminated, False otherwise.
-        """
         result = None
 
         if self.kernel_resource_name:
@@ -110,7 +77,6 @@ class CustomResourceProxy(RemoteProcessProxy):
         super(CustomResourceProxy, self).cleanup()
 
     async def confirm_remote_startup(self):
-        """Confirms the custom resource has started and returned necessary connection information."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
@@ -126,19 +92,16 @@ class CustomResourceProxy(RemoteProcessProxy):
                 self.detect_launch_failure()
 
     def get_process_info(self):
-        """Captures the base information necessary for kernel persistence relative to custom resource."""
         process_info = super(CustomResourceProxy, self).get_process_info()
         process_info.update({'assigned_node_ip': self.assigned_node_ip, })
         return process_info
 
     def load_process_info(self, process_info):
-        """Loads the base information necessary for kernel persistence relative to custom resource."""
         super(CustomResourceProxy, self).load_process_info(process_info)
         self.assigned_node_ip = process_info['assigned_node_ip']
 
     @abc.abstractmethod
     def get_initial_states(self):
-        """Return list of states indicating  custom resource is starting (includes running)."""
         raise NotImplementedError
 
     @abc.abstractmethod

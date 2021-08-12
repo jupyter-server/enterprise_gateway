@@ -10,14 +10,7 @@ urllib3.disable_warnings()
 
 
 def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
-    """Return the kubernetes pod spec as a yaml string.
-
-    - load jinja2 template from this file directory.
-    - substitute template variables with keywords items.
-    """
     j_env = Environment(loader=FileSystemLoader(os.path.dirname(__file__)), trim_blocks=True, lstrip_blocks=True)
-    # jinja2 template substitutes template variables with None though keywords doesn't contain corresponding item.
-    # Therfore, no need to check if any are left unsubstituted. Kubernetes API server will validate the pod spec instead.
     k8s_yaml = j_env.get_template('/' + kernel_crd_template + '.yaml.j2').render(**keywords)
 
     return k8s_yaml
