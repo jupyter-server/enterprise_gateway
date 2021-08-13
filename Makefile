@@ -69,18 +69,18 @@ kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
 	make VERSION=$(VERSION) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C  etc $@
 
-install: ## Make a conda env with dist/*.whl and dist/*.tar.gz installed
+install: ## Make a conda env with dist/jupyter_enterprise_gateway-*.whl and dist/jupyter_enterprise_gateway-*.tar.gz installed
 	-conda env remove -y -n $(ENV)-install
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
-		pip install dist/*.whl && \
+		pip install dist/jupyter_enterprise_gateway-*.whl && \
 			jupyter enterprisegateway --help && \
 			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
 
 	conda create -y -n $(ENV)-install python=3 pip
 	$(SA) $(ENV)-install && \
-		pip install dist/*.tar.gz && \
+		pip install dist/jupyter_enterprise_gateway-*.tar.gz && \
 			jupyter enterprisegateway --help && \
 			pip uninstall -y jupyter_enterprise_gateway
 	conda env remove -y -n $(ENV)-install
