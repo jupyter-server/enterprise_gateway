@@ -36,8 +36,8 @@ build:
 env: ## Make a dev environment
 	-conda env create --file requirements.yml --name $(ENV)
 
-activate: ## Activate the virtualenv (default: enterprise-gateway-dev)
-	@echo "$(SA) $(ENV)"
+activate: ## Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
+	@echo "Run \`$(SA) $(ENV)\` to activate the environment."
 
 clean: ## Make a clean source tree
 	-rm -rf dist
