@@ -1,13 +1,14 @@
 {
   "language": "python",
-  "display_name": "Spark Python Operator Mode",
+  "display_name": "Spark Operator (Python)",
   "metadata": {
     "process_proxy": {
-      "class_name": "enterprise_gateway.services.processproxies.spark_operator.SparkOperatorProcessProxy"
+      "class_name": "enterprise_gateway.services.processproxies.spark_operator.SparkOperatorProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-spark-py:VERSION",
+        "executor_image_name": "elyra/kernel-spark-py:VERSION"
+      }
     }
-  },
-  "env": {
-    "KERNEL_IMAGE": "elyra/kernel-spark-py:VERSION"
   },
   "argv": [
     "python",
