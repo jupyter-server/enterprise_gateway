@@ -1,3 +1,14 @@
+from kubernetes import config, client
+
+config.load_incluster_config()
+first_node_name = client.CoreV1Api(client.ApiClient()).list_node().items[0].metadata.name
+node_info = client.CoreV1Api(client.ApiClient()).read_node(name=first_node_name)
+container_runtime = node_info.status.node_info.container_runtime_version
+
+if 'docker://' not in container_runtime:
+    print(f'{container_runtime} is not supported by KIP now')
+    exit(0)
+
 import logging
 import os
 import queue
@@ -8,7 +19,6 @@ from docker.client import DockerClient
 from docker.errors import APIError
 from docker.errors import NotFound
 from threading import Thread
-
 
 gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:8888")
 num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
@@ -149,7 +159,6 @@ def puller():
 
 
 if __name__ == "__main__":
-
     logger = logging.getLogger('kernel_image_puller')
     logger.setLevel(log_level)
 
