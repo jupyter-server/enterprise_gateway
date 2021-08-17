@@ -1,3 +1,9 @@
+import logging
+import os
+import queue
+import requests
+import time
+
 from kubernetes import config, client
 
 config.load_incluster_config()
@@ -6,14 +12,9 @@ node_info = client.CoreV1Api(client.ApiClient()).read_node(name=first_node_name)
 container_runtime = node_info.status.node_info.container_runtime_version
 
 if 'docker://' not in container_runtime:
-    print(f'{container_runtime} is not supported by KIP now')
-    exit(0)
-
-import logging
-import os
-import queue
-import requests
-import time
+    while True:
+        # prevent a daemonset from restarting
+        time.sleep(10)
 
 from docker.client import DockerClient
 from docker.errors import APIError
