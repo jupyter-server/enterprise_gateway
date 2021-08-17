@@ -8,7 +8,7 @@ RUN conda install --quiet --yes \
     cffi \
     ipykernel \
     ipython \
-    jupyter_client \
+    'jupyter_client<7' \
     future \
     pycryptodomex && \
     conda clean -tipsy && \
