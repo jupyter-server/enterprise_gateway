@@ -7,7 +7,7 @@ spec:
   pythonVersion: "3"
   sparkVersion: 2.4.5
   image: {{ kernel_image }}
-  mainApplicationFile: "local:///tmp/launch_ipykernel.py"
+  mainApplicationFile: "local:////usr/local/bin/kernel-launchers/scripts/launch_ipykernel.py"
   arguments:
     - "--RemoteProcessProxy.kernel-id"
     - "{{ kernel_id }}"
