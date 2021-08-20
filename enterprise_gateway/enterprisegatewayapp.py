@@ -12,6 +12,7 @@ import socket
 import ssl
 import sys
 import time
+from typing import Optional
 import weakref
 
 from zmq.eventloop import ioloop
@@ -210,29 +211,21 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             ws_ping_interval=self.ws_ping_interval * 1000
         )
 
-    def _build_ssl_options(self):
-        """Build a dictionary of SSL options for the tornado HTTP server.
-
-        Taken directly from jupyter/notebook code.
+    def _build_ssl_options(self) -> Optional[ssl.SSLContext]:
+        """Build an SSLContext for the tornado HTTP server.
         """
-        ssl_options = {}
-        if self.certfile:
-            ssl_options['certfile'] = self.certfile
-        if self.keyfile:
-            ssl_options['keyfile'] = self.keyfile
-        if self.client_ca:
-            ssl_options['ca_certs'] = self.client_ca
-        if self.ssl_version:
-            ssl_options['ssl_version'] = self.ssl_version
-        if not ssl_options:
+        if not any((self.certfile, self.keyfile, self.client_ca)):
             # None indicates no SSL config
-            ssl_options = None
-        else:
-            ssl_options.setdefault('ssl_version', self.ssl_version_default_value)
-            if ssl_options.get('ca_certs', False):
-                ssl_options.setdefault('cert_reqs', ssl.CERT_REQUIRED)
+            return None
 
-        return ssl_options
+        ssl_context = ssl.SSLContext(protocol=self.ssl_version or self.ssl_version_default_value)
+        if self.certfile:
+            ssl_context.load_cert_chain(certfile=self.certfile, keyfile=self.keyfile)
+        if self.client_ca:
+            ssl_context.load_verify_locations(cafile=self.client_ca)
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+        return ssl_context
 
     def init_http_server(self):
         """Initializes a HTTP server for the Tornado web application on the
