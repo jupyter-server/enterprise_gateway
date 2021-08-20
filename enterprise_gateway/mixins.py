@@ -447,6 +447,14 @@ class EnterpriseGatewayConfigMixin(Configurable):
         au_env = os.getenv(self.authorized_users_env)
         return au_env.split(',') if au_env is not None else []
 
+    # Authorized origin
+    authorized_origin_env = 'EG_AUTHORIZED_ORIGIN'
+    authorized_origin = Unicode(config=True,
+                                help="""Hostname (e.g. 'localhost', 'reverse.proxy.net') which the handler will match
+                                against the request's SSL certificate.  An HTTP 403 (Forbidden) error will be raised on
+                                a failed match.  This option requires TLS to be enabled.  It does not support IP
+                                addresses. (EG_AUTHORIZED_ORIGIN env var)""")
+
     # Port range
     port_range_env = 'EG_PORT_RANGE'
     port_range_default_value = "0..0"

@@ -12,8 +12,8 @@ import socket
 import ssl
 import sys
 import time
-from typing import Optional
 import weakref
+from typing import Optional
 
 from zmq.eventloop import ioloop
 from tornado import httpserver
@@ -163,8 +163,25 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             # Some handlers take args, so retain those in addition to the
             # handler class ref
             new_handler = tuple([pattern] + list(handler[1:]))
+            if self.authorized_origin:
+                self.__add_authorized_hostname_match(new_handler)
+
             handlers.append(new_handler)
         return handlers
+
+    def __add_authorized_hostname_match(self, handler: web.RequestHandler) -> None:
+        base_prepare = handler[1].prepare
+        authorized_hostname = self.authorized_origin
+
+        def wrapped_prepare(self):
+            ssl_cert = self.request.get_ssl_certificate()
+            try:
+                ssl.match_hostname(ssl_cert, authorized_hostname)
+            except ssl.SSLCertVerificationError:
+                raise web.HTTPError(403, 'Forbidden')
+            base_prepare(self)
+
+        handler[1].prepare = wrapped_prepare
 
     def init_webapp(self):
         """Initializes Tornado web application with uri handlers.
