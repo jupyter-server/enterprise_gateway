@@ -29,6 +29,7 @@ from enum import Enum
 from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from jupyter_server import _tz
+from jupyter_server.serverapp import random_ports
 from socket import gethostbyname, gethostname, socket, timeout,\
     AF_INET, SO_REUSEADDR, SOCK_STREAM, SOL_SOCKET, SHUT_RDWR, SHUT_WR
 from tornado import web
@@ -51,7 +52,8 @@ socket_timeout = float(os.getenv('EG_SOCKET_TIMEOUT', '0.005'))
 tunneling_enabled = bool(os.getenv('EG_ENABLE_TUNNELING', 'False').lower() == 'true')
 ssh_port = int(os.getenv('EG_SSH_PORT', '22'))
 eg_response_ip = os.getenv('EG_RESPONSE_IP', None)
-response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
+desired_response_port = int(os.getenv('EG_RESPONSE_PORT', 8877))
+response_port_retries = int(os.getenv('EG_RESPONSE_PORT_RETRIES', 10))
 response_addr_any = bool(os.getenv('EG_RESPONSE_ADDR_ANY', 'False').lower() == 'true')
 
 connection_interval = poll_interval / 100.0  # already polling, so make connection timeout a fraction of outer poll
@@ -191,11 +193,29 @@ class ResponseManager(SingletonConfigurable):
         bind_ip = (local_ip if eg_response_ip is None else eg_response_ip)
         bind_ip = (bind_ip if response_addr_any is False else '')
 
-        try:
-            s.bind((bind_ip, response_port))
-        except Exception as ex:
-            raise RuntimeError("Failed to bind to port '{}' for response address due to: '{}'".
-                               format(response_port, ex))
+        response_port = desired_response_port
+        for port in random_ports(response_port, response_port_retries + 1):
+            try:
+                s.bind((bind_ip, port))
+            except OSError as e:
+                if e.errno == errno.EADDRINUSE:
+                    self.log.info(f"Response port {port} is already in use, trying another port...")
+                    continue
+                elif e.errno in (errno.EACCES, getattr(errno, 'WSAEACCES', errno.EACCES)):
+                    self.log.warning(f"Permission to bind to response port {port} denied - continuing...")
+                    continue
+                else:
+                    raise RuntimeError(f"Failed to bind to port '{port}' for response address due to: '{e}'")
+            else:
+                response_port = port
+                break
+        else:
+            msg = f"No available response port could be found after {response_port_retries + 1} attempts"
+            self.log.critical(msg)
+            raise RuntimeError(msg)
+
+        self.log.info(f"Enterprise Gateway is bound to port {response_port} "
+                      f"for remote kernel connection information.")
         s.listen(128)
         s.settimeout(socket_timeout)
         self._response_socket = s
