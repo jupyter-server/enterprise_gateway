@@ -16,7 +16,7 @@ from traitlets import directional_link, log as traitlets_log
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
-from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
+from ...mixins import EnterpriseGatewayConfigMixin, KernelEnvMixin
 
 
 def get_process_proxy_config(kernelspec):
@@ -284,7 +284,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         return new_kernel_id(kernel_id_fn=super(RemoteMappingKernelManager, self).new_kernel_id, log=self.log, **kwargs)
 
 
-class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager):
+class RemoteKernelManager(EnterpriseGatewayConfigMixin, KernelEnvMixin, AsyncIOLoopKernelManager):
     """
     Extends the AsyncIOLoopKernelManager used by the RemoteMappingKernelManager.
 
@@ -338,8 +338,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                            "port_range",
                            "impersonation_enabled",
                            "max_kernels_per_user",
-                           "env_whitelist",
-                           "env_process_whitelist",
+                           #"kernel_env_forward",
+                           "kernel_env_inherit",
                            "yarn_endpoint",
                            "alt_yarn_endpoint",
                            "yarn_endpoint_security_enabled",
@@ -366,15 +366,15 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
     def _capture_user_overrides(self, **kwargs):
         """
-       Make a copy of any whitelist or KERNEL_ env values provided by user.  These will be injected
-       back into the env after the kernelspec env has been applied.  This enables defaulting behavior
-       of the kernelspec env stanza that would have otherwise overridden the user-provided values.
+        Make a copy of any whitelist or KERNEL_ env values provided by user.  These will be injected
+        back into the env after the kernelspec env has been applied.  This enables defaulting behavior
+        of the kernelspec env stanza that would have otherwise overridden the user-provided values.
         """
         env = kwargs.get('env', {})
-        self.user_overrides.update({key: value for key, value in env.items()
-                                    if key.startswith('KERNEL_') or
-                                    key in self.env_process_whitelist or
-                                    key in self.env_whitelist})
+        self.user_overrides.update({k:v for k, v in env.items()
+                                    if k.startswith('KERNEL_') or
+                                    k in self.kernel_env_inherit or
+                                    k in self.kernel_env_keys})
 
     def format_kernel_cmd(self, extra_arguments=None):
         """
