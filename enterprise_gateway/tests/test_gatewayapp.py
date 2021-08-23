@@ -13,6 +13,7 @@ RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 
 class TestGatewayAppConfig(unittest.TestCase):
     """Tests configuration of the gateway app."""
+
     def setUp(self):
         """Saves a copy of the environment."""
         self.environ = dict(os.environ)
@@ -89,14 +90,10 @@ class TestGatewayAppConfig(unittest.TestCase):
 
         self._assert_envs_to_traitlets()
 
-    def test_ssl_options(self):
+    def test_ssl_options_no_config(self):
         app = EnterpriseGatewayApp()
         ssl_options = app._build_ssl_options()
         self.assertIsNone(ssl_options)
-        app = EnterpriseGatewayApp()
-        os.environ['EG_CERTFILE'] = '/test/fake.crt'
-        ssl_options = app._build_ssl_options()
-        self.assertEqual(ssl_options['ssl_version'], 5)
 
 
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
@@ -108,6 +105,7 @@ class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     app : KernelGatewayApp
         Instance of the app
     """
+
     def tearDown(self):
         """Shuts down the app after test run."""
         if self.app:
