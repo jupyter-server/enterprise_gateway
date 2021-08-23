@@ -5,17 +5,6 @@ import requests
 import time
 
 from kubernetes import config, client
-
-config.load_incluster_config()
-first_node_name = client.CoreV1Api(client.ApiClient()).list_node().items[0].metadata.name
-node_info = client.CoreV1Api(client.ApiClient()).read_node(name=first_node_name)
-container_runtime = node_info.status.node_info.container_runtime_version
-
-if 'docker://' not in container_runtime:
-    while True:
-        # prevent a daemonset from restarting
-        time.sleep(10)
-
 from docker.client import DockerClient
 from docker.errors import APIError
 from docker.errors import NotFound
@@ -35,8 +24,6 @@ POLICY_ALYWAYS = "Always"
 policies = (POLICY_IF_NOT_PRESENT, POLICY_ALYWAYS)
 
 policy = os.getenv("KIP_PULL_POLICY", POLICY_IF_NOT_PRESENT)
-
-docker_client = DockerClient.from_env()
 
 logging.basicConfig(format='[%(levelname)1.1s %(asctime)s %(name)s.%(threadName)s] %(message)s')
 
@@ -163,6 +150,22 @@ if __name__ == "__main__":
     logger = logging.getLogger('kernel_image_puller')
     logger.setLevel(log_level)
 
+    config.load_incluster_config()
+    first_node_name = client.CoreV1Api(client.ApiClient()).list_node().items[0].metadata.name
+    node_info = client.CoreV1Api(client.ApiClient()).read_node(name=first_node_name)
+    container_runtime = node_info.status.node_info.container_runtime_version
+
+    if 'docker://' not in container_runtime:
+        while True:
+            logger.warning(
+                """
+                KernelInfoPuller only operates on Docker-based K8s systems and is unable to pull kernel images at this time.  
+                Please pre-seed your nodes with the necessary kernel images prior to their use.
+                """
+            )
+
+            time.sleep(60 * 5)
+
     # Determine pull policy.
     pulled_images = set()
     if policy not in policies:
@@ -178,6 +181,8 @@ if __name__ == "__main__":
     logger.info("KIP_PULL_POLICY: {}".format(policy))
     logger.info("KIP_LOG_LEVEL: {}".format(log_level))
     logger.info("KIP_AUTH_TOKEN: {}".format(auth_token))
+
+    docker_client = DockerClient.from_env()
 
     # Create an empty queue and start the puller threads.  The number of puller threads is configurable.
     name_queue = queue.Queue()
