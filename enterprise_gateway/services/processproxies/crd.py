@@ -27,7 +27,19 @@ class CustomResourceProxy(KubernetesProcessProxy):
         result = None
 
         if self.kernel_resource_name:
-            result = self.terminate_custom_resource()
+            if self.delete_kernel_namespace and not self.kernel_manager.restarting:
+                body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy='Background')
+                v1_status = client.CoreV1Api().delete_namespace(name=self.kernel_namespace, body=body)
+
+                if v1_status and v1_status.status:
+                    termination_status = ['Succeeded', 'Failed', 'Terminating']
+                    if any(status in v1_status.status for status in termination_status):
+                        result = True
+            else:
+                result = self.terminate_custom_resource()
+
+        if result:
+            self.kernel_resource_name = None
 
         return result
 
