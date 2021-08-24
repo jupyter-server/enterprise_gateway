@@ -6,9 +6,9 @@
       "class_name": "enterprise_gateway.services.processproxies.docker_swarm.DockerSwarmProcessProxy",
       "config": {
         "image_name": "elyra/kernel-py:VERSION"
-      },
+      }
+    },
     "debugger": true
-    }
   },
   "env": {
   },

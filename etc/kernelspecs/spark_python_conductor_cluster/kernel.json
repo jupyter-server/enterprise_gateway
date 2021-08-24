@@ -4,7 +4,8 @@
   "metadata": {
     "process_proxy": {
       "class_name": "enterprise_gateway.services.processproxies.conductor.ConductorClusterProcessProxy"
-    }
+    },
+    "debugger": true
   },
   "env": { 
     "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
