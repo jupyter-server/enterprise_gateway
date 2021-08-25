@@ -6,13 +6,13 @@ from .k8s import KubernetesProcessProxy
 from kubernetes import client
 
 
-class CustomResourceProxy(KubernetesProcessProxy):
+class CustomResourceProcessProxy(KubernetesProcessProxy):
     group = version = plural = None
     custom_resource_template_name = None
     kernel_resource_name = None
 
     def __init__(self, kernel_manager, proxy_config):
-        super(CustomResourceProxy, self).__init__(kernel_manager, proxy_config)
+        super(CustomResourceProcessProxy, self).__init__(kernel_manager, proxy_config)
 
     async def launch_process(self, kernel_cmd, **kwargs):
         kwargs['env']['KERNEL_RESOURCE_NAME'] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
@@ -20,7 +20,7 @@ class CustomResourceProxy(KubernetesProcessProxy):
         kwargs['env']['KERNEL_CRD_VERSION'] = self.version
         kwargs['env']['KERNEL_CRD_PLURAL'] = self.plural
 
-        await super(CustomResourceProxy, self).launch_process(kernel_cmd, **kwargs)
+        await super(CustomResourceProcessProxy, self).launch_process(kernel_cmd, **kwargs)
         return self
 
     def kill(self):

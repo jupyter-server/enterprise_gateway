@@ -2,12 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
-from .crd import CustomResourceProxy, client
+from .crd import CustomResourceProcessProxy, client
 
 enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 
 
-class SparkOperatorProcessProxy(CustomResourceProxy):
+class SparkOperatorProcessProxy(CustomResourceProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super(SparkOperatorProcessProxy, self).__init__(kernel_manager, proxy_config)
         self.group = 'sparkoperator.k8s.io'

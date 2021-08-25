@@ -112,6 +112,14 @@ within a Docker Swarm cluster.
 within Docker configuration.  Note: because these kernels will always run local to the corresponding Enterprise Gateway instance, these process proxies are of limited use.
 - `ConductorClusterProcessProxy` - is responsible for the discovery and management of kernels hosted
 within an IBM Spectrum Conductor cluster.
+- `SparkOperatorProcessProxy` - is responsible for the descovery and management of kernels hosted 
+within a Kubernetes cluster but created as a SparkApplication instead of a Pod. The SparkApplication is a Kubernetes custom resource 
+defined inside the project [spark-on-k8s-operator](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator), which 
+makes all kinds of spark on k8s components better organized and easy to configure.
+
+Before you run this kernel, please ensure that spark operator is installed under a certain namespace of your Kubernetes
+cluster.
+
 
 You might notice that the last five process proxies do not necessarily control the *launch* of the kernel.  This is 
 because the native jupyter framework is utilized such that the script that is invoked by the framework is what 
@@ -290,6 +298,18 @@ option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where th
 located.  
 
 See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
+
+###### CustomResourceProcessProxy
+Enterprise Gateway also provides a implementation of a process proxy derived from KubernetesProcessProxy 
+called CustomResourceProcessProxy. 
+
+Instead of creating kernel based on Kubernetes pod, CustomResourceProcessProxy
+manages kernel by implementation of custom resource definition(CRD), e.g. SparkApplication is a CRD which include
+plenty component of a Spark on Kubernetes application.
+
+If you want to include a new CRD, just wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py)
+and [spark_python_operator](https://github.com/abzymeinsjtu/enterprise_gateway/blob/feat_crd_processproxy_support/etc/kernelspecs/spark_python_operator) kernelspec.
+
 
 #### Process Proxy Configuration
 Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 
