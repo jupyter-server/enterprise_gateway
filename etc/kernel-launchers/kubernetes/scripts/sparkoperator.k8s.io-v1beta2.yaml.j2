@@ -7,7 +7,7 @@ spec:
   pythonVersion: "3"
   sparkVersion: 2.4.5
   image: {{ kernel_image }}
-  mainApplicationFile: "local:////usr/local/bin/kernel-launchers/scripts/launch_ipykernel.py"
+  mainApplicationFile: "local:///usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py"
   arguments:
     - "--RemoteProcessProxy.kernel-id"
     - "{{ kernel_id }}"
@@ -18,6 +18,7 @@ spec:
     - "--RemoteProcessProxy.port-range"
     - "{{ eg_port_range }}"
   driver:
+    serviceAccount: "{{ kernel_service_account_name }}"
     labels:
       kernel_id: "{{ kernel_id }}"
       app: enterprise-gateway
