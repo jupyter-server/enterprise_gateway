@@ -300,15 +300,24 @@ located.
 See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
 
 ###### CustomResourceProcessProxy
-Enterprise Gateway also provides a implementation of a process proxy derived from KubernetesProcessProxy 
-called CustomResourceProcessProxy. 
+Enterprise Gateway also provides a implementation of a process proxy derived from `KubernetesProcessProxy` 
+called `CustomResourceProcessProxy`. 
 
-Instead of creating kernel based on Kubernetes pod, CustomResourceProcessProxy
-manages kernel by implementation of custom resource definition(CRD), e.g. SparkApplication is a CRD which include
-plenty component of a Spark on Kubernetes application.
+Instead of creating kernels based on a Kubernetes pod, `CustomResourceProcessProxy`
+manages kernels via a custom resource definition (CRD). For example,  `SparkApplication` is a CRD that includes
+many components of a Spark-on-Kubernetes application.
 
-If you want to include a new CRD, just wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py)
-and [spark_python_operator](https://github.com/abzymeinsjtu/enterprise_gateway/blob/feat_crd_processproxy_support/etc/kernelspecs/spark_python_operator) kernelspec.
+If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
+
+- override custom resource related variables(i.e. `group`, `version` and `plural`
+and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
+
+- define a jinja template like
+[sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
+As a generic design, the template file should be named as {crd_group}-{crd_version} so that you can reuse
+[launch_custom_resource.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py) in the kernelspec.
+
+- define a kernelspec like [spark_python_operator/kernel.json](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
 
 
 #### Process Proxy Configuration
