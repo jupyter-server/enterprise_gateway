@@ -74,10 +74,20 @@ def fetch_image_names():
                         images.add(executor_image_name)
 
     # Add the image names to the name queue
-    for image_name in images:
-        name_queue.put_nowait(image_name)
+    if docker_client is None:
+        logger.warning(
+            """
+            KernelInfoPuller only operates on Docker-based K8s systems and is unable to pull kernel images at this time.  
+            Please pre-seed your nodes with the necessary kernel images prior to their use.
+            Images below cannot be pulled: 
+                {}
+            """.format(','.join(images)))
+        return False
+    else:
+        for image_name in images:
+            name_queue.put_nowait(image_name)
 
-    return True
+        return True
 
 
 def pull_image(image_name):
@@ -89,20 +99,7 @@ def pull_image(image_name):
 
     Since NotFound exceptions are tolerated, we trap for only that exception and let
     the caller handle others.
-
-    If container runtime is not docker(e.g. containerd), the method returns.
     """
-    if docker_client is None:
-        logger.warning(
-            """
-            KernelInfoPuller only operates on Docker-based K8s systems and is unable to pull kernel images at this time.  
-            Please pre-seed your nodes with the necessary kernel images prior to their use.
-            Image '{}' cannot be pulled.
-            """
-        )
-
-        return
-
     if policy == POLICY_IF_NOT_PRESENT:
         if image_name in pulled_images:
             # Image has been pulled, but make sure it still exists.  If it doesn't exist
