@@ -5,7 +5,7 @@ dependencies:
   - docker-py>=3.5.0
   - future
   - jinja2>=2.10
-  - jupyter_client>=6.1
+  - jupyter_client>=6.1,<7.0
   - jupyter_core>=4.6.0
   - jupyter_server>=1.2
   - paramiko>=2.1.2
