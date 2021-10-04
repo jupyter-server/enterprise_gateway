@@ -114,6 +114,14 @@ within a Docker Swarm cluster.
 within Docker configuration.  Note: because these kernels will always run local to the corresponding Enterprise Gateway instance, these process proxies are of limited use.
 - `ConductorClusterProcessProxy` - is responsible for the discovery and management of kernels hosted
 within an IBM Spectrum Conductor cluster.
+- `SparkOperatorProcessProxy` - is responsible for the descovery and management of kernels hosted 
+within a Kubernetes cluster but created as a SparkApplication instead of a Pod. The SparkApplication is a Kubernetes custom resource 
+defined inside the project [spark-on-k8s-operator](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator), which 
+makes all kinds of spark on k8s components better organized and easy to configure.
+
+Before you run this kernel, please ensure that spark operator is installed under a certain namespace of your Kubernetes
+cluster.
+
 
 You might notice that the last five process proxies do not necessarily control the *launch* of the kernel.  This is 
 because the native jupyter framework is utilized such that the script that is invoked by the framework is what 
@@ -292,6 +300,27 @@ option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where th
 located.  
 
 See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
+
+###### CustomResourceProcessProxy
+Enterprise Gateway also provides a implementation of a process proxy derived from `KubernetesProcessProxy` 
+called `CustomResourceProcessProxy`. 
+
+Instead of creating kernels based on a Kubernetes pod, `CustomResourceProcessProxy`
+manages kernels via a custom resource definition (CRD). For example,  `SparkApplication` is a CRD that includes
+many components of a Spark-on-Kubernetes application.
+
+If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
+
+- override custom resource related variables(i.e. `group`, `version` and `plural`
+and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
+
+- define a jinja template like
+[sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
+As a generic design, the template file should be named as {crd_group}-{crd_version} so that you can reuse
+[launch_custom_resource.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py) in the kernelspec.
+
+- define a kernelspec like [spark_python_operator/kernel.json](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
+
 
 #### Process Proxy Configuration
 Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 

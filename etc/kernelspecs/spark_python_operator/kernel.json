@@ -1,0 +1,25 @@
+{
+  "language": "python",
+  "display_name": "Spark Operator (Python)",
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.spark_operator.SparkOperatorProcessProxy",
+      "config": {
+        "image_name": "elyra/kernel-spark-py:VERSION",
+        "executor_image_name": "elyra/kernel-spark-py:VERSION"
+      }
+    }
+  },
+  "argv": [
+    "python",
+    "/usr/local/share/jupyter/kernels/spark_python_operator/scripts/launch_custom_resource.py",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
+    "--RemoteProcessProxy.port-range",
+    "{port_range}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}"
+  ]
+}

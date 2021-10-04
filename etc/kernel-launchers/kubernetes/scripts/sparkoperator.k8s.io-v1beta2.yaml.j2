@@ -1,0 +1,34 @@
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: {{ kernel_resource_name }}
+spec:
+  type: Python
+  pythonVersion: "3"
+  sparkVersion: 2.4.5
+  image: {{ kernel_image }}
+  mainApplicationFile: "local:///usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py"
+  arguments:
+    - "--RemoteProcessProxy.kernel-id"
+    - "{{ kernel_id }}"
+    - "--RemoteProcessProxy.spark-context-initialization-mode"
+    - "{{ init_mode }}"
+    - "--RemoteProcessProxy.response-address"
+    - "{{ eg_response_address }}"
+    - "--RemoteProcessProxy.port-range"
+    - "{{ eg_port_range }}"
+  driver:
+    serviceAccount: "{{ kernel_service_account_name }}"
+    labels:
+      kernel_id: "{{ kernel_id }}"
+      app: enterprise-gateway
+      component: kernel
+    cores: 1
+    coreLimit: 1000m
+    memory: 1g
+  executor:
+    image: {{ kernel_executor_image }}
+    instances: 2
+    cores: 1
+    coreLimit: 1000m
+    memory: 1g
