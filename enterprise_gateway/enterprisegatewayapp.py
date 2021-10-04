@@ -13,6 +13,7 @@ import ssl
 import sys
 import time
 import weakref
+from typing import Optional
 
 from zmq.eventloop import ioloop
 from tornado import httpserver
@@ -162,8 +163,25 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             # Some handlers take args, so retain those in addition to the
             # handler class ref
             new_handler = tuple([pattern] + list(handler[1:]))
+            if self.authorized_origin:
+                self.__add_authorized_hostname_match(new_handler)
+
             handlers.append(new_handler)
         return handlers
+
+    def __add_authorized_hostname_match(self, handler: web.RequestHandler) -> None:
+        base_prepare = handler[1].prepare
+        authorized_hostname = self.authorized_origin
+
+        def wrapped_prepare(self):
+            ssl_cert = self.request.get_ssl_certificate()
+            try:
+                ssl.match_hostname(ssl_cert, authorized_hostname)
+            except ssl.SSLCertVerificationError:
+                raise web.HTTPError(403, 'Forbidden')
+            base_prepare(self)
+
+        handler[1].prepare = wrapped_prepare
 
     def init_webapp(self):
         """Initializes Tornado web application with uri handlers.
@@ -210,29 +228,21 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             ws_ping_interval=self.ws_ping_interval * 1000
         )
 
-    def _build_ssl_options(self):
-        """Build a dictionary of SSL options for the tornado HTTP server.
-
-        Taken directly from jupyter/notebook code.
+    def _build_ssl_options(self) -> Optional[ssl.SSLContext]:
+        """Build an SSLContext for the tornado HTTP server.
         """
-        ssl_options = {}
-        if self.certfile:
-            ssl_options['certfile'] = self.certfile
-        if self.keyfile:
-            ssl_options['keyfile'] = self.keyfile
-        if self.client_ca:
-            ssl_options['ca_certs'] = self.client_ca
-        if self.ssl_version:
-            ssl_options['ssl_version'] = self.ssl_version
-        if not ssl_options:
+        if not any((self.certfile, self.keyfile, self.client_ca)):
             # None indicates no SSL config
-            ssl_options = None
-        else:
-            ssl_options.setdefault('ssl_version', self.ssl_version_default_value)
-            if ssl_options.get('ca_certs', False):
-                ssl_options.setdefault('cert_reqs', ssl.CERT_REQUIRED)
+            return None
 
-        return ssl_options
+        ssl_context = ssl.SSLContext(protocol=self.ssl_version or self.ssl_version_default_value)
+        if self.certfile:
+            ssl_context.load_cert_chain(certfile=self.certfile, keyfile=self.keyfile)
+        if self.client_ca:
+            ssl_context.load_verify_locations(cafile=self.client_ca)
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+        return ssl_context
 
     def init_http_server(self):
         """Initializes a HTTP server for the Tornado web application on the

@@ -114,6 +114,12 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     carefully as it can dramatically limit who can launch kernels.
     (EG_AUTHORIZED_USERS env var - non-bracketed, just comma-separated)
     Default: set()
+--EnterpriseGatewayApp.authorized_origin=<Unicode>
+    Hostname (e.g. 'localhost', 'reverse.proxy.net') which the handler will
+    match against the request's SSL certificate.  An HTTP 403 (Forbidden) error
+    will be raised on a failed match.  This option requires TLS to be enabled.
+    It does not support IP addresses. (EG_AUTHORIZED_ORIGIN env var)
+    Default: ''
 --EnterpriseGatewayApp.base_url=<Unicode>
     The base path for mounting all API resources (EG_BASE_URL env var)
     Default: '/'
