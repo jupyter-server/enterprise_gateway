@@ -6,18 +6,19 @@ import os
 from jupyter_server.utils import ensure_async
 from tornado import web
 from ...mixins import CORSMixin
+from typing import List
 
 
 class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
     """Exposes the ability to return specifications from static files"""
 
     @staticmethod
-    def get_resource_metadata():
+    def get_resource_metadata() -> tuple:
         """Returns the (resource, mime-type) for the handlers spec.
         """
         pass
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initializes the instance of this class to serve files.
 
         The handler is initialized to serve files from the directory
@@ -25,7 +26,7 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
         """
         web.StaticFileHandler.initialize(self, path=os.path.dirname(__file__))
 
-    async def get(self):
+    async def get(self) -> None:
         """Handler for a get on a specific handler
         """
         resource_name, content_type = self.get_resource_metadata()
@@ -33,7 +34,7 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
         res = web.StaticFileHandler.get(self, resource_name)
         await ensure_async(res)
 
-    def options(self, **kwargs):
+    def options(self, **kwargs) -> None:
         """Method for properly handling CORS pre-flight"""
         self.finish()
 
@@ -41,18 +42,18 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
 class SpecJsonHandler(BaseSpecHandler):
     """Exposes a JSON swagger specification"""
     @staticmethod
-    def get_resource_metadata():
+    def get_resource_metadata() -> tuple:
         return 'swagger.json', 'application/json'
 
 
 class APIYamlHandler(BaseSpecHandler):
     """Exposes a YAML swagger specification"""
     @staticmethod
-    def get_resource_metadata():
+    def get_resource_metadata() -> tuple:
         return 'swagger.yaml', 'text/x-yaml'
 
 
-default_handlers = [
+default_handlers: List[str] = [
     ('/api/{}'.format(SpecJsonHandler.get_resource_metadata()[0]), SpecJsonHandler),
     ('/api/{}'.format(APIYamlHandler.get_resource_metadata()[0]), APIYamlHandler)
 ]
