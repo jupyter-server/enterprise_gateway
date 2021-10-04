@@ -4,11 +4,11 @@ import queue
 import requests
 import time
 
+from kubernetes import config, client
 from docker.client import DockerClient
 from docker.errors import APIError
 from docker.errors import NotFound
 from threading import Thread
-
 
 gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:8888")
 num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
@@ -24,8 +24,6 @@ POLICY_ALYWAYS = "Always"
 policies = (POLICY_IF_NOT_PRESENT, POLICY_ALYWAYS)
 
 policy = os.getenv("KIP_PULL_POLICY", POLICY_IF_NOT_PRESENT)
-
-docker_client = DockerClient.from_env()
 
 logging.basicConfig(format='[%(levelname)1.1s %(asctime)s %(name)s.%(threadName)s] %(message)s')
 
@@ -76,10 +74,20 @@ def fetch_image_names():
                         images.add(executor_image_name)
 
     # Add the image names to the name queue
-    for image_name in images:
-        name_queue.put_nowait(image_name)
+    if docker_client is None:
+        logger.warning(
+            """
+            KernelInfoPuller only operates on Docker-based K8s systems and is unable to pull kernel images at this time.  
+            Please pre-seed your nodes with the necessary kernel images prior to their use.
+            Images below cannot be pulled: 
+                {}
+            """.format(','.join(images)))
+        return False
+    else:
+        for image_name in images:
+            name_queue.put_nowait(image_name)
 
-    return True
+        return True
 
 
 def pull_image(image_name):
@@ -148,10 +156,20 @@ def puller():
         name_queue.task_done()
 
 
-if __name__ == "__main__":
+def _is_docker_runtime():
+    config.load_incluster_config()
+    first_node_name = client.CoreV1Api(client.ApiClient()).list_node().items[0].metadata.name
+    node_info = client.CoreV1Api(client.ApiClient()).read_node(name=first_node_name)
+    container_runtime = node_info.status.node_info.container_runtime_version
 
+    return 'docker://' in container_runtime
+
+
+if __name__ == "__main__":
     logger = logging.getLogger('kernel_image_puller')
     logger.setLevel(log_level)
+
+    is_docker_runtime = _is_docker_runtime()
 
     # Determine pull policy.
     pulled_images = set()
@@ -168,6 +186,8 @@ if __name__ == "__main__":
     logger.info("KIP_PULL_POLICY: {}".format(policy))
     logger.info("KIP_LOG_LEVEL: {}".format(log_level))
     logger.info("KIP_AUTH_TOKEN: {}".format(auth_token))
+
+    docker_client = DockerClient.from_env() if is_docker_runtime else None
 
     # Create an empty queue and start the puller threads.  The number of puller threads is configurable.
     name_queue = queue.Queue()
