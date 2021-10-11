@@ -8,8 +8,8 @@ import urllib3
 urllib3.disable_warnings()
 
 # Set env to False if the container should be left around for debug purposes, etc.
-remove_container = bool(os.getenv('EG_REMOVE_CONTAINER', 'True').lower() == 'true')
-swarm_mode = bool(os.getenv('EG_DOCKER_MODE', 'swarm').lower() == 'swarm')
+remove_container = bool(os.getenv('REMOVE_CONTAINER', os.getenv('EG_REMOVE_CONTAINER', 'True')).lower() == 'true')
+swarm_mode = bool(os.getenv('DOCKER_MODE', os.getenv('EG_DOCKER_MODE', 'swarm')).lower() == 'swarm')
 
 
 def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode):
@@ -24,7 +24,7 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
     container_name = os.environ.get('KERNEL_USERNAME', '') + '-' + kernel_id
 
     # Determine network. If EG_DOCKER_NETWORK has not been propagated, fall back to 'bridge'...
-    docker_network = os.environ.get('EG_DOCKER_NETWORK', 'bridge')
+    docker_network = os.environ.get('DOCKER_NETWORK', os.environ.get('EG_DOCKER_NETWORK', 'bridge'))
 
     # Build labels - these will be modelled similar to kubernetes: kernel_id, component, app, ...
     labels = dict()
@@ -34,9 +34,9 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
 
     # Capture env parameters...
     param_env = dict()
-    param_env['EG_PORT_RANGE'] = port_range
-    param_env['EG_PUBLIC_KEY'] = public_key
-    param_env['EG_RESPONSE_ADDRESS'] = response_addr
+    param_env['PORT_RANGE'] = port_range
+    param_env['PUBLIC_KEY'] = public_key
+    param_env['RESPONSE_ADDRESS'] = response_addr
     param_env['KERNEL_SPARK_CONTEXT_INIT_MODE'] = spark_context_init_mode
 
     # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and ENV_WHITELIST)
@@ -93,23 +93,38 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+    parser.add_argument('--kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
-    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
+    parser.add_argument('--port-range', dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
-    parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
+    parser.add_argument('--response-address', dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+    parser.add_argument('--public-key', dest='public_key', nargs='?',
                         help='Public key used to encrypt connection information')
-    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
-                        nargs='?', help='Indicates whether or how a spark context should be created',
+    parser.add_argument('--spark-context-initialization-mode', dest='spark_context_init_mode',
+                        nargs='?', help='Indicates whether or how a spark context should be created')
+
+    # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
+    # This means that the default value for --spark-context-initialization-mode (none) will need to come from
+    # the mirrored args' default until deprecated item has been removed.
+    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='rpp_kernel_id', nargs='?',
+                        help='Indicates the id associated with the launched kernel. (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.port-range', dest='rpp_port_range', nargs='?',
+                        metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.response-address', dest='rpp_response_address', nargs='?',
+                        metavar='<ip>:<port>',
+                        help='Connection address (<ip>:<port>) for returning connection file (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.public-key', dest='rpp_public_key', nargs='?',
+                        help='Public key used to encrypt connection information (deprecated)')
+    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='rpp_spark_context_init_mode',
+                        nargs='?', help='Indicates whether or how a spark context should be created (deprecated)',
                         default='none')
 
     arguments = vars(parser.parse_args())
-    kernel_id = arguments['kernel_id']
-    port_range = arguments['port_range']
-    response_addr = arguments['response_address']
-    public_key = arguments['public_key']
-    spark_context_init_mode = arguments['spark_context_init_mode']
+    kernel_id = arguments['kernel_id'] or arguments['rpp_kernel_id']
+    port_range = arguments['port_range'] or arguments['rpp_port_range']
+    response_addr = arguments['response_address'] or arguments['rpp_response_address']
+    public_key = arguments['public_key'] or arguments['rpp_public_key']
+    spark_context_init_mode = arguments['spark_context_init_mode'] or arguments['rpp_spark_context_init_mode']
 
     launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode)

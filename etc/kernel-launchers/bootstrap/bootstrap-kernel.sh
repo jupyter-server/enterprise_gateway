@@ -1,6 +1,8 @@
 #!/bin/bash
 
-EG_PORT_RANGE=${EG_PORT_RANGE:-0..0}
+PORT_RANGE=${PORT_RANGE:-${EG_PORT_RANGE:-0..0}}
+RESPONSE_ADDRESS=${RESPONSE_ADDRESS:-${EG_RESPONSE_ADDRESS}}
+PUBLIC_KEY=${PUBLIC_KEY:-${EG_PUBLIC_KEY}}
 KERNEL_LAUNCHERS_DIR=${KERNEL_LAUNCHERS_DIR:-/usr/local/bin/kernel-launchers}
 KERNEL_SPARK_CONTEXT_INIT_MODE=${KERNEL_SPARK_CONTEXT_INIT_MODE:-none}
 
@@ -13,7 +15,7 @@ launch_python_kernel() {
     export JPY_PARENT_PID=$$  # Force reset of parent pid since we're detached
 
 	set -x
-	python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.port-range ${EG_PORT_RANGE} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.public-key ${EG_PUBLIC_KEY} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
+	python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
 	{ set +x; } 2>/dev/null
 }
 
@@ -22,7 +24,7 @@ launch_R_kernel() {
     # and shutdown requests from Enterprise Gateway.
 
 	set -x
-	Rscript ${KERNEL_LAUNCHERS_DIR}/R/scripts/launch_IRkernel.R --RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.port-range ${EG_PORT_RANGE} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.public-key ${EG_PUBLIC_KEY} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
+	Rscript ${KERNEL_LAUNCHERS_DIR}/R/scripts/launch_IRkernel.R --kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}
 	{ set +x; } 2>/dev/null
 }
 
@@ -60,7 +62,7 @@ launch_scala_kernel() {
          --class launcher.ToreeLauncher \
          "${LAUNCHER_APP}" \
          "${TOREE_OPTS}" \
-         "--RemoteProcessProxy.kernel-id ${KERNEL_ID} --RemoteProcessProxy.port-range ${EG_PORT_RANGE} --RemoteProcessProxy.response-address ${EG_RESPONSE_ADDRESS} --RemoteProcessProxy.public-key ${EG_PUBLIC_KEY} --RemoteProcessProxy.spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}"
+         "--kernel-id ${KERNEL_ID} --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE}"
     { set +x; } 2>/dev/null
 }
 
@@ -70,9 +72,9 @@ then
     echo "KERNEL_LANGUAGE is required.  Set this value in the image or when starting container."
     exit 1
 fi
-if [ -z "${KERNEL_ID+x}" ] || [ -z "${EG_RESPONSE_ADDRESS+x}" ] || [ -z "${EG_PUBLIC_KEY+x}" ]
+if [ -z "${KERNEL_ID+x}" ] || [ -z "${RESPONSE_ADDRESS+x}" ] || [ -z "${PUBLIC_KEY+x}" ]
 then
-    echo "Environment variables, KERNEL_ID, EG_RESPONSE_ADDRESS, and EG_PUBLIC_KEY are required.  Ensure this container is started by Enterprise Gateway."
+    echo "Environment variables, KERNEL_ID, RESPONSE_ADDRESS, and PUBLIC_KEY are required."
     exit 1
 fi
 

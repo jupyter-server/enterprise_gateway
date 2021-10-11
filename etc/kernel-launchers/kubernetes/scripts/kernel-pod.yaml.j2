@@ -1,4 +1,4 @@
-# This file defines the Kubernetes objects necessary for Enterprise Gateway kernels to run witihin Kubernetes.
+# This file defines the Kubernetes objects necessary for kernels to run witihin Kubernetes.
 # Substitution parameters are processed by the launch_kubernetes.py code located in the
 # same directory.  Some values are factory values, while others (typically prefixed with 'kernel_') can be
 # provided by the client.
@@ -38,12 +38,12 @@ spec:
   {% endif %}
   containers:
   - env:
-    - name: EG_PORT_RANGE
-      value: "{{ eg_port_range }}"
-    - name: EG_RESPONSE_ADDRESS
-      value: "{{ eg_response_address }}"
-    - name: EG_PUBLIC_KEY
-      value: "{{ eg_public_key }}"
+    - name: PORT_RANGE
+      value: "{{ port_range }}"
+    - name: RESPONSE_ADDRESS
+      value: "{{ response_address }}"
+    - name: PUBLIC_KEY
+      value: "{{ public_key }}"
     - name: KERNEL_ID
       value: "{{ kernel_id }}"
     - name: KERNEL_LANGUAGE

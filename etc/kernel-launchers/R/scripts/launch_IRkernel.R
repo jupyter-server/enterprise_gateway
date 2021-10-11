@@ -12,7 +12,9 @@ sparkConfigList <- list(
 spark.executorEnv.R_LIBS_USER=r_libs_user,
 spark.rdd.compress="true")
 
-min_port_range_size = Sys.getenv("EG_MIN_PORT_RANGE_SIZE")
+min_port_range_size = Sys.getenv("MIN_PORT_RANGE_SIZE")
+if ( is.null(min_port_range_size) )
+    min_port_range_size = Sys.getenv("EG_MIN_PORT_RANGE_SIZE")
 if ( is.null(min_port_range_size) )
     min_port_range_size = 1000
 
@@ -108,52 +110,89 @@ validate_port_range <- function(port_range){
 
 # Check arguments
 parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
+parser$add_argument("--kernel-id", nargs='?',
+       help="the id associated with the launched kernel")
+parser$add_argument("--port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
+       help="the range of ports impose for kernel ports")
+parser$add_argument("--response-address", nargs='?', metavar='<ip>:<port>',
+      help="the IP:port address of the system hosting the server and expecting response")
+parser$add_argument("--public-key", nargs='?',
+      help="the public key used to encrypt connection information")
+parser$add_argument("--spark-context-initialization-mode", nargs='?',
+      help="the initialization mode of the spark context: lazy, eager or none")
+
 parser$add_argument("connection_file", nargs='?', help='Connection file to write connection info')
 parser$add_argument("--RemoteProcessProxy.kernel-id", nargs='?',
-       help="the id associated with the launched kernel")
+       help="the id associated with the launched kernel (deprecated)")
 parser$add_argument("--RemoteProcessProxy.port-range", nargs='?', metavar='<lowerPort>..<upperPort>',
-       help="the range of ports impose for kernel ports")
+       help="the range of ports impose for kernel ports (deprecated)")
 parser$add_argument("--RemoteProcessProxy.response-address", nargs='?', metavar='<ip>:<port>',
-      help="the IP:port address of the system hosting the server and expecting response")
+      help="the IP:port address of the system hosting the server and expecting response (deprecated)")
 parser$add_argument("--RemoteProcessProxy.public-key", nargs='?',
-      help="the public key used to encrypt connection information")
+      help="the public key used to encrypt connection information (deprecated)")
 parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
-      help="the initialization mode of the spark context: lazy, eager or none")
+      help="the initialization mode of the spark context: lazy, eager or none (deprecated)")
 parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
 
 argv <- parser$parse_args()
 
-if (is.null(argv$connection_file) && is.null(argv$RemoteProcessProxy.kernel_id)){
-    message("At least one of the parameters: 'connection_file' or '--RemoteProcessProxy.kernel-id' must be provided!")
+kernel_id <- argv$kernel_id
+if (is.null(kernel_id)) {
+    kernel_id <- argv$RemoteProcessProxy.kernel_id
+}
+
+port_range <- argv$port_range
+if (is.null(port_range)) {
+    port_range <- argv$RemoteProcessProxy.port_range
+}
+
+response_address <- argv$response_address
+if (is.null(response_address)) {
+    response_address <- argv$RemoteProcessProxy.response_address
+}
+
+public_key <- argv$public_key
+if (is.null(public_key)) {
+    public_key <- argv$RemoteProcessProxy.public_key
+}
+
+spark_context_initialization_mode <- argv$spark_context_initialization_mode
+if (is.null(spark_context_initialization_mode)) {
+    spark_context_initialization_mode <- argv$RemoteProcessProxy.spark_context_initialization_mode
+}
+
+
+if (is.null(argv$connection_file) && is.null(kernel_id)){
+    message("At least one of the parameters: 'connection_file' or '--kernel-id' must be provided!")
     return(NA)
 }
 
-if (is.null(argv$RemoteProcessProxy.kernel_id)){
-    message("Parameter '--RemoteProcessProxy.kernel-id' must be provided!")
+if (is.null(kernel_id)){
+    message("Parameter '--kernel-id' must be provided!")
     return(NA)
 }
 
-if (is.null(argv$RemoteProcessProxy.public_key)){
-    message("Parameter '--RemoteProcessProxy.public-key' must be provided!")
+if (is.null(public_key)){
+    message("Parameter '--public-key' must be provided!")
     return(NA)
 }
 
-# if we have a response address, then deal with items relative to remote support (ports, gateway-socket, etc.)
-if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$RemoteProcessProxy.response_address) > 0){
+# if we have a response address, then deal with items relative to remote support (ports, comm-socket, etc.)
+if (!is.null(response_address) && str_length(response_address) > 0){
 
     #If port range argument is passed from kernel json with no value
-    if (is.null(argv$RemoteProcessProxy.port_range)){
-        argv$RemoteProcessProxy.port_range <- NA
+    if (is.null(port_range)){
+        port_range <- NA
     }
 
     #  If there is a response address, use pull socket mode
-    connection_file <- determine_connection_file(argv$RemoteProcessProxy.kernel_id)
+    connection_file <- determine_connection_file(kernel_id)
 
     # if port-range was provided, validate the range and determine bounds
     lower_port = 0
     upper_port = 0
-    if (!is.na(argv$RemoteProcessProxy.port_range)){
-        range <- validate_port_range(argv$RemoteProcessProxy.port_range)
+    if (!is.na(port_range)){
+        range <- validate_port_range(port_range)
         if (length(range) > 1){
             lower_port = range$lower_port
             upper_port = range$upper_port
@@ -165,31 +204,26 @@ if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$Remote
     pid <- Sys.getpid()
 
     # Hoop to jump through to get the directory this script resides in so that we can
-    # load the co-located python gateway_listener.py file.  This code will not work if
+    # load the co-located python server_listener.py file.  This code will not work if
     # called directly from within RStudio.
     # https://stackoverflow.com/questions/1815606/rscript-determine-path-of-the-executing-script
     launch_args <- commandArgs(trailingOnly = FALSE)
     file_option <- "--file="
     script_path <- sub(file_option, "", launch_args[grep(file_option, launch_args)])
-    listener_file <- paste(sep="/", dirname(script_path), "gateway_listener.py")
+    listener_file <- paste(sep="/", dirname(script_path), "server_listener.py")
 
-    # Launch the gateway listener logic in an async manner and poll for the existence of
-    # the connection file before continuing.  Should there be an issue, Enterprise Gateway
+    # Launch the server listener logic in an async manner and poll for the existence of
+    # the connection file before continuing.  Should there be an issue, the server
     # will terminate the launcher, so there's no need for a timeout.
     python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
 
-    # Simplify parameters
-    response_addr <- argv$RemoteProcessProxy.response_address
-    kernel_id <- argv$RemoteProcessProxy.kernel_id
-    public_key <- argv$RemoteProcessProxy.public_key
-
-    gw_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
+    svr_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
                 paste(python_cmd,"-c \"import os, sys, imp;
-                gl = imp.load_source('setup_gateway_listener', '${listener_file}');
-                gl.setup_gateway_listener(conn_filename='${connection_file}', parent_pid='${pid}',
+                gl = imp.load_source('setup_server_listener', '${listener_file}');
+                gl.setup_server_listener(conn_filename='${connection_file}', parent_pid='${pid}',
                 lower_port=${lower_port}, upper_port=${upper_port},
-                response_addr='${response_addr}', kernel_id='${kernel_id}', public_key='${public_key}')\"")))
-    system(gw_listener_cmd, wait=FALSE)
+                response_addr='${response_address}', kernel_id='${kernel_id}', public_key='${public_key}')\"")))
+    system(svr_listener_cmd, wait=FALSE)
 
     while (!file.exists(connection_file)) {
         Sys.sleep(0.5)
@@ -202,15 +236,15 @@ if (!is.null(argv$RemoteProcessProxy.response_address) && str_length(argv$Remote
 
 # If spark context creation is desired go ahead and initialize the session/context
 # Otherwise, skip spark context creation if set to none or not provided
-if (!is.na(argv$RemoteProcessProxy.spark_context_initialization_mode)){
-    if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+if (!is.na(spark_context_initialization_mode)){
+    if (!identical(spark_context_initialization_mode, "none")){
         # Add custom application name (spark.app.name) spark config if available, else default to kernel_id
         if (!is.null(argv$customAppName) && str_length(argv$customAppName) > 0){
             sparkConfigList[['spark.app.name']] <- argv$customAppName
         } else {
-            sparkConfigList[['spark.app.name']] <- argv$RemoteProcessProxy.kernel_id
+            sparkConfigList[['spark.app.name']] <- kernel_id
         }
-        initialize_spark_session(argv$RemoteProcessProxy.spark_context_initialization_mode)
+        initialize_spark_session(spark_context_initialization_mode)
     }
 }
 
@@ -218,11 +252,11 @@ if (!is.na(argv$RemoteProcessProxy.spark_context_initialization_mode)){
 IRkernel::main(connection_file)
 
 # Only unlink the connection file if we're launched for remote behavior.
-if (!is.na(argv$RemoteProcessProxy.response_address)){
+if (!is.na(response_address)){
     unlink(connection_file)
 }
 
 # Stop the context and exit
-if (!identical(argv$RemoteProcessProxy.spark_context_initialization_mode, "none")){
+if (!identical(spark_context_initialization_mode, "none")){
     sparkR.session.stop()
 }

@@ -10,19 +10,19 @@ from Cryptodome.Cipher import PKCS1_v1_5, AES
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
-from ipython_genutils.py3compat import str_to_bytes
 from jupyter_client.connect import write_connection_file
 from threading import Thread
 
 LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
 
-max_port_range_retries = int(os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5'))
-log_level = os.getenv('EG_LOG_LEVEL', '10')
+max_port_range_retries = int(os.getenv('MAX_PORT_RANGE_RETRIES', os.getenv('EG_MAX_PORT_RANGE_RETRIES', '5')))
+
+log_level = os.getenv('LOG_LEVEL', os.getenv('EG_LOG_LEVEL', '10'))
 log_level = int(log_level) if log_level.isdigit() else log_level
 
 logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
 
-logger = logging.getLogger('gateway_listener for R launcher')
+logger = logging.getLogger('server_listener for R launcher')
 logger.setLevel(log_level)
 
 
@@ -78,8 +78,8 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
     cf_json['pgid'] = os.getpgid(parent_pid)
 
     # prepare socket address for handling signals
-    gateway_sock = prepare_gateway_socket(lower_port, upper_port)
-    cf_json['comm_port'] = gateway_sock.getsockname()[1]
+    comm_sock = prepare_comm_socket(lower_port, upper_port)
+    cf_json['comm_port'] = comm_sock.getsockname()[1]
     cf_json['kernel_id'] = kernel_id
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -93,10 +93,10 @@ def return_connection_info(connection_file, response_addr, lower_port, upper_por
     finally:
         s.close()
 
-    return gateway_sock
+    return comm_sock
 
 
-def prepare_gateway_socket(lower_port, upper_port):
+def prepare_comm_socket(lower_port, upper_port):
     """Prepares the socket to which the server will send signal and shutdown requests.
 
        This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
@@ -156,8 +156,8 @@ def _get_candidate_port(lower_port, upper_port):
     return random.randint(lower_port, upper_port)
 
 
-def get_gateway_request(sock):
-    """Gets a request from the (gateway) server and returns the corresponding dictionary.
+def get_server_request(sock):
+    """Gets a request from the server and returns the corresponding dictionary.
 
        This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
     """
@@ -182,8 +182,8 @@ def get_gateway_request(sock):
     return request_info
 
 
-def gateway_listener(sock, parent_pid):
-    """Waits for requests from the (gateway) server and processes each when received.  Currently,
+def server_listener(sock, parent_pid):
+    """Waits for requests from the server and processes each when received.  Currently,
        these will be one of a sending a signal to the corresponding kernel process (signum) or
        stopping the listener and exiting the kernel (shutdown).
 
@@ -191,7 +191,7 @@ def gateway_listener(sock, parent_pid):
     """
     shutdown = False
     while not shutdown:
-        request = get_gateway_request(sock)
+        request = get_server_request(sock)
         if request:
             signum = -1  # prevent logging poll requests since that occurs every 3 seconds
             if request.get('signum') is not None:
@@ -200,26 +200,27 @@ def gateway_listener(sock, parent_pid):
             if request.get('shutdown') is not None:
                 shutdown = bool(request.get('shutdown'))
             if signum != 0:
-                logger.info("gateway_listener got request: {}".format(request))
+                logger.info("server_listener got request: {}".format(request))
 
 
-def setup_gateway_listener(conn_filename, parent_pid, lower_port, upper_port, response_addr, kernel_id, public_key):
+def setup_server_listener(conn_filename, parent_pid, lower_port, upper_port, response_addr, kernel_id, public_key):
     ip = "0.0.0.0"
-    key = str_to_bytes(str(uuid.uuid4()))
+    key = str(uuid.uuid4()).encode()  # convert to bytes
 
     ports = _select_ports(5, lower_port, upper_port)
 
     write_connection_file(fname=conn_filename, ip=ip, key=key, shell_port=ports[0], iopub_port=ports[1],
                           stdin_port=ports[2], hb_port=ports[3], control_port=ports[4])
     if response_addr:
-        gateway_socket = return_connection_info(conn_filename, response_addr, int(lower_port), int(upper_port),
-                                                kernel_id, public_key, int(parent_pid))
-        if gateway_socket:  # socket in use, start gateway listener thread
-            gateway_listener_thread = Thread(target=gateway_listener, args=(gateway_socket, int(parent_pid),))
-            gateway_listener_thread.start()
+        comm_socket = return_connection_info(conn_filename, response_addr, int(lower_port), int(upper_port),
+                                             kernel_id, public_key, int(parent_pid))
+        if comm_socket:  # socket in use, start server listener thread
+            server_listener_thread = Thread(target=server_listener, args=(comm_socket, int(parent_pid),))
+            server_listener_thread.start()
 
     return
 
+
 __all__ = [
-    'setup_gateway_listener',
+    'setup_server_listener',
 ]
