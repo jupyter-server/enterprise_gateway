@@ -16,7 +16,7 @@ gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:8888")
 num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
 num_retries = int(os.getenv("KIP_NUM_RETRIES", "3"))
 interval = int(os.getenv("KIP_INTERVAL", "300"))
-log_level = os.getenv("KIP_LOG_LEVEL", "DEBUG")
+log_level = os.getenv("KIP_LOG_LEVEL", "INFO")
 
 # Add authentication token support to KIP
 auth_token = os.getenv("KIP_AUTH_TOKEN", None)
