@@ -66,7 +66,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
-            self.local_proc = self.launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kwargs)
+            self.local_proc = self.launch_kernel(cmd, stdout=open(self.kernel_log, mode='a'), stderr=STDOUT, **kwargs)
             result_pid = str(self.local_proc.pid)
         else:
             # launch remote command via ssh
