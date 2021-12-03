@@ -58,8 +58,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
         pod_status = None
+        kernel_label_selector = "kernel_id=" + self.kernel_id + ",component=kernel"
         ret = client.CoreV1Api().list_namespaced_pod(namespace=self.kernel_namespace,
-                                                     label_selector="kernel_id=" + self.kernel_id)
+                                                     label_selector=kernel_label_selector)
         if ret and ret.items:
             pod_info = ret.items[0]
             self.container_name = pod_info.metadata.name
