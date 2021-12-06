@@ -221,6 +221,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             # Also set the allow_origin setting used by jupyter_server so that the
             # check_origin method used everywhere respects the value
             allow_origin=self.allow_origin,
+            # Set base_url for use in request handlers
+            base_url=self.base_url,
             # Always allow remote access (has been limited to localhost >= notebook 5.6)
             allow_remote_access=True,
             # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
