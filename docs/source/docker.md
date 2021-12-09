@@ -65,7 +65,7 @@ Users that do not wish to extend an existing kernel image must be cognizant of a
 2. Is the base image one from [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks)?
 
 #### Requirements for Custom Kernel Images
-Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.5.1`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
+Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.5.2`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
 
 ##### Bootstrap-kernel.sh
 Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
@@ -119,7 +119,7 @@ If your base image is not from docker-stacks, it is recommended that you NOT run
 Aside from configuring the image user, all other aspects of customization are the same.  In this case, we'll use the tensorflow-gpu image and convert it to be usable via Enterprise Gateway as a custom kernel image.  Note that because this image didn't have `wget` we used `curl` to download the supporting kernel-image files.
 
 ```dockerfile
-FROM tensorflow/tensorflow:2.5.1-gpu-jupyter
+FROM tensorflow/tensorflow:2.5.2-gpu-jupyter
 
 USER root
 
