@@ -42,6 +42,7 @@ object KernelProfile {
       kernel_name = "Apache Toree Scala", transport = "tcp", ip = "0.0.0.0",
       signature_scheme = "hmac-sha256"
     )
+
     Json.prettyPrint(Json.toJson(newKernelProfile))
   }
 }

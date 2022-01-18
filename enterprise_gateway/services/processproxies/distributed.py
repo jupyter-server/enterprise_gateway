@@ -2,14 +2,13 @@
 # Distributed under the terms of the Modified BSD License.
 """Code used for the generic distribution of kernels across a set of hosts."""
 
-import os
+import asyncio
 import json
-import time
+import os
+import signal
 
 from subprocess import STDOUT
 from socket import gethostbyname
-
-from jupyter_client import launch_kernel
 
 from .processproxy import RemoteProcessProxy, BaseProcessProxyABC
 
@@ -18,7 +17,9 @@ kernel_log_dir = os.getenv("EG_KERNEL_LOG_DIR", '/tmp')  # would prefer /var/log
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
-    """Manages the lifecycle of kernels distributed across a set of hosts."""
+    """
+    Manages the lifecycle of kernels distributed across a set of hosts.
+    """
     host_index = 0
 
     def __init__(self, kernel_manager, proxy_config):
@@ -27,11 +28,13 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if proxy_config.get('remote_hosts'):
             self.hosts = proxy_config.get('remote_hosts').split(',')
         else:
-            self.hosts = kernel_manager.parent.parent.remote_hosts  # from command line or env
+            self.hosts = kernel_manager.remote_hosts  # from command line or env
 
-    def launch_process(self, kernel_cmd, **kwargs):
-        """Launches a kernel process on a selected host."""
-        super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
+    async def launch_process(self, kernel_cmd, **kwargs):
+        """
+        Launches a kernel process on a selected host.
+        """
+        await super(DistributedProcessProxy, self).launch_process(kernel_cmd, **kwargs)
 
         self.assigned_host = self._determine_next_host()
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
@@ -48,8 +51,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         self.log.info("Kernel launched on '{}', pid: {}, ID: {}, Log file: {}:{}, Command: '{}'.  ".
                       format(self.assigned_host, self.pid, self.kernel_id, self.assigned_host,
                              self.kernel_log, kernel_cmd))
-        self.confirm_remote_startup()
-
+        await self.confirm_remote_startup()
         return self
 
     def _launch_remote_process(self, kernel_cmd, **kwargs):
@@ -64,7 +66,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
-            self.local_proc = launch_kernel(cmd, stdout=open(self.kernel_log, mode='w'), stderr=STDOUT, **kwargs)
+            self.local_proc = self.launch_kernel(cmd, stdout=open(self.kernel_log, mode='a'), stderr=STDOUT, **kwargs)
             result_pid = str(self.local_proc.pid)
         else:
             # launch remote command via ssh
@@ -121,24 +123,24 @@ class DistributedProcessProxy(RemoteProcessProxy):
         DistributedProcessProxy.host_index += 1
         return next_host
 
-    def confirm_remote_startup(self):
+    async def confirm_remote_startup(self):
         """ Confirms the remote kernel has started by obtaining connection information from the remote host."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
-            self.handle_timeout()
+            await self.handle_timeout()
 
             self.log.debug("{}: Waiting to connect.  Host: '{}', KernelID: '{}'".
                            format(i, self.assigned_host, self.kernel_id))
 
             if self.assigned_host != '':
-                ready_to_connect = self.receive_connection_info()
+                ready_to_connect = await self.receive_connection_info()
 
-    def handle_timeout(self):
+    async def handle_timeout(self):
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
-        time.sleep(poll_interval)
+        await asyncio.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(self.start_time, RemoteProcessProxy.get_current_time())
 
         if time_interval > self.kernel_launch_timeout:
@@ -146,5 +148,16 @@ class DistributedProcessProxy(RemoteProcessProxy):
                      "log ({}:{}) for more information.".\
                 format(self.kernel_launch_timeout, self.assigned_host, self.kernel_log)
             timeout_message = "KernelID: '{}' launch timeout due to: {}".format(self.kernel_id, reason)
-            self.kill()
+            await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=500, reason=timeout_message)
+
+    def cleanup(self):
+        # DistributedProcessProxy can have a tendency to leave zombies, particularly when EG is
+        # abruptly terminated.  This extra call to shutdown_lister does the trick.
+        self.shutdown_listener()
+        super(RemoteProcessProxy, self).cleanup()
+
+    def shutdown_listener(self):
+        """Ensure that kernel process is terminated."""
+        self.send_signal(signal.SIGTERM)
+        super(DistributedProcessProxy, self).shutdown_listener()

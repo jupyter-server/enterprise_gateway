@@ -1,6 +1,7 @@
 ## Troubleshooting
+
 This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
-instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.html) page.
+instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.md) page.
 
 - **None of the scenarios on this page match or resolve my issue, what do I do next?**
 
@@ -47,8 +48,7 @@ instructions for setting up a debug environment on our [Debugging Jupyter Enterp
     examples for how to go about validating their configuration.
     3. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place.  These
     should be covered in our [Getting Started](getting-started.html#configuring-resource-managers) topics.
-    4. If using a Notebook as your front-end, ensure that the 
-    [NB2KG extension](getting-started.html#connecting-a-notebook-to-enterprise-gateway) is properly configured.
+    4. If using a Notebook server as your front-end, ensure that the Gateway configuration options or NB2KG extension settings are properly configured.
     Once the notebook has started, a refresh on the tree view should issue the same `kernelspecs` request in step 1 and
     the drop-down menu items for available kernels should reflect an entry for each kernelspec returned.
     5. **Always** consult your Enterprise Gateway log file.  If you have not redirected `stdout` and `stderr` to a
@@ -159,20 +159,20 @@ but it failed with a "Kernel error" and a SSHException.**
 
     ```
     Traceback (most recent call last):
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1512, in _execute
+      File "/opt/conda/lib/python3.7/site-packages/tornado/web.py", line 1512, in _execute
         result = yield result
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+      File "/opt/conda/lib/python3.7/site-packages/tornado/gen.py", line 1055, in run
         value = future.result()
       ....
       ....
       ....
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/kernels/remotemanager.py", line 125, in _launch_kernel
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/kernels/remotemanager.py", line 125, in _launch_kernel
         return self.process_proxy.launch_process(kernel_cmd, **kw)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 63, in launch_process
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 63, in launch_process
         self.confirm_remote_startup(kernel_cmd, **kw)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 174, in confirm_remote_startup
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/yarn.py", line 174, in confirm_remote_startup
         ready_to_connect = self.receive_connection_info()
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 565, in receive_connection_info
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 565, in receive_connection_info
         raise e
     TypeError: Incorrect padding
     ```
@@ -199,17 +199,17 @@ but it failed with a "Kernel error" and a SSHException.**
 
     ```
     Traceback (most recent call last):
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/web.py", line 1511, in _execute
+      File "/opt/conda/lib/python3.7/site-packages/tornado/web.py", line 1511, in _execute
         result = yield result
-      File "/opt/anaconda2/lib/python2.7/site-packages/tornado/gen.py", line 1055, in run
+      File "/opt/conda/lib/python3.7/site-packages/tornado/gen.py", line 1055, in run
         value = future.result()
       ....
       ....
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 478, in __init__
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 478, in __init__
         super(RemoteProcessProxy, self).__init__(kernel_manager, proxy_config)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 87, in __init__
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 87, in __init__
         self._validate_port_range(proxy_config)
-      File "/opt/anaconda2/lib/python2.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 407, in _validate_port_range
+      File "/opt/conda/lib/python3.7/site-packages/enterprise_gateway/services/processproxies/processproxy.py", line 407, in _validate_port_range
         "port numbers is (1024, 65535).".format(self.lower_port))
     RuntimeError: Invalid port range '1000..2000' specified. Range for valid port numbers is (1024, 65535).
     ```
@@ -243,6 +243,11 @@ but it failed with a "Kernel error" and a SSHException.**
    To address this issue, increase the amount of memory available for your YARN application or another
    Resource Manager managing the kernel.
 
+- **PySpark 2.4.x fails on Python 3.8**
+
+   PySpark 2.4.x fails on Python 3.8 as described in [SPARK-29536](https://issues.apache.org/jira/browse/SPARK-29536).
+   Use Python 3.7.x as the issue only seems to have been resolved on Spark 3.0.
+
 - **I'm trying to use a notebook with user impersonation on a Kerberos enabled cluster but it fails to authenticate.**
 
     When using user impersonation in a YARN cluster with Kerberos authentication, if Kerberos is not
@@ -255,3 +260,12 @@ but it failed with a "Kernel error" and a SSHException.**
 
     The most common cause for this WARN is when the user that started Enterprise Gateway is not authenticated
     with Kerberos. This can happen when the user has either not run `kinit` or their previous ticket has expired.
+
+- **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environment fails trying to create /home/jovyan/.local**
+
+    As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/3.6/admin_guide/manage_scc.html#enable-images-to-run-with-user-in-the-dockerfile)
+    there is a need to issue the following command to enable running  with `USER` in Dockerfile.
+    
+    ```bash
+    oc adm policy add-scc-to-group anyuid system:authenticated
+    ```

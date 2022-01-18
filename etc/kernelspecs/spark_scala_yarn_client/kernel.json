@@ -8,7 +8,7 @@
   },
   "env": {
     "SPARK_HOME": "/usr/hdp/current/spark2-client",
-    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+    "__TOREE_SPARK_OPTS__": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
     "__TOREE_OPTS__": "--alternate-sigint USR2",
     "LAUNCH_OPTS": "",
     "DEFAULT_INTERPRETER": "Scala"
@@ -19,6 +19,8 @@
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.port-range",
     "{port_range}",
     "--RemoteProcessProxy.spark-context-initialization-mode",

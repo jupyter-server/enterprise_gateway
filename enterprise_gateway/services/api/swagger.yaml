@@ -1,0 +1,450 @@
+swagger: '2.0'
+
+info:
+  title: Jupyter Enterprise Gateway API
+  description: The API for the Jupyter Enterprise Gateway
+  version: "6"
+  contact:
+    name: Jupyter Project
+    url: https://jupyter.org
+
+produces:
+  - application/json
+consumes:
+  - application/json
+parameters:
+  kernel:
+    name: kernel_id
+    required: true
+    in: path
+    description: kernel uuid
+    type: string
+    format: uuid
+  session:
+    name: session
+    required: true
+    in: path
+    description: session uuid
+    type: string
+    format: uuid
+
+securityDefinitions:
+  tokenHeader:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: |
+      The authorization token to verify authorization. This is only needed
+      when `EnterpriseGatewayApp.auth_token` is set. This should take the
+      form of `token {value}` where `{value}` is the value of the token.
+      Alternatively, the token can be passed as a query parameter.
+  tokenParam:
+    type: apiKey
+    name: token
+    in: query
+    description: |
+      The authorization token to verify authorization. This is only needed
+      when `EnterpriseGatewayApp.auth_token` is set. This should take the
+      form of `token={value}` where `{value}` is the value of the token.
+      Alternatively, the token can be passed as a header.
+
+security:
+  - tokenHeader: []
+  - tokenParam: []
+
+paths:
+  /api:
+    get:
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns information about the API
+          schema:
+            $ref: '#/definitions/ApiInfo'
+  /api/swagger.yaml:
+    get:
+      produces:
+        - text/x-yaml
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns a swagger specification in yaml
+  /api/swagger.json:
+    get:
+      summary: Get API info
+      tags:
+        - api
+      responses:
+        200:
+          description: Returns a swagger specification in json
+  /api/kernelspecs:
+    get:
+      summary: Get kernel specs
+      tags:
+        - kernelspecs
+      parameters:
+        - name: user
+          in: query
+          description: When present, kernelspec results will be filtered based on the configured authorization of specified value.
+          required: false
+          type: string
+      responses:
+        200:
+          description: |
+            If no query parameter is specified, all kernel specs will be returned;
+            otherwise the result set is filtered based on the query parameter.
+          schema:
+            type: object
+            properties:
+              default:
+                type: string
+                description: The name of the default kernel.
+              kernelspecs:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/KernelSpec'
+  /api/kernels:
+    get:
+      summary: List the JSON data for all currently running kernels
+      tags:
+        - kernels
+      responses:
+        200:
+          description: List of running kernels
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Kernel'
+        403:
+          description: |
+            This method is not accessible when `EnterpriseGatewayApp.list_kernels` is `False`.
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Start a kernel and return the uuid
+      tags:
+        - kernels
+      parameters:
+        - name: start_kernel_body
+          in: body
+          schema:
+            type: object
+            properties:
+              name:
+                 type: string
+                 description: Kernel spec name (defaults to default kernel spec for server)
+              env:
+                type: object
+                description: |
+                  A dictionary of environment variables and values to include in the
+                  kernel process - subject to whitelisting.
+                additionalProperties:
+                  type: string
+      responses:
+        201:
+          description: The metadata about the newly created kernel.
+          schema:
+            $ref: '#/definitions/Kernel'
+          headers:
+            Location:
+              description: Model for started kernel
+              type: string
+              format: url
+        403:
+          description: The maximum number of kernels have been created.
+          schema:
+            $ref: '#/definitions/Error'
+  /api/kernels/{kernel_id}:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    get:
+      summary: Get kernel information
+      tags:
+        - kernels
+      responses:
+        200:
+          description: Information about the kernel
+          schema:
+            $ref: '#/definitions/Kernel'
+    delete:
+      summary: Kill a kernel and delete the kernel id
+      tags:
+        - kernels
+      responses:
+        204:
+          description: Kernel deleted
+  /api/kernels/{kernel_id}/channels:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    get:
+      summary: Upgrades the connection to a websocket connection.
+      tags:
+        - channels
+      responses:
+        200:
+          description: The connection will be upgraded to a websocket.
+  /kernels/{kernel_id}/interrupt:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    post:
+      summary: Interrupt a kernel
+      tags:
+        - kernels
+      responses:
+        204:
+          description: Kernel interrupted
+  /kernels/{kernel_id}/restart:
+    parameters:
+      - $ref: '#/parameters/kernel'
+    post:
+      summary: Restart a kernel
+      tags:
+        - kernels
+      responses:
+        200:
+          description: Kernel interrupted
+          headers:
+            Location:
+              description: URL for kernel commands
+              type: string
+              format: url
+          schema:
+            $ref: '#/definitions/Kernel'
+  /api/sessions:
+    get:
+      summary: List available sessions
+      tags:
+        - sessions
+      responses:
+        200:
+          description: List of current sessions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Session'
+        403:
+          description: |
+            This method is not accessible when the kernel gateway
+            when the `list_kernels` option is `False`.
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: |
+        Create a new session, or return an existing session if a session
+        of the same name already exists.
+      tags:
+        - sessions
+      parameters:
+        - name: session
+          in: body
+          schema:
+            $ref: '#/definitions/Session'
+      responses:
+        201:
+          description: Session created or returned
+          schema:
+            $ref: '#/definitions/Session'
+          headers:
+            Location:
+              description: URL for session commands
+              type: string
+              format: url
+        501:
+          description: Session not available
+          schema:
+            $ref: '#/definitions/Error'
+
+  /api/sessions/{session}:
+    parameters:
+      - $ref: '#/parameters/session'
+    get:
+      summary: Get session
+      tags:
+        - sessions
+      responses:
+        200:
+          description: Session
+          schema:
+            $ref: '#/definitions/Session'
+    patch:
+      summary: This can be used to rename the session.
+      tags:
+        - sessions
+      parameters:
+        - name: model
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Session'
+      responses:
+        200:
+          description: Session
+          schema:
+            $ref: '#/definitions/Session'
+        400:
+          description: No data provided
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Delete a session
+      tags:
+        - sessions
+      responses:
+        204:
+          description: Session (and kernel) were deleted
+        410:
+          description: |
+            Kernel was deleted before the session, and the session
+            was *not* deleted
+
+definitions:
+  Error:
+    description: An error response from the server
+    type: object
+    properties:
+      reason:
+        type: string
+        description: The reason for the failure
+      message:
+        type: string
+        description: The message logged when the error occurred
+  KernelSpec:
+    description: Kernel spec (contents of kernel.json)
+    properties:
+      name:
+        type: string
+        description: Unique name for kernel
+      KernelSpecFile:
+        $ref: '#/definitions/KernelSpecFile'
+        description: Kernel spec json file
+      resources:
+        type: object
+        properties:
+          kernel.js:
+            type: string
+            format: filename
+            description: path for kernel.js file
+          kernel.css:
+            type: string
+            format: filename
+            description: path for kernel.css file
+          logo-*:
+            type: string
+            format: filename
+            description: |
+              path for logo file.  Logo filenames are of the form `logo-widthxheight`
+  KernelSpecFile:
+    description: Kernel spec json file
+    required:
+      - argv
+      - display_name
+      - language
+    properties:
+      language:
+        type: string
+        description: The programming language which this kernel runs. This will be stored in notebook metadata.
+      argv:
+        type: array
+        description: |
+          A list of command line arguments used to start the kernel. The text `{connection_file}` in any
+          argument will be replaced with the path to the connection file.
+        items:
+          type: string
+      display_name:
+        type: string
+        description: |
+          The kernel's name as it should be displayed in the UI. Unlike the kernel name used in the API,
+          this can contain arbitrary unicode characters.
+      codemirror_mode:
+        type: string
+        description: |
+          Codemirror mode.  Can be a string *or* an valid Codemirror mode object.  This defaults to the
+          string from the `language` property.
+      env:
+        type: object
+        description: |
+          A dictionary of environment variables to set for the kernel. These will be added to the current
+          environment variables.
+        additionalProperties:
+          type: string
+      metadata:
+        type: object
+        description: |
+          A free-form dictionary consisting of additional information about the kernel and its environment.
+        additionalProperties: true
+      help_links:
+        type: array
+        description: Help items to be displayed in the help menu in the notebook UI.
+        items:
+          type: object
+          required:
+          - text
+          - url
+          properties:
+            text:
+              type: string
+              description: menu item link text
+            url:
+              type: string
+              format: URL
+              description: menu item link url
+  Kernel:
+    description: Kernel information
+    required:
+      - id
+      - name
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: uuid of kernel
+      name:
+        type: string
+        description: kernel spec name
+      last_activity:
+        type: string
+        description: |
+          ISO 8601 timestamp for the last-seen activity on this kernel.
+          Use this in combination with execution_state == 'idle' to identify
+          which kernels have been idle since a given time.
+          Timestamps will be UTC, indicated 'Z' suffix.
+          Added in notebook server 5.0.
+      connections:
+        type: number
+        description: |
+          The number of active connections to this kernel.
+      execution_state:
+        type: string
+        description: |
+          Current execution state of the kernel (typically 'idle' or 'busy', but may be other values, such as 'starting').
+          Added in notebook server 5.0.
+  Session:
+    description: A session
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      path:
+        type: string
+        description: path to the session
+      name:
+        type: string
+        description: name of the session
+      type:
+        type: string
+        description: session type
+      kernel:
+        $ref: '#/definitions/Kernel'
+  ApiInfo:
+    description: Information about the api
+    type: object
+    properties:
+      version:
+        type: string
+      gateway_version:
+        type: string

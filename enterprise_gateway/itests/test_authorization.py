@@ -25,7 +25,7 @@ class TestAuthorization(unittest.TestCase):
         try:
             kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username='bob')
             result = kernel.execute("print('The cow jumped over the moon.')")
-            self.assertEquals(result, "The cow jumped over the moon.\n")
+            self.assertEqual(result, "The cow jumped over the moon.\n")
         finally:
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)
@@ -40,6 +40,7 @@ class TestAuthorization(unittest.TestCase):
         finally:
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)
+
 
 if __name__ == '__main__':
     unittest.main()

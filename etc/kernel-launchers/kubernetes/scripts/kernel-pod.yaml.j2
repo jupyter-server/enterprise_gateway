@@ -1,0 +1,104 @@
+# This file defines the Kubernetes objects necessary for kernels to run witihin Kubernetes.
+# Substitution parameters are processed by the launch_kubernetes.py code located in the
+# same directory.  Some values are factory values, while others (typically prefixed with 'kernel_') can be
+# provided by the client.
+#
+# This file can be customized as needed.  No changes are required to launch_kubernetes.py provided kernel_
+# values are used - which be automatically set from corresponding KERNEL_ env values.  Updates will be required
+# to launch_kubernetes.py if new document sections (i.e., new k8s 'kind' objects) are introduced.
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ kernel_pod_name }}"
+  namespace: "{{ kernel_namespace }}"
+  labels:
+    kernel_id: "{{ kernel_id }}"
+    app: enterprise-gateway
+    component: kernel
+spec:
+  restartPolicy: Never
+  serviceAccountName: "{{ kernel_service_account_name }}"
+# NOTE: that using runAsGroup requires that feature-gate RunAsGroup be enabled.
+# WARNING: Only using runAsUser w/o runAsGroup or NOT enabling the RunAsGroup feature-gate
+# will result in the new kernel pod's effective group of 0 (root)! although the user will
+# correspond to the runAsUser value.  As a result, BOTH should be uncommented AND the feature-gate
+# should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
+# that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
+# "kernel_uid" and "kernel_gid" values.
+  {% if kernel_uid is defined or kernel_gid is defined %}
+  securityContext:
+    {% if kernel_uid is defined %}
+    runAsUser: {{ kernel_uid | int }}
+    {% endif %}
+    {% if kernel_gid is defined %}
+    runAsGroup: {{ kernel_gid | int }}
+    {% endif %}
+    fsGroup: 100
+  {% endif %}
+  containers:
+  - env:
+    - name: PORT_RANGE
+      value: "{{ port_range }}"
+    - name: RESPONSE_ADDRESS
+      value: "{{ response_address }}"
+    - name: PUBLIC_KEY
+      value: "{{ public_key }}"
+    - name: KERNEL_ID
+      value: "{{ kernel_id }}"
+    - name: KERNEL_LANGUAGE
+      value: "{{ kernel_language }}"
+    - name: KERNEL_NAME
+      value: "{{ kernel_name }}"
+    - name: KERNEL_NAMESPACE
+      value: "{{ kernel_namespace }}"
+    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
+      value: "{{ kernel_spark_context_init_mode }}"
+    - name: KERNEL_USERNAME
+      value: "{{ kernel_username }}"
+    image: "{{ kernel_image }}"
+    name: "{{ kernel_pod_name }}"
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    resources:
+      {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+      requests:
+        {% if kernel_cpus is defined %}
+        cpu: "{{ kernel_cpus }}"
+        {% endif %}
+        {% if kernel_memory is defined %}
+        memory: "{{ kernel_memory }}"
+        {% endif %}
+        {% if kernel_gpus is defined %}
+        nvidia.com/gpu: "{{ kernel_gpus }}"
+        {% endif %}
+      {% endif %}
+      {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+      limits:
+        {% if kernel_cpus_limit is defined %}
+        cpu: "{{ kernel_cpus_limit }}"
+        {% endif %}
+        {% if kernel_memory_limit is defined %}
+        memory: "{{ kernel_memory_limit }}"
+        {% endif %}
+        {% if kernel_gpus_limit is defined %}
+        nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+        {% endif %}
+      {% endif %}
+    {% endif %}
+    {% if kernel_working_dir is defined %}
+    workingDir: "{{ kernel_working_dir }}"
+    {% endif %}
+    volumeMounts:
+# Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
+    {% if kernel_volume_mounts is defined %}
+      {% for volume_mount in kernel_volume_mounts %}
+    - {{ volume_mount }}
+      {% endfor %}
+    {% endif %}
+  volumes:
+# Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
+  {% if kernel_volumes is defined %}
+    {% for volume in kernel_volumes %}
+  - {{ volume }}
+    {% endfor %}
+  {% endif %}

@@ -7,6 +7,12 @@ from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+v = sys.version_info
+if v[:2] < (3, 6):
+    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.6 or above."
+    print(error, file=sys.stderr)
+    sys.exit(1)
+
 version_ns = {}
 with open(os.path.join(here, 'enterprise_gateway', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
@@ -18,8 +24,9 @@ setup_args = dict(
     url='http://github.com/jupyter-incubator/enterprise_gateway',
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
-Jupyter Enterprise Gateway is a lightweight, multi-tenant, scalable and secure gateway that enables 
-Jupyter Notebooks to share resources across an Apache Spark cluster.
+A lightweight, multi-tenant, scalable and secure gateway that enables
+Jupyter Notebooks to share resources across distributed clusters such as
+Apache Spark, Kubernetes and others..
 ''',
     version=version_ns['__version__'],
     license='BSD',
@@ -27,38 +34,43 @@ Jupyter Notebooks to share resources across an Apache Spark cluster.
     keywords=['Interactive', 'Interpreter', 'Kernel', 'Web', 'Cloud'],
     packages=[
         'enterprise_gateway',
+        'enterprise_gateway.base',
         'enterprise_gateway.client',
         'enterprise_gateway.services',
+        'enterprise_gateway.services.api',
         'enterprise_gateway.services.kernels',
+        'enterprise_gateway.services.kernelspecs',
         'enterprise_gateway.services.processproxies',
         'enterprise_gateway.services.sessions'
     ],
-    scripts=[
-        'scripts/jupyter-enterprisegateway'
-    ],
     install_requires=[
-        'jupyter_core>=4.4.0',
-        'jupyter_client>=5.2.0',
-        'notebook>=5.3.0,<6.0',
-        'jupyter_kernel_gateway>=2.1.0',
-        'traitlets>=4.2.0',
-        'tornado>=4.2.0',
-        'requests>=2.7,<3.0',
-        'paramiko>=2.1.2',
-        'yarn-api-client>=0.3.0',
-        'pexpect>=4.2.0',
-        'pycrypto>=2.6.1',
-        'pyzmq>=17.0.0',
+        'docker>=3.5.0',
+        'future',
+        'jinja2>=2.10',
+        'jupyter_client~=6.1',
+        'jupyter_core>=4.6.0',
         'kubernetes>=4.0.0',
-        'docker>=3.5.0'
+        'jupyter_server>=1.2',
+        'paramiko>=2.1.2',
+        'pexpect>=4.2.0',
+        'pycryptodomex>=3.9.7',
+        'pyzmq>=17.0.0',
+        'requests~=2.7',
+        'tornado>=6.1',
+        'traitlets>=4.3.3',
+        'watchdog>=2.1.3',
+        'yarn-api-client>=1.0',
     ],
+    extras_require = {
+        'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
+    },
+    python_requires='>=3.6',
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3'
     ],
     include_package_data=True,
@@ -68,7 +80,7 @@ if 'setuptools' in sys.modules:
     # setupstools turns entrypoint scripts into executables on windows
     setup_args['entry_points'] = {
         'console_scripts': [
-            'jupyter-enterprisegateway = enterprise_gateway:launch_instance'
+            'jupyter-enterprisegateway = enterprise_gateway.enterprisegatewayapp:launch_instance'
         ]
     }
     # Don't bother installing the .py scripts if if we're using entrypoints

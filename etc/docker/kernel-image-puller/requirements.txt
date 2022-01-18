@@ -1,0 +1,3 @@
+docker>=3.7.2
+requests>=2.7,<3.0
+kubernetes>=17.17.0

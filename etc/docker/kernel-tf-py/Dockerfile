@@ -1,18 +1,25 @@
-# Ubuntu:xenial
-FROM tensorflow/tensorflow:1.11.0-py3
+# Ubuntu:Bionic
+# TensorFlow 2.4.0
+ARG BASE_CONTAINER=jupyter/tensorflow-notebook:703d8b2dcb88
 
-RUN pip install pycrypto
+FROM $BASE_CONTAINER
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+ENV KERNEL_LANGUAGE python
+
+ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
+
+RUN conda install --quiet --yes \
+    pillow \
+    future \
+    pycryptodomex && \
+    fix-permissions $CONDA_DIR
 
 USER root
 
-RUN adduser --system --uid 1000 --gid 100 jovyan && \
-    chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
+RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
 	chown -R jovyan:users /usr/local/bin/kernel-launchers
 
-
 USER jovyan
-ENV KERNEL_LANGUAGE python
-CMD /usr/local/bin/bootstrap-kernel.sh
+
+CMD [ "/usr/local/bin/bootstrap-kernel.sh" ]

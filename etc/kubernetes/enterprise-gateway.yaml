@@ -16,7 +16,7 @@ metadata:
     app: enterprise-gateway
     component: enterprise-gateway
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: enterprise-gateway-controller
@@ -25,13 +25,16 @@ metadata:
     component: enterprise-gateway
 rules:
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "services", "configmaps", "secrets", "persistentvolumnes", "persistentvolumeclaims"]
+    resources: ["pods", "namespaces", "services", "configmaps", "secrets", "persistentvolumes", "persistentvolumeclaims"]
     verbs: ["get", "watch", "list", "create", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["rolebindings"]
     verbs: ["get", "list", "create", "delete"]
+  - apiGroups: ["sparkoperator.k8s.io"]
+    resources: ["sparkapplications"]
+    verbs: ["get", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   # Referenced by EG_KERNEL_CLUSTER_ROLE below
@@ -44,7 +47,7 @@ rules:
     resources: ["pods"]
     verbs: ["get", "watch", "list", "create", "delete"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: enterprise-gateway-controller
@@ -61,6 +64,43 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kernel-image-puller-sa
+  namespace: enterprise-gateway
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: check-node
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kernel-image-puller-controller
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+subjects:
+  - kind: ServiceAccount
+    name: kernel-image-puller-sa
+    namespace: enterprise-gateway
+roleRef:
+  kind: ClusterRole
+  name: check-node
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -73,6 +113,9 @@ spec:
   - name: http
     port: 8888
     targetPort: 8888
+  - name: response
+    port: 8877
+    targetPort: 8877
   selector:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
@@ -81,7 +124,7 @@ spec:
 #  externalIPs:
 #  - k8s-master-public-ip
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: enterprise-gateway
@@ -107,6 +150,12 @@ spec:
       serviceAccountName: enterprise-gateway-sa
       containers:
       - env:
+        - name: EG_PORT
+          value: "8888"
+
+        - name: EG_RESPONSE_PORT
+          value: "8877"
+
           # Created above.
         - name: EG_NAMESPACE
           value: "enterprise-gateway"
@@ -119,18 +168,31 @@ spec:
           # must be provided or one will be created for each kernel.
         - name: EG_SHARED_NAMESPACE
           value: "False"
+          # NOTE: This requires appropriate volume mounts to make notebook dir accessible
+        - name: EG_MIRROR_WORKING_DIRS
+
         - name: EG_POD_TEMPLATE_DIR
           value: "/tmp"
-        - name: EG_TUNNELING_ENABLED
-          value: "False"
+          # Current idle timeout is 1 hour.
         - name: EG_CULL_IDLE_TIMEOUT
-          value: "600"
+          value: "3600"
+
         - name: EG_LOG_LEVEL
           value: "DEBUG"
+
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: "60"
+
         - name: EG_KERNEL_WHITELIST
-          value: "['r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes']"
+          value: "'r_kubernetes','python_kubernetes','python_tf_kubernetes','python_tf_gpu_kubernetes','scala_kubernetes','spark_r_kubernetes','spark_python_kubernetes','spark_scala_kubernetes'"
+
+        - name: EG_DEFAULT_KERNEL_NAME
+          value: "python_kubernetes"
+
+        # Optional authorization token passed in all requests
+        #- name: EG_AUTH_TOKEN
+        #  value: <configured-auth-token>
+
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
         image: elyra/enterprise-gateway:dev
         # Use IfNotPresent policy so that dev-based systems don't automatically
@@ -138,9 +200,9 @@ spec:
         # this policy should be sufficient for them as well.
         imagePullPolicy: IfNotPresent
         name: enterprise-gateway
-        args: ["--gateway"]
         ports:
         - containerPort: 8888
+        - containerPort: 8877
 ## Uncomment to enable NFS-mounted kernelspecs
 #        volumeMounts:
 #        - name: kernelspecs
@@ -150,3 +212,37 @@ spec:
 #        nfs:
 #          server: <internal-ip-of-nfs-server>
 #          path: "/usr/local/share/jupyter/kernels"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kernel-image-puller
+  namespace: enterprise-gateway
+spec:
+  selector:
+    matchLabels:
+      name: kernel-image-puller
+  template:
+    metadata:
+      labels:
+        name: kernel-image-puller
+        app: enterprise-gateway
+        component: kernel-image-puller
+    spec:
+      containers:
+      - name: kernel-image-puller
+        image: elyra/kernel-image-puller:dev
+        env:
+          - name: KIP_GATEWAY_HOST
+            value: "http://enterprise-gateway.enterprise-gateway:8888"
+          - name: KIP_INTERVAL
+            value: "300"
+          - name: KIP_PULL_POLICY
+            value: "IfNotPresent"
+        volumeMounts:
+          - name: dockersock
+            mountPath: "/var/run/docker.sock"
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock

@@ -19,12 +19,16 @@ client = DockerClient.from_env()
 
 
 class DockerSwarmProcessProxy(ContainerProcessProxy):
-    """Kernel lifecycle management for kernels in Docker Swarm."""
+    """
+    Kernel lifecycle management for kernels in Docker Swarm.
+    """
     def __init__(self, kernel_manager, proxy_config):
         super(DockerSwarmProcessProxy, self).__init__(kernel_manager, proxy_config)
 
     def launch_process(self, kernel_cmd, **kwargs):
-        """Launches the specified process within a Docker Swarm environment."""
+        """
+        Launches the specified process within a Docker Swarm environment.
+        """
         # Convey the network to the docker launch script
         kwargs['env']['EG_DOCKER_NETWORK'] = docker_network
         kwargs['env']['EG_DOCKER_MODE'] = 'swarm'
@@ -88,8 +92,9 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug("{}: Waiting to connect to docker container. "
-                    "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}', TaskID: '{}'".
-                    format(iteration, self.container_name, task_state, self.assigned_ip, self.kernel_id, task_id))
+                           "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}', TaskID: '{}'".
+                           format(iteration, self.container_name, task_state,
+                                  self.assigned_ip, self.kernel_id, task_id))
         return task_state
 
     def terminate_container_resources(self):

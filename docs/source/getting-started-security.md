@@ -1,15 +1,16 @@
 ## Security Features
+
 Jupyter Enterprise Gateway does not currently perform user _authentication_ but, instead, assumes that all users
 issuing requests have been previously authenticated.  Recommended applications for this are 
 [Apache Knox](https://knox.apache.org/) or perhaps even [Jupyter Hub](https://jupyterhub.readthedocs.io/en/latest/) 
-(e.g., if nb2kg-enabled notebook servers were spawned targeting an Enterprise Gateway cluster).
+(e.g., if gateway-enabled notebook servers were spawned targeting an Enterprise Gateway cluster).
 
 This section introduces some of the security features inherent in Enterprise Gateway (with more to come).
 
 **KERNEL_USERNAME**
 
 In order to convey the name of the authenicated user, `KERNEL_USERNAME` should be sent in the kernel creation request 
-via the `env:` entry.  This will occur automatically within NB2KG since it propagates all environment variables 
+via the `env:` entry.  This will occur automatically within the gateway-enabled Notebook server since it propagates all environment variables 
 prefixed with `KERNEL_`.  If the request does not include a `KERNEL_USERNAME` entry, one will be added to the kernel's
 launch environment with the value of the gateway user.
 
@@ -70,7 +71,8 @@ via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled`
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
 
-##### Impersonation in YARN Cluster Mode
+#### Impersonation in YARN Cluster Mode
+
 In a cluster managed by the YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
 this security option as a pre-requisite for user impersonation. When user impersonation is enabled, kernels are launched
 with the `--proxy-user ${KERNEL_USERNAME}` which will tell YARN to launch the kernel in a container used by the provided
@@ -81,7 +83,7 @@ Note that, when using kerberos in a YARN managed cluster, the gateway user (`ely
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration steps.
 
-###### SPNEGO Authentication to YARN APIs
+#### SPNEGO Authentication to YARN APIs
 
 When kerberos is enabled in a YARN managed cluster, the administration uis can be configured to require authentication/authorization
 via SPENEGO. When running Enterprise Gateway in a environment configured this way, we need to convey an extra configuration
@@ -91,7 +93,8 @@ to enable the proper authorization when communicating with YARN via the YARN API
 YARN APIs and can also be conveyed via the command-line boolean option `EnterpriseGatewayApp.yarn_endpoint_security_enabled`
 (default = False)
 
-##### Impersonation in Standalone or YARN Client Mode
+#### Impersonation in Standalone or YARN Client Mode
+
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
 kernel launch as the target user.  This can also be configured within the 
 [run.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_client/bin/run.sh)
@@ -111,7 +114,7 @@ will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 
 ### SSH Tunneling
 
-Jupyter Enterprise Gateway is now configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
+Jupyter Enterprise Gateway is configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
 communication socket created within the launcher and used to perform remote and cross-user signalling functionality. SSH
 tunneling is NOT enabled by default. Tunneling can be enabled/disabled via the environment variable `EG_ENABLE_TUNNELING=False`.
 Note, there is no command-line or configuration file support for this variable.
@@ -123,9 +126,18 @@ Please perform necessary steps to validate all hosts before enabling SSH tunneli
 * SSH to each node cluster and accept the host key properly
 * Configure SSH to disable `StrictHostKeyChecking`
 
+### Using  Generic Security Service (Kerberos)
+
+Jupyter Enterprise Gateway has support for SSH connections using GSS (for example Kerberos), which enables its deployment
+without the use of an ssh key.  The `EG_REMOTE_GSS_SSH` environment variable can be used to control this behavior.
+
+See [list of additional supported environment variables](config-options.html#additional-supported-environment-variables).
+
+
 ### Securing Enterprise Gateway Server
 
-##### Using SSL for encrypted communication
+#### Using SSL for encrypted communication
+
 Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its clients. With SSL enabled, all the
 communication between the server and client are encrypted and highly secure.
 
@@ -152,21 +164,20 @@ options with the command:
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
 	```
 
-2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is NB2KG
-serverextension.
+2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
 
-	During Jupyter notebook server startup, export the following environment variables where NB2KG will access
+	During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
 	during runtime:
 
 	```bash
-	export KG_CLIENT_CERT=${PATH_TO_PEM_FILE}
-	export KG_CLIENT_KEY=${PATH_TO_KEY_FILE}
-	export KG_CLIENT_CA=${PATH_TO_SELFSIGNED_CA}
+	export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
+	export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
+	export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
 	```
 
-	Note: If using a self-signed certificate, you can set `KG_CLIENT_CA` same as `KG_CLIENT_CERT`.
+	Note: If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
 
-##### Using Enterprise Gateway configuration file
+#### Using Enterprise Gateway configuration file
 You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
 
 1. If you do not already have a configuration file, generate a Enterprise Gateway configuration file by running the
@@ -189,4 +200,4 @@ from the configuration file, modify the corresponding parameter to the appropria
 4. Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
 provides better readability and debuggability.
 
-After configuring the above, the communication between NB2KG and Enterprise Gateway is SSL enabled.
+After configuring the above, the communication between gateway-enabled Notebook Server and Enterprise Gateway is SSL enabled.

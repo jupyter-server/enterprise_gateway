@@ -1,5 +1,5 @@
 {
-  "display_name": "Python 2 (distributed)", 
+  "display_name": "Python 3 (distributed)",
   "language": "python", 
   "metadata": {
     "process_proxy": {
@@ -13,6 +13,8 @@
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
     "--RemoteProcessProxy.port-range",
     "{port_range}",
     "--RemoteProcessProxy.spark-context-initialization-mode",

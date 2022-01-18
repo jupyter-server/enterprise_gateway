@@ -19,8 +19,8 @@ fi
 
 PROG_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 
-# Add gateway_listener.py to files for spark-opts
-ADDITIONAL_OPTS="--files ${PROG_HOME}/scripts/gateway_listener.py"
+# Add server_listener.py to files for spark-opts
+ADDITIONAL_OPTS="--files ${PROG_HOME}/scripts/server_listener.py"
 
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

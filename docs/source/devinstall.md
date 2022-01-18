@@ -86,9 +86,8 @@ make kernelspecs
 ```
 
 Note: Because the scala launcher requires a jar file, `make kernelspecs` requires the use of `sbt` to build the 
-scala launcher jar. Please consult the [sbt site](http://www.scala-sbt.org/) for directions to 
+scala launcher jar. Please consult the [sbt site](https://www.scala-sbt.org/) for directions to 
 install/upgrade `sbt` on your platform. We currently prefer the use of 1.0.3.
-
 
 ### Build distribution files
 
@@ -139,7 +138,7 @@ make itest
 
 ### Build the docker images
 
-The following can be used to build all docker images used within the project.  See [docker images](docker.html) for specific details.
+The following can be used to build all docker images used within the project.  See [docker images](docker.md) for specific details.
 
 ```
 make docker-images

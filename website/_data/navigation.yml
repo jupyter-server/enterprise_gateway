@@ -1,0 +1,22 @@
+topnav:
+
+- title: Enterprise Gateway
+  subcategories:
+  - title: What is it?
+    url: /enterprise_gateway/#about
+  - title: Features
+    url: /enterprise_gateway/#features
+  - title: Supported Platforms
+    url: /enterprise_gateway/#platforms
+  - title: Contact
+    url: /enterprise_gateway/#contact
+
+
+- title: Documentation
+  url: https://jupyter-enterprise-gateway.readthedocs.io/en/latest/
+
+- title: GitHub
+  url: https://github.com/jupyter/enterprise_gateway
+
+- title: Privacy
+  url: /enterprise_gateway/privacy-policy

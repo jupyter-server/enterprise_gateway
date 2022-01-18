@@ -1,16 +1,29 @@
 # Ubuntu:xenial
-FROM tensorflow/tensorflow:1.11.0-gpu-py3
+ARG BASE_CONTAINER=tensorflow/tensorflow:2.4.0-gpu-jupyter
+FROM $BASE_CONTAINER
 
-RUN pip install pycrypto
+ENV DEBIAN_FRONTEND=noninteractive
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+RUN apt-get update && apt-get install -yq \
+    build-essential \
+    libsm6 \
+    libxext-dev \
+    libxrender1 \
+    netcat \
+    python3-dev \
+    tzdata \
+    unzip && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install future pycryptodomex
+
+ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
 USER root
 
 RUN adduser --system --uid 1000 --gid 100 jovyan && \
     chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
-	chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
-	chown -R jovyan:users /usr/local/bin/kernel-launchers
+    chmod 0755 /usr/local/bin/bootstrap-kernel.sh && \
+    chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 
 USER jovyan

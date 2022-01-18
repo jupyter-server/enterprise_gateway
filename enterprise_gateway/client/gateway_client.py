@@ -1,10 +1,9 @@
 
 import os
+import logging
 import requests
 import time
-import re
 from uuid import uuid4
-from pprint import pprint
 from tornado.escape import json_encode, json_decode, utf8
 from threading import Thread
 import websocket
@@ -14,17 +13,19 @@ try:  # prefer python 3, fallback to 2
 except ImportError:
     import Queue as queue
 
-DEFAULT_TIMEOUT = 60 * 60
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 120))
+log_level = os.getenv("LOG_LEVEL", "INFO")
+
+logging.basicConfig(format='[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s] %(message)s')
 
 
-class GatewayClient:
+class GatewayClient(object):
     """
     *** E X P E R I M E N T A L *** *** E X P E R I M E N T A L ***
 
     An experimental Gateway Client that is used for Enterprise Gateway
     integration tests and can be leveraged for micro service type of
     connections.
-
     """
     DEFAULT_USERNAME = os.getenv('KERNEL_USERNAME', 'bob')
     DEFAULT_GATEWAY_HOST = os.getenv('GATEWAY_HOST', 'localhost:8888')
@@ -33,27 +34,29 @@ class GatewayClient:
     def __init__(self, host=DEFAULT_GATEWAY_HOST):
         self.http_api_endpoint = 'http://{}/api/kernels'.format(host)
         self.ws_api_endpoint = 'ws://{}/api/kernels'.format(host)
+        self.log = logging.getLogger('GatewayClient')
+        self.log.setLevel(log_level)
 
-    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=DEFAULT_TIMEOUT):
-        print('Starting a {} kernel ....'.format(kernelspec_name))
+    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT):
+        self.log.info('Starting a {} kernel ....'.format(kernelspec_name))
 
         json_data = {'name': kernelspec_name,
                      'env': {'KERNEL_USERNAME': username,
-                             'KERNEL_LAUNCH_TIMEOUT': GatewayClient.KERNEL_LAUNCH_TIMEOUT} }
+                             'KERNEL_LAUNCH_TIMEOUT': GatewayClient.KERNEL_LAUNCH_TIMEOUT}}
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data))
         if response.status_code == 201:
             json_data = response.json()
             kernel_id = json_data.get("id")
-            print('Started kernel with id {}'.format(kernel_id))
+            self.log.info('Started kernel with id {}'.format(kernel_id))
         else:
             raise RuntimeError('Error starting kernel : {} response code \n {}'.
                                format(response.status_code, response.content))
 
-        return Kernel(self.http_api_endpoint, self.ws_api_endpoint, kernel_id, timeout)
+        return KernelClient(self.http_api_endpoint, self.ws_api_endpoint, kernel_id, timeout=timeout, logger=self.log)
 
     def shutdown_kernel(self, kernel):
-        print("Shutting down kernel : {} ....".format(kernel.kernel_id))
+        self.log.info("Shutting down kernel : {} ....".format(kernel.kernel_id))
 
         if not kernel:
             return False
@@ -63,20 +66,19 @@ class GatewayClient:
         url = "{}/{}".format(self.http_api_endpoint, kernel.kernel_id)
         response = requests.delete(url)
         if response.status_code == 204:
-            print('Kernel {} shutdown'.format(kernel.kernel_id))
+            self.log.debug('Kernel {} shutdown'.format(kernel.kernel_id))
             return True
         else:
             raise RuntimeError('Error shutting down kernel {}: {}'.format(kernel.kernel_id, response.content))
 
 
-class Kernel:
+class KernelClient(object):
 
     DEAD_MSG_ID = 'deadbeefdeadbeefdeadbeefdeadbeef'
     POST_IDLE_TIMEOUT = 0.5
     DEFAULT_INTERRUPT_WAIT = 1
 
-    def __init__(self, http_api_endpoint, ws_api_endpoint, kernel_id, timeout=DEFAULT_TIMEOUT):
-
+    def __init__(self, http_api_endpoint, ws_api_endpoint, kernel_id, timeout=REQUEST_TIMEOUT, logger=None):
         self.shutting_down = False
         self.restarting = False
         self.http_api_endpoint = http_api_endpoint
@@ -84,7 +86,8 @@ class Kernel:
         self.ws_api_endpoint = ws_api_endpoint
         self.kernel_ws_api_endpoint = '{}/{}/channels'.format(ws_api_endpoint, kernel_id)
         self.kernel_id = kernel_id
-        print('Initializing kernel client ({}) to {}'.format(kernel_id, self.kernel_ws_api_endpoint))
+        self.log = logger
+        self.log.debug('Initializing kernel client ({}) to {}'.format(kernel_id, self.kernel_ws_api_endpoint))
 
         self.kernel_socket = \
             websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True)
@@ -109,9 +112,12 @@ class Kernel:
             self.response_queues = None
 
         if self.response_reader:
+            self.response_reader.join(timeout=2.0)
+            if self.response_reader.is_alive():
+                self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
 
-    def execute(self, code, timeout=DEFAULT_TIMEOUT):
+    def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
         Executes the code provided and returns the result of that execution.
         """
@@ -125,31 +131,38 @@ class Kernel:
                 if response_message:
                     response_message_type = response_message['msg_type']
 
-                    if response_message_type == 'error':
+                    if response_message_type == 'error' or \
+                            (response_message_type == 'execute_reply' and
+                             response_message['content']['status'] == 'error'):
                         response.append('{}:{}:{}'.format(response_message['content']['ename'],
                                                           response_message['content']['evalue'],
                                                           response_message['content']['traceback']))
                     elif response_message_type == 'stream':
-                        response.append(Kernel._convert_raw_response(response_message['content']['text']))
+                        response.append(KernelClient._convert_raw_response(response_message['content']['text']))
 
                     elif response_message_type == 'execute_result' or response_message_type == 'display_data':
                         if 'text/plain' in response_message['content']['data']:
                             response.append(
-                                Kernel._convert_raw_response(response_message['content']['data']['text/plain']))
+                                KernelClient._convert_raw_response(response_message['content']['data']['text/plain']))
                         elif 'text/html' in response_message['content']['data']:
                             response.append(
-                                Kernel._convert_raw_response(response_message['content']['data']['text/html']))
-
+                                KernelClient._convert_raw_response(response_message['content']['data']['text/html']))
                     elif response_message_type == 'status':
                         if response_message['content']['execution_state'] == 'idle':
                             post_idle = True  # indicate we're at the logical end and timeout poll for next message
                             continue
+                    else:
+                        self.log.debug("Unhandled response for msg_id: {} of msg_type: {}".
+                                       format(msg_id, response_message_type))
 
-                if post_idle and response_message is None:
+                if response_message is None:  # We timed out.  If post idle, its ok, else make mention of it
+                    if not post_idle:
+                        self.log.warning("Unexpected timeout occurred for msg_id: {} - no 'idle' status received!".
+                                         format(msg_id))
                     break
 
         except BaseException as b:
-            print(b)
+            self.log.debug(b)
 
         return ''.join(response)
 
@@ -157,25 +170,26 @@ class Kernel:
         url = "{}/{}".format(self.kernel_http_api_endpoint, "interrupt")
         response = requests.post(url)
         if response.status_code == 204:
-            print('Kernel {} interrupted'.format(self.kernel_id))
+            self.log.debug('Kernel {} interrupted'.format(self.kernel_id))
             return True
         else:
             raise RuntimeError('Unexpected response interrupting kernel {}: {}'.
                                format(self.kernel_id, response.content))
 
-    def restart(self, timeout=DEFAULT_TIMEOUT):
+    def restart(self, timeout=REQUEST_TIMEOUT):
         self.restarting = True
         self.kernel_socket.close()
         self.kernel_socket = None
         url = "{}/{}".format(self.kernel_http_api_endpoint, "restart")
         response = requests.post(url)
         if response.status_code == 200:
-            print('Kernel {} restarted'.format(self.kernel_id))
+            self.log.debug('Kernel {} restarted'.format(self.kernel_id))
             self.kernel_socket = \
                 websocket.create_connection(self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True)
             self.restarting = False
             return True
         else:
+            self.restarting = False
             raise RuntimeError('Unexpected response restarting kernel {}: {}'.format(self.kernel_id, response.content))
 
     def get_state(self):
@@ -183,7 +197,7 @@ class Kernel:
         response = requests.get(url)
         if response.status_code == 200:
             json = response.json()
-            print('Kernel {} state: {}'.format(self.kernel_id, json))
+            self.log.debug('Kernel {} state: {}'.format(self.kernel_id, json))
             return json['execution_state']
         else:
             raise RuntimeError('Unexpected response retrieving state for kernel {}: {}'.
@@ -209,7 +223,7 @@ class Kernel:
         key.  The msg_id is returned in order to read responses.
         """
         msg_id = uuid4().hex
-        message = Kernel.__create_execute_request(msg_id, code)
+        message = KernelClient.__create_execute_request(msg_id, code)
 
         # create response-queue and add to map for this msg_id
         self.response_queues[msg_id] = queue.Queue()
@@ -226,18 +240,15 @@ class Kernel:
         and the execute_result payload - where the two are out of order, then this will pickup the result.
         """
 
-        if post_idle and timeout > Kernel.POST_IDLE_TIMEOUT:
-            timeout = Kernel.POST_IDLE_TIMEOUT  # overwrite timeout to small value following idle messages.
+        if post_idle and timeout > KernelClient.POST_IDLE_TIMEOUT:
+            timeout = KernelClient.POST_IDLE_TIMEOUT  # overwrite timeout to small value following idle messages.
 
         msg_queue = self.response_queues.get(msg_id)
         try:
+            self.log.debug("Getting response for msg_id: {} with timeout: {}".format(msg_id, timeout))
             response = msg_queue.get(timeout=timeout)
-
-            #print_str = '\n<<<<<<<<<<<<<<< POST IDLE MESSAGE >>>>>>>>>>>>>>>' if post_idle else '\n<<<<<<<<<<<<<<<'
-            #print(print_str)
-            #print('Pulled response from queue for kernel with msg_id: {}'.format(msg_id))
-            #pprint(response)
-
+            self.log.debug("Got response for msg_id: {}, msg_type: {}".
+                           format(msg_id, response['msg_type'] if response else 'null'))
         except queue.Empty:
             response = None
 
@@ -257,18 +268,24 @@ class Kernel:
                     raw_message = self.kernel_socket.recv()
                     response_message = json_decode(utf8(raw_message))
 
-                    msg_id = Kernel._get_msg_id(response_message)
+                    msg_id = KernelClient._get_msg_id(response_message, self.log)
 
                     if msg_id not in self.response_queues:
                         # this will happen when the msg_id is generated by the server
                         self.response_queues[msg_id] = queue.Queue()
 
                     # insert into queue
+                    self.log.debug("Inserting response for msg_id: {}, msg_type: {}".
+                                   format(msg_id, response_message['msg_type']))
                     self.response_queues.get(msg_id).put_nowait(response_message)
                 except BaseException as be1:
                     if self.restarting:  # If restarting, wait until restart has completed - which includes new socket
+                        i = 1
                         while self.restarting:
+                            if i >= 10 and i % 2 == 0:
+                                self.log.debug("Still restarting after {} secs...".format(i))
                             time.sleep(1)
+                            i += 1
                         continue
                     raise be1
 
@@ -277,16 +294,22 @@ class Kernel:
 
         except BaseException as be2:
             if not self.shutting_down:
-                print('Unexpected exception encountered ({})'.format(be2))
+                self.log.warning('Unexpected exception encountered ({})'.format(be2))
 
-        print('Response reader thread exiting...')
+        self.log.debug('Response reader thread exiting...')
 
     @staticmethod
-    def _get_msg_id(message):
-        msg_id = Kernel.DEAD_MSG_ID
-        if message and 'msg_id' in message['parent_header'] and message['parent_header']['msg_id']:
-            msg_id = message['parent_header']['msg_id']
-
+    def _get_msg_id(message, logger):
+        msg_id = KernelClient.DEAD_MSG_ID
+        if message:
+            if 'msg_id' in message['parent_header'] and message['parent_header']['msg_id']:
+                msg_id = message['parent_header']['msg_id']
+            elif 'msg_id' in message:
+                # msg_id may not be in the parent_header, see if present in response
+                # IPython kernel appears to do this after restarts with a 'starting' status
+                msg_id = message['msg_id']
+        else:  # Dump the "dead" message...
+            logger.debug("+++++ Dumping dead message: {}".format(message))
         return msg_id
 
     @staticmethod

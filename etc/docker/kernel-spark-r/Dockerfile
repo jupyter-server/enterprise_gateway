@@ -1,26 +1,42 @@
-FROM elyra/spark-r:v3.0.0.4c1cd80
+ARG HUB_ORG
+ARG TAG
 
-# Install items necessary for IRKernel and launcher to run.
-# First some python things...
-RUN apk add --no-cache build-base libzmq python-dev && \
-    python -m ensurepip && \
-    rm -r /usr/lib/python*/ensurepip && \
-    pip install --upgrade pip setuptools jupyter_client && \
-    rm -r /root/.cache
+ARG BASE_CONTAINER=$HUB_ORG/kernel-r:$TAG
+FROM $BASE_CONTAINER
 
-# then some R things...
-RUN mkdir -p /usr/share/doc/R/html && \
-    Rscript --slave --no-save --no-restore-history \
-        -e "install.packages(pkgs=c('argparse','jsonlite','uuid','stringr','repr','IRkernel','IRdisplay', \
-                                    'evaluate', 'crayon', 'pbdZMQ', 'digest', 'base64enc','versions'), \
-                                    lib='/usr/lib/R/library', repos=c('http://cran.cnr.berkeley.edu/'))" \
-        -e "versions::install.versions('devtools', '1.13.6', lib='/usr/lib/R/library')"
+ARG SPARK_VERSION
 
-ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin
+USER root
 
-RUN adduser -S -u 1000 -G users jovyan && \
-    chown -R jovyan:users /usr/local/bin/kernel-launchers /opt/spark/work-dir
+ENV SPARK_VER $SPARK_VERSION
+ENV SPARK_HOME /opt/spark
+ENV KERNEL_LANGUAGE=R
+ENV R_LIBS_USER $R_LIBS_USER:${R_HOME}/library:${SPARK_HOME}/R/lib
+ENV PATH $PATH:$SPARK_HOME/bin
+
+RUN apt-get update && apt-get install -y \
+    openjdk-8-jdk \
+    libssl-dev
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+# Download and install Spark
+RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
+    tar -xz -C /opt && \
+    ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME
+
+# Download entrypoint.sh from matching tag
+# Use tini from Anaconda installation
+RUN cd /opt/ && \
+    wget https://raw.githubusercontent.com/apache/spark/v${SPARK_VER}/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh && \
+    chmod a+x /opt/entrypoint.sh && \
+    sed -i 's/tini -s/tini -g/g' /opt/entrypoint.sh && \
+    ln -sfn /opt/conda/bin/tini /usr/bin/tini
+
+WORKDIR $SPARK_HOME/work-dir
+# Ensure that work-dir is writable by everyone
+RUN chmod 0777 $SPARK_HOME/work-dir
+
+ENTRYPOINT [ "/opt/entrypoint.sh" ]
 
 USER jovyan
-
-ENV KERNEL_LANGUAGE=R R_LIBS_USER=${R_HOME}/library:${SPARK_HOME}/R/lib
