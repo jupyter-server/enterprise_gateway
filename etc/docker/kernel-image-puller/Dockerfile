@@ -8,6 +8,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY kernel_image_puller.py ./
 
+# Install crictl for use by KIP when non-docker installations are encountered.
+ARG CRICTL_VERSION=v1.22.0
+RUN curl -sL https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | tar zxv -C /usr/local/bin
+
+RUN echo $PATH
 # The following environment variables are supported - defaults provided.  Override as needed.
 ENV KIP_GATEWAY_HOST http://localhost:8888
 ENV KIP_INTERVAL 300
