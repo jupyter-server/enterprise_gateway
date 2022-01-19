@@ -619,6 +619,12 @@ with helm.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
 
+Ensure the `enterprise-gateway` namespace exists:
+
+```bash
+kubectl create namespace enterprise-gateway
+```
+
 From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
 
 ```bash
