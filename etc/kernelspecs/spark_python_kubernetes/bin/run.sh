@@ -28,8 +28,11 @@ PROG_HOME=${KERNEL_LAUNCHERS_DIR}/python
 EG_POD_TEMPLATE_DIR=${EG_POD_TEMPLATE_DIR:-/tmp}
 SCRIPTS_HOME="$(cd "`dirname "$0"`"/../scripts; pwd)"
 pod_template_file=${EG_POD_TEMPLATE_DIR}/kpt_${KERNEL_ID}
-additional_spark_opts=`python ${SCRIPTS_HOME}/launch_kubernetes.py --pod-template=${pod_template_file} $@`
+spark_opts_out=${EG_POD_TEMPLATE_DIR}/spark_opts_${KERNEL_ID}
+python ${SCRIPTS_HOME}/launch_kubernetes.py $@ --pod-template=${pod_template_file} --spark-opts-out=${spark_opts_out}
+additional_spark_opts=`cat ${spark_opts_out}`
 SPARK_OPTS="${SPARK_OPTS} ${additional_spark_opts}"
+rm -f ${spark_opts_out}
 
 set -x
 eval exec \

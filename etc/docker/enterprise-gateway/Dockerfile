@@ -22,6 +22,13 @@ USER root
 
 RUN apt update && apt install -yq curl openjdk-8-jdk
 
+# Download and install Spark
+RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
+    tar -xz -C /opt && \
+    ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME && \
+    mkdir -p /usr/hdp/current && \
+    ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 /usr/hdp/current/spark2-client
+
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp/
 RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
@@ -38,13 +45,6 @@ RUN chown jovyan:users /usr/local/bin/start-enterprise-gateway.sh && \
 	chown -R jovyan:users /usr/local/share/jupyter /usr/local/bin/kernel-launchers && \
 	chmod 0666 /usr/local/share/jupyter/enterprise-gateway.log && \
 	rm -f /usr/local/bin/bootstrap-kernel.sh
-
-# Download and install Spark
-RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
-    tar -xz -C /opt && \
-    ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME && \
-    mkdir -p /usr/hdp/current && \
-    ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 /usr/hdp/current/spark2-client
 
 USER jovyan
 

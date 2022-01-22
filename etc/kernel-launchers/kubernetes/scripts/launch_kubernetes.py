@@ -28,8 +28,8 @@ def generate_kernel_pod_yaml(keywords):
     return k8s_yaml
 
 
-def launch_kubernetes_kernel(kernel_id, port_range, response_addr,
-                             public_key, spark_context_init_mode, pod_template_file):
+def launch_kubernetes_kernel(kernel_id, port_range, response_addr, public_key,
+                             spark_context_init_mode, pod_template_file, spark_opts_out):
     # Launches a containerized kernel as a kubernetes pod.
 
     if os.getenv('KUBERNETES_SERVICE_HOST'):
@@ -106,9 +106,11 @@ def launch_kubernetes_kernel(kernel_id, port_range, response_addr,
 
         additional_spark_opts += _get_spark_resources(pod_template)
 
-        # Note: the following print statement is used in the corresponding run.sh script to
-        # extend spark options with these values.  TODO: find a better way.
-        print(additional_spark_opts)
+        if spark_opts_out:
+            with open(spark_opts_out, "w+") as soo_fd:
+                soo_fd.write(additional_spark_opts)
+        else:  # If no spark_opts_out was specified, print to stdout in case this is an old caller
+            print(additional_spark_opts)
 
 
 def _get_spark_resources(pod_template: Dict) -> str:
@@ -162,6 +164,10 @@ if __name__ == '__main__':
                         nargs='?', help='Indicates whether or how a spark context should be created')
     parser.add_argument('--pod-template', dest='pod_template_file', nargs='?',
                         metavar='template filename', help='When present, yaml is written to file, no launch performed.')
+    parser.add_argument('--spark-opts-out', dest='spark_opts_out', nargs='?',
+                        metavar='additional spark options filename',
+                        help='When present, additional spark options are written to file, '
+                             'no launch performed, requires --pod-template.')
 
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default value for --spark-context-initialization-mode (none) will need to come from
@@ -186,6 +192,7 @@ if __name__ == '__main__':
     public_key = arguments['public_key'] or arguments['rpp_public_key']
     spark_context_init_mode = arguments['spark_context_init_mode'] or arguments['rpp_spark_context_init_mode']
     pod_template_file = arguments['pod_template_file']
+    spark_opts_out = arguments['spark_opts_out']
 
-    launch_kubernetes_kernel(kernel_id, port_range, response_addr,
-                             public_key, spark_context_init_mode, pod_template_file)
+    launch_kubernetes_kernel(kernel_id, port_range, response_addr, public_key,
+                             spark_context_init_mode, pod_template_file, spark_opts_out)
