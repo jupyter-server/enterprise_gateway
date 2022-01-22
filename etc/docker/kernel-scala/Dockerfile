@@ -6,6 +6,8 @@ FROM $BASE_CONTAINER
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
+USER root
+
 # Create/setup the jovyan system user
 RUN adduser --system -uid 1000 jovyan --ingroup users && \
     chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
