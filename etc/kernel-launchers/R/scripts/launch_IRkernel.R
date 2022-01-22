@@ -120,6 +120,11 @@ parser$add_argument("--public-key", nargs='?',
       help="the public key used to encrypt connection information")
 parser$add_argument("--spark-context-initialization-mode", nargs='?',
       help="the initialization mode of the spark context: lazy, eager or none")
+parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
+
+# The following arguments are deprecated and will be used only if their mirroring arguments have no value.
+# This means that the default value for --spark-context-initialization-mode (none) will need to come from
+# the mirrored args' default until deprecated items have been removed.
 
 parser$add_argument("connection_file", nargs='?', help='Connection file to write connection info')
 parser$add_argument("--RemoteProcessProxy.kernel-id", nargs='?',
@@ -132,7 +137,6 @@ parser$add_argument("--RemoteProcessProxy.public-key", nargs='?',
       help="the public key used to encrypt connection information (deprecated)")
 parser$add_argument("--RemoteProcessProxy.spark-context-initialization-mode", nargs='?', default="none",
       help="the initialization mode of the spark context: lazy, eager or none (deprecated)")
-parser$add_argument("--customAppName", nargs='?', help="the custom application name to be set")
 
 argv <- parser$parse_args()
 
