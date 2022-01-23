@@ -1,7 +1,9 @@
 ARG HUB_ORG
 ARG SPARK_VERSION
 
-ARG BASE_CONTAINER=$HUB_ORG/spark:v$SPARK_VERSION
+# TODO: Restore usage of SPARK_VERSION ARG once https://github.com/jupyter/enterprise_gateway/pull/867 is merged
+#ARG BASE_CONTAINER=$HUB_ORG/spark:v$SPARK_VERSION
+ARG BASE_CONTAINER=$HUB_ORG/spark:v2.4.6
 FROM $BASE_CONTAINER
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/

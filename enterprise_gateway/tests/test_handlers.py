@@ -395,7 +395,7 @@ class TestDefaults(TestHandlers):
         }))
 
         # Assert the reply comes back. Test will timeout if this hangs.
-        for _ in range(15):
+        for _ in range(8):
             msg = yield ws.read_message()
             msg = json_decode(msg)
             print(f"test_kernel_comm: {_}: {msg['msg_type']}")

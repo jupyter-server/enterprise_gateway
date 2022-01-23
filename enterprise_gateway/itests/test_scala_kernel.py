@@ -90,9 +90,14 @@ class ScalaKernelBaseSparkTestCase(ScalaKernelBaseTestCase):
         result = self.kernel.execute('sc.getConf.get("spark.submit.deployMode")')
         self.assertRegex(result, self.get_expected_deploy_mode())
 
+    # TODO - Remove once https://github.com/jupyter/enterprise_gateway/pull/867 is merged
+    def get_expected_spark_version(self):
+        return os.getenv("EXPECTED_SPARK_VERSION", "2.4.*")
+
 
 class TestScalaKernelLocal(unittest.TestCase, ScalaKernelBaseTestCase):
-    SPARK_VERSION = os.getenv("SPARK_VERSION")
+    # TODO - Restore getenv once https://github.com/jupyter/enterprise_gateway/pull/867 is merged
+    SPARK_VERSION = "2.4.6"  # os.getenv("SPARK_VERSION")
     DEFAULT_KERNELSPEC = "spark_{}_scala".format(SPARK_VERSION)
     KERNELSPEC = os.getenv("SCALA_KERNEL_LOCAL_NAME", DEFAULT_KERNELSPEC)  # scala_kubernetes for k8s
 
