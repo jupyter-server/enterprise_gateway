@@ -176,7 +176,7 @@ spec:
           value: "False"
           # NOTE: This requires appropriate volume mounts to make notebook dir accessible
         - name: EG_MIRROR_WORKING_DIRS
-
+          value: "False"
         - name: EG_POD_TEMPLATE_DIR
           value: "/tmp"
           # Current idle timeout is 1 hour.
