@@ -113,10 +113,6 @@ class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
 
         super(TestGatewayAppBase, self).tearDown()
 
-    def get_new_ioloop(self):
-        """Uses a global zmq ioloop for tests."""
-        return ioloop.IOLoop.current()
-
     def get_app(self):
         """Returns a tornado.web.Application for the Tornado test runner."""
         if hasattr(self, '_app'):
