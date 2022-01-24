@@ -8,8 +8,8 @@ from setuptools import setup
 here = os.path.abspath(os.path.dirname(__file__))
 
 v = sys.version_info
-if v[:2] < (3, 6):
-    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.6 or above."
+if v[:2] < (3, 7):
+    error = "ERROR: Jupyter Enterprise Gateway requires Python version 3.7 or above."
     print(error, file=sys.stderr)
     sys.exit(1)
 
@@ -21,7 +21,7 @@ setup_args = dict(
     name='jupyter_enterprise_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
-    url='http://github.com/jupyter-incubator/enterprise_gateway',
+    url='http://github.com/jupyter/enterprise_gateway',
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
 A lightweight, multi-tenant, scalable and secure gateway that enables
@@ -64,14 +64,19 @@ Apache Spark, Kubernetes and others..
     extras_require = {
         'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
     },
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     classifiers=[
         'Intended Audience :: Developers',
-        'Intended Audience :: System Administrators',
         'Intended Audience :: Science/Research',
+        'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10'
     ],
     include_package_data=True,
 )
