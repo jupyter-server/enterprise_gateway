@@ -5,7 +5,7 @@
 import logging
 import unittest
 import os
-from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp, ioloop
+from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp
 from tornado.testing import AsyncHTTPTestCase, ExpectLog
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
