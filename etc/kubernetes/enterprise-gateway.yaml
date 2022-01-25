@@ -31,8 +31,8 @@ rules:
     resources: ["rolebindings"]
     verbs: ["get", "list", "create", "delete"]
   - apiGroups: ["sparkoperator.k8s.io"]
-    resources: ["sparkapplications"]
-    verbs: ["get", "list", "create", "delete"]
+    resources: ["sparkapplications", "sparkapplications/status", "scheduledsparkapplications", "scheduledsparkapplications/status"]
+    verbs: ["get", "watch", "list", "create", "delete", "deletecollection", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
