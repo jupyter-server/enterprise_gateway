@@ -8,7 +8,8 @@
         "image_name": "elyra/kernel-spark-py:VERSION",
         "executor_image_name": "elyra/kernel-spark-py:VERSION"
       }
-    }
+    },
+    "debugger": true
   },
   "env": {
     "SPARK_HOME": "/opt/spark",

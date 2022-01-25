@@ -1,6 +1,6 @@
 # Ubuntu:Bionic
 # TensorFlow 2.4.0
-ARG BASE_CONTAINER=jupyter/tensorflow-notebook:703d8b2dcb88
+ARG BASE_CONTAINER=jupyter/tensorflow-notebook:8e693aad7dcc
 
 FROM $BASE_CONTAINER
 
@@ -9,6 +9,7 @@ ENV KERNEL_LANGUAGE python
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
 RUN conda install --quiet --yes \
+    ipykernel \
     pillow \
     future \
     pycryptodomex && \

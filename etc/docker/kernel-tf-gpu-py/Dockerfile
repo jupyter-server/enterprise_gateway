@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -yq \
     tzdata \
     unzip && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install future pycryptodomex
+    pip install --upgrade future pycryptodomex ipykernel>=6.0
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

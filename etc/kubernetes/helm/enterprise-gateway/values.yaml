@@ -50,6 +50,11 @@ nfs:
   # IP address of NFS server. Required if enabled.
   internalServerIPAddress:
 
+kernelspecsPvc:
+  enabled: false
+  # PVC name. Required if want mount kernelspecs without nfs. PVC should create in the same namespace before EG deployed. 
+  name: 
+
 ingress:
   enabled: false
 
