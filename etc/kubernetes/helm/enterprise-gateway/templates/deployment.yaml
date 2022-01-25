@@ -85,7 +85,7 @@ spec:
       volumes:
       - name: pvc-kernelspecs
         persistentVolumeClaim:
-          claimName: {{ .Values.kernelpvc.name }}
+          claimName: {{ .Values.kernelspecsPvc.name }}
 {{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs
