@@ -17,6 +17,8 @@ spec:
     - "{{ eg_response_address }}"
     - "--port-range"
     - "{{ eg_port_range }}"
+    - "--public-key"
+    - "{{ eg_public_key }}"
   driver:
     serviceAccount: "{{ kernel_service_account_name }}"
     labels:
