@@ -18,27 +18,34 @@ spec:
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
     spec:
+      serviceAccountName: enterprise-gateway-sa
       containers:
       - name: kernel-image-puller
         image: {{ .Values.kip.image }}
         imagePullPolicy: {{ .Values.kip.imagePullPolicy }}
         env:
+        - name: KIP_LOG_LEVEL
+          value: {{ .Values.logLevel }}
         - name: KIP_GATEWAY_HOST
           value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.port }}"
         - name: KIP_INTERVAL
           value: !!str {{ .Values.kip.interval }}
         - name: KIP_PULL_POLICY
           value: {{ .Values.kip.pullPolicy }}
+        - name: KIP_CRI_ENDPOINT
+          value: "unix://{{ .Values.kip.criSocket }}"
+        - name: KIP_DEFAULT_CONTAINER_REGISTRY
+          value: {{ .Values.kip.defaultContainerRegistry }}
         # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
         {{- if .Values.authToken }}
         - name: KIP_AUTH_TOKEN   
           value: {{ .Values.authToken }}
         {{- end }}
         volumeMounts:
-        - name: dockersock
-          mountPath: "/var/run/docker.sock"
+        - name: cri-socket
+          mountPath: !!str {{ .Values.kip.criSocket }}  # see env KIP_CRI_ENDPOINT
       volumes:
-      - name: dockersock
+      - name: cri-socket
         hostPath:
-          path: /var/run/docker.sock
+          path: {{ .Values.kip.criSocket }}
 {{- end }}

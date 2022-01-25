@@ -84,5 +84,9 @@ kip:
   pullPolicy: IfNotPresent
   # The interval (in seconds) at which the Kernel Image Puller fetches kernelspecs to pull kernel images.
   interval: 300
+  # The container runtime interface socket, use /run/containerd/containerd.sock for containerd installations
+  criSocket: /var/run/docker.sock
+  # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
+  defaultContainerRegistry: docker.io
 
 

@@ -246,6 +246,10 @@ The Kernel Image Puller can be configured for the interval at which it checks fo
 
 If the Enterprise Gateway defines an authentication token (`EG_AUTH_TOKEN`) then that same token should be configured here as (`KIP_AUTH_TOKEN`) so that the puller can correctly authenticate its requests.
 
+The Kernel Image Puller also supports multiple container runtimes since Docker is no longer configured by default in Kubernetes.  KIP currently supports Docker and Containerd runtimes.  If another runtime is encountered, KIP will try to proceed using the Containerd client `crictl` against the configured socket.  As a result, it is import that the `criSocket` value be appropriately configured relative to the container runtime.  If the runtime is something other than Docker or Containerd and `crictl` isn't able to pull images, it may be necessary to manually pre-seed images or incur kernel start timeouts the first time a given node is asked to start a kernel associated with a non-resident image.
+
+KIP also supports the notion of a _default container registry_ whereby image names that do not specify a registry (e.g., `docker.io` or `quay.io`) KIP will apply the configured default.  Ideally, the image name should be fully qualified.
+
 Here's what the Kernel Image Puller looks like in the yaml...
 ```yaml
 apiVersion: apps/v1
@@ -267,23 +271,30 @@ spec:
       containers:
       - name: kernel-image-puller
         image: elyra/kernel-image-puller:VERSION
-        env:
-          - name: KIP_GATEWAY_HOST
-            value: "http://enterprise-gateway.enterprise-gateway:8888"
-          - name: KIP_INTERVAL
-            value: "300"
-          - name: KIP_PULL_POLICY
-            value: "IfNotPresent"
-          # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
-          - name: KIP_AUTH_TOKEN
-            value:
+           - name: KIP_LOG_LEVEL
+             value: {{ .Values.logLevel }}
+           - name: KIP_GATEWAY_HOST
+             value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.port }}"
+           - name: KIP_INTERVAL
+             value: !!str {{ .Values.kip.interval }}
+           - name: KIP_PULL_POLICY
+             value: {{ .Values.kip.pullPolicy }}
+           - name: KIP_CRI_ENDPOINT
+             value: "unix://{{ .Values.kip.criSocket }}"
+           - name: KIP_DEFAULT_CONTAINER_REGISTRY
+             value: {{ .Values.kip.defaultContainerRegistry }}
+         # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
+              {{- if .Values.authToken }}
+        - name: KIP_AUTH_TOKEN
+          value: {{ .Values.authToken }}
+              {{- end }}
         volumeMounts:
-          - name: dockersock
-            mountPath: "/var/run/docker.sock"
+           - name: cri-socket
+             mountPath: !!str {{ .Values.kip.criSocket }}  # see env KIP_CRI_ENDPOINT
       volumes:
-      - name: dockersock
-        hostPath:
-          path: /var/run/docker.sock
+         - name: cri-socket
+           hostPath:
+              path: {{ .Values.kip.criSocket }}
 ```
 
 
@@ -618,6 +629,12 @@ If Ingress is desired see [this section](#setting-up-a-kubernetes-ingress-for-us
 with helm.
 
 ##### Create the Enterprise Gateway kubernetes service and deployment
+
+Ensure the `enterprise-gateway` namespace exists:
+
+```bash
+kubectl create namespace enterprise-gateway
+```
 
 From anywhere with Helm cluster access, create the service and deployment by running Helm from a source release or the git repository:
 
