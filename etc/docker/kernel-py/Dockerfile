@@ -1,8 +1,11 @@
 # Ubuntu 18.04.1 LTS Bionic
-ARG BASE_CONTAINER=jupyter/scipy-notebook:2022-01-24
+ARG BASE_CONTAINER=jupyter/scipy-notebook:04f7f60d34a6
 FROM $BASE_CONTAINER
 
 ENV PATH=$PATH:$CONDA_DIR/bin
+
+# Add debugger support
+RUN pip install --upgrade ipykernel
 
 RUN conda install --quiet --yes \
     cffi \
