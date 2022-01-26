@@ -1,10 +1,9 @@
 # Ubuntu 18.04.1 LTS Bionic
-ARG BASE_CONTAINER=jupyter/r-notebook:8e693aad7dcc
+ARG BASE_CONTAINER=jupyter/r-notebook:2022-01-24
 FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
     'r-argparse' \
-    jupyter_client \
     pycryptodomex && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR

@@ -1,14 +1,11 @@
 # Ubuntu 18.04.1 LTS Bionic
-ARG BASE_CONTAINER=jupyter/scipy-notebook:8e693aad7dcc
+ARG BASE_CONTAINER=jupyter/scipy-notebook:2022-01-24
 FROM $BASE_CONTAINER
 
 ENV PATH=$PATH:$CONDA_DIR/bin
 
 RUN conda install --quiet --yes \
     cffi \
-    ipykernel \
-    ipython \
-    jupyter_client \
     future \
     pycryptodomex && \
     conda clean -tipsy && \
