@@ -68,7 +68,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 PATTERN_kernelspecs_all := *
 PATTERN_kernelspecs_yarn := *_yarn_*
 PATTERN_kernelspecs_conductor := *_conductor_*
-PATTERN_kernelspecs_kubernetes := *_kubernetes
+PATTERN_kernelspecs_kubernetes := {*_kubernetes,*_operator}
 PATTERN_kernelspecs_docker := *_docker
 
 define BUILD_KERNELSPEC
