@@ -246,9 +246,9 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
 
     cd $SOURCE_DIR
     if [ -z "$DRY_RUN" ]; then
-        make clean dist release docs
+        make clean dist release docs docker-images push-images
     else
-        make clean dist docs
+        make clean dist docs docker-images
     fi
     mkdir -p $WORK_DIR/$RELEASE_TAG
     cp $SOURCE_DIR/dist/jupyter_enterprise_gateway* $WORK_DIR/$RELEASE_TAG
@@ -260,6 +260,8 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     update_version_to_development
 
     cd $SOURCE_DIR
+    mv dist $WORK_DIR/$RELEASE_TAG
+    mv build $WORK_DIR/$RELEASE_TAG
     make clean dist docs
 
     # Build next development iteraction
