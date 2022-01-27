@@ -1,5 +1,5 @@
 # Enterprise Gateway image name and tag to use.
-image: elyra/enterprise-gateway:dev
+image: elyra/enterprise-gateway:2.6.0
 # Enterprise Gateway image pull policy.
 imagePullPolicy: IfNotPresent
 # The primary port on which Enterprise Gateway is servicing requests.
@@ -83,7 +83,7 @@ ingress:
 kip:
   enabled: true
   # Kernel Image Puller image name and tag to use.
-  image: elyra/kernel-image-puller:dev
+  image: elyra/kernel-image-puller:2.6.0
   # Kernel Image Puller image pull policy.
   imagePullPolicy: IfNotPresent
   # Determines whether the Kernel Image Puller will pull kernel images it has previously pulled
