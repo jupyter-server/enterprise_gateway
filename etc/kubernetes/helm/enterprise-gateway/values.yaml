@@ -36,6 +36,7 @@ kernel:
     - spark_r_kubernetes
     - spark_python_kubernetes
     - spark_scala_kubernetes
+    - spark_python_operator
   # Default kernel name should be something from the whitelist
   defaultKernelName: python_kubernetes
 
