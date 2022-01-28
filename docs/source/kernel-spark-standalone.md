@@ -1,4 +1,4 @@
-## Spark Standalone
+# Spark Standalone
 
 By default, Jupyter Enterprise Gateway provides feature parity with Jupyter Kernel Gateway's websocket-mode, which means that by installing kernels in Enterprise Gateway and using the vanilla kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway.
 
@@ -18,7 +18,7 @@ SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP di
 EG_REMOTE_HOSTS=elyra-node-1.fyre.ibm.com,elyra-node-2.fyre.ibm.com,elyra-node-3.fyre.ibm.com,elyra-node-4.fyre.ibm.com,elyra-node-5.fyre.ibm.com
 ```
 
-### Configuring Kernels for Spark Standalone
+## Configuring Kernels for Spark Standalone
 
 Although Enterprise Gateway does not currently provide sample kernelspecs for Spark standalone, here are the steps necessary to convert a yarn_client kernelspec to standalone.
 
@@ -76,7 +76,7 @@ After that, you should have a kernel.json that looks similar to the one below:
 
 After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents.
 
-### Scala Kernel (Apache Toree kernel)
+## Scala Kernel (Apache Toree kernel)
 
 We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
@@ -95,7 +95,7 @@ mv $KERNELS_FOLDER/spark_scala_yarn_client $KERNELS_FOLDER/spark_scala_spark_sta
 
 For more information about the Scala kernel, please visit the [Apache Toree](https://toree.apache.org/) page.
 
-### Installing support for Python (IPython kernel)
+## Installing support for Python (IPython kernel)
 
 The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](https://ipython.readthedocs.io/en/stable/).
 
@@ -112,7 +112,7 @@ mv $KERNELS_FOLDER/spark_python_yarn_client $KERNELS_FOLDER/spark_python_spark_s
 
 For more information about the IPython kernel, please visit the [IPython kernel](https://ipython.readthedocs.io/en/stable/) page.
 
-### Installing support for R (IRkernel)
+## Installing support for R (IRkernel)
 
 **Install IRkernel**
 

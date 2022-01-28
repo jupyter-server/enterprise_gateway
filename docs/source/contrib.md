@@ -1,4 +1,4 @@
-## Contributing to Jupyter Enterprise Gateway
+# Contributing to Jupyter Enterprise Gateway
 
 Thank you for your interest in Jupyter Enterprise Gateway!  If you would like to contribute to the 
 project please first take a look at the 

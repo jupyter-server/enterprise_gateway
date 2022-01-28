@@ -1,4 +1,4 @@
-## Security Features
+# Security Features
 
 Jupyter Enterprise Gateway does not currently perform user _authentication_ but, instead, assumes that all users
 issuing requests have been previously authenticated.  Recommended applications for this are 
@@ -16,11 +16,11 @@ launch environment with the value of the gateway user.
 
 This value is then used within the _authorization_ and _impersonation_ functionality.
 
-### Authorization
+## Authorization
 By default, all users are authorized to start kernels.  This behavior can be adjusted when situations arise where
 more control is required.  Basic authorization can be expressed in two ways.
 
-##### Authorized Users
+### Authorized Users
 The command-line or configuration file option: `EnterpriseGatewayApp.authorized_users` can be specified to contain a
 list of user names indicating which users are permitted to launch kernels within the current gateway server.  
 
@@ -31,7 +31,7 @@ and the request fails.
 **Warning:** Since the `authorized_users` option must be exhaustive, it should be used only in situations where a small 
 and limited set of users are allowed access and empty otherwise.
  
-##### Unauthorized Users
+### Unauthorized Users
 The command-line or configuration file option: `EnterpriseGatewayApp.unauthorized_users` can be specified to contain a
 list of user names indicating which users are **NOT** permitted to launch kernels within the current gateway server. 
 The `unauthorized_users` list is always checked prior to the `authorized_users` list.  If the value of `KERNEL_USERNAME`
@@ -40,7 +40,7 @@ appears in the `unauthorized_users` list, the request is immediately failed with
 From a system security standpoint, privileged users (e.g., `root` and any users allowed `sudo` privileges) should be
 added to this option.
 
-##### Authorization Failures
+### Authorization Failures
 
 It should be noted that the corresponding messages logged when each of the above authorization failures occur are 
 slightly different.  This allows the administrator to discern from which authorization list the failure was generated.  
@@ -59,7 +59,7 @@ User 'bob' is not in the set of users authorized to start kernel 'Spark - Python
 KERNEL_USERNAME is set to an appropriate value and retry the request.
 ```
 
-### User Impersonation
+## User Impersonation
 
 The Enterprise Gateway server leverages other technologies to implement user impersonation when launching kernels. This
 option is configured via two pieces of information: `EG_IMPERSONATION_ENABLED` and
@@ -71,7 +71,7 @@ via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled`
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
 
-#### Impersonation in YARN Cluster Mode
+### Impersonation in YARN Cluster Mode
 
 In a cluster managed by the YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
 this security option as a pre-requisite for user impersonation. When user impersonation is enabled, kernels are launched
@@ -83,7 +83,7 @@ Note that, when using kerberos in a YARN managed cluster, the gateway user (`ely
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration steps.
 
-#### SPNEGO Authentication to YARN APIs
+### SPNEGO Authentication to YARN APIs
 
 When kerberos is enabled in a YARN managed cluster, the administration uis can be configured to require authentication/authorization
 via SPENEGO. When running Enterprise Gateway in a environment configured this way, we need to convey an extra configuration
@@ -93,7 +93,7 @@ to enable the proper authorization when communicating with YARN via the YARN API
 YARN APIs and can also be conveyed via the command-line boolean option `EnterpriseGatewayApp.yarn_endpoint_security_enabled`
 (default = False)
 
-#### Impersonation in Standalone or YARN Client Mode
+### Impersonation in Standalone or YARN Client Mode
 
 Impersonation performed in standalone or YARN cluster modes tends to take the form of using `sudo` to perform the 
 kernel launch as the target user.  This can also be configured within the 
@@ -112,7 +112,7 @@ WARNING: Should impersonation be disabled after granting the gateway user elevat
 **strongly recommended** those privileges be revoked (on all hosts) prior to starting kernels since those kernels
 will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 
-### SSH Tunneling
+## SSH Tunneling
 
 Jupyter Enterprise Gateway is configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the 
 communication socket created within the launcher and used to perform remote and cross-user signalling functionality. SSH
@@ -126,7 +126,7 @@ Please perform necessary steps to validate all hosts before enabling SSH tunneli
 * SSH to each node cluster and accept the host key properly
 * Configure SSH to disable `StrictHostKeyChecking`
 
-### Using  Generic Security Service (Kerberos)
+## Using  Generic Security Service (Kerberos)
 
 Jupyter Enterprise Gateway has support for SSH connections using GSS (for example Kerberos), which enables its deployment
 without the use of an ssh key.  The `EG_REMOTE_GSS_SSH` environment variable can be used to control this behavior.
@@ -134,9 +134,9 @@ without the use of an ssh key.  The `EG_REMOTE_GSS_SSH` environment variable can
 See [list of additional supported environment variables](config-options.html#additional-supported-environment-variables).
 
 
-### Securing Enterprise Gateway Server
+## Securing Enterprise Gateway Server
 
-#### Using SSL for encrypted communication
+### Using SSL for encrypted communication
 
 Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its clients. With SSL enabled, all the
 communication between the server and client are encrypted and highly secure.
@@ -177,7 +177,7 @@ options with the command:
 
 	Note: If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
 
-#### Using Enterprise Gateway configuration file
+### Using Enterprise Gateway configuration file
 You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
 
 1. If you do not already have a configuration file, generate a Enterprise Gateway configuration file by running the

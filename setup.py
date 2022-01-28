@@ -21,7 +21,7 @@ setup_args = dict(
     name='jupyter_enterprise_gateway',
     author='Jupyter Development Team',
     author_email='jupyter@googlegroups.com',
-    url='http://github.com/jupyter-incubator/enterprise_gateway',
+    url='http://github.com/jupyter/enterprise_gateway',
     description='A web server for spawning and communicating with remote Jupyter kernels',
     long_description='''\
 A lightweight, multi-tenant, scalable and secure gateway that enables
@@ -61,7 +61,7 @@ Apache Spark, Kubernetes and others..
         'watchdog>=2.1.3',
         'yarn-api-client>=1.0',
     ],
-    extras_require = {
+    extras_require={
         'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
     },
     python_requires='>=3.6',

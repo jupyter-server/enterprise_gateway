@@ -1,14 +1,14 @@
-## Development Workflow
+# Development Workflow
 
 Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter/enterprise_gateway) 
 server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
 running tests, building docs, packaging kernelspecs, etc.
 
-### Prerequisites
+## Prerequisites
 
 Install [miniconda](https://conda.io/miniconda.html) and [GNU make](https://www.gnu.org/software/make/) on your system.
 
-### Clone the repo
+## Clone the repo
 
 Clone this repository in a local directory.
 
@@ -20,7 +20,7 @@ cd !$
 # clone this repo
 git clone https://github.com/jupyter/enterprise_gateway.git
 ```
-### Make
+## Make
 
 Enterprise Gateway's build environment is centered around `make` and the corresponding `Makefile`.  
 Entering `make` with no parameters yields the following:
@@ -47,7 +47,7 @@ test                           Run unit tests
 ```
 Some of the more useful commands are listed below.
 
-### Build a conda environment
+## Build a conda environment
 
 Build a Python 3 conda environment containing the necessary dependencies for
 running the enterprise gateway server, running tests, and building documentation.
@@ -66,7 +66,7 @@ make ENV=my-conda-env env
 >**Note:** If using a non-default conda env, all `make` commands should include the `ENV=` parameter, 
 otherwise the command will use the default environment.
 
-### Build the wheel file
+## Build the wheel file
 
 Build a wheel file that can then be installed via `pip install`
 
@@ -74,7 +74,7 @@ Build a wheel file that can then be installed via `pip install`
 make bdist
 ```
 
-### Build the kernelspec tar file
+## Build the kernelspec tar file
 
 Enterprise Gateway includes two sets of kernelspecs for each of the three primary kernels: `IPython`,`IR`, 
 and `Toree` to demonstrate remote kernels and their corresponding launchers.  One set uses the 
@@ -89,7 +89,7 @@ Note: Because the scala launcher requires a jar file, `make kernelspecs` require
 scala launcher jar. Please consult the [sbt site](https://www.scala-sbt.org/) for directions to 
 install/upgrade `sbt` on your platform. We currently prefer the use of 1.0.3.
 
-### Build distribution files
+## Build distribution files
 
 Builds the files necessary for a given release: the wheel file, the source tar file, and the kernelspecs tar
 file.  This is essentially a helper target consisting of the `bdist` `sdist` and `kernelspecs` targets.
@@ -98,7 +98,7 @@ file.  This is essentially a helper target consisting of the `bdist` `sdist` and
 make dist
 ```
 
-### Run the Enterprise Gateway server
+## Run the Enterprise Gateway server
 
 Run an instance of the Enterprise Gateway server.
 
@@ -108,7 +108,7 @@ make dev
 
 Then access the running server at the URL printed in the console.
 
-### Build the docs
+## Build the docs
 
 Run Sphinx to build the HTML documentation.
 
@@ -116,7 +116,7 @@ Run Sphinx to build the HTML documentation.
 make docs
 ```
 
-### Run the unit tests
+## Run the unit tests
 
 Run the unit test suite.
 
@@ -124,7 +124,7 @@ Run the unit test suite.
 make test
 ```
 
-### Run the integration tests
+## Run the integration tests
 
 Run the integration tests suite. 
 
@@ -136,7 +136,7 @@ and YARN cluster mode.
 make itest
 ```
 
-### Build the docker images
+## Build the docker images
 
 The following can be used to build all docker images used within the project.  See [docker images](docker.md) for specific details.
 
