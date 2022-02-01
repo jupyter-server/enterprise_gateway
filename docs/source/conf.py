@@ -34,7 +34,6 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
-    "IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib_github_alt",
     "sphinxcontrib.openapi",
     "sphinxemoji.sphinxemoji",
