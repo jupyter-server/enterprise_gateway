@@ -1,5 +1,5 @@
-## Standalone Remote Kernel Execution 
-##### a.k.a "Library Mode"
+# Standalone Remote Kernel Execution 
+## a.k.a "Library Mode"
 
 Remote kernels can be executed by using the `RemoteKernelManager` class directly. This enables running kernels using `ProcessProxy`s without the Enterprise Gateway Webapp.
 

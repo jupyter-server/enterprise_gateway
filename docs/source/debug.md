@@ -1,14 +1,14 @@
-## Debugging Jupyter Enterprise Gateway
+# Debugging Jupyter Enterprise Gateway
 This page discusses how to go about debugging Enterprise Gateway.  We also provide troubleshooting information
 on our [Troubleshooting](troubleshooting.md) page.
 
-### Configuring your IDE for debugging Jupyter Enterprise Gateway
+## Configuring your IDE for debugging Jupyter Enterprise Gateway
 
 While your mileage may vary depending on which IDE you are using, the steps below (which was created
 using PyChar as an example) should be useful for configuring a debuging session for EG with minimum 
 adjustments for different IDEs.
 
-#### Creating a new Debug Configuration
+### Creating a new Debug Configuration
 
 Go to Run->Edit Configuration and create a new python configuration with the following settings:
 
@@ -38,7 +38,7 @@ EG_ENABLE_TUNNELING=False
 ```
 
 
-#### Running in debug mode
+### Running in debug mode
 
 Now that you have handled the necessary configuration, use Run-Debug and select the debug configuration 
 you just created and happy debuging. 

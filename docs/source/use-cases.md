@@ -1,4 +1,4 @@
-## Use Cases
+# Use Cases
 
 Jupyter Enterprise Gateway addresses specific use cases for different personas.  We list a few below:
 

@@ -1,4 +1,4 @@
-## YARN Cluster Mode
+# YARN Cluster Mode
 
 To leverage the full distributed capabilities of Jupyter Enterprise Gateway, there is a need to provide additional configuration options in a cluster deployment.
 
@@ -26,7 +26,7 @@ If Enterprise Gateway is remote from the YARN cluster (i.e., no HADOOP_CONF_DIR)
 EG_ALT_YARN_ENDPOINT=http://${ALT_YARN_RESOURCE_MANAGER_FQDN}:8088/ws/v1/cluster #Common to YARN deployment
 ```
 
-### Configuring Kernels for YARN Cluster mode
+## Configuring Kernels for YARN Cluster mode
 
 For each supported Jupyter Kernel, we have provided sample kernel configurations and launchers as part of the release [jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz](https://github.com/jupyter/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz).
 
@@ -71,7 +71,7 @@ After that, you should have a `kernel.json` that looks similar to the one below:
 }
 ```
 
-### Scala Kernel (Apache Toree kernel)
+## Scala Kernel (Apache Toree kernel)
 
 We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
@@ -89,7 +89,7 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz --strip 1 --direct
 
 For more information about the Scala kernel, please visit the [Apache Toree](https://toree.apache.org/) page.
 
-### Installing support for Python (IPython kernel)
+## Installing support for Python (IPython kernel)
 
 The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](https://ipython.readthedocs.io/en/stable/).
 
@@ -105,7 +105,7 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz --strip 1 --direct
 
 For more information about the IPython kernel, please visit the [IPython kernel](https://ipython.readthedocs.io/en/stable/) page.
 
-### Installing support for R (IRkernel)
+## Installing support for R (IRkernel)
 
 **Install IRkernel**
 

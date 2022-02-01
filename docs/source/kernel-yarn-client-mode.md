@@ -1,4 +1,4 @@
-## YARN Client Mode
+# YARN Client Mode
 
 By default, Jupyter Enterprise Gateway provides feature parity with Jupyter Kernel Gateway's websocket-mode, which means that by installing kernels in Enterprise Gateway and using the vanilla kernelspecs created during installation you will have your kernels running in client mode with drivers running on the same host as Enterprise Gateway.
 
@@ -73,7 +73,7 @@ After that, you should have a kernel.json that looks similar to the one below:
 
 After making any necessary adjustments such as updating SPARK_HOME or other environment specific configuration, you now should have a new Kernel available which will use Jupyter Enterprise Gateway to execute your notebook cell contents.
 
-### Scala Kernel (Apache Toree kernel)
+## Scala Kernel (Apache Toree kernel)
 
 We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
@@ -91,7 +91,7 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz --strip 1 --direct
 
 For more information about the Scala kernel, please visit the [Apache Toree](https://toree.apache.org/) page.
 
-### Installing support for Python (IPython kernel)
+## Installing support for Python (IPython kernel)
 
 The IPython kernel comes pre-installed with Anaconda and we have tested with its default version of [IPython kernel](https://ipython.readthedocs.io/en/stable/).
 
@@ -107,7 +107,7 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.5.0.tar.gz --strip 1 --direct
 
 For more information about the IPython kernel, please visit the [IPython kernel](https://ipython.readthedocs.io/en/stable/) page.
 
-### Installing support for R (IRkernel)
+## Installing support for R (IRkernel)
 
 **Install IRkernel**
 
