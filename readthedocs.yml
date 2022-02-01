@@ -4,7 +4,7 @@ sphinx:
 conda:
     environment: docs/environment.yml
 python:
-    version: 3.9
+    version: "3.8"
     install:
         # install itself with pip install .
         - method: pip
