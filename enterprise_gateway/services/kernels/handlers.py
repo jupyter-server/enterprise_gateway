@@ -9,24 +9,19 @@ import jupyter_server.services.kernels.handlers as jupyter_server_handlers
 from jupyter_client.jsonutil import date_default
 from tornado import web
 from functools import partial
-from ...mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+from ...mixins import CORSMixin, JSONErrorsMixin, KernelEnvMixin, TokenAuthorizationMixin
 
 
 class MainKernelHandler(TokenAuthorizationMixin,
                         CORSMixin,
                         JSONErrorsMixin,
+                        KernelEnvMixin,
                         jupyter_server_handlers.MainKernelHandler):
     """Extends the jupyter_server main kernel handler with token auth, CORS, and
     JSON errors.
     """
 
-    @property
-    def env_whitelist(self):
-        return self.settings['eg_env_whitelist']
 
-    @property
-    def env_process_whitelist(self):
-        return self.settings['eg_env_process_whitelist']
 
     async def post(self):
         """Overrides the super class method to manage env in the request body.
@@ -50,19 +45,15 @@ class MainKernelHandler(TokenAuthorizationMixin,
         if model is not None and 'env' in model:
             if not isinstance(model['env'], dict):
                 raise tornado.web.HTTPError(400)
-            # Start with the PATH from the current env. Do not provide the entire environment
-            # which might contain server secrets that should not be passed to kernels.
-            env = {'PATH': os.getenv('PATH', '')}
-            # Whitelist environment variables from current process environment
-            env.update({key: value for key, value in os.environ.items()
-                        if key in self.env_process_whitelist})
-            # Whitelist KERNEL_* args and those allowed by configuration from client.  If all
-            # envs are requested, just use the keys from the payload.
-            env_whitelist = self.env_whitelist
-            if env_whitelist == ['*']:
-                env_whitelist = model['env'].keys()
-            env.update({key: value for key, value in model['env'].items()
-                        if key.startswith('KERNEL_') or key in env_whitelist})
+
+            env = {
+                # always inherit PATH from the gateway env
+                **{'PATH': os.getenv('PATH', '')},
+                # inherit vars from the gateway env if var name in self.env_inherit
+                **{k:v for k, v in os.environ.items() if k in self.kernel_env_inherit},
+                # forward vars from request env if var name starts with KERNEL_ or in self.env_forward
+                **{k:v for k, v in model['env'].items() if k.startswith('KERNEL_') or k in self.kernel_env_keys},
+            }
 
             # If kernel_headers are configured, fetch each of those and include in start request
             kernel_headers = {}

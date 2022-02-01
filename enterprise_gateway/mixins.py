@@ -139,6 +139,24 @@ class JSONErrorsMixin(object):
         self.finish(json.dumps(reply))
 
 
+class KernelEnvMixin:
+    # @property
+    # def kernel_env_forward(self):
+    #     return self.settings['eg_kernel_env_forward']
+
+    @property
+    def kernel_env_keys(self):
+        km = self.settings['kernel_manager']
+        if km.kernel_spec is not None and "env" in km.kernel_spec:
+            return tuple(km.kernel_spec['env'].keys())
+        else:
+            return None
+
+    @property
+    def kernel_env_inherit(self):
+        return self.settings['eg_kernel_env_inherit']
+
+
 class EnterpriseGatewayConfigMixin(Configurable):
     # Server IP / PORT binding
     port_env = 'EG_PORT'
@@ -313,24 +331,24 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def list_kernels_default(self):
         return os.getenv(self.list_kernels_env, os.getenv('KG_LIST_KERNELS', 'False')).lower() == 'true'
 
-    env_whitelist_env = 'EG_ENV_WHITELIST'
-    env_whitelist = List(config=True,
-                         help="""Environment variables allowed to be set when a client requests a
-                         new kernel. Use '*' to allow all environment variables sent in the request.
-                         (EG_ENV_WHITELIST env var)""")
+    # kernel_env_forward_env = 'EG_KERNEL_ENV_FORWARD'
+    # kernel_env_forward = List(config=True,
+    #                      help="""Environment variables allowed to be set when a client requests a
+    #                      new kernel. Use '*' to allow all environment variables sent in the request.
+    #                      (EG_KERNEL_ENV_FORWARD env var)""")
 
-    @default('env_whitelist')
-    def env_whitelist_default(self):
-        return os.getenv(self.env_whitelist_env, os.getenv('KG_ENV_WHITELIST', '')).split(',')
+    # @default('kernel_env_forward')
+    # def kernel_env_forward_default(self):
+    #     return os.getenv(self.kernel_env_forward_env, os.getenv('KG_KERNEL_ENV_FORWARD', '')).split(',')
 
-    env_process_whitelist_env = 'EG_ENV_PROCESS_WHITELIST'
-    env_process_whitelist = List(config=True,
+    kernel_env_inherit_env = 'EG_KERNEL_ENV_INHERIT'
+    kernel_env_inherit = List(config=True,
                                  help="""Environment variables allowed to be inherited
-                                 from the spawning process by the kernel. (EG_ENV_PROCESS_WHITELIST env var)""")
+                                 from the spawning process by the kernel. (EG_KERNEL_ENV_INHERIT env var)""")
 
-    @default('env_process_whitelist')
-    def env_process_whitelist_default(self):
-        return os.getenv(self.env_process_whitelist_env, os.getenv('KG_ENV_PROCESS_WHITELIST', '')).split(',')
+    @default('kernel_env_inherit')
+    def kernel_env_inherit_default(self):
+        return os.getenv(self.kernel_env_inherit_env, os.getenv('KG_KERNEL_ENV_INHERIT', '')).split(',')
 
     kernel_headers_env = 'EG_KERNEL_HEADERS'
     kernel_headers = List(config=True,

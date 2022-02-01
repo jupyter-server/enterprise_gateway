@@ -24,10 +24,10 @@ class TestHandlers(TestGatewayAppBase):
         os.environ['JUPYTER_PATH'] = RESOURCES
 
         # These are required for setup of test_kernel_defaults
-        os.environ['EG_ENV_PROCESS_WHITELIST'] = "PROCESS_VAR1,PROCESS_VAR2"
+        os.environ['EG_KERNEL_ENV_INHERIT'] = "PROCESS_VAR1,PROCESS_VAR2"
         os.environ['PROCESS_VAR1'] = "process_var1_override"
 
-        self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
+        # self.app.kernel_env_forward = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
 
     def tearDown(self):
         """Shuts down the app after test run."""
@@ -35,8 +35,8 @@ class TestHandlers(TestGatewayAppBase):
         # Clean out items added to env
         if 'JUPYTER_PATH' in os.environ:
             os.environ.pop('JUPYTER_PATH')
-        if 'EG_ENV_PROCESS_WHITELIST' in os.environ:
-            os.environ.pop('EG_ENV_PROCESS_WHITELIST')
+        if 'EG_KERNEL_ENV_INHERIT' in os.environ:
+            os.environ.pop('EG_KERNEL_ENV_INHERIT')
         if 'PROCESS_VAR1' in os.environ:
             os.environ.pop('PROCESS_VAR1')
 
@@ -504,8 +504,7 @@ class TestDefaults(TestHandlers):
     @gen_test
     def test_kernel_env(self):
         """Kernel should start with environment vars defined in the request."""
-        # Note: Only envs in request prefixed with KERNEL_ or in env_whitelist (TEST_VAR)
-        # with the exception of KERNEL_GATEWAY - which is "system owned".
+        # env vars are forwarded from request if key starts with KERNEL_ or key in kernel env stanza
         kernel_body = json.dumps({
             'name': 'python',
             'env': {
@@ -533,11 +532,8 @@ class TestDefaults(TestHandlers):
 
     @gen_test
     def test_kernel_defaults(self):
-        """Kernel should start with env vars defined in request overriding env vars defined in kernelspec."""
-
-        # Note: Only envs in request prefixed with KERNEL_ or in env_whitelist (OTHER_VAR1, OTHER_VAR2)
-        # with the exception of KERNEL_GATEWAY - which is "system owned" - will be set in kernel env.
-        # Since OTHER_VAR1 is not in the request, its existing value in kernel.json will be used.
+        """Kernel should start with env ars defined in request overriding env vars defined in kernelspec."""
+        # env vars are forwarded from request if key starts with KERNEL_ or key in kernel env stanza
 
         # NOTE: This test requires use of the kernels/kernel_defaults_test/kernel.json file.
         kernel_body = json.dumps({
@@ -689,13 +685,10 @@ class TestWildcardEnvs(TestHandlers):
         """Configure JUPYTER_PATH so that we can use local kernelspec files for testing.
         """
         super().setup_app()
-        # overwrite env_whitelist
-        self.app.env_whitelist = ['*']
 
     @gen_test
     def test_kernel_wildcard_env(self):
         """Kernel should start with environment vars defined in the request."""
-        # Note: Since env_whitelist == '*', all values should be present.
         kernel_body = json.dumps({
             'name': 'python',
             'env': {

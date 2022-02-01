@@ -107,13 +107,15 @@
         "tags": [
           "kernelspecs"
         ],
-        "parameters": {
+        "parameters": [
+          {
             "name": "user",
             "required": false,
             "in": "query",
             "description": "When present, kernelspec results will be filtered based on the configured authorization of specified value.",
             "type": "string"
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "If no query parameter is specified, all kernel specs will be returned; otherwise the result set is filtered based on the query parameter.",

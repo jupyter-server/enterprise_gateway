@@ -22,7 +22,7 @@ To see the same configuration options at the command line, run the following:
 jupyter enterprisegateway --help-all
 ```
 
-A snapshot of this help appears below for ease of reference on the web.  
+A snapshot of this help appears below for ease of reference on the web.
 
 ```
 Jupyter Enterprise Gateway
@@ -148,14 +148,14 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     A value of 0 or less disables dynamic config updates.
     (EG_DYNAMIC_CONFIG_INTERVAL env var)
     Default: 0
---EnterpriseGatewayApp.env_process_whitelist=<list-item-1>...
+--EnterpriseGatewayApp.kernel_env_inherit=<list-item-1>...
     Environment variables allowed to be inherited from the spawning process by
-    the kernel. (EG_ENV_PROCESS_WHITELIST env var)
+    the kernel. (EG_KERNEL_ENV_INHERIT env var)
     Default: []
---EnterpriseGatewayApp.env_whitelist=<list-item-1>...
+--EnterpriseGatewayApp.kernel_env_forward=<list-item-1>...
     Environment variables allowed to be set when a client requests a new kernel.
     Use '*' to allow all environment variables sent in the request.
-    (EG_ENV_WHITELIST env var)
+    (EG_KERNEL_ENV_FORWARD env var)
     Default: []
 --EnterpriseGatewayApp.expose_headers=<Unicode>
     Sets the Access-Control-Expose-Headers header. (EG_EXPOSE_HEADERS env var)
@@ -439,10 +439,10 @@ The following environment variables can be used to influence functionality and a
     in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_GIDS.
 
   EG_RESPONSE_IP=None
-    Experimental.  The IP address to use to formulate the response address (with 
-    `EG_RESPONSE_PORT`).  By default, the server's IP is used.  However, we may find 
+    Experimental.  The IP address to use to formulate the response address (with
+    `EG_RESPONSE_PORT`).  By default, the server's IP is used.  However, we may find
     it necessary to use a different IP in cases where the target kernels are external
-    to the Enterprise Gateway server (for example).  It's value may also need to be 
+    to the Enterprise Gateway server (for example).  It's value may also need to be
     set in cases where the computed (default) is not correct for the current topology.
 
   EG_RESPONSE_PORT=8877
@@ -503,7 +503,7 @@ The following environment variables may be useful for troubleshooting:
     should rarely be necessary.
 
   EG_POLL_INTERVAL=0.5
-    The interval (in seconds) to wait before checking poll results again.  
+    The interval (in seconds) to wait before checking poll results again.
 
   EG_REMOVE_CONTAINER=True
     Used by launch_docker.py, indicates whether the kernel's docker container should be
