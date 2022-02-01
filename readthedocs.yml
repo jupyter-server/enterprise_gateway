@@ -9,3 +9,4 @@ python:
         # install itself with pip install .
         - method: pip
           path: .
+
