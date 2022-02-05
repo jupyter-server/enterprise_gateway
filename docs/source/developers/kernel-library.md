@@ -20,3 +20,6 @@ client.execute()
 ```
 
 The above code will execute the notebook on a kernel using the configured `ProcessProxy`.
+
+
+TODO: Add reference to GatewayKernelManager and GatewayKernelClient in Jupyter Server and how to use from nbclient and papermill.

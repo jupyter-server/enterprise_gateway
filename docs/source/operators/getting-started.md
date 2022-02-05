@@ -1,55 +1,24 @@
 # Getting started
 
-Jupyter Enterprise Gateway requires Python (Python 3.3 or greater, or Python 2.7) and is intended to be installed on a node (typically the master node) of a managed cluster.  Although its design center is for running kernels in [Apache Spark 2.x](https://spark.apache.org/docs/latest/index.html) clusters, clusters configured without Apache Spark are also acceptable.
+Jupyter Enterprise Gateway requires Python (Python 3.6 or greater) and is intended to be installed on a node (typically the primary node) of a managed cluster.  Although its design center is for running kernels in [Apache Spark](https://spark.apache.org/docs/latest/index.html) clusters, clusters configured without Apache Spark are also supported.
 
-The following Resource Managers are supported with the Jupyter Enterprise Gateway:
+The following Resource Managers are currently supported with Jupyter Enterprise Gateway:
 
-* Spark Standalone
-* YARN Resource Manager - Client Mode
-* YARN Resource Manager - Cluster Mode
-* IBM Spectrum Conductor - Cluster Mode
 * Kubernetes
 * Docker Swarm
+* Hadoop YARN
+* Spark Standalone
+* IBM Spectrum Conductor
 
-If you don't rely on a Resource Manager, you can use the Distributed mode which will connect a set of hosts via SSH.
+If you don't rely on a Resource Manager, you can use the Distributed mode which will distribute kernels across a set of hosts via SSH.
 
 The following kernels have been tested with the Jupyter Enterprise Gateway:
 
 * Python/Apache Spark 2.x with IPython kernel
-* Scala 2.11/Apache Spark 2.x with Apache Toree kernel
+* Scala 2.11/Apache Spark 2.x with [Apache Toree](https://toree.apache.org/) kernel
 * R/Apache Spark 2.x with IRkernel
 
-To support Scala kernels, [Apache Toree](https://toree.apache.org/) is used. To support IPython kernels and R kernels, various packages have to be installed on each of the resource manager nodes. The simplest way to enable all the data nodes with required dependencies is to install [Anaconda](https://anaconda.com/) on all cluster nodes.
-
 To take full advantage of security and user impersonation capabilities, a Kerberized cluster is recommended.
-
-## Enterprise Gateway Features
-
-Jupyter Enterprise Gateway exposes the following features and functionality:
-
-* Enables the ability to launch kernels on different servers thereby distributing resource utilization across the enterprise
-* Pluggable framework allows for support of additional resource managers
-* Secure communication from client to kernel
-* Persistent kernel sessions (see [Roadmap](roadmap.html#project-roadmap))
-* Configuration profiles (see [Roadmap](roadmap.html#project-roadmap))
-* Feature parity with [Jupyter Kernel Gateway's](https://jupyter-kernel-gateway.readthedocs.io/en/latest/) websocket-mode.
-* A CLI for launching the enterprise gateway server: `jupyter enterprisegateway OPTIONS`
-* A Python 2.7 and 3.3+ compatible implementation
-
-
-## Kernel Gateway vs. Enterprise Gateway
-Enterprise Gateway was formerly built directly on Kernel Gateway.  At that time, it had complete feature parity with Kernel Gateway.  However, in order to address various roadmap items, Enterprise Gateway removed its dependency on Kernel Gateway, so now the question arises, when does one choose Enterprise Gateway over Kernel Gateway?
-
-### Use Enterprise Gateway if...
-1. You have a large computer cluster consisting of limited resources (GPUs, large memory, etc) and users require those resources from notebooks
-2. You have large numbers of users requiring access to a shared compute cluster
-3. You require some amount of High Availability/Disaster Recovery such that another Gateway server can be spun up to service existing (and remote) kernels
-
-### Use Kernel Gateway if...
-1. You have a small user pool where the resources of the Gateway server can be shared amongst those users (no remote kernel support)
-2. You wish to configured the [notebook-http mode](https://jupyter-kernel-gateway.readthedocs.io/en/latest/http-mode.html) functionality where a specific Notebook provides HTTP endpoints
-
-Note that Enterprise Gateway also supports local kernels by default.  However, HA/DR functionality won't be affective unless kernels run remotely.
 
 ## Installing Enterprise Gateway
 
@@ -60,7 +29,7 @@ packages for scientific computing and data science.
 Use the following installation steps:
 
 * Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda’s
-latest Python version (currently Python 2.7 and Python 3.6).
+latest Python version (currently Python 3.9).
 
 * Install the version of Anaconda which you downloaded, following the instructions on the download page.
 
@@ -154,7 +123,7 @@ For information about how to build your own kernel-based docker image for use by
 
 ## Starting Enterprise Gateway
 
-Very few arguments are necessary to minimally start Enterprise Gateway.  The following command could be considered a minimal command and essentially provides functionality equal to Jupyter Kernel Gateway:
+Very few arguments are necessary to minimally start Enterprise Gateway.  The following command could be considered a minimal command:
 
 ```bash
 jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0
@@ -182,46 +151,17 @@ else
 fi
 ```
 
-## Connecting a Notebook to Enterprise Gateway
+## Enterprise Gateway Features (TODO)
 
-To leverage the benefits of Enterprise Gateway, it's helpful to redirect a Notebook server's kernel management to the Gateway server.  This allows better separation of the user's notebooks from the managed computer cluster (Kubernetes, Hadoop YARN, Docker Swarm, etc.) on which Enterprise Gateway resides.  A Notebook server can be configured to relay kernel requests to an Enterprise Gateway server in two ways - depending on the version of Notebook you're using.
+Jupyter Enterprise Gateway exposes the following features and functionality:
 
-### Notebook 6.0 (and above)
-With the Notebook 6.0 release, the NB2KG server extension (see next section) is built directly into the Notebook server.  As a result, the steps for installing and configuring the server extension are no longer necessary.
+* Enables the ability to launch kernels on different servers thereby distributing resource utilization across the enterprise
+* Pluggable framework allows for support of additional resource managers
+* Secure communication from client to kernel
+* Persistent kernel sessions (see [Roadmap](roadmap.html#project-roadmap))
+* Configuration profiles (see [Roadmap](roadmap.html#project-roadmap))
+* Feature parity with [Jupyter Kernel Gateway's](https://jupyter-kernel-gateway.readthedocs.io/en/latest/) websocket-mode.
+* A CLI for launching the enterprise gateway server: `jupyter enterprisegateway OPTIONS`
+* A Python 3.6+ compatible implementation
 
-To start the notebook server from the command line, the following will redirect kernel management request to the Gateway server running at `<ENTERPRISE_GATEWAY_HOST_IP>`:
-```bash
-jupyter notebook --gateway-url=http://<ENTERPRISE_GATEWAY_HOST_IP>:8888 --GatewayClient.http_user=guest --GatewayClient.http_pwd=guest-password
-```
-
-If you have Notebook already in a docker image, a corresponding docker invocation would look something like this:
-```bash
-docker run -t --rm \
-  -e JUPYTER_GATEWAY_URL='http://<master ip>:8888' \
-  -e JUPYTER_GATEWAY_HTTP_USER=guest \
-  -e JUPYTER_GATEWAY_HTTP_PWD=guest-password \
-  -e JUPYTER_GATEWAY_VALIDATE_CERT='false' \
-  -e LOG_LEVEL=DEBUG \
-  -p 8888:8888 \
-  -v ${HOME}/notebooks/:/tmp/notebooks \
-  -w /tmp/notebooks \
-  notebook-docker-image
-```
-
-Notebook files residing in `${HOME}/notebooks` can then be accessed via `http://localhost:8888`.  
-
-### NB2KG Server Extension
-For Notebook versions prior to 6.0, the [NB2KG](https://github.com/jupyter/nb2kg) server extension is used to connect a Notebook from a local desktop or laptop to the Enterprise Gateway instance.  Please refer to the NB2KG repository's README file for [installation instructions](https://github.com/jupyter/nb2kg#install).
-
-Extending the notebook launch command listed on the [NB2KG repo](https://github.com/jupyter/nb2kg#run-notebook-server), one might use the following...
-
-```bash
-export KG_URL=http://<ENTERPRISE_GATEWAY_HOST_IP>:8888
-export KG_HTTP_USER=guest
-export KG_HTTP_PASS=guest-password
-export KERNEL_USERNAME=${KG_HTTP_USER}
-jupyter notebook \
-  --NotebookApp.session_manager_class=nb2kg.managers.SessionManager \
-  --NotebookApp.kernel_manager_class=nb2kg.managers.RemoteKernelManager \
-  --NotebookApp.kernel_spec_manager_class=nb2kg.managers.RemoteKernelSpecManager
-```
+Note that Enterprise Gateway also supports local kernels by default.  However, HA/DR functionality won't be affective unless kernels run remotely.
