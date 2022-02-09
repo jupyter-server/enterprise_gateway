@@ -239,10 +239,18 @@ spec:
             value: "300"
           - name: KIP_PULL_POLICY
             value: "IfNotPresent"
+          - name: KIP_CRI_ENDPOINT
+            value: "unix:///var/run/docker.sock"
+            # value: "unix:///run/containerd/containerd.sock"
+          - name: KIP_DEFAULT_CONTAINER_REGISTRY
+            value: "docker.io"
+            # value: "quay.io"
         volumeMounts:
-          - name: dockersock
+          - name: cri-socket
             mountPath: "/var/run/docker.sock"
+            # mountPath: "/run/containerd/containerd.sock" for containerd installations
       volumes:
-      - name: dockersock
+      - name: cri-socket
         hostPath:
           path: /var/run/docker.sock
+          # path: "/run/containerd/containerd.sock" for containerd installations

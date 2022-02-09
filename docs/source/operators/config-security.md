@@ -1,15 +1,15 @@
-# Security Features
+# Configuring Security
 
 Jupyter Enterprise Gateway does not currently perform user _authentication_ but, instead, assumes that all users
 issuing requests have been previously authenticated.  Recommended applications for this are 
-[Apache Knox](https://knox.apache.org/) or perhaps even [Jupyter Hub](https://jupyterhub.readthedocs.io/en/latest/) 
+[Apache Knox](https://knox.apache.org/) or [Jupyter Hub](https://jupyterhub.readthedocs.io/en/latest/) 
 (e.g., if gateway-enabled notebook servers were spawned targeting an Enterprise Gateway cluster).
 
-This section introduces some of the security features inherent in Enterprise Gateway (with more to come).
+This section introduces some security features inherent in Enterprise Gateway (with more to come).
 
-**KERNEL_USERNAME**
+## KERNEL_USERNAME
 
-In order to convey the name of the authenicated user, `KERNEL_USERNAME` should be sent in the kernel creation request 
+In order to convey the name of the authenticated user, `KERNEL_USERNAME` should be sent in the kernel creation request 
 via the `env:` entry.  This will occur automatically within the gateway-enabled Notebook server since it propagates all environment variables 
 prefixed with `KERNEL_`.  If the request does not include a `KERNEL_USERNAME` entry, one will be added to the kernel's
 launch environment with the value of the gateway user.
@@ -28,8 +28,10 @@ On each kernel launched, the authorized users list is searched for the value of 
 the user is found in the list the kernel's launch sequence continues, otherwise HTTP Error 403 (Forbidden) is raised
 and the request fails.
 
-**Warning:** Since the `authorized_users` option must be exhaustive, it should be used only in situations where a small 
+```{warning}
+Since the `authorized_users` option must be exhaustive, it should be used only in situations where a small 
 and limited set of users are allowed access and empty otherwise.
+```
  
 ### Unauthorized Users
 The command-line or configuration file option: `EnterpriseGatewayApp.unauthorized_users` can be specified to contain a
@@ -71,17 +73,20 @@ via the command-line boolean option `EnterpriseGatewayApp.impersonation_enabled`
 `KERNEL_USERNAME` is also conveyed within the environment of the kernel launch sequence where 
 its value is used to indicate the user that should be impersonated.
 
-### Impersonation in YARN Cluster Mode
+### Impersonation in Hadoop YARN clusters
 
-In a cluster managed by the YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
+In a cluster managed by the Hadoop YARN resource manager, impersonation is implemented by leveraging kerberos, and thus require
 this security option as a pre-requisite for user impersonation. When user impersonation is enabled, kernels are launched
 with the `--proxy-user ${KERNEL_USERNAME}` which will tell YARN to launch the kernel in a container used by the provided
 user name.
 
-Note that, when using kerberos in a YARN managed cluster, the gateway user (`elyra` by default) needs to be set up as a
+```{admonition} Important!
+:class: warning
+When using kerberos in a YARN managed cluster, the gateway user (`elyra` by default) needs to be set up as a
 `proxyuser` superuser in hadoop configuration. Please refer to the
 [Hadoop documentation](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html) 
 regarding the proper configuration steps.
+```
 
 ### SPNEGO Authentication to YARN APIs
 
@@ -108,9 +113,11 @@ in the background.  Refer to your operating system documentation for details.
 in the set of `unauthorized_users`.  Otherwise, kernels not configured for impersonation, or those requests that do not
 include `KERNEL_USERNAME`, will run as the, now, highly privileged gateway user!  
 
-WARNING: Should impersonation be disabled after granting the gateway user elevated privileges, it is 
+```{warning}
+Should impersonation be disabled after granting the gateway user elevated privileges, it is 
 **strongly recommended** those privileges be revoked (on all hosts) prior to starting kernels since those kernels
 will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
+```
 
 ## SSH Tunneling
 
@@ -144,60 +151,52 @@ communication between the server and client are encrypted and highly secure.
 1. You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile`
 options with the command:
 
-	```
-	jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
-	```
+    ```
+    jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
+    ```
 
-	As server starts up, the log should reflect the following,
+    As server starts up, the log should reflect the following,
 
-	```
-	[EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
-	```
+    ```
+    [EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
+    ```
 
-	Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
+    Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
 
-	TIP:
-	A self-signed certificate can be generated with openssl. For example, the following command will create a
-	certificate valid for 365 days with both the key and certificate data written to the same file:
+    TIP:
+    A self-signed certificate can be generated with openssl. For example, the following command will create a
+    certificate valid for 365 days with both the key and certificate data written to the same file:
 
-	```bash
-	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
-	```
+    ```bash
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
+    ```
 
 2. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
 
-	During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
-	during runtime:
+    During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
+    during runtime:
 
-	```bash
-	export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
-	export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
-	export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
-	```
+    ```bash
+    export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
+    export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
+    export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
+    ```
 
-	Note: If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
+    ```{note}
+    If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
+   ```
+    
 
 ### Using Enterprise Gateway configuration file
-You can also utilize the Enterprise Gateway configuration file to set static configurations for the server.
+You can also utilize the [Enterprise Gateway configuration file](config-file.html#configuration-file-options) to set static configurations for the server.
 
-1. If you do not already have a configuration file, generate a Enterprise Gateway configuration file by running the
-following command:
-
-	```
-	jupyter enterprisegateway --generate-config
-	```
-
-2. By default, the configuration file will be generated `~/.jupyter/jupyter_enterprise_gateway_config.py`.
-
-3. By default, all the configuration fields in `jupyter_enterprise_gateway_config.py` are commented out. To enable SSL
-from the configuration file, modify the corresponding parameter to the appropriate value.
+To enable SSL from the configuration file, modify the corresponding parameter to the appropriate value.
 
 	```
-	s,c.KernelGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
-	s,c.KernelGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
+	c.EnterpriseGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
+	c.EnterpriseGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
 	```
-
-4. Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
-provides better readability and debuggability.
+Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
+provides better readability and maintainability.
 
 After configuring the above, the communication between gateway-enabled Notebook Server and Enterprise Gateway is SSL enabled.

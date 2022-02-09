@@ -3,15 +3,17 @@ Documentation for Contributors
 
 These pages target people who are interested in contributing directly to the Jupyter Enterprise Gateway Project.
 
+..
+   use-cases
+
 .. toctree::
    :caption: Contributors
-   :maxdepth: 2
+   :maxdepth: 1
    :name: contributors
 
-   use-cases
    contrib
-   debug
+   system-architecture
    devinstall
    docker
-   system-architecture
+   debug
    roadmap

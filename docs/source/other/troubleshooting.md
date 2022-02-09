@@ -1,7 +1,7 @@
-# Troubleshooting
+# Troubleshooting Guide
 
 This page identifies scenarios we've encountered when running Enterprise Gateway.  We also provide 
-instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](debug.md) page.
+instructions for setting up a debug environment on our [Debugging Jupyter Enterprise Gateway](../contributors/debug.md) page.
 
 - **None of the scenarios on this page match or resolve my issue, what do I do next?**
 
@@ -77,7 +77,7 @@ a "Kernel error" and State: 'FAILED'.**
             final status: UNDEFINED
             tracking URL: http://burna1.yourcompany.com:8088/proxy/application_1506552273380_0011/
         ```
-    2. Lookup the YARN log for that applicationId in the YARN ResourceManager UI: ![YARN ResourceManager UI](images/yarnui.jpg)
+    2. Lookup the YARN log for that applicationId in the YARN ResourceManager UI: ![YARN ResourceManager UI](../images/yarnui.jpg)
     3. Drill down from the applicationId to find logs for the failed attempts and take appropriate
      actions. For example, for the error below, 
         ```

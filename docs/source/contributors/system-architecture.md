@@ -139,7 +139,7 @@ These class definitions can be found in the
 Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not 
 required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a *bring your own process proxy* model.
 
-![Process Class Hierarchy](images/process_proxy_hierarchy.png)
+![Process Class Hierarchy](../images/process_proxy_hierarchy.png)
 
 The process proxy constructor looks as follows:
 

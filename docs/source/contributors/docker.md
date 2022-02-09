@@ -1,16 +1,14 @@
 # Docker Images
 
-All docker images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter/enterprise_gateway/tree/master/etc/docker).
+All docker images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/docker).
 
 Local images can also be built via `make docker-images`.
-
-# Runtime Images
 
 The following sections describe the docker images used within Kubernetes and Docker Swarm environments - all of which can be pulled from the [Enterprise Gateway organization](https://hub.docker.com/r/elyra/) on dockerhub.
 
 ## elyra/enterprise-gateway
 
-The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) contains the Enterprise Gateway server software and default kernelspec files.  For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file.  For Docker Swarm, deployment can be accomplished using [enterprise-gateway-swarm.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) although we should convert this to a docker compose yaml file at some point.
+The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) contains the Enterprise Gateway server software and default kernelspec files.  For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file.  For Docker Swarm, deployment can be accomplished using [enterprise-gateway-swarm.sh](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/enterprise-gateway-swarm.sh) although we should convert this to a docker compose yaml file at some point.
 
 We recommend that a persistent/mounted volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
 
@@ -68,7 +66,7 @@ Users that do not wish to extend an existing kernel image must be cognizant of a
 Custom kernel images require some support files from the Enterprise Gateway repository.  These are packaged into a tar file for each release starting in `2.5.0`.  This tar file (named `jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz`) is composed of a few files - one bootstrap script and a kernel launcher (one per kernel type).
 
 #### Bootstrap-kernel.sh
-Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
+Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala.  When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables.  The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
 
 #### Kernel Launcher
 The kernel launcher, as discussed [here](system-architecture.html#kernel-launchers) does a number of things.  In particular, it creates the connection ports and conveys that connection information back to Enterprise Gateway via the socket identified by the response address parameter.  Although not a requirement for container-based usage, it is recommended that the launcher be written in the same language as the kernel.  (This is more of a requirement when used in applications like YARN.)
@@ -199,11 +197,11 @@ cp -r python_kubernetes python_myCustomKernel
 - Launch or refresh your Notebook session and confirm `My Custom Kernel` appears in the _new kernel_ drop-down.
 - Create a new notebook using `My Custom Kernel`.
 
-# Ancillary Docker Images
+## Ancillary Docker Images
 
 The project produces two docker images to make testing easier: [elyra/demo-base](docker.html#elyra-demo-base) and [elyra/enterprise-gateway-demo](docker.html#elyra-enterprise-gateway-demo).
 
-## elyra/demo-base
+### elyra/demo-base
 
 The [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/) image is considered the base image upon which [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) is built.  It consist of a Hadoop (YARN) installation that includes Spark, Java, miniconda and various kernel installations.
 
@@ -211,7 +209,7 @@ The primary use of this image is to quickly build elyra/enterprise-gateway image
 
 As of the 0.9.0 release, this image can be used to start a separate YARN cluster that, when combined with another instance of elyra/enterprise-gateway can better demonstrate remote kernel functionality.
 
-## elyra/enterprise-gateway-demo
+### elyra/enterprise-gateway-demo
 
 Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/) also includes the various example kernelspecs contained in the repository.
 

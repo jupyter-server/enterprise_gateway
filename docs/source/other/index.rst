@@ -3,8 +3,7 @@ Other helpful documentation
 
 .. toctree::
    :maxdepth: 1
+   :name: other
 
-   links
-   faq
-   full-config
-   changelog
+   troubleshooting
+   related-resources

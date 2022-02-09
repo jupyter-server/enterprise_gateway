@@ -1,6 +1,6 @@
 # Debugging Jupyter Enterprise Gateway
 This page discusses how to go about debugging Enterprise Gateway.  We also provide troubleshooting information
-on our [Troubleshooting](troubleshooting.md) page.
+in our [Troubleshooting Guide](../other/troubleshooting.md).
 
 ## Configuring your IDE for debugging Jupyter Enterprise Gateway
 
@@ -12,11 +12,11 @@ adjustments for different IDEs.
 
 Go to Run->Edit Configuration and create a new python configuration with the following settings:
 
-![Enterprise Gateway debug configuration](images/debug_configuration.png)
+![Enterprise Gateway debug configuration](../images/debug_configuration.png)
 
 **Script Path:**
 ```bash
-/Users/lresende/opensource/jupyter/elyra/scripts/jupyter-enterprisegateway
+/Users/jovyan/opensource/jupyter/elyra/scripts/jupyter-enterprisegateway
 ```   
 
 **Parameters:**
@@ -34,11 +34,11 @@ EG_ENABLE_TUNNELING=False
 
 **Working Directotry:**
 ```bash
-/Users/lresende/opensource/jupyter/elyra/scripts
+/Users/jovyan/opensource/jupyter/elyra/scripts
 ```
 
 
 ### Running in debug mode
 
 Now that you have handled the necessary configuration, use Run-Debug and select the debug configuration 
-you just created and happy debuging. 
+you just created and happy debugging. 

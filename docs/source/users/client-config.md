@@ -8,7 +8,7 @@ or
 jupyter server --generate-config
 ```
 The following is produced from the `--help-all` option.  To determine the corresponding configuration file option, replace `--` with `c.`.
-```bash
+```
 --GatewayClient.auth_scheme=<Unicode>
     The auth scheme, added as a prefix to the authorization token used in the HTTP headers.
             (JUPYTER_GATEWAY_AUTH_SCHEME env var)
