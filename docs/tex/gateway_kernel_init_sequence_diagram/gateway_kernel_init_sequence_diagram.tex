@@ -1,0 +1,43 @@
+\documentclass[convert]{standalone}
+\usepackage{fontspec}
+\usepackage{pgf-umlsd}
+\usepackage[bottom]{footmisc}
+
+\setmainfont{Consolas}
+
+\begin{document}
+\begin{sequencediagram}
+    \newthread{browser}{:browser}
+    \newinst[4]{server}{:jupyter\_server}
+    \newinst[3]{gateway}{:enterprise\_gateway}
+    \newinst[4]{kernel}{:kernel}
+    
+    \begin{sdblock}{fetch kernelspecs}{}
+        \begin{call}{browser}{https GET api/kernelspecs}{server}{api/kernelspecs response}
+            \begin{call}{server}{https GET api/kernelspecs}{gateway}{api/kernelspecs response}
+            \postlevel
+            \end{call}
+        \end{call}
+    \end{sdblock}
+    
+    \begin{sdblock}{kernel init}{}
+        \begin{call}{browser}{https POST api/sessions}{server}{api/sessions response}
+            \begin{call}{server}{https POST api/sessions}{gateway}{api/sessions response}
+                \begin{call}{gateway}{CoreV1API.create\_namespaced\_pod}{kernel}{kernel connection info\footnote{see https://github.com/jupyter/enterprise\_gateway/pull/877}}
+                    \postlevel
+                \end{call}
+                \postlevel
+                \begin{call}{gateway}{TCP socket requests}{kernel}{TCP socket handshakes}
+                    \postlevel
+                \end{call}
+            \end{call}
+        \end{call}
+        \postlevel
+        \begin{call}{browser}{ws GET api/kernels}{server}{websocket upgrade response}
+            \begin{call}{server}{ws GET api/kernels}{gateway}{websocket upgrade response}
+            \postlevel
+            \end{call}
+        \end{call}
+    \end{sdblock}
+\end{sequencediagram}
+\end{document}

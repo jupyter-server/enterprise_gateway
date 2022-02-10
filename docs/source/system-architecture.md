@@ -9,33 +9,35 @@ Enterprise Gateway is follow-on project to Jupyter Kernel Gateway with additiona
 At its basic level, a running kernel consists of two components for its communication - a set of ports and a process.
 
 ### Kernel Ports
-The first component is a set of five zero-MQ ports used to convey the Jupyter protocol between the Notebook 
-and the underlying kernel.  In addition to the 5 ports, is an IP address, a key, and a signature scheme 
-indicator used to interpret the key.  These eight pieces of information are conveyed to the kernel via a 
-json file, known as the connection file. 
+The first component is a set of five zero-MQ ports used to convey the Jupyter protocol between the Notebook
+and the underlying kernel.  In addition to the 5 ports, is an IP address, a key, and a signature scheme
+indicator used to interpret the key.  These eight pieces of information are conveyed to the kernel via a
+json file, known as the connection file.
 
 In today's Jupyter Kernel Gateway implementation, the IP address must be a local IP address meaning that the kernel cannot be
 remote from the kernel gateway.  The enforcement of this restriction is down in the `jupyter_client` module -
 two levels below JKG.
 
-This component is the core communication mechanism between the Notebook and the kernel.  All aspects, including 
-life-cycle management, can occur via this component.  The kernel process (below) comes into play only when 
+This component is the core communication mechanism between the Notebook and the kernel.  All aspects, including
+life-cycle management, can occur via this component.  The kernel process (below) comes into play only when
 port-based communication becomes unreliable or additional information is required.
 
 ### Kernel Process
-When a kernel is launched, one of the fields of the kernel's associated kernel specification is used to 
-identify a command to invoke.  In today's implementation, this command information, along with other 
-environment variables (also described in the kernel specification), is passed to `popen()` which returns 
+When a kernel is launched, one of the fields of the kernel's associated kernel specification is used to
+identify a command to invoke.  In today's implementation, this command information, along with other
+environment variables (also described in the kernel specification), is passed to `popen()` which returns
 a process class.  This class supports four basic methods following its creation:
 1. `poll()` to determine if the process is still running
 2. `wait()` to block the caller until the process has terminated
-3. `send_signal(signum)` to send a signal to the process 
+3. `send_signal(signum)` to send a signal to the process
 4. `kill()` to terminate the process
 
 As you can see, other forms of process communication can be achieved by abstracting the launch mechanism.
 
+![Kernel Process Lanuch Sequence Diagram](images/gateway_kernel_init_sequence_diagram.png)
+
 ### Kernel Specifications
-The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel 
+The primary vehicle for indicating a given kernel should be handled in a different manner is the kernel
 specification, otherwise known as the *kernel spec*.  Enterprise Gateway leverages the natively extensible `metadata` stanza to introduce a new stanza named `process_proxy`.
 
 The `process_proxy` stanza identifies the class that provides the kernel's process abstraction
@@ -78,33 +80,33 @@ See the [Process Proxy](#process-proxy) section for more details on process prox
 
 ## Remote Kernel Manager
 `RemoteKernelManager` is a subclass of jupyter_client's `IOLoopKernelManager` class and provides the
-primary integration points for remote process proxy invocations.  It implements a number of methods which allow 
-Enterprise Gateway to circumvent functionality that might otherwise be prevented.  As a result, some of these overrides may 
-not be necessary if lower layers of the Jupyter framework were modified.  For example, some methods are required 
+primary integration points for remote process proxy invocations.  It implements a number of methods which allow
+Enterprise Gateway to circumvent functionality that might otherwise be prevented.  As a result, some of these overrides may
+not be necessary if lower layers of the Jupyter framework were modified.  For example, some methods are required
 because Jupyter makes assumptions that the kernel process is local.
 
-Its primary functionality, however, is to override the `_launch_kernel` method (which is the method closest to 
-the process invocation) and instantiates the appropriate process proxy instance - which is then returned in 
-place of the process instance used in today's implementation.  Any interaction with the process then takes 
+Its primary functionality, however, is to override the `_launch_kernel` method (which is the method closest to
+the process invocation) and instantiates the appropriate process proxy instance - which is then returned in
+place of the process instance used in today's implementation.  Any interaction with the process then takes
 place via the process proxy.
 
-Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
+Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in
 [remotemanager.py](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
 
 ## Process Proxy
-Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
-process methods.  There are two immediate subclasses of `BaseProcessProxyABC` - `LocalProcessProxy` 
-and `RemoteProcessProxy`.  
+Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic
+process methods.  There are two immediate subclasses of `BaseProcessProxyABC` - `LocalProcessProxy`
+and `RemoteProcessProxy`.
 
-`LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain 
-a `process_proxy` stanza will use `LocalProcessProxy`.  
+`LocalProcessProxy` is essentially a pass-through to the current implementation.  KernelSpecs that do not contain
+a `process_proxy` stanza will use `LocalProcessProxy`.
 
 `RemoteProcessProxy` is an abstract base class representing remote kernel processes.  Currently, there are six
 built-in subclasses of `RemoteProcessProxy` ...
-- `DistributedProcessProxy` - largely a proof of concept class, `DistributedProcessProxy` is responsible for the launch 
+- `DistributedProcessProxy` - largely a proof of concept class, `DistributedProcessProxy` is responsible for the launch
 and management of kernels distributed across and explicitly defined set of hosts using ssh.  Hosts are determined
 via a round-robin algorithm (that we should make pluggable someday).
-- `YarnClusterProcessProxy` - is responsible for the discovery and management of kernels hosted as yarn applications 
+- `YarnClusterProcessProxy` - is responsible for the discovery and management of kernels hosted as yarn applications
 within a YARN-managed cluster.
 - `KubernetesProcessProxy` - is responsible for the discovery and management of kernels hosted
 within a Kubernetes cluster.
@@ -114,29 +116,29 @@ within a Docker Swarm cluster.
 within Docker configuration.  Note: because these kernels will always run local to the corresponding Enterprise Gateway instance, these process proxies are of limited use.
 - `ConductorClusterProcessProxy` - is responsible for the discovery and management of kernels hosted
 within an IBM Spectrum Conductor cluster.
-- `SparkOperatorProcessProxy` - is responsible for the descovery and management of kernels hosted 
-within a Kubernetes cluster but created as a SparkApplication instead of a Pod. The SparkApplication is a Kubernetes custom resource 
-defined inside the project [spark-on-k8s-operator](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator), which 
+- `SparkOperatorProcessProxy` - is responsible for the descovery and management of kernels hosted
+within a Kubernetes cluster but created as a SparkApplication instead of a Pod. The SparkApplication is a Kubernetes custom resource
+defined inside the project [spark-on-k8s-operator](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator), which
 makes all kinds of spark on k8s components better organized and easy to configure.
 
 Before you run this kernel, please ensure that spark operator is installed under a certain namespace of your Kubernetes
 cluster.
 
 
-You might notice that the last five process proxies do not necessarily control the *launch* of the kernel.  This is 
-because the native jupyter framework is utilized such that the script that is invoked by the framework is what 
+You might notice that the last five process proxies do not necessarily control the *launch* of the kernel.  This is
+because the native jupyter framework is utilized such that the script that is invoked by the framework is what
 launches the kernel against that particular resource manager.  As a result, the *startup time* actions of these process
-proxies is more about discovering where the kernel *landed* within the cluster in order to establish a mechanism for 
-determining lifetime.  *Discovery* typically consists of using the resource manager's API to locate the kernel who's name includes its kernel ID 
+proxies is more about discovering where the kernel *landed* within the cluster in order to establish a mechanism for
+determining lifetime.  *Discovery* typically consists of using the resource manager's API to locate the kernel who's name includes its kernel ID
 in some fashion.
 
-On the other hand, the `DistributedProcessProxy` essentially wraps the kernelspec argument vector (i.e., invocation 
+On the other hand, the `DistributedProcessProxy` essentially wraps the kernelspec argument vector (i.e., invocation
 string) in a remote shell since the host is determined by Enterprise Gateway, eliminating the discovery step from
 its implementation.
 
 These class definitions can be found in the
 [processproxies package](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
-Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not 
+Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not
 required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a *bring your own process proxy* model.
 
 ![Process Class Hierarchy](images/process_proxy_hierarchy.png)
@@ -147,7 +149,7 @@ The process proxy constructor looks as follows:
 def __init__(self, kernel_manager, proxy_config):
 ```
 
-where 
+where
 * `kernel_manager` is an instance of a `RemoteKernelManager` class.
 * `proxy_config` is a dictionary of configuration values present in the kernel spec's json file.  These
 values can be used to override or amend various global configuration values on a per-kernel basis. See
@@ -158,43 +160,43 @@ values can be used to override or amend various global configuration values on a
 def launch_process(self, kernel_cmd, *kw):
 ```
 where
-* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is 
-an artifact of the kernel manager `_launch_kernel()` method.  
-* `**kw` is a set key-word arguments which includes an `env` dictionary element consisting of the names 
-and values of which environment variables to set at launch time. 
+* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is
+an artifact of the kernel manager `_launch_kernel()` method.
+* `**kw` is a set key-word arguments which includes an `env` dictionary element consisting of the names
+and values of which environment variables to set at launch time.
 
-The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for 
-performing the appropriate actions relative to the target type.  The process must be in a running state prior 
-to returning from this method - otherwise attempts to use the connections will not be successful since the 
+The `launch_process()` method is the primary method exposed on the Process Proxy classes.  It's responsible for
+performing the appropriate actions relative to the target type.  The process must be in a running state prior
+to returning from this method - otherwise attempts to use the connections will not be successful since the
 (remote) kernel needs to have created the sockets.
 
-All process proxy subclasses should ensure `BaseProcessProxyABC.launch_process()` is called - which will automatically 
-place a variable named `KERNEL_ID` (consisting of the kernel's unique ID) into the corresponding kernel's environment 
+All process proxy subclasses should ensure `BaseProcessProxyABC.launch_process()` is called - which will automatically
+place a variable named `KERNEL_ID` (consisting of the kernel's unique ID) into the corresponding kernel's environment
 variable list since `KERNEL_ID` is a primary mechanism for associating remote applications to a specific kernel instance.
 
 ```python
 def poll(self):
 ```
-The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the 
+The `poll()` method is used by the Jupyter framework to determine if the process is still alive.  By default, the
 framework's heartbeat mechanism calls `poll()` every 3 seconds.  This method returns `None` if the process is still running, `False` otherwise (per the `popen()` contract).
 
 ```python
 def wait(self):
 ```
-The `wait()` method is used by the Jupyter framework when terminating a kernel.  Its purpose is to block return 
-to the caller until the process has terminated.  Since this could be a while, its best to return control in a 
+The `wait()` method is used by the Jupyter framework when terminating a kernel.  Its purpose is to block return
+to the caller until the process has terminated.  Since this could be a while, its best to return control in a
 reasonable amount of time since the kernel instance is destroyed anyway. This method does not return a value.
 
 ```python
 def send_signal(self, signum):
 ```
-The `send_signal()` method is used by the Jupyter framework to send a signal to the process.  Currently, `SIGINT (2)` 
+The `send_signal()` method is used by the Jupyter framework to send a signal to the process.  Currently, `SIGINT (2)`
 (to interrupt the kernel) is the signal sent.
 
-It should be noted that for normal processes - both local and remote - `poll()` and `kill()` functionality can 
+It should be noted that for normal processes - both local and remote - `poll()` and `kill()` functionality can
 be implemented via `send_signal` with `signum` values of `0` and `9`, respectively.
 
-This method returns `None` if the process is still running, `False` otherwise.   
+This method returns `None` if the process is still running, `False` otherwise.
 
 ```python
 def kill(self):
@@ -204,16 +206,16 @@ The `kill()` method is used by the Jupyter framework to terminate the kernel pro
 This method returns `None` if the process is killed successfully, `False` otherwise.
 
 ### RemoteProcessProxy
-As noted above, `RemoteProcessProxy` is an abstract base class that derives from `BaseProcessProxyABC`.  Subclasses 
+As noted above, `RemoteProcessProxy` is an abstract base class that derives from `BaseProcessProxyABC`.  Subclasses
 of `RemoteProcessProxy` must implement two methods - `confirm_remote_startup()` and `handle_timeout()`:
 ```python
 @abstractmethod
 def confirm_remote_startup(self, kernel_cmd, **kw):
 ```
 where
-* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is an 
-artifact of the kernel manager `_launch_kernel()` method.  
-* `**kw` is a set key-word arguments. 
+* `kernel_cmd` is a list (argument vector) that should be invoked to launch the kernel.  This parameter is an
+artifact of the kernel manager `_launch_kernel()` method.
+* `**kw` is a set key-word arguments.
 
 `confirm_remote_startup()` is responsible for detecting that the remote kernel has been appropriately launched and is ready to receive requests.  This can include gather application status from the remote resource manager but is really a function of having received the connection information from the remote kernel launcher.  (See [Kernel Launchers](#kernel-launchers))
 
@@ -222,13 +224,13 @@ artifact of the kernel manager `_launch_kernel()` method.
 def handle_timeout(self):
 ```
 
-`handle_timeout()` is responsible for detecting that the remote kernel has failed to startup in an acceptable time.  It 
-should be called from `confirm_remote_startup()`.  If the timeout expires, `handle_timeout()` should throw HTTP 
+`handle_timeout()` is responsible for detecting that the remote kernel has failed to startup in an acceptable time.  It
+should be called from `confirm_remote_startup()`.  If the timeout expires, `handle_timeout()` should throw HTTP
 Error 500 (`Internal Server Error`).
 
-Kernel launch timeout expiration is expressed via the environment variable `KERNEL_LAUNCH_TIMEOUT`.  If this 
-value does not exist, it defaults to the Enterprise Gateway process environment variable `EG_KERNEL_LAUNCH_TIMEOUT` - which 
-defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from the Notebook server, the launch 
+Kernel launch timeout expiration is expressed via the environment variable `KERNEL_LAUNCH_TIMEOUT`.  If this
+value does not exist, it defaults to the Enterprise Gateway process environment variable `EG_KERNEL_LAUNCH_TIMEOUT` - which
+defaults to 30 seconds if unspecified.  Since all `KERNEL_` environment variables "flow" from the Notebook server, the launch
 timeout can be specified as a client attribute of the Notebook session.
 
 #### YarnClusterProcessProxy
@@ -249,20 +251,20 @@ See [Enabling YARN Cluster Mode Support](kernel-yarn-cluster-mode.html#enabling-
 #### DistributedProcessProxy
 Like `YarnClusterProcessProxy`, Enterprise Gateway also provides an implementation of a basic
 round-robin remoting mechanism that is part of the `DistributedProcessProxy` class.  This class
-uses the `--EnterpriseGatewayApp.remote_hosts` command line option (or `EG_REMOTE_HOSTS` 
+uses the `--EnterpriseGatewayApp.remote_hosts` command line option (or `EG_REMOTE_HOSTS`
 environment variable) to determine on which hosts a given kernel should be launched.  It uses
 a basic round-robin algorithm to index into the list of remote hosts for selecting the target
-host.  It then uses ssh to launch the kernel on the target host.  As a result, all kernelspec 
-files must reside on the remote hosts in the same directory structure as on the Enterprise 
+host.  It then uses ssh to launch the kernel on the target host.  As a result, all kernelspec
+files must reside on the remote hosts in the same directory structure as on the Enterprise
 Gateway server.
 
-It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their 
-resources (within the kernel process itself) are not managed by the YARN resource manager. 
+It should be noted that kernels launched with this process proxy run in YARN _client_ mode - so their
+resources (within the kernel process itself) are not managed by the YARN resource manager.
 
-Like the yarn endpoint parameter the `remote_hosts` parameter can be specified within the 
+Like the yarn endpoint parameter the `remote_hosts` parameter can be specified within the
 process proxy configuration to override the global value - enabling finer-grained kernel distributions.
 
-See 
+See
 [Enabling YARN Client Mode or Spark Standalone Support](kernel-yarn-client-mode.html#enabling-yarn-client-mode-or-spark-standalone-support) for details.
 
 #### KubernetesProcessProxy
@@ -270,10 +272,10 @@ With the popularity of Kubernetes within the enterprise, Enterprise Gateway now 
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API.  Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
 cluster as a *Service* and *Deployment*.  The primary vehicle by which this is accomplished is via the
-[enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
-file that contains the necessary metadata to define its deployment.  
+[enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
+file that contains the necessary metadata to define its deployment.
 
-See 
+See
 [Enabling Kubernetes Support](kernel-kubernetes.html#enabling-kubernetes-support) for details.
 
 #### DockerSwarmProcessProxy
@@ -282,11 +284,11 @@ either as a Docker Swarm _service_ or a traditional Docker container.
 
 A similar `DockerProcessProxy` implementation has also been provided.  When used, the corresponding kernel will be launched as a traditional docker container that runs local to the launching Enterprise Gateway instance.  As a result, its use has limited value.
 
-See 
+See
 [Enabling Docker Swarm Support](kernel-docker.html#enabling-docker-swarm-support) for details.
 
 #### ConductorClusterProcessProxy
-Enterprise Gateway also provides an implementation of a process proxy 
+Enterprise Gateway also provides an implementation of a process proxy
 that communicates with an IBM Spectrum Conductor resource manager that has been instructed to launch a kernel
 on one of its worker nodes.  The node on which the kernel is launched is up to the resource
 manager - which enables an optimized distribution of kernel resources.
@@ -295,15 +297,15 @@ Derived from `RemoteProcessProxy`, `ConductorClusterProcessProxy` uses Conductor
 to locate the kernel and monitor its life-cycle.  However, once the kernel has returned its
 connection information, the primary kernel operations naturally take place over the ZeroMQ ports.
 
-This process proxy is reliant on the `--EnterpriseGatewayApp.conductor_endpoint` command line 
-option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where the Conductor resource manager is 
-located.  
+This process proxy is reliant on the `--EnterpriseGatewayApp.conductor_endpoint` command line
+option or the `EG_CONDUCTOR_ENDPOINT` environment variable to determine where the Conductor resource manager is
+located.
 
 See [Enabling IBM Spectrum Conductor Support](kernel-conductor.html#enabling-ibm-spectrum-conductor-support) for details.
 
 #### CustomResourceProcessProxy
-Enterprise Gateway also provides a implementation of a process proxy derived from `KubernetesProcessProxy` 
-called `CustomResourceProcessProxy`. 
+Enterprise Gateway also provides a implementation of a process proxy derived from `KubernetesProcessProxy`
+called `CustomResourceProcessProxy`.
 
 Instead of creating kernels based on a Kubernetes pod, `CustomResourceProcessProxy`
 manages kernels via a custom resource definition (CRD). For example,  `SparkApplication` is a CRD that includes
@@ -312,7 +314,7 @@ many components of a Spark-on-Kubernetes application.
 If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
 
 - override custom resource related variables(i.e. `group`, `version` and `plural`
-and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
+and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py).
 
 - define a jinja template like
 [sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
@@ -323,7 +325,7 @@ As a generic design, the template file should be named as {crd_group}-{crd_versi
 
 
 ### Process Proxy Configuration
-Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted 
+Each kernel.json's `process-proxy` stanza can specify an optional `config` stanza that is converted
 into a dictionary of name/value pairs and passed as an argument to the each process-proxy constructor
 relative to the class identified by the `class_name` entry.
 
@@ -333,8 +335,8 @@ not to its super-classes.  As a result, the super-class constructors will not at
 
 In addition, certain dictionary entries can override or amend system-level configuration values set on the command-line, thereby
 allowing administrators to tune behaviors down to the kernel level.  For example, an administrator might want to
-constrain python kernels configured to use specific resources to an entirely different set of hosts (and ports) that other 
-remote kernels might be targeting in order to isolate valuable resources. Similarly, an administrator might want to 
+constrain python kernels configured to use specific resources to an entirely different set of hosts (and ports) that other
+remote kernels might be targeting in order to isolate valuable resources. Similarly, an administrator might want to
 only authorize specific users to a given kernel.
 
 In such situations, one might find the following `process-proxy` stanza:
@@ -354,8 +356,8 @@ In such situations, one might find the following `process-proxy` stanza:
 }
 ```
 
-In this example, the kernel associated with this kernel.json file is relegated to hosts `priv_host1` and `priv_host2` 
-where kernel ports will be restricted to a range between `40000` and `41000` and only users `bob` and `alice` can 
+In this example, the kernel associated with this kernel.json file is relegated to hosts `priv_host1` and `priv_host2`
+where kernel ports will be restricted to a range between `40000` and `41000` and only users `bob` and `alice` can
 launch such kernels (provided neither appear in the global set of `unauthorized_users` since denial takes precedence).
 
 For a current enumeration of which system-level configuration values can be overridden or amended on a per-kernel basis
@@ -372,9 +374,9 @@ There are four primary tasks of a kernel launcher:
 3. Invocation of the target kernel
 4. Listen for interrupt and shutdown requests from Enterprise Gateway and carry out the action when appropriate
 
-Kernel launchers are minimally invoked with three parameters (all of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}`, a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`, and a public-key used by the launcher to encrypt an AES key that encrypts the kernel's connection information back to the server and respresented by the placeholder `{public_key}`.  
+Kernel launchers are minimally invoked with three parameters (all of which are conveyed by the `argv` stanza of the corresponding kernel.json file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}`, a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`, and a public-key used by the launcher to encrypt an AES key that encrypts the kernel's connection information back to the server and respresented by the placeholder `{public_key}`.
 
-The kernel's id is identified by the parameter `--RemoteProcessProxy.kernel-id`.  Its value (`{kernel_id}`) is essentially used to build a connection file to pass to the to-be-launched kernel, along with any other things - like log files, etc. 
+The kernel's id is identified by the parameter `--RemoteProcessProxy.kernel-id`.  Its value (`{kernel_id}`) is essentially used to build a connection file to pass to the to-be-launched kernel, along with any other things - like log files, etc.
 
 The response address is identified by the parameter `--RemoteProcessProxy.response-address`.  Its value (`{response_address}`) consists of a string of the form `<IPV4:port>` where the IPV4 address points back to the Enterprise Gateway server - which is listening for a response on the provided port.  The port's default value is `8877`, but can be specified via the environment variable `EG_RESPONSE_PORT`.
 
@@ -407,23 +409,23 @@ Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterp
   ]
 }
 ```
-Other options supported by launchers include: 
+Other options supported by launchers include:
 * `--RemoteProcessProxy.port-range {port_range}`  - passes configured port-range to launcher where launcher applies that range to kernel ports.  The port-range may be configured globally or on a per-kernelspec basis, as previously described.
-* `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]`  - indicates the *timeframe* in which the spark context will be created.  
-    - `lazy` (default) attempts to defer initialization as late as possible - although can vary depending on the 
+* `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]`  - indicates the *timeframe* in which the spark context will be created.
+    - `lazy` (default) attempts to defer initialization as late as possible - although can vary depending on the
     underlying kernel and launcher implementation.
     - `eager` attempts to create the spark context as soon as possible.
     - `none` skips spark context creation altogether.
-    
-    Note that some launchers may not be able to support all modes.  For example, the scala launcher uses the Toree 
+
+    Note that some launchers may not be able to support all modes.  For example, the scala launcher uses the Toree
     kernel - which currently assumes a spark context will exist.  As a result, a mode of `none` doesn't apply.
     Similarly, the `lazy` and `eager` modes in the Python launcher are essentially the same, with the spark context
     creation occurring immediately, but in the background thereby minimizing the kernel's startup time.
 
-Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
-parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
-script as the initial arguments to the launcher 
+Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom
+parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in
+the [run.sh](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
+script as the initial arguments to the launcher
 (see [launch_ipykernel.py](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
@@ -437,9 +439,9 @@ eval exec \
 ## Extending Enterprise Gateway
 Theoretically speaking, enabling a kernel for use in other frameworks amounts to the following:
 1. Build a kernel specification file that identifies the process proxy class to be used.
-2. Implement the process proxy class such that it supports the four primitive functions of 
-`poll()`, `wait()`, `send_signal(signum)` and `kill()` along with `launch_process()`.  
-3. If the process proxy corresponds to a remote process, derive the process proxy class from 
+2. Implement the process proxy class such that it supports the four primitive functions of
+`poll()`, `wait()`, `send_signal(signum)` and `kill()` along with `launch_process()`.
+3. If the process proxy corresponds to a remote process, derive the process proxy class from
 `RemoteProcessProxy` and implement `confirm_remote_startup()` and `handle_timeout()`.
-4. Insert invocation of a launcher (if necessary) which builds the connection file and 
+4. Insert invocation of a launcher (if necessary) which builds the connection file and
 returns its contents on the `{response_address}` socket and following the encryption protocol set forth in the other launchers.
