@@ -22,7 +22,7 @@
     
     \begin{sdblock}{kernel init}{}
         \begin{call}{browser}{https POST api/sessions}{server}{api/sessions response}
-            \begin{call}{server}{https POST api/sessions}{gateway}{api/sessions response}
+            \begin{call}{server}{https POST api/kernels}{gateway}{api/kernels response}
                 \begin{call}{gateway}{CoreV1API.create\_namespaced\_pod}{kernel}{kernel connection info\footnote{see https://github.com/jupyter/enterprise\_gateway/pull/877}}
                     \postlevel
                 \end{call}
