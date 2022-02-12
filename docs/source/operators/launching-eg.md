@@ -1,4 +1,4 @@
-## Launching Enterprise Gateway (common)
+# Launching Enterprise Gateway (common)
 
 Very few arguments are necessary to minimally start Enterprise Gateway.  The following command could be considered a minimal command:
 

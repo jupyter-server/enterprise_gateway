@@ -89,7 +89,7 @@ place of the process instance used in today's implementation.  Any interaction w
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in 
-[remotemanager.py](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
 
 ## Process Proxy
 Process proxy classes derive from the abstract base class `BaseProcessProxyABC` - which defines the four basic 
@@ -135,7 +135,7 @@ string) in a remote shell since the host is determined by Enterprise Gateway, el
 its implementation.
 
 These class definitions can be found in the
-[processproxies package](https://github.com/jupyter/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
+[processproxies package](https://github.com/jupyter-server/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
 Enterprise Gateway is architected such that additonal process proxy implementations can be provided and are not 
 required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a *bring your own process proxy* model.
 
@@ -270,7 +270,7 @@ With the popularity of Kubernetes within the enterprise, Enterprise Gateway now 
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API.  Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
 cluster as a *Service* and *Deployment*.  The primary vehicle by which this is accomplished is via the
-[enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
+[enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) 
 file that contains the necessary metadata to define its deployment.  
 
 See 
@@ -312,14 +312,14 @@ many components of a Spark-on-Kubernetes application.
 If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
 
 - override custom resource related variables(i.e. `group`, `version` and `plural`
-and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
+and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
 
 - define a jinja template like
-[sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
+[sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
 As a generic design, the template file should be named as {crd_group}-{crd_version} so that you can reuse
-[launch_custom_resource.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py) in the kernelspec.
+[launch_custom_resource.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py) in the kernelspec.
 
-- define a kernelspec like [spark_python_operator/kernel.json](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
+- define a kernelspec like [spark_python_operator/kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
 
 
 ### Process Proxy Configuration
@@ -380,7 +380,7 @@ The response address is identified by the parameter `--RemoteProcessProxy.respon
 
 The public key is identified by the parameter `--RemoteProcessProxy.public-key`.  Its value (`{public_key}`) is used to encrypt an AES key created by the launcher to encrypt the kernel's connection information.  The server, upon receipt of the response, uses the corresponding private key to decrypt the AES key, which it then uses to decrypt the connection information.  Both the public and private keys are ephemeral; created upon Enterprise Gateway's startup.  They can be ephemeral because they are only needed during a kernel's startup and never again.
 
-Here's a [kernel.json](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
+Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
 ```json
 {
@@ -422,9 +422,9 @@ Other options supported by launchers include:
 
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
 script as the initial arguments to the launcher 
-(see [launch_ipykernel.py](https://github.com/jupyter/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

@@ -56,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Jupyter Enterprise Gateway'
-copyright = "2022, Jupyter Server."
+copyright = "2022, Jupyter"
 author = "Jupyter Server Team"
 
 # The version info for the project you're documenting, acts as replacement for

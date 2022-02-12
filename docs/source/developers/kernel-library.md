@@ -1,7 +1,6 @@
 # Standalone Remote Kernel Execution 
-## a.k.a "Library Mode"
 
-Remote kernels can be executed by using the `RemoteKernelManager` class directly. This enables running kernels using `ProcessProxy`s without the Enterprise Gateway Webapp.
+Remote kernels can be executed by using the `RemoteKernelManager` class directly. This enables running kernels using `ProcessProxy`s without requiring deployment of the Enterprise Gateway web application.  This approach is also known as _Library Mode_.
 
 This can be useful in niche situations, for example, using [nbconvert](https://nbconvert.readthedocs.io/) or [nbclient](https://nbclient.readthedocs.io/) to execute a kernel on a remote cluster.
 
@@ -15,11 +14,10 @@ from enterprise_gateway.services.kernels.remotemanager import RemoteKernelManage
 with open("my_notebook.ipynb") as fp:
     test_notebook = nbformat.read(fp, as_version=4)
 
-client = NotebookClient(nb=test_notebook, kernel_manager_class=RemoteKernelManager)
+client = NotebookClient(nb=test_notebook, kernel_manager_class=RemoteKernelManager, kernel_name='my_remote_kernel')
 client.execute()
 ```
 
-The above code will execute the notebook on a kernel using the configured `ProcessProxy`.
+The above code will execute the notebook on a kernel named `my_remote_kernel` using its configured `ProcessProxy`.  
 
-
-TODO: Add reference to GatewayKernelManager and GatewayKernelClient in Jupyter Server and how to use from nbclient and papermill.
+Depending on the process proxy, the _hosting application_ (e.g., `nbclient`) will likely need to be configured to run on the same network as the remote kernel.  So, for example, with Kubernetes, `nbclient` would need to be configured as a Kubernetes POD.

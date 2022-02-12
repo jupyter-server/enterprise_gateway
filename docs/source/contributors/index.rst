@@ -11,6 +11,7 @@ These pages target people who are interested in contributing directly to the Jup
    :maxdepth: 1
    :name: contributors
 
+   use-cases
    contrib
    system-architecture
    devinstall
