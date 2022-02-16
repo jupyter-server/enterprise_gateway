@@ -2,7 +2,7 @@
 
 Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter/enterprise_gateway) 
 server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
-running tests, building docs, packaging kernelspecs, etc.
+running tests, building docs, packaging kernel specifications, etc.
 
 ## Prerequisites
 
@@ -10,61 +10,66 @@ Install [miniconda](https://conda.io/miniconda.html) and [GNU make](https://www.
 
 ## Clone the repo
 
-Clone this repository in a local directory.
+Clone this repository into a local directory.
 
 ```bash
-# make a directory under ~ to put source
+# make a directory under your HOME directory to put the source code
 mkdir -p ~/projects
 cd !$
 
 # clone this repo
-git clone https://github.com/jupyter/enterprise_gateway.git
+git clone https://github.com/jupyter-server/enterprise_gateway.git
 ```
 ## Make
 
-Enterprise Gateway's build environment is centered around `make` and the corresponding `Makefile`.  
-Entering `make` with no parameters yields the following:
+Enterprise Gateway's build environment is centered around `make` and the corresponding [`Makefile`](https://github.com/jupyter-server/enterprise_gateway/blob/master/Makefile).
 
+Entering `make` with no parameters yields the following:
 ```
-activate                       Activate the virtualenv (default: enterprise-gateway-dev)
+activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
 clean-images                   Remove docker images (includes kernel-based images)
 clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
 dev                            Make a server in jupyter_websocket mode
-dist                           Make source, binary and kernelspecs distribution to dist folder
+dist                           Make source, binary, kernelspecs and helm chart distributions to dist folder
 docker-images                  Build docker images (includes kernel-based images)
 docs                           Make HTML documentation
 env                            Make a dev environment
-install                        Make a conda env with dist/*.whl and dist/*.tar.gz installed
+helm-chart                     Make helm chart distribution
+install                        Make a conda env with dist/jupyter_enterprise_gateway-*.whl and dist/jupyter_enterprise_gateway-*.tar.gz installed
+itest-docker-debug             Run integration tests (optionally) against docker container with print statements
 itest-docker                   Run integration tests (optionally) against docker swarm
+itest-yarn-debug               Run integration tests (optionally) against docker demo (YARN) container with print statements
 itest-yarn                     Run integration tests (optionally) against docker demo (YARN) container
 kernel-images                  Build kernel-based docker images
 kernelspecs                    Create archives with sample kernelspecs
+lint                           Check code style
 nuke                           Make clean + remove conda env
-publish-images                 Push docker images to docker hub
 release                        Make a wheel + source release on PyPI
 test                           Run unit tests
 ```
 Some of the more useful commands are listed below.
 
-## Build a conda environment
+## Build the conda environment
 
 Build a Python 3 conda environment containing the necessary dependencies for
 running the enterprise gateway server, running tests, and building documentation.
 
-```
+```bash
 make env
 ```
 
 By default, the env built will be named `enterprise-gateway-dev`.  To produce a different conda env, 
 you can specify the name via the `ENV=` parameter. 
 
-```
+```bash
 make ENV=my-conda-env env
 ```
-
->**Note:** If using a non-default conda env, all `make` commands should include the `ENV=` parameter, 
+```{admonition} Important!
+:class: warning
+If using a non-default conda env, all `make` commands should include the `ENV=` parameter, 
 otherwise the command will use the default environment.
+```
 
 ## Build the wheel file
 
@@ -73,28 +78,29 @@ Build a wheel file that can then be installed via `pip install`
 ```
 make bdist
 ```
+The wheel file will reside in the `dist` directory.
 
 ## Build the kernelspec tar file
 
-Enterprise Gateway includes two sets of kernelspecs for each of the three primary kernels: `IPython`,`IR`, 
-and `Toree` to demonstrate remote kernels and their corresponding launchers.  One set uses the 
-`DistributedProcessProxy` while the other uses  the `YarnClusterProcessProxy`. The following makefile 
-target produces a tar file (`enterprise_gateway_kernelspecs.tar.gz`) in the `dist` directory. 
+Enterprise Gateway includes several sets of kernel specifications for each of the three primary kernels: `IPython Kernel`,`IRkernel`, 
+and `Apache Toree` to demonstrate remote kernels and their corresponding launchers.  These sets of files are then added to tar files corresponding to their target resource managers.  In addition, a _combined_ tar file is also built containing all kernel specifications. Like the wheel file, these tar files will reside in the `dist` directory. 
 
-```
+```bash
 make kernelspecs
 ```
 
-Note: Because the scala launcher requires a jar file, `make kernelspecs` requires the use of `sbt` to build the 
+```{note}
+Because the scala launcher requires a jar file, `make kernelspecs` requires the use of `sbt` to build the 
 scala launcher jar. Please consult the [sbt site](https://www.scala-sbt.org/) for directions to 
-install/upgrade `sbt` on your platform. We currently prefer the use of 1.0.3.
+install/upgrade `sbt` on your platform. We currently use version 1.3.12.
+```
 
 ## Build distribution files
 
-Builds the files necessary for a given release: the wheel file, the source tar file, and the kernelspecs tar
-file.  This is essentially a helper target consisting of the `bdist` `sdist` and `kernelspecs` targets.
+Builds the files necessary for a given release: the wheel file, the source tar file, and the kernel specificaaation tar
+files.  This is essentially a helper target consisting of the `bdist` `sdist` and `kernelspecs` targets.
 
-```
+```bash
 make dist
 ```
 
@@ -102,7 +108,7 @@ make dist
 
 Run an instance of the Enterprise Gateway server.
 
-```
+```bash
 make dev
 ```
 
@@ -112,15 +118,20 @@ Then access the running server at the URL printed in the console.
 
 Run Sphinx to build the HTML documentation.
 
-```
+```bash
 make docs
+```
+This command actually issues `make html` from the `docs` sub-directory.  This would be equivalent to `make -C docs html`.
+
+```{note}
+The first time you try to build the docs you will likely need to run `make requirements` from the `docs` directory: `make -C docs requirements`
 ```
 
 ## Run the unit tests
 
 Run the unit test suite.
 
-```
+```bash
 make test
 ```
 
@@ -128,18 +139,23 @@ make test
 
 Run the integration tests suite. 
 
-These tests will bootstrap a docker image with Apache Spark using YARN resource manager and
-Jupyter Enterprise Gateway and perform various tests for each kernel in both YARN client
-and YARN cluster mode.
-
+These tests will bootstrap the [`elyra/enterprise-gateway-demo`](docker.md/#elyra-enterprise-gateway-demo) docker image with Apache Spark using YARN resource manager and
+Jupyter Enterprise Gateway and perform various tests for each kernel in local, YARN client, and YARN cluster modes.
+bash
 ```
-make itest
+make itest-yarn
 ```
 
 ## Build the docker images
 
 The following can be used to build all docker images used within the project.  See [docker images](docker.md) for specific details.
 
-```
+```bash
 make docker-images
+```
+
+If you only want to build the kernel images, use
+
+```bash
+make kernel-images
 ```

@@ -16,7 +16,7 @@ These pages target people who are interested in contributing directly to the Jup
 
    contrib
    system-architecture
-   devinstall
    docker
+   devinstall
    debug
    roadmap
