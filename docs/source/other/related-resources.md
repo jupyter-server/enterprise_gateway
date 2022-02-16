@@ -2,6 +2,10 @@
 
 Here are some resources related to the Jupyter Enterprise Gateway project. 
 
+* [Jupyter.org](https://jupyter.org)
+* [Jupyter Server Team Compass](https://github.com/jupyter-server/team-compass#jupyter-server-team-compass)
+* [Jupyter Calendar - Community Meetings](https://docs.jupyter.org/en/latest/community/content-community.html#monthly-meetings)
+* [Jupyter Community Discourse Forum](https://discourse.jupyter.org/)
 * [Jupyter Kernel Gateway Github Repo](https://github.com/jupyer-server/kernel_gateway) - the source code for Kernel Gateway - which supports local kernels and notebook-hosted end-points.
 * [Jupyter Server Github Repo](https://github.com/jupyter-server/jupyter_server) - the source code for the Jupyter Server.  Many of the Enterprise Gateway's handlers and kernel management classes either _are_ or are derived from the Jupyter Server classes.
 * [Jupyter Notebook Github Repo](https://github.com/jupyter/notebook>) - the source code for the classic Notebook from which the gateways and Jupyter Server were derived.
