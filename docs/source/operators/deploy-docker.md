@@ -2,7 +2,7 @@
 
 This section describes how to deploy Enterprise Gateway into an existing Docker or Docker Swarm cluster.  The two deployments are nearly identical and any differences will be noted.
 
-The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with other images.  See [Runtime Images](../contributors/docker.html#runtime-images) for image details.
+The base Enterprise Gateway image is [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) and can be found in the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/), along with other images.  See [Docker Images](../contributors/docker.md) for image details.
 
 The following sample kernelspecs are currently available on Docker and Docker Swarm deployments:
 

@@ -1,6 +1,6 @@
 # Distributed deployments
 
-This section describes how to deploy Enterprise Gateway to manage kernels across a distributed set of hosts.  In this case, a resource manager is not used, but, rather, SSH is used to distribute the kernels.  This functionality is accomplished via the [`DistributedProcessProxy`](../contributors/system-architecture.html#DistributedProcessProxy).
+This section describes how to deploy Enterprise Gateway to manage kernels across a distributed set of hosts.  In this case, a resource manager is not used, but, rather, SSH is used to distribute the kernels.  This functionality is accomplished via the [`DistributedProcessProxy`](../contributors/system-architecture.md#distributedprocessproxy).
 
 Steps required to complete deployment on a distributed cluster are:
 1. [Install Enterprise Gateway](installing-eg.md) on the "primary node" of the cluster.
@@ -24,8 +24,8 @@ The `DistributedProcessProxy` utilizes SSH between the Enterprise Gateway server
 
 The set of remote hosts used by the `DistributedProcessProxy` are derived from two places.
 
-+ The [configuration option](index.html#configuring-enterprise-gateway): `EnterpriseGatewayApp.remote_hosts` whose default value comes from the env variable EG_REMOTE_HOSTS - which, itself, defaults to 'localhost'.
-+ The config option can be [overridden on a per-kernel basis](config-kernel-override.html#per-kernel-configuration-overrides) if the process_proxy stanza contains a config stanza where there's a `remote_hosts` entry. If present, this value will be used instead.
++ The configuration option `EnterpriseGatewayApp.remote_hosts`, whose default value comes from the env variable EG_REMOTE_HOSTS - which, itself, defaults to 'localhost'.
++ The config option can be [overridden on a per-kernel basis](config-kernel-override.md#per-kernel-configuration-overrides) if the process_proxy stanza contains a config stanza where there's a `remote_hosts` entry. If present, this value will be used instead.
 
 ```{tip}
 Entries in the remote hosts configuration should be fully qualified domain names (FQDN). For example, `host1.acme.com, host2.acme.com`

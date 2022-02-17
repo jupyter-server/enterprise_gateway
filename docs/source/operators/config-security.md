@@ -138,8 +138,9 @@ Please perform necessary steps to validate all hosts before enabling SSH tunneli
 Jupyter Enterprise Gateway has support for SSH connections using GSS (for example Kerberos), which enables its deployment
 without the use of an ssh key.  The `EG_REMOTE_GSS_SSH` environment variable can be used to control this behavior.
 
-See [list of additional supported environment variables](config-options.html#additional-supported-environment-variables).
-
+```{seealso}
+The list of [additional supported environment variables](config-add-env.md#additional-environment-variables).
+```
 
 ## Securing Enterprise Gateway Server
 
@@ -188,7 +189,7 @@ options with the command:
     
 
 ### Using Enterprise Gateway configuration file
-You can also utilize the [Enterprise Gateway configuration file](config-file.html#configuration-file-options) to set static configurations for the server.
+You can also utilize the [Enterprise Gateway configuration file](config-file.md#configuration-file-options) to set static configurations for the server.
 
 To enable SSL from the configuration file, modify the corresponding parameter to the appropriate value.
 

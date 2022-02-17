@@ -41,7 +41,7 @@ Image [elyra/kernel-spark-r](https://hub.docker.com/r/elyra/kernel-spark-r/) als
 
 ## Ancillary Docker Images
 
-The project produces two docker images to make testing easier: [elyra/demo-base](#elyra-demo-base) and [elyra/enterprise-gateway-demo](#elyra-enterprise-gateway-demo).
+The project produces two docker images to make testing easier: `elyra/demo-base` and `elyra/enterprise-gateway-demo`.
 
 ### elyra/demo-base
 

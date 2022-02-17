@@ -1,5 +1,5 @@
 # Command-line options
-In some cases, it may be easier to use command line options.  These can also be used for _static_ values that should not be the targeted for [_dynamic configurables_](#dynamic-configurables).
+In some cases, it may be easier to use command line options.  These can also be used for _static_ values that should not be the targeted for [_dynamic configurables_](config-dynamic.md/#dynamic-configurables).
 
 To see the same configuration options at the command line, run the following:
 

@@ -17,7 +17,7 @@ be validated independently.  The following items can be used as a checklist to c
 2. Independently validate any resource manager you're running against.  Various resource managers usually provide 
 examples for how to go about validating their configuration.
 3. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place.  These
-should be covered in the [deployment section](../operators/index.html#deploying-enterprise-gateway) of our Operators Guide.
+should be covered in the deployment section of our Operators Guide.
 4. If using a Notebook server as your front-end, ensure that the Gateway configuration options or NB2KG extension settings are properly configured.
 Once the notebook has started, a refresh on the tree view should issue the same `kernelspecs` request in step 1 and
 the drop-down menu items for available kernels should reflect an entry for each kernelspec returned.
@@ -25,7 +25,7 @@ the drop-down menu items for available kernels should reflect an entry for each 
 file you are highly encouraged to do so.  In addition, you should enable `DEBUG` logging at least until your 
 configuration is stable.  Please note, however, that you may be asked to produce an Enterprise Gateway log with 
 `DEBUG` enabled when reporting issues.  An example of output redirection and `DEBUG` logging is also provided in our
-   [Operators Guide](../operators/launching-eg.html#launching-enterprise-gateway-common).
+   [Operators Guide](../operators/launching-eg.md#launching-enterprise-gateway-common).
     
 ## Hadoop YARN Cluster Mode
 Scenario: **I'm trying to launch a (Python/Scala/R) kernel in YARN Cluster Mode, but it failed with 
@@ -88,9 +88,9 @@ kernels.  The default location is /tmp with a filename of `kernel-<kernel_id>.lo
 can be configured using the environment variable `EG_KERNEL_LOG_DIR` during Enterprise Gateway start up. 
 
 ```{seealso}
-[Launching Enterprise Gateway](../operators/launching-eg.html#launching-enterprise-gateway-common) for an 
+[Launching Enterprise Gateway](../operators/launching-eg.md#launching-enterprise-gateway-common) for an 
 example of starting the Enterprise Gateway from a script and the 
-[Operators Guide](../operators/config-add-env.html#additional-environment-variables) 
+[Operators Guide](../operators/config-add-env.md#additional-environment-variables) 
 for a list of configurable environment variables.
 ```
 
@@ -243,7 +243,7 @@ The most common cause for this WARN is when the user that started Enterprise Gat
 ## Openshift Kubernetes
 Scenario: **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environment fails trying to create /home/jovyan/.local**
 
-As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/3.6/admin_guide/manage_scc.html#enable-images-to-run-with-user-in-the-dockerfile)
+As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/3.6/admin_guide/manage_scc.md#enable-images-to-run-with-user-in-the-dockerfile)
     there is a need to issue the following command to enable running  with `USER` in Dockerfile.
     
     ```bash
@@ -261,7 +261,7 @@ issues are important to us).  If not found, please provide the following informa
 1. Describe the issue in as much detail as possible.  This should include configuration information about your environment.
 2. Gather and _attach_ the following files to the issue.  If possible, please archive the files first.
     1. The **complete** Enterprise Gateway log file.  If possible, please enable `DEBUG` logging that encompasses
-       the issue.  You can refer to this section of our [Operators Guide](../operators/launching-eg.html#launching-enterprise-gateway-common)
+       the issue.  You can refer to this section of our [Operators Guide](../operators/launching-eg.md#launching-enterprise-gateway-common)
      for redirection and `DEBUG` enablement.
     2. The log file(s) produced from the corresponding kernel.  This is primarily a function of the underlying resource
        manager.

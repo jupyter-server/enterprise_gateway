@@ -1,5 +1,5 @@
 # Per-kernel overrides
-As mentioned in the overview of [Process Proxy Configuration](../contributors/system-architecture.html#process-proxy-configuration)
+As mentioned in the overview of [Process Proxy Configuration](../contributors/system-architecture.md#process-proxy-configuration)
 capabilities, it's possible to override or amend specific system-level configuration values on a per-kernel basis.  These capabilities can be implemented with the kernel specification's process-proxy `config` stanza or via environment variables.
 
 ## Per-kernel configuration overrides

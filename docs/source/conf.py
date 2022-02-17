@@ -40,6 +40,7 @@ extensions = [
 ]
 
 myst_enable_extensions = ["html_image"]
+myst_heading_anchors = 4
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

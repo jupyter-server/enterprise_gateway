@@ -1,5 +1,5 @@
 # Configuration file options
-Placing configuration options into the configuration file `jupyter_enterprise_gateway_config.py` is recommended because this will enabled the use of the [_dynamic configurables_](#dynamic-configurables) functionality. To generate a template configuration file, run the following:
+Placing configuration options into the configuration file `jupyter_enterprise_gateway_config.py` is recommended because this will enabled the use of the [_dynamic configurables_](config-dynamic.md/#dynamic-configurables) functionality. To generate a template configuration file, run the following:
 
 ```bash
 jupyter enterprisegateway --generate-config

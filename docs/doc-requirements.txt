@@ -1,5 +1,5 @@
 jinja2
-myst-parser<0.17  # 0.17 has issues with forward-referenced links
+myst-parser
 pydata_sphinx_theme
 sphinxcontrib-openapi
 sphinxcontrib_github_alt

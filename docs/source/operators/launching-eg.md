@@ -9,7 +9,7 @@ jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0
 where `--ip=0.0.0.0` exposes Enterprise Gateway on the public network and `--port_retries=0` ensures that a single instance will be started.
 
 ```{note}
-_The ability to target resource-managed clusters (and use remote kernels) will require additional configuration settings depending on the resource manager.  For additional information see the appropriate [server-based deployment topic](index.html#server-based-deployments)._
+The ability to target resource-managed clusters (and use remote kernels) will require additional configuration settings depending on the resource manager.  For additional information see the appropriate server-based deployment topic of our Operators Guide.
 ```
 
 We recommend starting Enterprise Gateway as a background task.  As a result, you might find it best to create a start script to maintain options, file redirection, etc.
@@ -31,5 +31,5 @@ fi
 ```
 
 ```{tip}
-Remember that any options set via the command-line will not be available for [dynamic configuration funtionality](config-dynamic.html#dynamic-configurables). 
+Remember that any options set via the command-line will not be available for [dynamic configuration funtionality](config-dynamic.md#dynamic-configurables). 
 ```
