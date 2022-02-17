@@ -139,7 +139,7 @@ make test
 
 Run the integration tests suite. 
 
-These tests will bootstrap the [`elyra/enterprise-gateway-demo`](docker.md/#elyra-enterprise-gateway-demo) docker image with Apache Spark using YARN resource manager and
+These tests will bootstrap the [`elyra/enterprise-gateway-demo`](docker.html/#elyra-enterprise-gateway-demo) docker image with Apache Spark using YARN resource manager and
 Jupyter Enterprise Gateway and perform various tests for each kernel in local, YARN client, and YARN cluster modes.
 bash
 ```

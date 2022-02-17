@@ -43,7 +43,7 @@ The sample kernels specifications in `jupyter_enterprise_gateway_kernelspecs_yar
 ```
 
 ```{tip}
-We recommend installing kernel specifications into a shared folder like `/usr/local/share/jupyter/kernels`.  This is the location in which they reside within container images and where many of the document references aassume they'll be located.
+We recommend installing kernel specifications into a shared folder like `/usr/local/share/jupyter/kernels`.  This is the location in which they reside within container images and where many of the document references assume they'll be located.
 ```
 ### Python Kernel (IPython kernel)
 
