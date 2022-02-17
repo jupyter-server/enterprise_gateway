@@ -121,17 +121,13 @@ Run Sphinx to build the HTML documentation.
 ```bash
 make docs
 ```
-This command actually issues `make html` from the `docs` sub-directory.  This would be equivalent to `make -C docs html`.
-
-```{note}
-The first time you try to build the docs you will likely need to run `make requirements` from the `docs` directory: `make -C docs requirements`
-```
+This command actually issues `make requirements html` from the `docs` sub-directory. 
 
 ## Run the unit tests
 
 Run the unit test suite.
 
-```bash
+```
 make test
 ```
 
@@ -141,8 +137,8 @@ Run the integration tests suite.
 
 These tests will bootstrap the [`elyra/enterprise-gateway-demo`](docker.html/#elyra-enterprise-gateway-demo) docker image with Apache Spark using YARN resource manager and
 Jupyter Enterprise Gateway and perform various tests for each kernel in local, YARN client, and YARN cluster modes.
-bash
-```
+
+```bash
 make itest-yarn
 ```
 
