@@ -16,7 +16,7 @@ We have plenty to do, now and in the future.  Here's where we're headed:
 
 ## Wish list
 * Multi-gateway support on client-side
-  * Enables the ability for a single Jupyter Server to be configured against multiple Gateway server simultaneously.
+  * Enables the ability for a single Jupyter Server to be configured against multiple Gateway servers simultaneously.  This work will primarily be in Jupyter Server.
 * Pluggable load-balancers into `DistributedProcessProxy` (currently uses simple round-robin)
 * Support for other resource managers
   * Slurm?
