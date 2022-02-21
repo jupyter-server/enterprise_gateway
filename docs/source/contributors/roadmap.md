@@ -1,13 +1,12 @@
 # Project Roadmap
 We have plenty to do, now and in the future.  Here's where we're headed:
 
-## Planned for 3.0 and 4.0 releases
-* Spark 3.0 support (3.0 release)
+## Planned for 3.0
+* Spark 3.0 support
   * Includes pod template files
-* High Availability
-  * Session persistence using a shared location (NoSQL DB)
-  * Active/active support
-* Kernel Provisioners (4.0 release)
+
+## Planned for 4.0
+* Kernel Provisioners
   * Provisioners will replace process proxies and enable Enterprise Gateway to remove its cap on `jupyter_client < 7`.
 * Parameterized Kernels
   * Enable the ability to prompt for parameters
@@ -15,6 +14,9 @@ We have plenty to do, now and in the future.  Here's where we're headed:
 
 
 ## Wish list
+* High Availability
+  * Session persistence using a shared location (NoSQL DB) (File persistence has been implemented)
+  * Active/active support
 * Multi-gateway support on client-side
   * Enables the ability for a single Jupyter Server to be configured against multiple Gateway servers simultaneously.  This work will primarily be in Jupyter Server.
 * Pluggable load-balancers into `DistributedProcessProxy` (currently uses simple round-robin)
