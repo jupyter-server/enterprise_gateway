@@ -40,14 +40,17 @@ extensions = [
 ]
 
 myst_enable_extensions = ["html_image"]
+myst_heading_anchors = 4 # Needs to be 4 or higher
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
-source_suffix = ['.rst', '.md']
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -57,7 +60,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Jupyter Enterprise Gateway'
-copyright = "2022, Jupyter Server."
+copyright = "2022, Project Jupyter"
 author = "Jupyter Server Team"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -124,16 +127,15 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-# html_theme = "pydata_sphinx_theme"
-html_theme = "sphinx_book_theme"
+html_theme = "pydata_sphinx_theme"
+# html_theme = "sphinx_book_theme"
 html_logo = "_static/jupyter-logo.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    'logo_only': html_logo
-}
+# html_theme_options = {}
+#   'logo_only': html_logo
 #     'description': "Enterprise Gateway",
 #     'fixed_sidebar': False,
 #     'show_relbars': True,

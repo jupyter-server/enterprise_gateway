@@ -21,7 +21,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 DOC_REQUIREMENTS = doc-requirements.txt
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest coverage gettext requirements
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -55,7 +55,7 @@ clean:
 	rm -rf $(BUILDDIR)/*
 
 requirements:
-	pip install -r $(DOC_REQUIREMENTS)
+	pip install -q -r $(DOC_REQUIREMENTS)
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

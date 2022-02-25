@@ -63,7 +63,7 @@ dev: ## Make a server in jupyter_websocket mode
 	$(SA) $(ENV) && python enterprise_gateway
 
 docs: ## Make HTML documentation
-	$(SA) $(ENV) && make -C docs html
+	$(SA) $(ENV) && make -C docs requirements html
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
