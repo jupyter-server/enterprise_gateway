@@ -1,3 +1,4 @@
+#!/opt/conda/bin/python
 import os
 import yaml
 import argparse
@@ -26,7 +27,7 @@ def launch_custom_resource_kernel(kernel_id, port_range, response_addr, public_k
     keywords['eg_response_address'] = response_addr
     keywords['kernel_id'] = kernel_id
     keywords['kernel_name'] = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    keywords['kernel_spark_context_init_mode'] = spark_context_init_mode
+    keywords['spark_context_initialization_mode'] = spark_context_init_mode
 
     for name, value in os.environ.items():
         if name.startswith('KERNEL_'):
@@ -47,15 +48,15 @@ def launch_custom_resource_kernel(kernel_id, port_range, response_addr, public_k
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
+    parser.add_argument('--kernel-id', '--RemoteProcessProxy.kernel-id', dest='kernel_id', nargs='?',
                         help='Indicates the id associated with the launched kernel.')
-    parser.add_argument('--RemoteProcessProxy.port-range', dest='port_range', nargs='?',
+    parser.add_argument('--port-range', '--RemoteProcessProxy.port-range',  dest='port_range', nargs='?',
                         metavar='<lowerPort>..<upperPort>', help='Port range to impose for kernel ports')
-    parser.add_argument('--RemoteProcessProxy.response-address', dest='response_address', nargs='?',
+    parser.add_argument('--response-address', '--RemoteProcessProxy.response-address',  dest='response_address', nargs='?',
                         metavar='<ip>:<port>', help='Connection address (<ip>:<port>) for returning connection file')
-    parser.add_argument('--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
+    parser.add_argument('--public-key', '--RemoteProcessProxy.public-key', dest='public_key', nargs='?',
                         help='Public key used to encrypt connection information')
-    parser.add_argument('--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
+    parser.add_argument('--spark-context-initialization-mode', '--RemoteProcessProxy.spark-context-initialization-mode', dest='spark_context_init_mode',
                         nargs='?', help='Indicates whether or how a spark context should be created',
                         default='none')
 

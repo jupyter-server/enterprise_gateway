@@ -1,4 +1,4 @@
-## Local Mode
+# Local Mode
 
 The Local deployment can be useful for local development and is not meant to be run in production environments as it subjects the gateway server to resource exhaustion.
 

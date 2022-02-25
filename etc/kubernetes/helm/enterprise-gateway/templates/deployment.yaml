@@ -78,6 +78,14 @@ spec:
         nfs:
           server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
+{{- else if .Values.kernelspecsPvc.enabled }}
+        volumeMounts:
+        - name: pvc-kernelspecs
+          mountPath: "/usr/local/share/jupyter/kernels"
+      volumes:
+      - name: pvc-kernelspecs
+        persistentVolumeClaim:
+          claimName: {{ .Values.kernelspecsPvc.name }}
 {{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs

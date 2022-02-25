@@ -1,4 +1,4 @@
-## Distributed Mode
+# Distributed Mode
 
 This page describes the approach taken for integrating Enterprise Gateway into a distributed set of hosts, without cluster resource managers.
 

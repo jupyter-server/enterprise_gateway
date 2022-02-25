@@ -4,7 +4,6 @@ FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
     'r-argparse' \
-    jupyter_client \
     pycryptodomex && \
     conda clean -tipsy && \
     fix-permissions $CONDA_DIR

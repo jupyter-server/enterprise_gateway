@@ -1,6 +1,6 @@
 # Ubuntu:Bionic
 # TensorFlow 2.4.0
-ARG BASE_CONTAINER=jupyter/tensorflow-notebook:703d8b2dcb88
+ARG BASE_CONTAINER=jupyter/tensorflow-notebook:2022-01-24
 
 FROM $BASE_CONTAINER
 

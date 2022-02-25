@@ -1,4 +1,4 @@
-## Kubernetes
+# Kubernetes
 
 This page describes the approach taken for integrating Enterprise Gateway into an existing Kubernetes cluster.
 
@@ -19,7 +19,7 @@ As with all kubernetes deployments, Enterprise Gateway is built into a docker im
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
 
-### Enterprise Gateway Deployment
+## Enterprise Gateway Deployment
 Enterprise Gateway manifests itself as a Kubernetes deployment, exposed externally by a Kubernetes service.  It is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
 
 The service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available.  Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`.  As a result, kernel creation requests will be routed to different deployment instances (see deployment) thereby diminishing the need for a `LoadBalancer` type. Here's the service yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml):
@@ -119,7 +119,7 @@ spec:
         - containerPort: 8888
         - containerPort: 8877
 ```
-#### Namespaces
+### Namespaces
 A best practice for Kubernetes applications running in an enterprise is to isolate applications via namespaces.  Since Enterprise Gateway also requires isolation at the kernel level, it makes sense to use a namespace for each kernel, by default.
 
 The initial namespace is created in the `enterprise-gateway.yaml` file using a default name of `enterprise-gateway`.  This name is communicated to the EG application via the env variable `EG_NAMESPACE`.  All Enterprise Gateway components reside in this namespace.
@@ -139,7 +139,7 @@ Installations wishing to pre-create the kernel namespace can do so by conveying 
 
 Although **not recommended**, installations requiring everything in the same namespace - Enterprise Gateway and all its kernels - can do so by setting env `EG_SHARED_NAMESPACE` to `True`. When set, all kernels will run in the enterprise gateway namespace, essentially eliminating all aspects of isolation between kernel instances.
 
-#### Role-Based Access Control (RBAC)
+### Role-Based Access Control (RBAC)
 Another best practice of Kubernetes applications is to define the minimally viable set of permissions for the application.  Enterprise Gateway does this by defining role-based access control (RBAC) objects for both Enterprise Gateway and kernels.
 
 Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and rolebindings, a cluster-scoped role binding is required.  The cluster role binding `enterprise-gateway-controller` also references the subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and also created by the yaml file.
@@ -239,7 +239,7 @@ roleRef:
   name: kernel-controller
   apiGroup: rbac.authorization.k8s.io
 ```
-#### Kernel Image Puller
+### Kernel Image Puller
 Because kernels now reside within containers and its typical for the first reference of a container to trigger its pull from a docker repository, kernel startup requests can easily timeout whenever the kernel image is first accessed on any given node.  To mitigate this issue, Enterprise Gateway deployment includes a DaemonSet object named `kernel-image-puller` or KIP.  This object is responsible for polling Enterprise Gateway for the current set of configured kernelspecs, picking out any configured image name references, and pulling those images to the node on which KIP is running.  Because its a daemon set, this will also address the case when new nodes are added to a configuration.
 
 The Kernel Image Puller can be configured for the interval at which it checks for new kernelspecs (`KIP_INTERVAL`), the number of puller threads it will utilize per node (`KIP_NUM_PULLERS`), the number of retries it will attempt for a given image (`KIP_NUM_RETRIES`), and the pull policy (`KIP_PULL_POLICY`) - which essentially dictates whether it will attempt to pull images that its already encoutnered (`Always`) vs. only pulling the image if it hasn't seen it yet (`IfNotPresent`).
@@ -250,8 +250,8 @@ The Kernel Image Puller also supports multiple container runtimes since Docker i
 
 KIP also supports the notion of a _default container registry_ whereby image names that do not specify a registry (e.g., `docker.io` or `quay.io`) KIP will apply the configured default.  Ideally, the image name should be fully qualified.
 
-Here's what the Kernel Image Puller looks like in the yaml...
-```yaml
+Here's what the Kernel Image Puller helm template looks like...
+```yaml+jinja
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -298,11 +298,11 @@ spec:
 ```
 
 
-#### Kernelspec Modifications
+### Kernelspec Modifications
 
 One of the more common areas of customization we see occurs within the kernelspec files located in `/usr/local/share/jupyter/kernels`.  To accommodate the ability to customize the kernel definitions, you have two different options: NFS mounts, or custom container images.  The two options are mutually exclusive, because they mount kernelspecs into the same location in the Enterprise Gateway pod.
 
-##### Via NFS
+#### Via NFS
 
 The kernels directory can be mounted as an NFS volume into the Enterprise Gateway pod, thereby making the kernelspecs available to all EG pods within the Kubernetes cluster (provided the NFS mounts exist on all applicable nodes).
 
@@ -350,7 +350,7 @@ Note that because the kernel pod definition file, [kernel-pod.yaml](https://gith
 
 Use of more formal persistent volume types must include the [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes) and corresponding Persistent Volume Claim stanzas.
 
-##### Via Custom Container Image
+#### Via Custom Container Image
 
 If you are deploying Enterprise Gateway via the Helm chart (see Deploying Enterprise Gateway, below), then instead of using NFS, you can build your custom kernelspecs into a container image that Enterprise Gateway consumes.  Here's an example Dockerfile for such a container:
 
@@ -372,13 +372,13 @@ helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gatewa
 
 Also, you should update the Helm chart `kernel_whitelist` value with the name(s) of your custom kernelspecs.
 
-### Kubernetes Kernel Instances
+## Kubernetes Kernel Instances
 There are essentially two kinds of kernels (independent of language) launched within an Enterprise Gateway Kubernetes cluster - _vanilla_ and _spark-on-kubernetes_ (if available).
 
 When _vanilla_ kernels are launched, Enterprise Gateway is responsible for creating the corresponding pod. On the other hand, _spark-on-kubernetes_ kernels are launched via `spark-submit` with a specific `master` URI - which then creates the corresponding pod(s) (including executor pods).  Images can be launched using both forms provided they have the appropriate support for Spark installed.
 
 Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml.j2](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2)) serves as a template where each of the tags surrounded with `{{` and `}}` represent variables that are substituted at the time of the kernel's launch.  All `{{ kernel_xxx }}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
-```yaml
+```yaml+jinja
 apiVersion: v1
 kind: Pod
 metadata:
@@ -435,10 +435,10 @@ There are a number of items worth noting:
 1. Kernel pods have restart policies of `Never`.  This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
 
-### Unconditional Volume Mounts
+## Unconditional Volume Mounts
 Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. An example of these unconditional volume mounts can be found when extending docker shared memory. For some I/O jobs the pod will need more than the default `64mb` of shared memory on the `/dev/shm` path.
 
-```
+```yaml+jinja
 volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
 {% if kernel_volume_mounts is defined %}
@@ -457,7 +457,7 @@ volumes:
 
 The conditional volumes are handled by the loops inside of the yaml file. Any unconditional volumes can be added before these conditions. In the scenario where the `/dev/shm` will need to be expanded the following mount has to be added.
 
-```
+```yaml+jinja
 volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
 - mountPath: /dev/shm
@@ -479,7 +479,7 @@ emptyDir:
 {% endif %}
 ```
 
-### Kubernetes Resource Quotas
+## Kubernetes Resource Quotas
 
 When deploying kernels on a Kubernetes cluster a best practice is to define request and limit quotas for CPUs, GPUs, and Memory.  These quotas can be defined from the client via KERNEL_-prefixed environment variables which are passed through to the kernel at startup.
 
@@ -494,7 +494,7 @@ Memory and CPU units are based on the [Kubernetes Official Documentation](https:
 
 When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
-```
+```yaml+jinja
 {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
   resources:
     {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
@@ -524,7 +524,7 @@ When defined, these variables are then substituted into the appropriate location
   {% endif %}
 ```
 
-### KubernetesProcessProxy
+## KubernetesProcessProxy
 To indicate that a given kernel should be launched into a Kubernetes configuration, the kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:` of `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Kubernetes environment.
 
 Along with the `class_name:` entry, this process proxy stanza should also include a proxy configuration stanza  which specifies the docker image to associate with the kernel's pod.  If this entry is not provided, the Enterprise Gateway implementation will use a default entry of `elyra/kernel-py:VERSION`.  In either case, this value is made available to the rest of the parameters used to launch the kernel by way of an environment variable: `KERNEL_IMAGE`.
@@ -582,53 +582,53 @@ For these invocations, the `argv:` is nearly identical to non-kubernetes configu
 }
 ```
 
-### Deploying Enterprise Gateway on Kubernetes
+## Deploying Enterprise Gateway on Kubernetes
 Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working on the master node, it is time to deploy Enterprise Gateway. There a couple of different deployment options - kubectl or helm.
 
-#### Option 1: Deploying with kubectl
+### Option 1: Deploying with kubectl
 
 Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like Helm.
 
-##### Create the Enterprise Gateway kubernetes service and deployment
+#### Create the Enterprise Gateway kubernetes service and deployment
 From the master node, create the service and deployment using the yaml file from a source release or the git repository:
 
-```
+```bash
 kubectl apply -f etc/kubernetes/enterprise-gateway.yaml
 
 service "enterprise-gateway" created
 deployment "enterprise-gateway" created
 ```
 
-##### Uninstalling Enterprise Gateway
+#### Uninstalling Enterprise Gateway
 
 To shutdown Enterprise Gateway issue a delete command using the previously mentioned global label `app=enterprise-gateway`
-```
+```bash
 kubectl delete all -l app=enterprise-gateway
 ```
 or simply delete the namespace
-```
+```bash
 kubectl delete ns enterprise-gateway
 ```
 
 A kernel's objects can be similarly deleted using the kernel's namespace...
-```
+```bash
 kubectl delete ns <kernel-namespace>
 ```
 Note that this should not imply that kernels be "shutdown" using a the `kernel_id=` label.  This will likely trigger Jupyter's auto-restart logic - so its best to properly shutdown kernels prior to kubernetes object deletions.
 
 Also note that deleting the Enterprise Gateway namespace will not delete cluster-scoped resources like the cluster roles `enterprise-gateway-controller` and `kernel-controller` or the cluster role binding `enterprise-gateway-controller`. The following commands can be used to delete these:
-```
+```bash
 kubectl delete clusterrole -l app=enterprise-gateway
 kubectl delete clusterrolebinding -l app=enterprise-gateway
 ```
 
-#### Option 2: Deploying with Helm
+### Option 2: Deploying with Helm
 
 Choose this option if you want to deploy via a [Helm](https://helm.sh/) chart.
 If Ingress is desired see [this section](#setting-up-a-kubernetes-ingress-for-use-with-enterprise-gateway) before deploying
 with helm.
 
-##### Create the Enterprise Gateway kubernetes service and deployment
+#### Create the Enterprise Gateway kubernetes service and deployment
 
 Ensure the `enterprise-gateway` namespace exists:
 
@@ -645,7 +645,7 @@ the helm chart tarball is also accessible as an asset on our [release](https://g
 ```bash
 helm install --name enterprise-gateway --atomic --namespace enterprise-gateway https://github.com/jupyter/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_helm-2.5.0.tgz
 ```
-##### Configuration
+#### Configuration
 
 Here are all of the values that you can set when deploying the Helm chart. You
 can override them with Helm's `--set` or `--values` options.
@@ -683,16 +683,16 @@ can override them with Helm's `--set` or `--values` options.
 | `kip.pullPolicy` | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`) | `IfNotPresent` |
 
 
-##### Uninstalling Enterprise Gateway
+#### Uninstalling Enterprise Gateway
 
 When using Helm, you can uninstall Enterprise Gateway with the following command:
 
-```
+```bash
 helm delete --purge enterprise-gateway
 ```
 
-#### Confirm deployment and note the service port mapping
-```
+### Confirm deployment and note the service port mapping
+```bash
 kubectl get all --all-namespaces -l app=enterprise-gateway
 
 NAME                        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
@@ -722,7 +722,7 @@ However, if using Helm, see the section above about how to set the `k8sMasterPub
 
 The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook server will vary depending on whether you choose to define an external IP or not.  If and external IP is defined, you'll set `JUPYTER_GATEWAY_URL=<externalIP>:8888` else you'll set `JUPYTER_GATEWAY_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.**  As a result, use of the `externalIPs:` value is highly recommended.
 
-### Setting up a Kubernetes Ingress for use with Enterprise Gateway
+## Setting up a Kubernetes Ingress for use with Enterprise Gateway
 
 To setup an ingress with Enterprise Gateway, you'll need an ingress controller deployed on your kubernetes cluster. We
 recommend either NGINX or Traefik. Installation and configuration instructions can be found at the following :
@@ -795,11 +795,11 @@ where `PORT` is the ingress controller's http `NodePort` we referenced earlier.
 **NOTE:** `PORT` may be optional depending on how your environment/infrastructure is configured.
 
 
-### Kubernetes Tips
+## Kubernetes Tips
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes environment.
 
 - All objects created on behalf of Enterprise Gateway can be located using the label `app=enterprise-gateway`.  You'll probably see duplicated entries for the deployments(deploy) and replication sets (rs) - I didn't include the duplicates here.
-```
+```bash
 kubectl get all -l app=enterprise-gateway --all-namespaces
 
 NAME                        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
@@ -811,10 +811,9 @@ rs/enterprise-gateway-74c46cb7fc   1         1         1         3h
 NAME                                            READY     STATUS    RESTARTS   AGE
 po/alice-5e755458-a114-4215-96b7-bcb016fc7b62   1/1       Running   0          8s
 po/enterprise-gateway-74c46cb7fc-jrkl7          1/1       Running   0          3h
-
 ```
 - All objects related to a given kernel can be located using the label `kernel_id=<kernel_id>`
-```
+```bash
 kubectl get all -l kernel_id=5e755458-a114-4215-96b7-bcb016fc7b62 --all-namespaces
 
 NAME                                            READY     STATUS    RESTARTS   AGE
@@ -824,18 +823,18 @@ Note: because kernels are, by default, isolated to their own namespace, you coul
 given kernel using only the `--namespace <kernel-namespace>` clause.
 
 - To enter into a given pod (i.e., container) in order to get a better idea of what might be happening within the container, use the exec command with the pod name
-```
+```bash
 kubectl exec -it enterprise-gateway-74c46cb7fc-jrkl7 /bin/bash
 ```
 
 - Logs can be accessed against the pods or deployment (requires the object type prefix (e.g., `po/`))
-```
+```bash
 kubectl logs -f po/alice-5e755458-a114-4215-96b7-bcb016fc7b62
 ```
 Note that if using multiple replicas, commands against each pod are required.
 
 - The Kubernetes dashboard is useful as well.  Its located at port `30000` of the master node
-```
+```bash
 https://elyra-kube1.foo.bar.com:30000/dashboard/#!/overview?namespace=default
 ```
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on

@@ -61,7 +61,7 @@ Apache Spark, Kubernetes and others..
         'watchdog>=2.1.3',
         'yarn-api-client>=1.0',
     ],
-    extras_require = {
+    extras_require={
         'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
     },
     python_requires='>=3.7',

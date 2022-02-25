@@ -1,5 +1,12 @@
+version: 2
+sphinx:
+    configuration: docs/source/conf.py
 conda:
-    file: docs/environment.yml
+    environment: docs/environment.yml
 python:
-    version: 3
-  
+    version: "3.8"
+    install:
+        # install itself with pip install .
+        - method: pip
+          path: .
+

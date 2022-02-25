@@ -1,8 +1,8 @@
-## Ancillary Features
+# Ancillary Features
 
 This page points out some features and functionality worthy of your attention but not necessarily part of the Jupyter Enterprise Gateway implementation.
 
-### Culling idle kernels
+## Culling idle kernels
 
 With the adoption of notebooks and interactive development for data science, a new "resource utilization" pattern has arisen, where kernel resources are locked for a given notebook, but due to interactive development process it might be idle for a long period of time causing the cluster resources to starve. One way to workaround this problem is to enable culling of idle kernels after a specific timeout period. 
 
@@ -30,7 +30,7 @@ else
 fi
 ```
 
-### Installing Python modules from within notebook cell
+## Installing Python modules from within notebook cell
 To be able to honor user isolation in a multi-tenant world, installing Python modules using `pip` from within a Notebook Cell should be done using the `--user` command-line option as shown below:
 
 ```

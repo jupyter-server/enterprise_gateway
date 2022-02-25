@@ -1,4 +1,4 @@
-## Configuration options
+# Configuration options
 
 Jupyter Enterprise Gateway adheres to
 [Jupyter's common configuration approach](https://jupyter.readthedocs.io/en/latest/use/config.html)
@@ -345,7 +345,7 @@ RemoteMappingKernelManager(AsyncMappingKernelManager) options
 
 ```
 
-### Additional supported environment variables
+## Additional supported environment variables
 The following environment variables can be used to influence functionality and are not tied to command-line options:
 ```text
   EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME=default
@@ -478,7 +478,7 @@ The following environment variables can be used to influence functionality and a
   EG_YARN_CERT_BUNDLE=<custom_truststore_path>
     The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.
 ```
-### Environment variables that assist in troubleshooting
+## Environment variables that assist in troubleshooting
 The following environment variables may be useful for troubleshooting:
 ```text
   EG_DOCKER_LOG_LEVEL=WARNING
@@ -525,7 +525,7 @@ The following environment variables may be useful for troubleshooting:
     By default, the yarn-api-client library is too verbose for its logging.  This
     value can be adjusted in situations where YARN troubleshooting may be warranted.
 ```
-### System-owned environment variables
+## System-owned environment variables
 The following environment variables are managed by Enterprise Gateway and listed here for completeness.  WARNING: Manually setting these variables could adversely affect operations.
 ```text
   EG_DOCKER_MODE
@@ -542,7 +542,7 @@ The following environment variables are managed by Enterprise Gateway and listed
     kernel.
 ```
 
-### Per-kernel Configuration Overrides
+## Per-kernel Configuration Overrides
 As mentioned in the overview of [Process Proxy Configuration](system-architecture.html#process-proxy-configuration)
 capabilities, it's possible to override or amend specific system-level configuration values on a per-kernel basis.
 The following enumerates the set of per-kernel configuration overrides:
@@ -568,7 +568,7 @@ access at the kernel level_.  These values apply to **all** process-proxy kernel
 Any values specified in the config dictionary override the globally defined values.  These apply to all
 `RemoteProcessProxy` kernels.
 
-### Per-kernel Environment Overrides
+## Per-kernel Environment Overrides
 In some cases, it is useful to allow specific values that exist in a kernel.json `env` stanza to be
 overridden on a per-kernel basis.  For example, if the kernelspec supports resource limitations you
 may want to allow some requests to have access to more memory or GPUs than another.  Enterprise
@@ -709,7 +709,7 @@ The following kernel-specific environment variables are managed within Enterpris
     launch script the mode of Spark context intiatilization it should apply when
     starting the spark-based kernel container.
 ```
-### Dynamic Configurables
+## Dynamic Configurables
 Enterprise Gateway now supports the ability to update configuration variables without having to
 restart Enterprise Gateway.  This enables the ability to do things like enable debug logging or
 adjust the maximum number of kernels per user, all without having to restart Enterprise Gateway.

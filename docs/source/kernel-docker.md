@@ -1,4 +1,4 @@
-## Docker Swarm
+# Docker Swarm
 
 This page describes the approach taken for integrating Enterprise Gateway into an existing Docker Swarm cluster.
 
@@ -14,7 +14,7 @@ The following sample kernelspecs are currently available on Docker:
 + python_tf_gpu_docker
 + scala_docker
 
-### Enterprise Gateway Deployment
+## Enterprise Gateway Deployment
 
 Enterprise Gateway manifests itself as a Docker Swarm service.  It is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have a label of `app=enterprise-gateway` applied.
 
@@ -40,7 +40,7 @@ docker-compose up
 
 The documentation for managing a compose stack can be found [here](https://docs.docker.com/compose/overview/).
 
-##### Kernelspec Modifications
+### Kernelspec Modifications
 
 One of the more common areas of customization we see occur within the kernelspec files located in /usr/local/share/jupyter/kernels.  To accommodate the ability to customize the kernel definitions, the kernels directory can be exposed as a mounted volume thereby making it available to all containers within the swarm cluster.
 
@@ -48,7 +48,7 @@ As an example, we have included the necessary commands to mount these volumes, b
 
 Note that because the kernel launch script, [launch_docker.py](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py), resides in the kernelspecs hierarchy, updates or modifications to docker-based kernel instances can now also take place.  (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 
-### Docker Swarm Kernel Instances
+## Docker Swarm Kernel Instances
 
 Enterprise Gateway currently supports launching of _vanilla_ (i.e., non-spark) kernels within a Docker Swarm cluster.  When kernels are launched, Enterprise Gateway is responsible for creating the appropriate entity.  The kind of entity created is a function of the corresponding process proxy class.  
 
@@ -61,7 +61,7 @@ Items worth noting:
 2. The service/container will have 3 labels applied: "kernel_id=<kernel-id>", "component=kernel", and "app=enterprise-gateway" - similar to Kubernetes.
 3. The service/container will be launched within the same docker network as Enterprise Gateway.
 
-### DockerSwarmProcessProxy
+## DockerSwarmProcessProxy
 
 To indicate that a given kernel should be launched as a Docker Swarm service into a swarm cluster, the kernel.json file's `metadata` stanza  must include a `process_proxy` stanza indicating a `class_name:`  of `DockerSwarmProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Docker Swarm environment.
 
@@ -98,7 +98,7 @@ As always, kernels are launched by virtue of the `argv:` stanza in their respect
 }
 ```
 
-### DockerProcessProxy
+## DockerProcessProxy
 
 Running containers in Docker Swarm versus traditional Docker are different enough to warrant having separate process proxy implementations.  As a result, the kernel.json file could reference the `DockerProcessProxy` class and, accordingly, a traditional docker container (as opposed to a swarm _service_) will be created.  The rest of the kernel.json file, image name, argv stanza, etc. is identical.
 
