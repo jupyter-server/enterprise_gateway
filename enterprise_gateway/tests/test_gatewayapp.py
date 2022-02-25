@@ -5,7 +5,7 @@
 import logging
 import unittest
 import os
-from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp, ioloop
+from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp
 from tornado.testing import AsyncHTTPTestCase, ExpectLog
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -112,10 +112,6 @@ class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
             self.app.shutdown()
 
         super(TestGatewayAppBase, self).tearDown()
-
-    def get_new_ioloop(self):
-        """Uses a global zmq ioloop for tests."""
-        return ioloop.IOLoop.current()
 
     def get_app(self):
         """Returns a tornado.web.Application for the Tornado test runner."""
