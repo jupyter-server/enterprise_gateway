@@ -36,6 +36,7 @@ kernel:
     - spark_r_kubernetes
     - spark_python_kubernetes
     - spark_scala_kubernetes
+    - spark_python_operator
   # Default kernel name should be something from the whitelist
   defaultKernelName: python_kubernetes
 
@@ -49,6 +50,11 @@ nfs:
   enabled: false
   # IP address of NFS server. Required if enabled.
   internalServerIPAddress:
+
+kernelspecsPvc:
+  enabled: false
+  # PVC name. Required if want mount kernelspecs without nfs. PVC should create in the same namespace before EG deployed. 
+  name: 
 
 ingress:
   enabled: false

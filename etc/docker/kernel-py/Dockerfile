@@ -4,11 +4,11 @@ FROM $BASE_CONTAINER
 
 ENV PATH=$PATH:$CONDA_DIR/bin
 
+# Add debugger support
+RUN pip install --upgrade ipykernel
+
 RUN conda install --quiet --yes \
     cffi \
-    ipykernel \
-    ipython \
-    jupyter_client \
     future \
     pycryptodomex && \
     conda clean -tipsy && \
