@@ -1321,8 +1321,7 @@ class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
                             # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
                             self.log.debug(
                                 "ERROR: OSError(ENOTCONN) raised on socket shutdown, "
-                                "listener likely not connected. Cannot send {request}",
-                                request=request,
+                                f"listener likely not connected. Cannot send {request}"
                             )
                         else:
                             self.log.warning("Exception occurred attempting to shutdown communication socket to {}:{} "
