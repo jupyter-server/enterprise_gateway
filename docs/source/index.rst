@@ -32,10 +32,10 @@ Who's this for?
 ---------------
 Jupyter Enterprise Gateway is a highly technical piece of the Jupyter Stack, so we've separated documentation to help specific personas:
 
-1. :ref:`Users <users>`: people using Jupyter web applications that wish to connect to an Enterprise Gateway instance.
-2. :ref:`Operators <operators>`: people deploying or serving Jupyter Enterprise Gateway to others.
-3. :ref:`Developers <developers>`: people writing applications or deploying kernels for other resource managers.
-4. :ref:`Contributors <contributors>`: people contributing directly to the Jupyter Enterprise Gateway project.
+1. `Users <users/index.html>`_: people using Jupyter web applications that wish to connect to an Enterprise Gateway instance.
+2. `Operators <operators/index.html>`_: people deploying or serving Jupyter Enterprise Gateway to others.
+3. `Developers <developers/index.html>`_: people writing applications or deploying kernels for other resource managers.
+4. `Contributors <contributors/index.html>`_: people contributing directly to the Jupyter Enterprise Gateway project.
 
 If you find gaps in our documentation, please open an issue (or better yet, a pull request) on the Jupyter Enterprise Gateway `Github repo <https://github.com/jupyter-server/enterprise_gateway>`_.
 
