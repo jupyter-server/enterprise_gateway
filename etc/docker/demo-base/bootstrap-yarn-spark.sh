@@ -24,18 +24,21 @@ then
 	exit 0
 fi
 
-: ${HADOOP_PREFIX:=/usr/hdp/current/hadoop}
+: ${HADOOP_HOME:=/usr/hdp/current/hadoop}
 : ${YARN_HOST:=$HOSTNAME}
 : ${SPARK_HOME:=/usr/hdp/current/spark2-client}
-: ${SPARK_VER:=2.4.6}
+: ${SPARK_VER:=3.2.1}
+: ${JAVA_HOME:=/usr/lib/jvm/java-8-openjdk-amd64}
+
+echo "export JAVA_HOME=${JAVA_HOME}" >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 
 # Set all the hadoop envs for this shell
-$HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
+$HADOOP_HOME/etc/hadoop/hadoop-env.sh
 
-rm /tmp/*.pid
+rm -f /tmp/*.pid
 
 # installing libraries if any - (resource urls added comma separated to the ACP system variable)
-cd $HADOOP_PREFIX/share/hadoop/common ; for cp in ${ACP//,/ }; do  echo == $cp; curl -LO $cp ; done; cd -
+cd $HADOOP_HOME/share/hadoop/common ; for cp in ${ACP//,/ }; do  echo == $cp; curl -LO $cp ; done; cd -
 
 ## altering the hostname in core-site and enterprise-gateway startup configuration
 sed s/HOSTNAME/$YARN_HOST/ /usr/hdp/current/hadoop/etc/hadoop/core-site.xml.template > /usr/hdp/current/hadoop/etc/hadoop/core-site.xml
@@ -57,12 +60,12 @@ sudo service ssh restart
 if [[ "$YARN_HOST" == "$HOSTNAME" || "$FROM" == "YARN" ]];
 then
     echo "********** FORMATTING NAMENODE ***********"
-    $HADOOP_PREFIX/bin/hdfs namenode -format
-    $HADOOP_PREFIX/sbin/start-dfs.sh
-    $HADOOP_PREFIX/sbin/start-yarn.sh
+    $HADOOP_HOME/bin/hdfs namenode -format
+    $HADOOP_HOME/sbin/start-dfs.sh
+    $HADOOP_HOME/sbin/start-yarn.sh
 
     echo "********** LEAVING HDFS SAFE MODE...... ***********"
-    $HADOOP_PREFIX/bin/hadoop dfsadmin -safemode leave
+    $HADOOP_HOME/bin/hadoop dfsadmin -safemode leave
 
     echo "********** UPLOADING SPARK JARS TO HDFS..... ***********"
     hdfs dfs -put $SPARK_HOME/jars /spark

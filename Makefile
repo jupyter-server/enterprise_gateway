@@ -13,7 +13,7 @@ ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
 VERSION?=3.0.0.dev0
-SPARK_VERSION?=3.2.0
+SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
     TAG:=dev
