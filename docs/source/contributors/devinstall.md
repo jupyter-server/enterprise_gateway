@@ -97,7 +97,7 @@ install/upgrade `sbt` on your platform. We currently use version 1.3.12.
 
 ## Build distribution files
 
-Builds the files necessary for a given release: the wheel file, the source tar file, and the kernel specificaaation tar
+Builds the files necessary for a given release: the wheel file, the source tar file, and the kernel specification tar
 files.  This is essentially a helper target consisting of the `bdist` `sdist` and `kernelspecs` targets.
 
 ```bash
