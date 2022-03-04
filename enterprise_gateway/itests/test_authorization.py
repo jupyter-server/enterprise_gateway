@@ -34,9 +34,9 @@ class TestAuthorization(unittest.TestCase):
         kernel = None
         try:
             kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username='bad_guy')
-            self.assertTrue(False, msg="Unauthorization exception expected!")
+            self.assertTrue(False, msg="Unauthorized exception expected!")
         except Exception as be:
-            self.assertRegexpMatches(be.args[0], "403")
+            self.assertRegex(be.args[0], "403")
         finally:
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)
