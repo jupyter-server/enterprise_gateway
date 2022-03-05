@@ -5,7 +5,7 @@
     clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
     kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker clean-kernel-image-puller
 
-SA:=source activate
+SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
