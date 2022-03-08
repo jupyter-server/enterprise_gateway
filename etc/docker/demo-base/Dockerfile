@@ -2,6 +2,7 @@ ARG BASE_CONTAINER=ubuntu:bionic
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
+ARG SPARKR_VERSION=3.1.2
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
@@ -111,14 +112,14 @@ RUN conda install --yes --quiet \
 
 USER $NB_UID
 
-#Package ‘SparkR’ was removed from the CRAN repository.
+#Package ‘SparkR’ currently supports 3.1.2, so we'll set its own ARG
 #https://cran.r-project.org/src/contrib/Archive/SparkR/
 
 RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.edu/CRAN/", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_$SPARK_VER.tar.gz", destfile = "SparkR_$SPARK_VER.tar.gz")' \
-            -e 'install.packages(pkgs="SparkR_$SPARK_VER.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
-            -e 'unlink("SparkR_$SPARK_VER.tar.gz")'
+            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_$SPARKR_VERSION.tar.gz", destfile = "SparkR_$SPARKR_VERSION.tar.gz")' \
+            -e 'install.packages(pkgs="SparkR_$SPARKR_VERSION.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
+            -e 'unlink("SparkR_$SPARKR_VERSION.tar.gz")'
 
 # SETUP HADOOP CONFIGS
 RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_HOME=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
