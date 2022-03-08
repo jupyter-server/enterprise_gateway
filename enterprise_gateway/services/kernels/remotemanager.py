@@ -6,7 +6,8 @@ import os
 import signal
 import re
 import uuid
-
+from pwd import getpwnam
+import grp
 from tornado import web
 from ipython_genutils.py3compat import unicode_type
 from ipython_genutils.importstring import import_item
@@ -17,6 +18,7 @@ from traitlets import directional_link, log as traitlets_log
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
+
 
 
 def get_process_proxy_config(kernelspec):
@@ -147,7 +149,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         username = KernelSessionManager.get_kernel_username(**kwargs)
         self.log.debug("RemoteMappingKernelManager.start_kernel: {kernel_name}, kernel_username: {username}".
                        format(kernel_name=kwargs['kernel_name'], username=username))
-
+        self.connection_dir=os.path.join(os.path.expanduser('~'+username),".local/share/jupyter/runtime/")
         # Check max kernel limits
         self._enforce_kernel_limits(username)
 
@@ -571,8 +573,17 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             self.hb_port = ports[3]
             self.control_port = ports[4]
 
-            return super(RemoteKernelManager, self).write_connection_file()
+            cf = super(RemoteKernelManager, self).write_connection_file()
+            username=self.user_overrides.get('KERNEL_USERNAME',None)
+            if username:
+                uid=getpwnam(username).pw_uid
+                guid=grp.getgrnam(username).gr_gid
+                os.chown(self.connection_file,uid,guid)
+                self.log.debug(f"Local connection file chowned:{self.connection_file} to {username}")
+            else:
+                raise RuntimeError("Unrecognized user")
 
+            return cf
     def _get_process_proxy(self):
         """
         Reads the associated kernelspec and to see if has a process proxy stanza.

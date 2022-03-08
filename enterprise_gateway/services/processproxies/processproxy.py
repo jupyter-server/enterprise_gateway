@@ -38,7 +38,7 @@ from traitlets.config import SingletonConfigurable
 from zmq.ssh import tunnel
 
 from ..sessions.kernelsessionmanager import KernelSessionManager
-
+from jupyterhub.spawner import set_user_setuid
 # Default logging level of paramiko produces too much noise - raise to warning only.
 logging.getLogger('paramiko').setLevel(os.getenv('EG_SSH_LOG_LEVEL', logging.WARNING))
 
@@ -963,7 +963,18 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
     async def launch_process(self, kernel_cmd, **kwargs):
         await super(LocalProcessProxy, self).launch_process(kernel_cmd, **kwargs)
-
+        user=kwargs["env"].get("KERNEL_USERNAME",None)
+        self.log.info(f"KARGS {kwargs}")
+                      
+        if user:
+            kwargs["preexec_fn"]=set_user_setuid(user,chdir=False)
+        else:
+            raise RuntimeError("Trying to run as root on host, unrecognized user")
+        # launch the local run.sh
+        working_dir=kwargs["env"].get("KERNEL_WORKING_DIR",None)
+        if working_dir:
+            kwargs["cwd"]=working_dir
+            
         # launch the local run.sh
         self.local_proc = self.launch_kernel(kernel_cmd, **kwargs)
         self.pid = self.local_proc.pid
