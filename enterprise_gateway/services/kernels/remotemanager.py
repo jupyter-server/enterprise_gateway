@@ -17,7 +17,6 @@ from ..sessions.kernelsessionmanager import KernelSessionManager
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
 
-
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
     Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
