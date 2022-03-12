@@ -5,11 +5,11 @@
 import os
 import time
 import uuid
+from tempfile import TemporaryDirectory
 
 from tornado.testing import gen_test
 from tornado.escape import json_decode, url_escape
 
-from ipython_genutils.tempdir import TemporaryDirectory
 from .test_handlers import TestHandlers
 
 pjoin = os.path.join

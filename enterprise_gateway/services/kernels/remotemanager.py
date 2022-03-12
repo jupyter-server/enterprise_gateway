@@ -8,8 +8,6 @@ import re
 import uuid
 
 from tornado import web
-from ipython_genutils.py3compat import unicode_type
-from ipython_genutils.importstring import import_item
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from traitlets import directional_link, log as traitlets_log
@@ -17,6 +15,36 @@ from traitlets import directional_link, log as traitlets_log
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
+
+
+
+def import_item(name):
+    """Import and return ``bar`` given the string ``foo.bar``.
+    Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
+    executing the code ``from foo import bar``.
+    Parameters
+    ----------
+    name : string
+      The fully qualified name of the module/package being imported.
+    Returns
+    -------
+    mod : module object
+       The module that was imported.
+    """
+
+    parts = name.rsplit('.', 1)
+    if len(parts) == 2:
+        # called with 'foo.bar....'
+        package, obj = parts
+        module = __import__(package, fromlist=[obj])
+        try:
+            pak = getattr(module, obj)
+        except AttributeError:
+            raise ImportError('No module named %s' % obj)
+        return pak
+    else:
+        # called with un-dotted string
+        return __import__(parts[0])
 
 
 def get_process_proxy_config(kernelspec):
@@ -64,7 +92,7 @@ def new_kernel_id(**kwargs):
         The uuid string to associate with the new kernel
     """
     log = kwargs.pop("log", None) or traitlets_log.get_logger()
-    kernel_id_fn = kwargs.pop("kernel_id_fn", None) or (lambda: unicode_type(uuid.uuid4()))
+    kernel_id_fn = kwargs.pop("kernel_id_fn", None) or (lambda: str(uuid.uuid4()))
 
     env = kwargs.get('env')
     if env and env.get('KERNEL_ID'):  # If there's a KERNEL_ID in the env, check it out
@@ -79,7 +107,7 @@ def new_kernel_id(**kwargs):
                       format(str_kernel_id, ve))
             raise ve
         # user-provided id is valid, use it
-        kernel_id = unicode_type(str_kernel_id)
+        kernel_id = str(str_kernel_id)
         log.debug("Using user-provided kernel_id: {}".format(kernel_id))
     else:
         kernel_id = kernel_id_fn(**kwargs)
