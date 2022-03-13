@@ -5,7 +5,6 @@
 import uuid
 from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
-from ipython_genutils.py3compat import unicode_type
 
 
 class SessionManager(LoggingConfigurable):
@@ -48,7 +47,7 @@ class SessionManager(LoggingConfigurable):
 
     def new_session_id(self):
         """Creates a uuid for a new session."""
-        return unicode_type(uuid.uuid4())
+        return str(uuid.uuid4())
 
     async def create_session(self, path=None, kernel_name=None, kernel_id=None, *args, **kwargs):
         """Creates a session and returns its model.

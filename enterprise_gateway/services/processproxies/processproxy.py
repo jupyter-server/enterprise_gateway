@@ -26,7 +26,6 @@ from Cryptodome.Cipher import PKCS1_v1_5, AES
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Util.Padding import unpad
 from enum import Enum
-from ipython_genutils.py3compat import with_metaclass
 from jupyter_client import launch_kernel, localinterfaces
 from jupyter_server import _tz
 from jupyter_server.serverapp import random_ports
@@ -352,7 +351,7 @@ class ResponseManager(SingletonConfigurable):
         self._response_registry[kernel_id].response = connection_info
 
 
-class BaseProcessProxyABC(with_metaclass(abc.ABCMeta, object)):
+class BaseProcessProxyABC(metaclass=abc.ABCMeta):
     """
     Process Proxy Abstract Base Class.
 
@@ -978,7 +977,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
         return self
 
 
-class RemoteProcessProxy(with_metaclass(abc.ABCMeta, BaseProcessProxyABC)):
+class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
     """
     Abstract Base Class implementation associated with remote process proxies.
     """

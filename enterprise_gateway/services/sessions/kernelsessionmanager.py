@@ -7,7 +7,6 @@ import json
 import os
 import threading
 
-from ipython_genutils.py3compat import (bytes_to_str, str_to_bytes)
 from jupyter_core.paths import jupyter_data_dir
 from traitlets import Bool, Unicode, default
 from traitlets.config.configurable import LoggingConfigurable
@@ -202,7 +201,7 @@ class KernelSessionManager(LoggingConfigurable):
             info = session_info['connection_info']
             key = info.get('key')
             if key:
-                info['key'] = bytes_to_str(key)
+                info['key'] = key.decode("utf8")
 
         return session
 
@@ -214,7 +213,7 @@ class KernelSessionManager(LoggingConfigurable):
             info = session_info['connection_info']
             key = info.get('key')
             if key:
-                info['key'] = str_to_bytes(key)
+                info['key'] = key.encode("utf8")
 
         return session
 
