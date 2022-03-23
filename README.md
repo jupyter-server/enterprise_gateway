@@ -1,6 +1,5 @@
 **[Website](https://jupyter.org/enterprise_gateway/)** |
 **[Technical Overview](#technical-overview)** |
-**[Features](#features)** |
 **[Installation](#installation)** |
 **[System Architecture](#system-architecture)** |
 **[Contributing](#contributing)** |
@@ -40,19 +39,14 @@ the following ways:
 * Secure communication from the client, through the Enterprise Gateway server, to the kernels
 * Multi-tenant capabilities
 * Persistent kernel sessions
-* Ability to associate profiles consisting of configuration settings to a kernel for a given user (see [Project Roadmap](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/roadmap.html))
+* Ability to associate profiles consisting of configuration settings to a kernel for a given user (see [Project Roadmap](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/roadmap.html))
 
 ![Deployment Diagram](https://github.com/jupyter/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
-
-## Features
-
-See [Enterprise Gateway Features](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/getting-started.html#enterprise-gateway-features) in the 
-documentation for a list of Jupyter Enterprise Gateway features.
 
 ## Installation
 
 Detailed installation instructions are located in the 
-[Getting Started page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/getting-started.html)
+[Getting Started page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/users/index.html)
 of the project docs. Here's a quick start using `pip`:
 
 ```bash
@@ -66,17 +60,17 @@ jupyter enterprisegateway --help-all
 jupyter enterprisegateway
 ```
 
-Please check the [Configuration Options page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/config-options.html) 
+Please check the [Configuration Options page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/operators/index.html) 
 for information about the supported options.
 
 ## System Architecture
 
-The [System Architecture page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/system-architecture.html) 
+The [System Architecture page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/system-architecture.html) 
 includes information about Enterprise Gateway's remote kernel, process proxy, and launcher frameworks.
 
 ## Contributing
 
-The [Contribution page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contrib.html) includes 
+The [Contribution page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/contrib.html) includes 
 information about how to contribute to Enterprise Gateway along with our roadmap.  While there, you'll want to
-[set up a development environment](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/devinstall.html) and check out typical developer tasks.
+[set up a development environment](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/devinstall.html) and check out typical developer tasks.
 
