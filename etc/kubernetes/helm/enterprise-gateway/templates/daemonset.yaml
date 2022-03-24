@@ -38,14 +38,26 @@ spec:
           value: {{ .Values.kip.defaultContainerRegistry }}
         # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
         {{- if .Values.authToken }}
-        - name: KIP_AUTH_TOKEN   
+        - name: KIP_AUTH_TOKEN
           value: {{ .Values.authToken }}
         {{- end }}
         volumeMounts:
         - name: cri-socket
           mountPath: !!str {{ .Values.kip.criSocket }}  # see env KIP_CRI_ENDPOINT
+        {{- if .Values.kip.imagePullSecret }}
+        - name: dockerconfig
+          mountPath: "/root/.docker"
+        {{- end }}
       volumes:
       - name: cri-socket
         hostPath:
           path: {{ .Values.kip.criSocket }}
+      {{- if .Values.kip.imagePullSecret }}
+      - name: dockerconfig
+        secret:
+          secretName: {{ tpl .Values.kip.imagePullSecret . }}
+          items:
+          - key: .dockerconfigjson
+            path: config.json
+      {{- end }}
 {{- end }}
