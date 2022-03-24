@@ -46,7 +46,7 @@ the following ways:
 ## Installation
 
 Detailed installation instructions are located in the 
-[Getting Started page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/users/index.html)
+[Users Guide](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/users/index.html)
 of the project docs. Here's a quick start using `pip`:
 
 ```bash
@@ -60,7 +60,7 @@ jupyter enterprisegateway --help-all
 jupyter enterprisegateway
 ```
 
-Please check the [Configuration Options page](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/operators/index.html) 
+Please check the [configuration options within the Operators Guide](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/operators/index.html#configuring-enterprise-gateway) 
 for information about the supported options.
 
 ## System Architecture
