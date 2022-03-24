@@ -94,5 +94,6 @@ kip:
   criSocket: /var/run/docker.sock
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
-
+  # The name of a secret with type 'kubernetes.io/dockerconfigjson' for pulling kernel images from private Docker registries
+  imagePullSecret: ""
 
