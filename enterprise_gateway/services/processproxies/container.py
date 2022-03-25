@@ -142,8 +142,10 @@ class ContainerProcessProxy(RemoteProcessProxy):
         container_status = self.get_container_status(None)
         # Do not check whether container_status is None
         # EG couldn't restart kernels although connections exists.
-        # See https://github.com/jupyter-server/enterprise_gateway/issues/827
-        if container_status in self.get_initial_states():
+        # See https://github.com/jupyter/enterprise_gateway/issues/827
+        # The new check for `kernel_manager.restarting` added to prevent that false positive
+        # response that might happen when the kernel is restarting.
+        if self.kernel_manager.restarting or container_status in self.get_initial_states():
             result = None
 
         return result

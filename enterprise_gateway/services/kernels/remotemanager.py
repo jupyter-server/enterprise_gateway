@@ -1,6 +1,9 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Kernel managers that operate against a remote process."""
+import time
+
+import asyncio
 
 import os
 import re
@@ -18,6 +21,7 @@ from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
+default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
 
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
@@ -189,6 +193,50 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         return kernel_id
 
+    async def restart_kernel(self, kernel_id):
+        kernel = self.get_kernel(kernel_id)
+        self.log.debug(f"Current value of the Kernel Restarting: {kernel.restarting}")
+        if kernel.restarting:  # assuming duplicate request.
+            await self.wait_and_poll_for_restart_to_complete(kernel_id, "restart")
+            self.log.info(
+                f"Done with waiting for restart to complete. Current value of restarting: {kernel.restarting}. "
+                f"Skipping restarting kernel.")
+            return
+        self.log.info("Going ahead to process restart kernel request.")
+        try:
+            kernel.restarting = True  # Moved in out of RemoteKernelManager
+            await super(RemoteMappingKernelManager, self).restart_kernel(kernel_id)
+        finally:
+            self.log.debug("Resetting `restarting` flag to False.")
+            kernel.restarting = False
+
+    async def shutdown_kernel(self, kernel_id, now=False, restart=False):
+        kernel = self.get_kernel(kernel_id)
+        self.log.debug(f"Current value of the Kernel Restarting: {kernel.restarting}")
+        if kernel.restarting:
+            await self.wait_and_poll_for_restart_to_complete(kernel_id, "shutdown")
+        try:
+            await super(RemoteMappingKernelManager, self).shutdown_kernel(kernel_id, now, restart)
+        except KeyError as ke:  # this is hit for multiple shutdown request.
+            self.log.exception(f"Exception while shutting Kernel: {kernel_id}: {ke}")
+
+    async def wait_and_poll_for_restart_to_complete(self, kernel_id, action="shutdown"):
+        kernel = self.get_kernel(kernel_id)
+        start_time = int(time.time())  # epoc time in seconds
+        timeout = kernel.kernel_launch_timeout
+        poll_time = 1  # TODO can be read from a new config.
+        self.log.info(f"Kernel is restarting when {action} request received. Polling every {poll_time} "
+                      f"seconds for next {timeout} seconds for kernel '{kernel_id}'"
+                      f" to complete its restart.")
+        while kernel.restarting:
+            now = int(time.time())
+            if (now - start_time) > timeout:
+                self.log.info(f"Wait_Timeout: Existing out of the restart wait loop to {action} kernel.")
+                break
+            await asyncio.sleep(poll_time)
+        self.log.info(f"Returning with current value of the Kernel Restarting: {kernel.restarting}.")
+        return
+
     def _enforce_kernel_limits(self, username: str) -> None:
         """
         If MaxKernels or MaxKernelsPerUser are configured, enforce the respective values.
@@ -341,6 +389,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.sigint_value = None
         self.kernel_id = None
         self.user_overrides = {}
+        self.kernel_launch_timeout = default_kernel_launch_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
 
         # If this instance supports port caching, then disable cache_ports since we don't need this
@@ -412,6 +461,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         of the kernelspec env stanza that would have otherwise overridden the user-provided values.
         """
         env = kwargs.get("env", {})
+        # see if KERNEL_LAUNCH_TIMEOUT was included from user.  If so, override default
+        if env.get('KERNEL_LAUNCH_TIMEOUT', None):
+            self.kernel_launch_timeout = float(env.get('KERNEL_LAUNCH_TIMEOUT'))
         self.user_overrides.update(
             {
                 key: value
@@ -504,7 +556,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             Any options specified here will overwrite those used to launch the
             kernel.
         """
-        self.restarting = True
         kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace(
             "kernel-", ""
         ).replace(".json", "")
@@ -535,7 +586,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # Refresh persisted state.
         if self.kernel_session_manager:
             self.kernel_session_manager.refresh_session(kernel_id)
-        self.restarting = False
 
     async def signal_kernel(self, signum):
         """
