@@ -11,7 +11,7 @@
 * Users have HDFS folder setup at startup
 
 # Basic Use
-As of the 0.9.0 release of [Jupyter Enterprise Gateway](https://github.com/jupyter/enterprise_gateway/releases)
+As of the 0.9.0 release of [Jupyter Enterprise Gateway](https://github.com/jupyter-server/enterprise_gateway/releases)
 this image can be started as a separate YARN cluster to better demonstrate remote kernel capabilities.  See section
 [Dual Mode](https://hub.docker.com/r/elyra/enterprise-gateway/#dual_mode) on the enterprise-gateway page for command
 usage.

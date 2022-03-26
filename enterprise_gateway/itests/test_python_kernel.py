@@ -70,7 +70,7 @@ class PythonKernelBaseTestCase(TestBase):
 
     def test_scope(self):
         # Ensure global variable is accessible in function.
-        # See https://github.com/jupyter/enterprise_gateway/issues/687
+        # See https://github.com/jupyter-server/enterprise_gateway/issues/687
         # Build the example code...
         scope_code = list()
         scope_code.append("a = 42\n")
