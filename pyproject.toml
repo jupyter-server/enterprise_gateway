@@ -1,0 +1,6 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.jupyter-releaser.options]
+ignore-links = ["http://my-gateway-server.com:8888"]

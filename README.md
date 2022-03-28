@@ -1,4 +1,4 @@
-**[Website](https://jupyter.org/enterprise_gateway/)** |
+**[Website](https://jupyter-enterprise-gateway.readthedocs.io/)** |
 **[Technical Overview](#technical-overview)** |
 **[Installation](#installation)** |
 **[System Architecture](#system-architecture)** |
