@@ -8,4 +8,4 @@ Deploy [enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) 
 
 Launch a gateway-enabled Jupyter Notebook application against  the Enterprise Gateway instance and pick the desired kernel to use in your notebook.
 
-For more information, check our [repo](https://github.com/jupyter/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).
+For more information, check our [repo](https://github.com/jupyter-server/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

@@ -59,7 +59,7 @@ RUN pip install pycrypto
 
 # Download and extract the enterprise gateway kernel launchers and bootstrap 
 # files and deploy to /usr/local/bin. Change permissions to NB_UID:NB_GID.
-RUN wget https://github.com/jupyter/enterprise_gateway/releases/download/vVERSION/jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz &&\
+RUN wget https://github.com/jupyter-server/enterprise_gateway/releases/download/vVERSION/jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz &&\
         tar -xvf jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz -C /usr/local/bin &&\
         rm -f jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz &&\
         fix-permissions /usr/local/bin
@@ -101,7 +101,7 @@ RUN pip install pycrypto
 
 # Download and extract the enterprise gateway kernel launchers and bootstrap
 # files and deploy to /usr/local/bin. Change permissions to NB_UID:NB_GID.
-RUN curl -L https://github.com/jupyter/enterprise_gateway/releases/download/vVERSION/jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz | \
+RUN curl -L https://github.com/jupyter-server/enterprise_gateway/releases/download/vVERSION/jupyter_enterprise_gateway_kernel_image_files-VERSION.tar.gz | \
     tar -xz -C /usr/local/bin 
 
 RUN adduser --system --uid 1000 --gid 100 jovyan && \

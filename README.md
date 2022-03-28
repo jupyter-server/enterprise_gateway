@@ -6,7 +6,7 @@
 
 # Jupyter Enterprise Gateway
 
-[![Actions Status](https://github.com/jupyter/enterprise_gateway/workflows/Builds/badge.svg)](https://github.com/jupyter/enterprise_gateway/actions)
+[![Actions Status](https://github.com/jupyter-server/enterprise_gateway/workflows/Builds/badge.svg)](https://github.com/jupyter-server/enterprise_gateway/actions)
 [![PyPI version](https://badge.fury.io/py/jupyter-enterprise-gateway.svg)](https://badge.fury.io/py/jupyter-enterprise-gateway)
 [![Downloads](https://pepy.tech/badge/jupyter-enterprise-gateway/month)](https://pepy.tech/project/jupyter-enterprise-gateway/month)
 [![Documentation Status](https://readthedocs.org/projects/jupyter-enterprise-gateway/badge/?version=latest)](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/?badge=latest)
@@ -41,7 +41,7 @@ the following ways:
 * Persistent kernel sessions
 * Ability to associate profiles consisting of configuration settings to a kernel for a given user (see [Project Roadmap](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/roadmap.html))
 
-![Deployment Diagram](https://github.com/jupyter/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
+![Deployment Diagram](https://github.com/jupyter-server/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
 
 ## Installation
 

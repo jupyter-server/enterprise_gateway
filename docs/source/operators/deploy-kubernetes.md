@@ -155,7 +155,7 @@ spec:
   sessionAffinity: ClientIP
   type: NodePort
 ```
-The deployment yaml essentially houses the pod description.  By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster.  This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) that defines the Kubernetes deployment and pod (for helm, see [deployement.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/deployment.yaml):
+The deployment yaml essentially houses the pod description.  By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster.  This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels.  Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) that defines the Kubernetes deployment and pod (for helm, see [deployement.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/deployment.yaml):
 ```yaml
 apiVersion: apps/v1beta2
 kind: Deployment
@@ -448,7 +448,7 @@ for the container specification and `volumes` in the pod specification (non-appl
 
 ```
 ```{tip}
-Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
+Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 ```
 
 Use of more formal persistent volume types must include the [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes) and corresponding Persistent Volume Claim stanzas.
@@ -740,7 +740,7 @@ kube-system          service/tiller-deploy                            ClusterIP 
 
 Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your
 Enterprise Gateway service. The EG helm chart is configured with an ingress template, which
-can be found at [here](https://github.com/jupyter/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
+can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
 for Enterprise Gateway.
 
 Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired configurations and install EG as normal via helm.

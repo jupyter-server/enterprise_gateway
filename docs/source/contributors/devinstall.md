@@ -1,6 +1,6 @@
 # Development Workflow
 
-Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter/enterprise_gateway) 
+Here are instructions for setting up a development environment for the [Jupyter Enterprise Gateway](https://github.com/jupyter-server/enterprise_gateway) 
 server. It also includes common steps in the developer workflow such as building Enterprise Gateway, 
 running tests, building docs, packaging kernel specifications, etc.
 
