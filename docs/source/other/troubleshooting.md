@@ -243,7 +243,7 @@ The most common cause for this WARN is when the user that started Enterprise Gat
 ## Openshift Kubernetes
 Scenario: **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environment fails trying to create /home/jovyan/.local**
 
-As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/3.6/admin_guide/manage_scc.md#enable-images-to-run-with-user-in-the-dockerfile)
+As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html)
     there is a need to issue the following command to enable running  with `USER` in Dockerfile.
     
     ```bash

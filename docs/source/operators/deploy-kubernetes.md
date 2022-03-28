@@ -448,7 +448,7 @@ for the container specification and `volumes` in the pod specification (non-appl
 
 ```
 ```{tip}
-Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
+Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 ```
 
 Use of more formal persistent volume types must include the [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes) and corresponding Persistent Volume Claim stanzas.
@@ -645,7 +645,7 @@ _(Please note that the use of `VERSION` in docker image tags is a placeholder fo
   }
 }
 ```
-As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json files.  However, when launching _vanilla_ kernels in a kubernetes environment, what gets invoked isn't the kernel's launcher, but, instead, a python script that is responsible for using the [Kubernetes Python API](https://github.com/kubernetes-client/python) to create the corresponding pod instance.  The pod is _configured_ by applying the values to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml) file previously displayed. This file resides in the same `scripts` directory as the kubernetes launch script - `launch_kubernetes.py` - which is referenced by the kernel.json's `argv:` stanza:
+As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json files.  However, when launching _vanilla_ kernels in a kubernetes environment, what gets invoked isn't the kernel's launcher, but, instead, a python script that is responsible for using the [Kubernetes Python API](https://github.com/kubernetes-client/python) to create the corresponding pod instance.  The pod is _configured_ by applying the values to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) file previously displayed. This file resides in the same `scripts` directory as the kubernetes launch script - `launch_kubernetes.py` - which is referenced by the kernel.json's `argv:` stanza:
 ```json
 {
   "argv": [
@@ -723,7 +723,7 @@ To set up an ingress with Enterprise Gateway, you'll need an ingress controller 
 recommend either NGINX or Traefik. Installation and configuration instructions can be found at the following :
 
 - [NGINX-Ingress-Controller](https://kubernetes.github.io/ingress-nginx)
-- [Traefik](https://docs.traefik.io/user-guide/kubernetes/)
+- [Traefik](https://doc.traefik.io/traefik/)
 
 Example - Here the NGINX Ingress Controller is deployed as a `LoadBalancer` with `NodePort` 32121 and 30884 open for http and https traffic respectively.
 
@@ -740,7 +740,7 @@ kube-system          service/tiller-deploy                            ClusterIP 
 
 Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your
 Enterprise Gateway service. The EG helm chart is configured with an ingress template, which
-can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
+can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/enterprise-gateway/templates/ingress.yaml)
 for Enterprise Gateway.
 
 Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired configurations and install EG as normal via helm.
