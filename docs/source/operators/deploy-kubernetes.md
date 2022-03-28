@@ -740,7 +740,7 @@ kube-system          service/tiller-deploy                            ClusterIP 
 
 Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your
 Enterprise Gateway service. The EG helm chart is configured with an ingress template, which
-can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/templates/ingress.yaml)
+can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/enterprise-gateway/templates/ingress.yaml)
 for Enterprise Gateway.
 
 Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired configurations and install EG as normal via helm.
