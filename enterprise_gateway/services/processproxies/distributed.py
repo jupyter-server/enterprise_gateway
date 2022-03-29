@@ -95,16 +95,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
             cmd = argv_cmd
         else:  # Add additional envs, including those in kernelspec
             cmd = ''
-            if kid:
-                cmd += 'export KERNEL_ID="{}";'.format(kid)
 
-            kuser = env_dict.get('KERNEL_USERNAME')
-            if kuser:
-                cmd += 'export KERNEL_USERNAME="{}";'.format(kuser)
-
-            impersonation = env_dict.get('EG_IMPERSONATION_ENABLED')
-            if impersonation:
-                cmd += 'export EG_IMPERSONATION_ENABLED="{}";'.format(impersonation)
+            for key, value in env_dict.items():
+                cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
 
             for key, value in self.kernel_manager.kernel_spec.env.items():
                 cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
