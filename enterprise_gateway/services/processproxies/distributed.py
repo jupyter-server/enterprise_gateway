@@ -95,9 +95,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             cmd = argv_cmd
         else:  # Add additional envs, including those in kernelspec
             cmd = ''
-            if kid:
-                cmd += 'export KERNEL_ID="{}";'.format(kid)
-                
+
             for key, value in env_dict.items():
                 cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
 
