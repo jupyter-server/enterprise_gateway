@@ -216,7 +216,7 @@ endif
 	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
-PREP_TIMEOUT?=60
+PREP_TIMEOUT?=120
 itest-docker-prep:
 	@-docker service rm enterprise-gateway_enterprise-gateway enterprise-gateway_enterprise-gateway-proxy
 	@-docker swarm leave --force
