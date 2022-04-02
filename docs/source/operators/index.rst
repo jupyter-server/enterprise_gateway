@@ -12,7 +12,10 @@ These pages are targeted at *operators* that need to deploy and configure a Jupy
 
 Deploying Enterprise Gateway
 ----------------------------
-The deployment of Enterprise Gateway consists of several items, depending on the nature of the target environment.  Because this topic differs depending on whether the runtime environment is targeting containers or traditional servers, we've separated the discussions accordingly.
+The deployment of Enterprise Gateway consists of several items, depending on
+the nature of the target environment.  Because this topic differs depending on
+whether the runtime environment is targeting containers or traditional servers,
+we've separated the discussions accordingly.
 
 Container-based deployments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +30,10 @@ Enterprise Gateway includes support for two forms of container-based environment
 
 Server-based deployments
 ~~~~~~~~~~~~~~~~~~~~~~~~
-Tasks for traditional server deployments are nearly identical with respect to Enterprise Gateway's installation and invocation, differing slightly with how the kernel specifications are configured.  As a result, we marked those topics as "common" relative to the others.
+Tasks for traditional server deployments are nearly identical with respect to
+Enterprise Gateway's installation and invocation, differing slightly with how
+the kernel specifications are configured.  As a result, we marked those topics
+as "common" relative to the others.
 
 .. toctree::
    :maxdepth: 1

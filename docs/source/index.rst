@@ -1,6 +1,11 @@
 Welcome to Jupyter Enterprise Gateway!
 ======================================
-Jupyter Enterprise Gateway is a headless web server with a pluggable framework for anyone supporting multiple notebook users in a managed-cluster environment. Some of the core functionality it provides is better optimization of compute resources, improved multi-user support, and more granular security for your Jupyter notebook environment - making it suitable for enterprise, scientific, and academic implementations.
+Jupyter Enterprise Gateway is a headless web server with a pluggable framework
+for anyone supporting multiple notebook users in a managed-cluster environment.
+Some of the core functionality it provides is better optimization of compute
+resources, improved multi-user support, and more granular security for your
+Jupyter notebook environment - making it suitable for enterprise, scientific,
+and academic implementations.
 
 From a technical perspective, Jupyter Enterprise Gateway is a web server that enables the ability to
 launch kernels on behalf of remote notebooks. This leads to better resource
@@ -15,7 +20,11 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 
 Kernel Gateway vs. Enterprise Gateway
 -------------------------------------
-Jupyter Enterprise Gateway was formerly built directly on Jupyter Kernel Gateway.  At that time, it had complete feature parity with Kernel Gateway.  However, in order to address various roadmap items, Enterprise Gateway removed its dependency on Kernel Gateway, so now the question arises, when does one choose Enterprise Gateway over Kernel Gateway?
+Jupyter Enterprise Gateway was formerly built directly on Jupyter Kernel
+Gateway.  At that time, it had complete feature parity with Kernel Gateway.
+However, in order to address various roadmap items, Enterprise Gateway removed
+its dependency on Kernel Gateway, so now the question arises, when does one
+choose Enterprise Gateway over Kernel Gateway?
 
 Use Enterprise Gateway if...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
