@@ -62,7 +62,7 @@ Apache Spark, Kubernetes and others..
         'yarn-api-client>=1.0',
     ],
     extras_require={
-        'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel'],
+        'test': ['coverage', 'pytest', 'pytest-tornasync', 'ipykernel', 'pre-commit'],
     },
     python_requires='>=3.7',
     classifiers=[

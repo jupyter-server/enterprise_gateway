@@ -2,6 +2,7 @@ include LICENSE.md
 include enterprise_gateway/services/api/swagger.*
 include Makefile
 include conftest.py
+include pyproject.toml
 
 prune docs
 prune website
@@ -10,6 +11,7 @@ recursive-include etc *
 
 exclude *.yml
 exclude release.sh
+exclude *.yaml
 
 prune enterprise_gateway/tests
 prune enterprise_gateway/itests
