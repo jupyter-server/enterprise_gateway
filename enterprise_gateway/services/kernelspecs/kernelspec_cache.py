@@ -267,7 +267,7 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
             self.kernel_spec_cache.put_item(kernel_name, kernelspec)
         except Exception as e:
             self.log.warning("The following exception occurred updating cache entry for: {src_resource_dir} "
-                             "- continuing...  ({e})".format(src_resource_dir=event.src_src_resource_dir, e=e))
+                             "- continuing...  ({e})".format(src_resource_dir=event.src_resource_dir, e=e))
 
     def on_moved(self, event):
         """Fires when a watched file is moved.
