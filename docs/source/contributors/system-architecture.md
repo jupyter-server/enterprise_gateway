@@ -318,12 +318,12 @@ many components of a Spark-on-Kubernetes application.
 If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
 
 - override custom resource related variables(i.e. `group`, `version` and `plural`
-and `get_container_status` method, wrt [spark_operator.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py). 
+and `get_container_status` method, wrt [launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py).
 
 - define a jinja template like
-[sparkoperator.k8s.io-v1beta2.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/sparkoperator.k8s.io-v1beta2.yaml.j2).
+[kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2).
 As a generic design, the template file should be named as {crd_group}-{crd_version} so that you can reuse
-[launch_custom_resource.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_custom_resource.py) in the kernelspec.
+[launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py) in the kernelspec.
 
 - define a kernel specification like [spark_python_operator/kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
 
@@ -386,7 +386,7 @@ The response address is identified by the parameter `--RemoteProcessProxy.respon
 
 The public key is identified by the parameter `--RemoteProcessProxy.public-key`.  Its value (`{public_key}`) is used to encrypt an AES key created by the launcher to encrypt the kernel's connection information.  The server, upon receipt of the response, uses the corresponding private key to decrypt the AES key, which it then uses to decrypt the connection information.  Both the public and private keys are ephemeral; created upon Enterprise Gateway's startup.  They can be ephemeral because they are only needed during a kernel's startup and never again.
 
-Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
+Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
 ```json
 {
@@ -428,9 +428,9 @@ Other options supported by launchers include:
 
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom 
 parameters to be conveyed in the launcher's environment.  `LAUNCH_OPTS` are then referenced in 
-the [run.sh](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) 
+the [run.sh](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
 script as the initial arguments to the launcher 
-(see [launch_ipykernel.py](https://github.com/jupyter-server/enterprise_gateway/blob/enterprise_gateway/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \

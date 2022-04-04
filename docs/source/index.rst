@@ -1,6 +1,11 @@
 Welcome to Jupyter Enterprise Gateway!
 ======================================
-Jupyter Enterprise Gateway is a headless web server with a pluggable framework for anyone supporting multiple notebook users in a managed-cluster environment. Some of the core functionality it provides is better optimization of compute resources, improved multi-user support, and more granular security for your Jupyter notebook environment - making it suitable for enterprise, scientific, and academic implementations.
+Jupyter Enterprise Gateway is a headless web server with a pluggable framework
+for anyone supporting multiple notebook users in a managed-cluster environment.
+Some of the core functionality it provides is better optimization of compute
+resources, improved multi-user support, and more granular security for your
+Jupyter notebook environment - making it suitable for enterprise, scientific,
+and academic implementations.
 
 From a technical perspective, Jupyter Enterprise Gateway is a web server that enables the ability to
 launch kernels on behalf of remote notebooks. This leads to better resource
@@ -15,7 +20,11 @@ distributes kernels across the compute cluster, dramatically increasing the numb
 
 Kernel Gateway vs. Enterprise Gateway
 -------------------------------------
-Jupyter Enterprise Gateway was formerly built directly on Jupyter Kernel Gateway.  At that time, it had complete feature parity with Kernel Gateway.  However, in order to address various roadmap items, Enterprise Gateway removed its dependency on Kernel Gateway, so now the question arises, when does one choose Enterprise Gateway over Kernel Gateway?
+Jupyter Enterprise Gateway was formerly built directly on Jupyter Kernel
+Gateway.  At that time, it had complete feature parity with Kernel Gateway.
+However, in order to address various roadmap items, Enterprise Gateway removed
+its dependency on Kernel Gateway, so now the question arises, when does one
+choose Enterprise Gateway over Kernel Gateway?
 
 Use Enterprise Gateway if...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,10 +41,10 @@ Who's this for?
 ---------------
 Jupyter Enterprise Gateway is a highly technical piece of the Jupyter Stack, so we've separated documentation to help specific personas:
 
-1. :ref:`Users <users>`: people using Jupyter web applications that wish to connect to an Enterprise Gateway instance.
-2. :ref:`Operators <operators>`: people deploying or serving Jupyter Enterprise Gateway to others.
-3. :ref:`Developers <developers>`: people writing applications or deploying kernels for other resource managers.
-4. :ref:`Contributors <contributors>`: people contributing directly to the Jupyter Enterprise Gateway project.
+1. `Users <users/index.html>`_: people using Jupyter web applications that wish to connect to an Enterprise Gateway instance.
+2. `Operators <operators/index.html>`_: people deploying or serving Jupyter Enterprise Gateway to others.
+3. `Developers <developers/index.html>`_: people writing applications or deploying kernels for other resource managers.
+4. `Contributors <contributors/index.html>`_: people contributing directly to the Jupyter Enterprise Gateway project.
 
 If you find gaps in our documentation, please open an issue (or better yet, a pull request) on the Jupyter Enterprise Gateway `Github repo <https://github.com/jupyter-server/enterprise_gateway>`_.
 

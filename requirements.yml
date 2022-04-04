@@ -30,11 +30,6 @@ dependencies:
   # Code Style
   - flake8
 
-  # Documentation Requirements
-  - sphinx_rtd_theme
-  - sphinx>=3
-  - recommonmark
-  - sphinx-markdown-tables
-
   - pip:
-    - jupyter_server>=1.2
+    - ..
+    - -r docs/doc-requirements.txt
