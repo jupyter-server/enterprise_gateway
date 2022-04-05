@@ -54,7 +54,7 @@ clean: ## Make a clean source tree
 	-$(SA) $(ENV) && make -C etc clean
 
 lint: ## Check code style
-	$(SA) $(ENV) && flake8 enterprise_gateway
+	$(SA) $(ENV) && pre-commit run --all-files
 
 nuke: ## Make clean + remove conda env
 	-conda env remove -n $(ENV) -y
@@ -112,10 +112,10 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests
+	$(SA) $(ENV) && pytest -vv $(TEST_DEBUG_OPTS)
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
+	$(SA) $(ENV) && pytest -vv $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
 release: POST_SDIST=upload
@@ -188,7 +188,7 @@ itest-yarn: ## Run integration tests (optionally) against docker demo (YARN) con
 ifeq (1, $(PREP_ITEST_YARN))
 	make itest-yarn-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) pytest -vv $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
 	@echo "Run \`docker logs itest-yarn\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
@@ -213,7 +213,7 @@ itest-docker: ## Run integration tests (optionally) against docker swarm
 ifeq (1, $(PREP_ITEST_DOCKER))
 	make itest-docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
+	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -vv $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=180

@@ -1,4 +1,5 @@
 # Culling idle kernels
+
 With the adoption of notebooks and interactive development for data science, a new "resource utilization" pattern has arisen, where kernel resources are locked for a given notebook, but due to interactive development processes it might be idle for a long period of time causing the cluster resources to starve. One way to workaround this problem is to enable the culling of idle kernels after a specific timeout period.
 
 Idle kernel culling is set to “off” by default. It’s enabled by setting `--RemoteKernelManager.cull_idle_timeout` to a positive value representing the number of seconds a kernel must remain idle to be culled (default: 0, recommended: 43200, 12 hours).

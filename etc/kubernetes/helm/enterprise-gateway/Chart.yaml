@@ -8,4 +8,3 @@ sources:
   - https://github.com/jupyter-server/enterprise_gateway
 kubeVersion: '>=1.11.0-0'
 tillerVersion: '>=2.11.0-0'
-

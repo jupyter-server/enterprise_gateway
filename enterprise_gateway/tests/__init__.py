@@ -2,6 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 from tornado import ioloop
 
+
 def teardown():
     """The test fixture appears to leak something on certain platforms that
     endlessly tries an async socket connect and fails after the tests end.
@@ -12,4 +13,3 @@ def teardown():
     # `Event loop is closed` exceptions.  These didn't affect the test resutls, but produced output that
     # was otherwise misleading noise.
     # ioloop.IOLoop.current().close(True)
-

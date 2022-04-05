@@ -24,5 +24,3 @@ jupyter enterprisegateway \
 	--MappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--MappingKernelManager.cull_interval=30 \
 	--MappingKernelManager.cull_connected=${EG_CULL_CONNECTED} 2>&1 | tee /usr/local/share/jupyter/enterprise-gateway.log
-
-

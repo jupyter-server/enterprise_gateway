@@ -1,11 +1,13 @@
 # Implementing a kernel specification
-If you find yourself [implementing a kernel launcher](kernel-launcher.md), you'll need a way to make that kernel and kernel launcher available to applications.  This is accomplished via the _kernel specification_ or _kernelspec_.
 
-Kernelspecs reside in well-known directories.  For Enterprise Gateway, we generally recommend they reside in `/usr/local/share/jupyter/kernels` where each entry in this directory is a directory representing the name of the kernel.  The kernel specification is represented by the file `kernel.json`, the contents of which essentially indicate what environment variables should be present in the kernel process (via the `env` _stanza_) and which command (and arguments) should be issued to start the kernel process (via the `argv` _stanza_).  The JSON also includes a `metadata` stanza that contains the process_proxy configuration, along with which process proxy class to instantiate to help manage the kernel process's lifecycle.
+If you find yourself [implementing a kernel launcher](kernel-launcher.md), you'll need a way to make that kernel and kernel launcher available to applications. This is accomplished via the _kernel specification_ or _kernelspec_.
 
-One approach the sample Enterprise Gateway kernel specifications take is to include a shell script that actually issues the `spark-submit` request.  It is this shell script (typically named `run.sh`) that is referenced in the `argv` stanza.
+Kernelspecs reside in well-known directories. For Enterprise Gateway, we generally recommend they reside in `/usr/local/share/jupyter/kernels` where each entry in this directory is a directory representing the name of the kernel. The kernel specification is represented by the file `kernel.json`, the contents of which essentially indicate what environment variables should be present in the kernel process (via the `env` _stanza_) and which command (and arguments) should be issued to start the kernel process (via the `argv` _stanza_). The JSON also includes a `metadata` stanza that contains the process_proxy configuration, along with which process proxy class to instantiate to help manage the kernel process's lifecycle.
+
+One approach the sample Enterprise Gateway kernel specifications take is to include a shell script that actually issues the `spark-submit` request. It is this shell script (typically named `run.sh`) that is referenced in the `argv` stanza.
 
 Here's an example from the [`spark_python_yarn_cluster`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) kernel specification:
+
 ```JSON
 {
   "language": "python",
@@ -38,7 +40,9 @@ Here's an example from the [`spark_python_yarn_cluster`](https://github.com/jupy
   ]
 }
 ```
+
 where [`run.sh`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) issues `spark-submit` specifying the kernel launcher as the "application":
+
 ```bash
 eval exec \
      "${SPARK_HOME}/bin/spark-submit" \
@@ -49,7 +53,8 @@ eval exec \
      "$@"
 ```
 
-For container-based environments, the `argv` may instead reference a script that is meant to create the container pod (for Kubernetes).  For these, we use a [template file](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) that operators can adjust to meet the needs of their environment.  Here's how that `kernel.json` looks:
+For container-based environments, the `argv` may instead reference a script that is meant to create the container pod (for Kubernetes). For these, we use a [template file](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) that operators can adjust to meet the needs of their environment. Here's how that `kernel.json` looks:
+
 ```json
 {
   "language": "python",
@@ -63,8 +68,7 @@ For container-based environments, the `argv` may instead reference a script that
     },
     "debugger": true
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_kubernetes/scripts/launch_kubernetes.py",
@@ -79,4 +83,5 @@ For container-based environments, the `argv` may instead reference a script that
   ]
 }
 ```
+
 As should be evident, kernel specifications are highly tuned to the runtime environment so your needs may be different, but _should_ resemble the approaches we've taken so far.

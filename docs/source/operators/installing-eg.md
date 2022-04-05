@@ -6,12 +6,12 @@ packages for scientific computing and data science.
 
 Use the following installation steps:
 
-* Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda’s
+- Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda’s
   latest Python version (currently Python 3.9).
 
-* Install the version of Anaconda which you downloaded, following the instructions on the download page.
+- Install the version of Anaconda which you downloaded, following the instructions on the download page.
 
-* Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/)
+- Install the latest version of Jupyter Enterprise Gateway from [PyPI](https://pypi.python.org/pypi/jupyter_enterprise_gateway/)
   or [conda forge](https://conda-forge.org/) along with its dependencies.
 
 ```{warning}
@@ -31,6 +31,7 @@ conda install -c conda-forge jupyter_enterprise_gateway
 At this point, the Jupyter Enterprise Gateway deployment provides local kernel support which is fully compatible with Jupyter Kernel Gateway.
 
 To uninstall Jupyter Enterprise Gateway...
+
 ```bash
 #uninstall using pip
 pip uninstall jupyter_enterprise_gateway

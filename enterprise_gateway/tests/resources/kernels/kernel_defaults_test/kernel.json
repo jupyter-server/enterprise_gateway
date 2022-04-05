@@ -9,11 +9,5 @@
     "PROCESS_VAR1": "process_var1_default",
     "PROCESS_VAR2": "process_var2_default"
   },
-  "argv": [
-    "python",
-    "-m",
-    "ipykernel_launcher",
-    "-f",
-    "{connection_file}"
-  ]
+  "argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"]
 }

@@ -1,5 +1,7 @@
 # Additional environment variables
+
 Besides those environment variables associated with configurable options, the following environment variables can also be used to influence functionality:
+
 ```text
   EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME=default
     Kubernetes only.  This value indicates the default service account name to use for
@@ -92,21 +94,21 @@ Besides those environment variables associated with configurable options, the fo
     in an exception indicating error 403 (Forbidden).  See also EG_PROHIBITED_GIDS.
 
   EG_RESPONSE_IP=None
-    Experimental.  The IP address to use to formulate the response address (with 
-    `EG_RESPONSE_PORT`).  By default, the server's IP is used.  However, we may find 
+    Experimental.  The IP address to use to formulate the response address (with
+    `EG_RESPONSE_PORT`).  By default, the server's IP is used.  However, we may find
     it necessary to use a different IP in cases where the target kernels are external
-    to the Enterprise Gateway server (for example).  It's value may also need to be 
+    to the Enterprise Gateway server (for example).  It's value may also need to be
     set in cases where the computed (default) is not correct for the current topology.
 
   EG_RESPONSE_PORT=8877
-    The single response port used to receive connection information 
+    The single response port used to receive connection information
     from launched kernels.
 
   EG_RESPONSE_PORT_RETRIES=10
     The number of retries to attempt when the original response port
-    (EG_RESPONSE_PORT) is found to be in-use.  This value should be 
+    (EG_RESPONSE_PORT) is found to be in-use.  This value should be
     set to 0 (zero) if no port retries are desired.
-    
+
   EG_SHARED_NAMESPACE=False
     Kubernetes only. This value indicates whether (True) or not (False) all kernel pods
     should reside in the same namespace as Enterprise Gateway.  This is not a recommended

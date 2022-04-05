@@ -63,7 +63,7 @@ spec:
           value: {{ .Values.kernel.defaultKernelName }}
         # Optional authorization token passed in all requests
         {{- if .Values.authToken }}
-        - name: EG_AUTH_TOKEN   
+        - name: EG_AUTH_TOKEN
           value: {{ .Values.authToken }}
         {{- end }}
         ports:
