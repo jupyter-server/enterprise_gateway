@@ -15,4 +15,3 @@ exclude *.yaml
 
 prune enterprise_gateway/tests
 prune enterprise_gateway/itests
-

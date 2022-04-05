@@ -190,7 +190,7 @@ spec:
           value: "python_kubernetes"
 
         # Optional authorization token passed in all requests
-        #- name: EG_AUTH_TOKEN   
+        #- name: EG_AUTH_TOKEN
         #  value: <configured-auth-token>
 
         # Ensure the following VERSION tag is updated to the version of Enterprise Gateway you wish to run
@@ -221,16 +221,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: kernel-image-puller 
+      name: kernel-image-puller
   template:
     metadata:
       labels:
-        name: kernel-image-puller 
+        name: kernel-image-puller
         app: enterprise-gateway
         component: kernel-image-puller
     spec:
       containers:
-      - name: kernel-image-puller 
+      - name: kernel-image-puller
         image: elyra/kernel-image-puller:dev
         env:
           - name: KIP_GATEWAY_HOST

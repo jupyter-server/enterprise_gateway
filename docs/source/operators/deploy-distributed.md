@@ -1,21 +1,22 @@
 # Distributed deployments
 
-This section describes how to deploy Enterprise Gateway to manage kernels across a distributed set of hosts.  In this case, a resource manager is not used, but, rather, SSH is used to distribute the kernels.  This functionality is accomplished via the [`DistributedProcessProxy`](../contributors/system-architecture.md#distributedprocessproxy).
+This section describes how to deploy Enterprise Gateway to manage kernels across a distributed set of hosts. In this case, a resource manager is not used, but, rather, SSH is used to distribute the kernels. This functionality is accomplished via the [`DistributedProcessProxy`](../contributors/system-architecture.md#distributedprocessproxy).
 
 Steps required to complete deployment on a distributed cluster are:
+
 1. [Install Enterprise Gateway](installing-eg.md) on the "primary node" of the cluster.
 2. [Install the desired kernels](installing-kernels.md)
 3. Install and configure the server and desired kernel specifications (see below)
 4. [Launch Enterprise Gateway](launching-eg.md)
 
-The `DistributedProcessProxy` simply uses a fixed set of host names and selects the _next_ host using a simple round-robin algorithm (see the [Roadmap](../contributors/roadmap.md) for making this pluggable).  In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for Jupyter Notebook and JupyterLab when not configured to use Enterprise Gateway.
+The `DistributedProcessProxy` simply uses a fixed set of host names and selects the _next_ host using a simple round-robin algorithm (see the [Roadmap](../contributors/roadmap.md) for making this pluggable). In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for Jupyter Notebook and JupyterLab when not configured to use Enterprise Gateway.
 
 The following sample kernelspecs are configured to use the `DistributedProcessProxy`:
 
-+ python_distributed
-+ spark_python_yarn_client
-+ spark_scala_yarn_client
-+ spark_R_yarn_client
+- python_distributed
+- spark_python_yarn_client
+- spark_scala_yarn_client
+- spark_R_yarn_client
 
 ```{admonition} Important!
 :class: warning
@@ -24,8 +25,8 @@ The `DistributedProcessProxy` utilizes SSH between the Enterprise Gateway server
 
 The set of remote hosts used by the `DistributedProcessProxy` are derived from two places.
 
-+ The configuration option `EnterpriseGatewayApp.remote_hosts`, whose default value comes from the env variable EG_REMOTE_HOSTS - which, itself, defaults to 'localhost'.
-+ The config option can be [overridden on a per-kernel basis](config-kernel-override.md#per-kernel-configuration-overrides) if the process_proxy stanza contains a config stanza where there's a `remote_hosts` entry. If present, this value will be used instead.
+- The configuration option `EnterpriseGatewayApp.remote_hosts`, whose default value comes from the env variable EG_REMOTE_HOSTS - which, itself, defaults to 'localhost'.
+- The config option can be [overridden on a per-kernel basis](config-kernel-override.md#per-kernel-configuration-overrides) if the process_proxy stanza contains a config stanza where there's a `remote_hosts` entry. If present, this value will be used instead.
 
 ```{tip}
 Entries in the remote hosts configuration should be fully qualified domain names (FQDN). For example, `host1.acme.com, host2.acme.com`
@@ -36,12 +37,14 @@ Entries in the remote hosts configuration should be fully qualified domain names
 All the kernel *specifications* configured to use the `DistributedProcessProxy` must be on all nodes to which there's a reference in the remote hosts configuration!  With YARN cluster node, only the Python and R kernel _packages_ are required on each node, not the entire kernel specification.
 ```
 
-The following installs the sample `python_distributed` kernel specification relative to the 2.6.0 release on the given node.  This step must be repeated for each node and each kernel specification.
-``` Bash
+The following installs the sample `python_distributed` kernel specification relative to the 2.6.0 release on the given node. This step must be repeated for each node and each kernel specification.
+
+```Bash
 wget https://github.com/jupyter-server/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
 ```
+
 ```{tip}
 You may find it easier to install all kernel specifications on each node, then remove directories corresponding to specification you're not interested in using.
 ```
@@ -52,7 +55,7 @@ YARN client mode kernel specifications can be considered _distributed mode kerne
 
 YARN Client kernel specifications require the following environment variable to be set within their `env` entries:
 
-* `SPARK_HOME` must point to the Apache Spark installation path
+- `SPARK_HOME` must point to the Apache Spark installation path
 
 ```
 SPARK_HOME:/usr/hdp/current/spark2-client                            #For HDP distribution
@@ -81,7 +84,7 @@ After that, you should have a `kernel.json` that looks similar to the one below:
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_yarn_client/bin/run.sh",
-     "--RemoteProcessProxy.kernel-id",
+    "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
@@ -101,12 +104,12 @@ Each node of the cluster will typically be configured in the same manner relativ
 
 Although Enterprise Gateway does not provide sample kernelspecs for Spark standalone, here are the steps necessary to convert a `yarn_client` kernelspec to standalone.
 
-+ Make a copy of the source `yarn_client` kernelspec into an applicable `standalone` directory.
-+ Edit the `kernel.json` file:
-   + Update the display_name with e.g. `Spark - Python (Spark Standalone)`.
-   + Update the `--master` option in the SPARK_OPTS to point to the spark master node rather than indicate `--deploy-mode client`.
-   + Update `SPARK_OPTS` and remove the `spark.yarn.submit.waitAppCompletion=false`.
-   + Update the `argv` stanza to reference `run.sh` in the appropriate directory.
+- Make a copy of the source `yarn_client` kernelspec into an applicable `standalone` directory.
+- Edit the `kernel.json` file:
+  - Update the display_name with e.g. `Spark - Python (Spark Standalone)`.
+  - Update the `--master` option in the SPARK_OPTS to point to the spark master node rather than indicate `--deploy-mode client`.
+  - Update `SPARK_OPTS` and remove the `spark.yarn.submit.waitAppCompletion=false`.
+  - Update the `argv` stanza to reference `run.sh` in the appropriate directory.
 
 After that, you should have a `kernel.json` that looks similar to the one below:
 
@@ -129,7 +132,7 @@ After that, you should have a `kernel.json` that looks similar to the one below:
   },
   "argv": [
     "/usr/local/share/jupyter/kernels/spark_python_spark_standalone/bin/run.sh",
-     "--RemoteProcessProxy.kernel-id",
+    "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",
     "{response_address}",
@@ -138,5 +141,3 @@ After that, you should have a `kernel.json` that looks similar to the one below:
   ]
 }
 ```
-
-

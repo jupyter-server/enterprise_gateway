@@ -7,11 +7,11 @@
     },
     "debugger": true
   },
-  "env": { 
+  "env": {
     "SPARK_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
     "LAUNCH_OPTS": ""
   },
-  "argv": [ 
+  "argv": [
     "--RemoteProcessProxy.kernel-id",
     "{kernel_id}",
     "--RemoteProcessProxy.response-address",

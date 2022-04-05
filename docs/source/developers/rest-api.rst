@@ -386,4 +386,3 @@ OpenAPI Specification
 Here's the current `OpenAPI <https://www.openapis.org/>`_ specification available from Enterprise Gateway.  An interactive version is available `here <https://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter-server/enterprise_gateway/master/enterprise_gateway/services/api/swagger.yaml>`_.
 
 .. openapi:: ../../../enterprise_gateway/services/api/swagger.yaml
-
