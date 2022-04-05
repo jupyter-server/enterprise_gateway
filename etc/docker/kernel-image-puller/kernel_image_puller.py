@@ -61,9 +61,9 @@ def fetch_image_names():
         logger.error(
             f"Got exception attempting to retrieve kernelspecs - retrying. Exception was: {ex}"
         )
-    finally:
-        if kspecs is None:
-            return False
+
+    if kspecs is None:
+        return False
 
     # Locate the configured images within the kernelspecs and add to set for duplicate management
     images = set()

@@ -228,8 +228,7 @@ class SessionManager(LoggingConfigurable):
         list
             Dictionaries from `row_to_model`
         """
-        l = [self.row_to_model(r) for r in self._sessions]
-        return l
+        return [self.row_to_model(r) for r in self._sessions]
 
     async def delete_session(self, session_id, *args, **kwargs):
         """Deletes the session in the session store with given `session_id`.

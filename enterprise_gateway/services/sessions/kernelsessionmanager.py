@@ -164,7 +164,7 @@ class KernelSessionManager(LoggingConfigurable):
                     )
                 else:
                     sessions_to_remove.append(kernel_id)
-                    self.log.warn(
+                    self.log.warning(
                         "Startup of persisted kernel session for id '{}' was not successful.  Check if "
                         "client is still active and restart kernel.".format(kernel_id)
                     )
