@@ -37,7 +37,6 @@ from .services.sessions.handlers import default_handlers as default_session_hand
 from .services.sessions.kernelsessionmanager import FileKernelSessionManager
 from .services.sessions.sessionmanager import SessionManager
 
-
 try:
     from jupyter_server.auth.authorizer import AllowAllAuthorizer
 except ImportError:
@@ -103,7 +102,6 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
-
         self.kernel_spec_manager = self.kernel_spec_manager_class(
             parent=self,
         )
@@ -132,7 +130,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             parent=self,
             log=self.log,
             kernel_manager=self.kernel_manager,
-            config=self.config  # required to get command-line options visible
+            config=self.config,  # required to get command-line options visible
         )
 
         # Attempt to start persisted sessions
