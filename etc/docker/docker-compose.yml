@@ -9,7 +9,6 @@ version: "3.5"
 # also required mode=host on any published ports. :-(
 # 3. We only use one replica since session affinity is another point of investigation in Swarm
 services:
-
   enterprise-gateway:
     image: elyra/enterprise-gateway:dev
     user: root

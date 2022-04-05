@@ -1,7 +1,9 @@
 # Kernel Environment Variables
-The Enterprise Gateway client software will also include _any_ environment variables prefixed with `KERNEL_` in the start kernel request sent to the Enterprise Gateway Server.  This enables the ability to _statically parameterize_ aspects of kernel start requests relative to other clients using the same Enterprise Gateway instance.
 
-There are several supported `KERNEL_` variables that the Enterprise Gateway server looks for and uses, but others can be sent to customize behaviors. The following kernel-specific environment variables are used by Enterprise Gateway.  As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's json body will be available to the kernel for its launch.
+The Enterprise Gateway client software will also include _any_ environment variables prefixed with `KERNEL_` in the start kernel request sent to the Enterprise Gateway Server. This enables the ability to _statically parameterize_ aspects of kernel start requests relative to other clients using the same Enterprise Gateway instance.
+
+There are several supported `KERNEL_` variables that the Enterprise Gateway server looks for and uses, but others can be sent to customize behaviors. The following kernel-specific environment variables are used by Enterprise Gateway. As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's json body will be available to the kernel for its launch.
+
 ```text
   KERNEL_GID=<from user> or 100
     Containers only. This value represents the group id in which the container will run.

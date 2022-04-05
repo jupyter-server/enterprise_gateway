@@ -10,8 +10,7 @@
     },
     "debugger": true
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_docker/scripts/launch_docker.py",

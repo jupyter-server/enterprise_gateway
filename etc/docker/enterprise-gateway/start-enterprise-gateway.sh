@@ -40,5 +40,3 @@ exec jupyter enterprisegateway \
 	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
 	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \
 	--RemoteMappingKernelManager.default_kernel_name=${EG_DEFAULT_KERNEL_NAME}
-
-

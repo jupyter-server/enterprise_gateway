@@ -9,8 +9,7 @@
       }
     }
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/scala_kubernetes/scripts/launch_kubernetes.py",

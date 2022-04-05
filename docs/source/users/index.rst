@@ -24,4 +24,3 @@ The following assumes an Enterprise Gateway server has been configured and deplo
    kernel-envs
 ..
    other clients (nbclient, papermill)
-

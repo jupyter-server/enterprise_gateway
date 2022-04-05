@@ -1,8 +1,11 @@
 # System-owned environment variables
+
 The following environment variables are managed by Enterprise Gateway and listed here for completeness.
+
 ```{warning}
 Manually setting these variables could adversely affect operations.
 ```
+
 ```text
   EG_DOCKER_MODE
     Docker only.  Used by launch_docker.py to determine if the kernel container

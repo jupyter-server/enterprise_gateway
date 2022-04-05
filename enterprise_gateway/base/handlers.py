@@ -3,26 +3,28 @@
 """Tornado handlers for the base of the API."""
 
 import json
+
 import jupyter_server._version
 from jupyter_server.base.handlers import APIHandler
 from tornado import web
-from ..mixins import TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin
+
 from .._version import __version__
+from ..mixins import CORSMixin, JSONErrorsMixin, TokenAuthorizationMixin
 
 
-class APIVersionHandler(TokenAuthorizationMixin,
-                        CORSMixin,
-                        JSONErrorsMixin,
-                        APIHandler):
-    """"
+class APIVersionHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, APIHandler):
+    """ "
     Extends the jupyter_server base API handler with token auth, CORS, and
     JSON errors to produce version information for jupyter_server and gateway.
     """
+
     def get(self):
         # not authenticated, so give as few info as possible
         # to be backwards compatibile, use only 'version' for the jupyter_server version
         # and be more specific for gateway_version
-        self.finish(json.dumps({"version": jupyter_server.__version__, "gateway_version": __version__}))
+        self.finish(
+            json.dumps({"version": jupyter_server.__version__, "gateway_version": __version__})
+        )
 
 
 class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
@@ -36,11 +38,9 @@ class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
     tornado.web.HTTPError
         Always 404 Not Found
     """
+
     def prepare(self):
         raise web.HTTPError(404)
 
 
-default_handlers = [
-    (r'/api', APIVersionHandler),
-    (r'/(.*)', NotFoundHandler)
-]
+default_handlers = [(r"/api", APIVersionHandler), (r"/(.*)", NotFoundHandler)]

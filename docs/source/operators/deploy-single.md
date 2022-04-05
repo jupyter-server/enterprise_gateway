@@ -3,6 +3,7 @@
 Single-server deployment can be useful for development and is not meant to be run in production environments as it subjects the gateway server to resource exhaustion.
 
 Steps to deploy a single server are:
+
 1. [Install Enterprise Gateway](installing-eg.md)
 2. [Install the desired kernels](installing-kernels.md)
 3. Install and configure the server and desired kernel specifications (see below)
@@ -13,19 +14,13 @@ If you just want to try Enterprise Gateway in a single-server setup, you can use
 ```json
 {
   "display_name": "Python 3 Local",
-  "language": "python", 
+  "language": "python",
   "metadata": {
     "process_proxy": {
       "class_name": "enterprise_gateway.services.processproxies.processproxy.LocalProcessProxy"
     }
   },
-  "argv": [
-    "python",
-    "-m",
-    "ipykernel_launcher",
-    "-f",
-    "{connection_file}"
-  ]
+  "argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"]
 }
 ```
 

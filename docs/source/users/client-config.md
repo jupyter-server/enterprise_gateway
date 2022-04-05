@@ -1,13 +1,19 @@
 # Gateway Client Configuration
-The set of Gateway Client configuration options include the following.  To get the current set of supported options, run the following:
+
+The set of Gateway Client configuration options include the following. To get the current set of supported options, run the following:
+
 ```bash
 jupyter server --help-all
 ```
+
 or
+
 ```bash
 jupyter server --generate-config
 ```
-The following is produced from the `--help-all` option.  To determine the corresponding configuration file option, replace `--` with `c.`.
+
+The following is produced from the `--help-all` option. To determine the corresponding configuration file option, replace `--` with `c.`.
+
 ```
 --GatewayClient.auth_scheme=<Unicode>
     The auth scheme, added as a prefix to the authorization token used in the HTTP headers.

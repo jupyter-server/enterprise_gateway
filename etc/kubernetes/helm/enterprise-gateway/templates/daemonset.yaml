@@ -38,7 +38,7 @@ spec:
           value: {{ .Values.kip.defaultContainerRegistry }}
         # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
         {{- if .Values.authToken }}
-        - name: KIP_AUTH_TOKEN   
+        - name: KIP_AUTH_TOKEN
           value: {{ .Values.authToken }}
         {{- end }}
         volumeMounts:

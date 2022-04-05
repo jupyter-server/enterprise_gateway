@@ -5,9 +5,9 @@ mistune<1
 myst-parser
 pydata_sphinx_theme
 sphinx
+sphinx-markdown-tables
+sphinx_book_theme
 sphinxcontrib-openapi
 sphinxcontrib_github_alt
 sphinxemoji
-sphinx_book_theme
-sphinx-markdown-tables
 tornado
