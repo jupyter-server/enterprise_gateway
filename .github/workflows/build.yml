@@ -55,7 +55,7 @@ jobs:
           timeout_minutes: 3
           max_attempts: 1
           command: |
-            pytest -v -s enterprise_gateway/tests
+            pytest -vv
       - name: Run integration tests
         run: |
           SA="source $CONDA_HOME/bin/activate" make itest-yarn
