@@ -553,7 +553,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         if self.local_proc:
             return self.local_proc.wait()
 
-        for i in range(max_poll_attempts):
+        for _ in range(max_poll_attempts):
             if self.poll():
                 time.sleep(poll_interval)
             else:
@@ -942,7 +942,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         """
         ports = []
         sockets = []
-        for i in range(count):
+        for _ in range(count):
             sock = self.select_socket()
             ports.append(sock.getsockname()[1])
             sockets.append(sock)

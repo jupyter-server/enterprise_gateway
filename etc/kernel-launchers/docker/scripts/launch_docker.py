@@ -79,9 +79,9 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
             kwargs["workdir"] = param_env.get("KERNEL_WORKING_DIR")
         # kwargs['mounts'] = mounts   # Enable if necessary
         # print("service args: {}".format(kwargs))  # useful for debug
-        kernel_service = client.services.create(image_name, **kwargs)
+        kernel_service = client.services.create(image_name, **kwargs)  # noqa
     else:
-        volumes = {
+        volumes = {  # noqa
             "/usr/local/share/jupyter/kernels": {
                 "bind": "/usr/local/share/jupyter/kernels",
                 "mode": "ro",
@@ -98,7 +98,7 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
             kwargs["working_dir"] = param_env.get("KERNEL_WORKING_DIR")
         # kwargs['volumes'] = volumes   # Enable if necessary
         # print("container args: {}".format(kwargs))  # useful for debug
-        kernel_container = client.containers.run(image_name, **kwargs)
+        kernel_container = client.containers.run(image_name, **kwargs)  # noqa
 
 
 if __name__ == "__main__":

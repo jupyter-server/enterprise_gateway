@@ -75,10 +75,6 @@ def initialize_namespace(namespace, cluster_type="spark"):
             """Initialize Spark session and replace global variable
             placeholders with real Spark session object references."""
             spark = SparkSession.builder.getOrCreate()
-            sc = spark.sparkContext
-            sql = spark.sql
-            sqlContext = spark._wrapped
-            sqlCtx = sqlContext
 
             # Stop the spark session on exit
             atexit.register(lambda: spark.stop())
@@ -310,7 +306,7 @@ def _select_ports(count, lower_port, upper_port):
     """
     ports = []
     sockets = []
-    for i in range(count):
+    for _ in range(count):
         sock = _select_socket(lower_port, upper_port)
         ports.append(sock.getsockname()[1])
         sockets.append(sock)

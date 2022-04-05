@@ -131,7 +131,7 @@ def _select_ports(count, lower_port, upper_port):
     """
     ports = []
     sockets = []
-    for i in range(count):
+    for _ in range(count):
         sock = _select_socket(lower_port, upper_port)
         ports.append(sock.getsockname()[1])
         sockets.append(sock)
