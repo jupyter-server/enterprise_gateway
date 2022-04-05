@@ -12,6 +12,7 @@ recursive-include etc *
 exclude *.yml
 exclude release.sh
 exclude *.yaml
+exclude .git-blame-ignore-revs
 
 prune enterprise_gateway/tests
 prune enterprise_gateway/itests
