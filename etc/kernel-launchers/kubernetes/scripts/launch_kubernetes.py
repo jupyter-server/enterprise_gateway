@@ -32,7 +32,13 @@ def generate_kernel_pod_yaml(keywords):
 
 
 def launch_kubernetes_kernel(
-    kernel_id, port_range, response_addr, public_key, spark_context_init_mode, pod_template_file, spark_opts_out
+    kernel_id,
+    port_range,
+    response_addr,
+    public_key,
+    spark_context_init_mode,
+    pod_template_file,
+    spark_opts_out,
 ):
     # Launches a containerized kernel as a kubernetes pod.
 
@@ -98,10 +104,14 @@ def launch_kubernetes_kernel(
                 if pod_template_file is None:
                     client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
             else:
-                sys.exit(f"ERROR - Unhandled Kubernetes object kind '{k8s_obj['kind']}' found in yaml file - "
-                         f"kernel launch terminating!")
+                sys.exit(
+                    f"ERROR - Unhandled Kubernetes object kind '{k8s_obj['kind']}' found in yaml file - "
+                    f"kernel launch terminating!"
+                )
         else:
-            sys.exit(f"ERROR - Unknown Kubernetes object '{k8s_obj}' found in yaml file - kernel launch terminating!")
+            sys.exit(
+                f"ERROR - Unknown Kubernetes object '{k8s_obj}' found in yaml file - kernel launch terminating!"
+            )
 
     if pod_template_file:
         # TODO - construct other --conf options for things like mounts, resources, etc.
@@ -110,8 +120,10 @@ def launch_kubernetes_kernel(
         yaml.dump(pod_template, stream)
 
         # Build up additional spark options.  Note the trailing space to accommodate concatenation
-        additional_spark_opts = f"--conf spark.kubernetes.driver.podTemplateFile={pod_template_file} " \
-                                f"--conf spark.kubernetes.executor.podTemplateFile={pod_template_file} "
+        additional_spark_opts = (
+            f"--conf spark.kubernetes.driver.podTemplateFile={pod_template_file} "
+            f"--conf spark.kubernetes.executor.podTemplateFile={pod_template_file} "
+        )
 
         additional_spark_opts += _get_spark_resources(pod_template)
 
@@ -130,32 +142,40 @@ def _get_spark_resources(pod_template: Dict) -> str:
     # The config value names below are pulled from:
     # https://spark.apache.org/docs/latest/running-on-kubernetes.html#container-spec
     spark_resources = ""
-    containers = pod_template.get('spec', {}).get('containers', [])
+    containers = pod_template.get("spec", {}).get("containers", [])
     if containers:
         # We're just dealing with single-container pods at this time.
-        resources = containers[0].get('resources', {})
+        resources = containers[0].get("resources", {})
         if resources:
-            requests = resources.get('requests', {})
+            requests = resources.get("requests", {})
             if requests:
-                cpu_request = requests.get('cpu')
+                cpu_request = requests.get("cpu")
                 if cpu_request:
-                    spark_resources += f"--conf spark.driver.cores={cpu_request} " \
-                                       f"--conf spark.executor.cores={cpu_request} "
-                memory_request = requests.get('memory')
+                    spark_resources += (
+                        f"--conf spark.driver.cores={cpu_request} "
+                        f"--conf spark.executor.cores={cpu_request} "
+                    )
+                memory_request = requests.get("memory")
                 if memory_request:
-                    spark_resources += f"--conf spark.driver.memory={memory_request} " \
-                                       f"--conf spark.executor.memory={memory_request} "
+                    spark_resources += (
+                        f"--conf spark.driver.memory={memory_request} "
+                        f"--conf spark.executor.memory={memory_request} "
+                    )
 
-            limits = resources.get('limits', {})
+            limits = resources.get("limits", {})
             if limits:
-                cpu_limit = limits.get('cpu')
+                cpu_limit = limits.get("cpu")
                 if cpu_limit:
-                    spark_resources += f"--conf spark.kubernetes.driver.limit.cores={cpu_limit} " \
-                                       f"--conf spark.kubernetes.executor.limit.cores={cpu_limit} "
-                memory_limit = limits.get('memory')
+                    spark_resources += (
+                        f"--conf spark.kubernetes.driver.limit.cores={cpu_limit} "
+                        f"--conf spark.kubernetes.executor.limit.cores={cpu_limit} "
+                    )
+                memory_limit = limits.get("memory")
                 if memory_limit:
-                    spark_resources += f"--conf spark.driver.memory={memory_limit} " \
-                                       f"--conf spark.executor.memory={memory_limit} "
+                    spark_resources += (
+                        f"--conf spark.driver.memory={memory_limit} "
+                        f"--conf spark.executor.memory={memory_limit} "
+                    )
     return spark_resources
 
 
@@ -194,11 +214,11 @@ if __name__ == "__main__":
         help="Indicates whether or how a spark context should be created",
     )
     parser.add_argument(
-        "--pod-template", 
+        "--pod-template",
         dest="pod_template_file",
         nargs="?",
         metavar="template filename",
-        help="When present, yaml is written to file, no launch performed."
+        help="When present, yaml is written to file, no launch performed.",
     )
     parser.add_argument(
         "--spark-opts-out",
@@ -206,7 +226,7 @@ if __name__ == "__main__":
         nargs="?",
         metavar="additional spark options filename",
         help="When present, additional spark options are written to file, "
-             "no launch performed, requires --pod-template."
+        "no launch performed, requires --pod-template.",
     )
 
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
@@ -258,5 +278,11 @@ if __name__ == "__main__":
     spark_opts_out = arguments["spark_opts_out"]
 
     launch_kubernetes_kernel(
-        kernel_id, port_range, response_addr, public_key, spark_context_init_mode, pod_template_file, spark_opts_out
+        kernel_id,
+        port_range,
+        response_addr,
+        public_key,
+        spark_context_init_mode,
+        pod_template_file,
+        spark_opts_out,
     )
