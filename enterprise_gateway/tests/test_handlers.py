@@ -545,7 +545,7 @@ class TestDefaults(TestHandlers):
     def test_kernel_env_auth_token(self):
         """Kernel should not have EG_AUTH_TOKEN in its environment."""
         os.environ["EG_AUTH_TOKEN"] = "fake-secret"
-
+        ws = None
         try:
             ws = yield self.spawn_kernel()
             req = self.execute_request('import os; print(os.getenv("EG_AUTH_TOKEN"))')
@@ -554,7 +554,8 @@ class TestDefaults(TestHandlers):
             self.assertNotIn("fake-secret", content["text"])
         finally:
             del os.environ["EG_AUTH_TOKEN"]
-            ws.close()
+            if ws:
+                ws.close()
 
 
 class TestCustomDefaultKernel(TestHandlers):

@@ -37,6 +37,11 @@ from .services.sessions.handlers import default_handlers as default_session_hand
 from .services.sessions.kernelsessionmanager import FileKernelSessionManager
 from .services.sessions.sessionmanager import SessionManager
 
+try:
+    from jupyter_server.auth.authorizer import AllowAllAuthorizer
+except ImportError:
+    AllowAllAuthorizer = object
+
 # Add additional command line aliases
 aliases = dict(base_aliases)
 aliases.update(
@@ -97,19 +102,19 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
-        # Only pass a default kernel name when one is provided. Otherwise,
-        # adopt whatever default the kernel manager wants to use.
-        kwargs = {}
-        if self.default_kernel_name:
-            kwargs["default_kernel_name"] = self.default_kernel_name
-
         self.kernel_spec_manager = self.kernel_spec_manager_class(
             parent=self,
         )
 
         self.kernel_spec_cache = self.kernel_spec_cache_class(
-            parent=self, kernel_spec_manager=self.kernel_spec_manager, **kwargs
+            parent=self, kernel_spec_manager=self.kernel_spec_manager
         )
+
+        # Only pass a default kernel name when one is provided. Otherwise,
+        # adopt whatever default the kernel manager wants to use.
+        kwargs = {}
+        if self.default_kernel_name:
+            kwargs["default_kernel_name"] = self.default_kernel_name
 
         self.kernel_manager = self.kernel_manager_class(
             parent=self,
@@ -126,7 +131,6 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             log=self.log,
             kernel_manager=self.kernel_manager,
             config=self.config,  # required to get command-line options visible
-            **kwargs,
         )
 
         # Attempt to start persisted sessions
@@ -221,6 +225,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
             # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
             ws_ping_interval=self.ws_ping_interval * 1000,
+            # Add a pass-through authorizer for now
+            authorizer=AllowAllAuthorizer(),
         )
 
     def _build_ssl_options(self) -> Optional[ssl.SSLContext]:
