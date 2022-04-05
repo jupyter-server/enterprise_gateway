@@ -69,7 +69,6 @@ Apache Spark, Kubernetes and others..
             "pytest-tornasync",
             "ipykernel",
             "pre-commit",
-            "pytest-timeout",
             "websocket-client",
         ],
     },
