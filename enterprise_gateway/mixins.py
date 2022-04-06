@@ -94,7 +94,7 @@ class TokenAuthorizationMixin:
             if client_token is None:
                 client_token = self.request.headers.get("Authorization")
                 if client_token and client_token.startswith(self.header_prefix):
-                    client_token = client_token[self.header_prefix_len:]
+                    client_token = client_token[self.header_prefix_len :]
                 else:
                     client_token = None
             if client_token != server_token:
@@ -375,8 +375,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default("list_kernels")
     def list_kernels_default(self):
         return (
-                os.getenv(self.list_kernels_env, os.getenv("KG_LIST_KERNELS", "False")).lower()
-                == "true"
+            os.getenv(self.list_kernels_env, os.getenv("KG_LIST_KERNELS", "False")).lower()
+            == "true"
         )
 
     env_whitelist_env = "EG_ENV_WHITELIST"
@@ -437,7 +437,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     load_balance = Bool(
         load_balance_default_value,
         config=True,
-        help="""DistributedProcessProxy use load balance open kernel by host's kernel numbers"""
+        help="""DistributedProcessProxy use load balance open kernel by host's kernel numbers""",
     )
 
     @default("load_balance")

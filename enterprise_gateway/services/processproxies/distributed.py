@@ -75,7 +75,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         )
         await self.confirm_remote_startup()
         if self.load_balance:
-            self.kernel_manager.parent.kernel_on_host.add_kernel_id(self.assigned_host, self.kernel_id)
+            self.kernel_manager.parent.kernel_on_host.add_kernel_id(
+                self.assigned_host, self.kernel_id
+            )
         return self
 
     def _launch_remote_process(self, kernel_cmd, **kwargs):
