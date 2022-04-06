@@ -379,7 +379,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         return new_kernel_id(kernel_id_fn=super().new_kernel_id, log=self.log, **kwargs)
 
     async def shutdown_kernel(self, kernel_id, now=False, restart=False):
-        super().shutdown_kernel(kernel_id, now, restart)
+        await super().shutdown_kernel(kernel_id, now, restart)
         if self.parent.load_balance:
             RemoteMappingKernelManager.kernel_on_host.delete_kernel_id(kernel_id)
 
