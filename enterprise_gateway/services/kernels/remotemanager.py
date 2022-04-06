@@ -122,6 +122,43 @@ def new_kernel_id(**kwargs):
     return kernel_id
 
 
+class TrackKernelOnHost:
+    _host_kernels = {}
+    _kernel_host_mapping = {}
+
+    def add_kernel_id(self, host: str, kernel_id: str):
+        self._kernel_host_mapping[kernel_id] = host
+        self.increment(host)
+
+    def delete_kernel_id(self, kernel_id: str):
+        host = self._kernel_host_mapping.get(kernel_id)
+        if host:
+            self.decrement(host)
+            del self._kernel_host_mapping[kernel_id]
+
+    def min_host(self) -> str:
+        return min(self._host_kernels, key=lambda k: self._host_kernels[k])
+
+    def increment(self, host: str) -> None:
+        val = int(self._host_kernels.get(host, 0))
+        self._host_kernels[host] = val + 1
+
+    def decrement(self, host: str) -> None:
+        val = int(self._host_kernels.get(host, 0))
+        self._host_kernels[host] = val - 1
+
+    def init_host_kernels(self, hosts) -> None:
+        self._host_kernels.update(
+            {
+                key: 0
+                for key in hosts
+            }
+        )
+
+    def get_len(self):
+        return len(self._host_kernels)
+
+
 class TrackPendingRequests:
     """
      Simple class to track (increment/decrement) pending kernel start requests, both total and per user.
@@ -154,6 +191,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """
 
     pending_requests = TrackPendingRequests()  # Used to enforce max-kernel limits
+    kernel_on_host = TrackKernelOnHost()  # When use load balance, record kernel numbers for each node
 
     def _kernel_manager_class_default(self):
         return "enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager"
@@ -226,7 +264,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             if self.parent.max_kernels_per_user >= 0:
                 if self.parent.kernel_session_manager:
                     active_and_pending = (
-                        self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                            self.parent.kernel_session_manager.active_sessions(username) + pending_user
                     )
                     if active_and_pending >= self.parent.max_kernels_per_user:
                         error_message = (
@@ -247,10 +285,12 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session.
         """
         super().remove_kernel(kernel_id)
+        if self.parent.load_balance:
+            RemoteMappingKernelManager.kernel_on_host.delete_kernel_id(kernel_id)
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
-        self, kernel_id, kernel_name, connection_info, process_info, launch_args
+            self, kernel_id, kernel_name, connection_info, process_info, launch_args
     ):
         """
         Starts a kernel from a persisted kernel session.
@@ -341,6 +381,11 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
         return new_kernel_id(kernel_id_fn=super().new_kernel_id, log=self.log, **kwargs)
 
+    async def shutdown_kernel(self, kernel_id, now=False, restart=False):
+        super().shutdown_kernel(kernel_id, now, restart)
+        if self.parent.load_balance:
+            RemoteMappingKernelManager.kernel_on_host.delete_kernel_id(kernel_id)
+
 
 class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager):
     """
@@ -404,6 +449,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "yarn_endpoint_security_enabled",
             "conductor_endpoint",
             "remote_hosts",
+            "load_balance"
         ]
         self._links = [
             directional_link((eg_instance, prop), (self, prop)) for prop in dependent_props
@@ -437,8 +483,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 key: value
                 for key, value in env.items()
                 if key.startswith("KERNEL_")
-                or key in self.env_process_whitelist
-                or key in self.env_whitelist
+                   or key in self.env_process_whitelist
+                   or key in self.env_whitelist
             }
         )
 
@@ -536,9 +582,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
         # the default value (False).
         if (
-            isinstance(self.process_proxy, RemoteProcessProxy)
-            and now
-            and self.mapping_kernel_manager
+                isinstance(self.process_proxy, RemoteProcessProxy)
+                and now
+                and self.mapping_kernel_manager
         ):
             if self.mapping_kernel_manager._kernel_connections.get(kernel_id, 0) == 0:
                 self.log.warning(
@@ -642,7 +688,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         restrictions if configured.
         """
         if (
-            isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address
+                isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address
         ) and not self.restarting:
             # However, since we *may* want to limit the selected ports, go ahead and get the ports using
             # the process proxy (will be LocalProcessProxy for default case) since the port selection will
@@ -679,6 +725,13 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     # access the app's configuration using the traitlet parent chain.
     # When it's used independently, it should fall back to safe defaults.
     @property
+    def mapping_kernel_manager(self):
+        try:
+            return self.parent
+        except AttributeError:
+            return None
+
+    @property
     def kernel_session_manager(self):
         try:
             return self.parent.parent.kernel_session_manager
@@ -691,10 +744,3 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             return self.parent.cull_idle_timeout
         except AttributeError:
             return 0
-
-    @property
-    def mapping_kernel_manager(self):
-        try:
-            return self.parent
-        except AttributeError:
-            return None
