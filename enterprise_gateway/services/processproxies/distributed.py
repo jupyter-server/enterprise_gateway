@@ -27,18 +27,30 @@ class DistributedProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super().__init__(kernel_manager, proxy_config)
         self.kernel_log = None
+        self.load_balance = kernel_manager.load_balance
         if proxy_config.get("remote_hosts"):
             self.hosts = proxy_config.get("remote_hosts").split(",")
         else:
             self.hosts = kernel_manager.remote_hosts  # from command line or env
 
+        if self.load_balance and self.kernel_manager.parent.kernel_on_host.get_len() == 0:
+            self.kernel_manager.parent.kernel_on_host.init_host_kernels(self.hosts)
+
     async def launch_process(self, kernel_cmd, **kwargs):
         """
         Launches a kernel process on a selected host.
         """
+        env_dict = kwargs.get("env")
         await super().launch_process(kernel_cmd, **kwargs)
+        if self.load_balance:
+            self.assigned_host = self.kernel_manager.parent.kernel_on_host.min_host()
+        else:
+            self.assigned_host = self._determine_next_host()
 
-        self.assigned_host = self._determine_next_host()
+        remote_host = env_dict.get("KERNEL_REMOTE_HOST")
+        if remote_host:
+            self.assigned_host = remote_host
+
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
         self.assigned_ip = self.ip
 
@@ -62,6 +74,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
             )
         )
         await self.confirm_remote_startup()
+        if self.load_balance:
+            self.kernel_manager.parent.kernel_on_host.add_kernel_id(self.assigned_host, self.kernel_id)
         return self
 
     def _launch_remote_process(self, kernel_cmd, **kwargs):
