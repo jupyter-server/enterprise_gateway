@@ -22,6 +22,7 @@ from traitlets import (
     Unicode,
     default,
     observe,
+    validate, TraitError
 )
 from traitlets.config import Configurable
 
@@ -94,7 +95,7 @@ class TokenAuthorizationMixin:
             if client_token is None:
                 client_token = self.request.headers.get("Authorization")
                 if client_token and client_token.startswith(self.header_prefix):
-                    client_token = client_token[self.header_prefix_len :]
+                    client_token = client_token[self.header_prefix_len:]
                 else:
                     client_token = None
             if client_token != server_token:
@@ -375,8 +376,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default("list_kernels")
     def list_kernels_default(self):
         return (
-            os.getenv(self.list_kernels_env, os.getenv("KG_LIST_KERNELS", "False")).lower()
-            == "true"
+                os.getenv(self.list_kernels_env, os.getenv("KG_LIST_KERNELS", "False")).lower()
+                == "true"
         )
 
     env_whitelist_env = "EG_ENV_WHITELIST"
@@ -431,18 +432,29 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def remote_hosts_default(self):
         return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(",")
 
-    # load balance
-    load_balance_env = "EG_LOAD_BALANCE"
-    load_balance_default_value = False
-    load_balance = Bool(
-        load_balance_default_value,
+    # load_balancing_algorithm
+    load_balancing_algorithm_env = "EG_LOAD_BALANCE_ALGORITHM"
+    load_balancing_algorithm_default_value = "round-robin"
+    load_balancing_algorithm = Unicode(
+        load_balancing_algorithm_default_value,
         config=True,
-        help="""DistributedProcessProxy use load balance open kernel by host's kernel numbers""",
+        help="""Which load balancing algorithm does DistributedProcessProxy used.
+            Default round-robin,another use least-connection.
+            """,
     )
 
-    @default("load_balance")
-    def load_balance_default(self):
-        return bool(os.getenv(self.load_balance_env, self.load_balance_default_value))
+    @default("load_balancing_algorithm")
+    def load_balancing_algorithm_default(self):
+        return os.getenv(self.load_balancing_algorithm_env, self.load_balancing_algorithm_default_value)
+
+    @validate("load_balancing_algorithm")
+    def _validate_load_balancing_algorithm(self, proposal):
+        value = proposal["value"]
+        try:
+            assert value == "round-robin" or value == "least-connection"
+        except ValueError:
+            raise TraitError(f'invalid load_balancing_algorithm value {value},not in [round-robin,least-connection]')
+        return value
 
     # Yarn endpoint
     yarn_endpoint_env = "EG_YARN_ENDPOINT"
