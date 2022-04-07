@@ -46,12 +46,7 @@ class TrackKernelOnHost:
 
     def init_host_kernels(self, hosts) -> None:
         if len(self._host_kernels) == 0:
-            self._host_kernels.update(
-                {
-                    key: 0
-                    for key in hosts
-                }
-            )
+            self._host_kernels.update({key: 0 for key in hosts})
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
@@ -65,7 +60,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super().__init__(kernel_manager, proxy_config)
         self.kernel_log = None
-        self.least_connection = kernel_manager.load_balancing_algorithm == 'least-connection'
+        self.least_connection = kernel_manager.load_balancing_algorithm == "least-connection"
         if proxy_config.get("remote_hosts"):
             self.hosts = proxy_config.get("remote_hosts").split(",")
         else:
@@ -172,7 +167,11 @@ class DistributedProcessProxy(RemoteProcessProxy):
             next_host = DistributedProcessProxy.kernel_on_host.min_or_remote_host(remote_host)
             DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
         else:
-            next_host = remote_host if remote_host else self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
+            next_host = (
+                remote_host
+                if remote_host
+                else self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
+            )
             DistributedProcessProxy.host_index += 1
 
         return next_host
