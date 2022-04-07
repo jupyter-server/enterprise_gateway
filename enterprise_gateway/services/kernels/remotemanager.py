@@ -218,7 +218,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             if self.parent.max_kernels_per_user >= 0:
                 if self.parent.kernel_session_manager:
                     active_and_pending = (
-                            self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                        self.parent.kernel_session_manager.active_sessions(username) + pending_user
                     )
                     if active_and_pending >= self.parent.max_kernels_per_user:
                         error_message = (
@@ -242,7 +242,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
-            self, kernel_id, kernel_name, connection_info, process_info, launch_args
+        self, kernel_id, kernel_name, connection_info, process_info, launch_args
     ):
         """
         Starts a kernel from a persisted kernel session.
@@ -385,7 +385,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "yarn_endpoint_security_enabled",
             "conductor_endpoint",
             "remote_hosts",
-            "load_balancing_algorithm"
+            "load_balancing_algorithm",
         ]
         self._links = [
             directional_link((eg_instance, prop), (self, prop)) for prop in dependent_props
@@ -417,8 +417,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 key: value
                 for key, value in env.items()
                 if key.startswith("KERNEL_")
-                   or key in self.env_process_whitelist
-                   or key in self.env_whitelist
+                or key in self.env_process_whitelist
+                or key in self.env_whitelist
             }
         )
 
@@ -512,9 +512,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
         # the default value (False).
         if (
-                isinstance(self.process_proxy, RemoteProcessProxy)
-                and now
-                and self.mapping_kernel_manager
+            isinstance(self.process_proxy, RemoteProcessProxy)
+            and now
+            and self.mapping_kernel_manager
         ):
             if self.mapping_kernel_manager._kernel_connections.get(kernel_id, 0) == 0:
                 self.log.warning(
@@ -617,7 +617,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         restrictions if configured.
         """
         if (
-                isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address
+            isinstance(self.process_proxy, LocalProcessProxy) or not self.response_address
         ) and not self.restarting:
             # However, since we *may* want to limit the selected ports, go ahead and get the ports using
             # the process proxy (will be LocalProcessProxy for default case) since the port selection will
