@@ -434,7 +434,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(",")
 
     # load_balancing_algorithm
-    load_balancing_algorithm_env = "EG_LOAD_BALANCE_ALGORITHM"
+    load_balancing_algorithm_env = "EG_LOAD_BALANCING_ALGORITHM"
     load_balancing_algorithm_default_value = "round-robin"
     load_balancing_algorithm = Unicode(
         load_balancing_algorithm_default_value,
