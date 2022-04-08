@@ -457,7 +457,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
             assert value == "round-robin" or value == "least-connection"
         except ValueError:
             raise TraitError(
-                f"invalid load_balancing_algorithm value {value},not in [round-robin,least-connection]"
+                f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
             )
         return value
 
