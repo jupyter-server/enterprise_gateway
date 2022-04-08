@@ -439,8 +439,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
     load_balancing_algorithm = Unicode(
         load_balancing_algorithm_default_value,
         config=True,
-        help="""Which load balancing algorithm does DistributedProcessProxy used.
-            Default round-robin,another use least-connection.
+        help="""Specifies which load balancing algorithm DistributedProcessProxy should use.
+            Must be one of "round-robin" or "least-connection".
             """,
     )
 
