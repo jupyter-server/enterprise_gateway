@@ -18,10 +18,12 @@ from traitlets import (
     Integer,
     List,
     Set,
+    TraitError,
     Type,
     Unicode,
     default,
     observe,
+    validate,
 )
 from traitlets.config import Configurable
 
@@ -430,6 +432,34 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default("remote_hosts")
     def remote_hosts_default(self):
         return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(",")
+
+    # load_balancing_algorithm
+    load_balancing_algorithm_env = "EG_LOAD_BALANCING_ALGORITHM"
+    load_balancing_algorithm_default_value = "round-robin"
+    load_balancing_algorithm = Unicode(
+        load_balancing_algorithm_default_value,
+        config=True,
+        help="""Specifies which load balancing algorithm DistributedProcessProxy should use.
+            Must be one of "round-robin" or "least-connection".
+            """,
+    )
+
+    @default("load_balancing_algorithm")
+    def load_balancing_algorithm_default(self):
+        return os.getenv(
+            self.load_balancing_algorithm_env, self.load_balancing_algorithm_default_value
+        )
+
+    @validate("load_balancing_algorithm")
+    def _validate_load_balancing_algorithm(self, proposal):
+        value = proposal["value"]
+        try:
+            assert value == "round-robin" or value == "least-connection"
+        except ValueError:
+            raise TraitError(
+                f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
+            )
+        return value
 
     # Yarn endpoint
     yarn_endpoint_env = "EG_YARN_ENDPOINT"
