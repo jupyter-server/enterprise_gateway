@@ -440,7 +440,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
         load_balancing_algorithm_default_value,
         config=True,
         help="""Specifies which load balancing algorithm DistributedProcessProxy should use.
-            Must be one of "round-robin" or "least-connection".
+            Must be one of "round-robin" or "least-connection".  (EG_LOAD_BALANCING_ALGORITHM
+            env var)
             """,
     )
 
