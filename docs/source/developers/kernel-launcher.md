@@ -1,6 +1,6 @@
 # Implementing a kernel launcher
 
-A new implementation for a [_kernel launcher_](../contributors/system-architecture.md#kernel-launchers) becomes necessary when you want to introduce another kind of kernel to an existing configuration. Out of the box, Enterprise Gateway provides [kernel launchers](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kernel-launchers) that support the IPython kernel, the Apache Toree scala kernel, and the R kernel - IRKernel. There are other "language-agnostic kernel launchers" provided by Enterprise Gateway, but those are used in container environments to start the container or pod where the "kernel image" uses on the three _language-based_ launchers to start the kernel within the container.
+A new implementation for a [_kernel launcher_](../contributors/system-architecture.md#kernel-launchers) becomes necessary when you want to introduce another kind of kernel to an existing configuration. Out of the box, Enterprise Gateway provides [kernel launchers](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kernel-launchers) that support the IPython kernel, the Apache Toree scala kernel, and the R kernel - IRKernel. There are other "language-agnostic kernel launchers" provided by Enterprise Gateway, but those are used in container environments to start the container or pod where the "kernel image" uses on the three _language-based_ launchers to start the kernel within the container.
 
 Its generally recommended that the launcher be written in the language of the kernel, but that is not a requirement so long as the launcher can start and manage the kernel's lifecycle and issue interrupts (if the kernel does not support message-based interrupts itself).
 
@@ -13,7 +13,7 @@ To reiterate, the four tasks of a kernel launcher are:
 
 ## Creating the connection information
 
-If your target kernel exists, then there is probably support for creating ZeroMQ ports. If this proves difficult, you may be able to take a _hybrid approach_ where the connection information, encryption and listener portion of things is implemented in Python, while invocation takes place in the native language. This is how the [R kernel-launcher](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kernel-launchers/R/scripts) support is implemented.
+If your target kernel exists, then there is probably support for creating ZeroMQ ports. If this proves difficult, you may be able to take a _hybrid approach_ where the connection information, encryption and listener portion of things is implemented in Python, while invocation takes place in the native language. This is how the [R kernel-launcher](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kernel-launchers/R/scripts) support is implemented.
 
 When creating the connection information, your kernel launcher should handle the possibility that the `--port-range` option has been specified such that each port should reside within the specified range.
 

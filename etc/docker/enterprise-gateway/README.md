@@ -13,16 +13,16 @@ Pull this image, along with all of the elyra/kernel-\* images to each of your ma
 
 ## Kubernetes
 
-Download the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file and make any necessary changes for your configuration. We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
+Download the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml) file and make any necessary changes for your configuration. We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
 
 Deploy Jupyter Enterprise Gateway using `kubectl apply -f enterprise-gateway.yaml`
 
 ## Docker Swarm
 
-Download the [`docker-compose.yml`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/docker-compose.yml) file and make any necessary changes for your configuration. The compose file consists of three pieces, the Enterprise Gateway container itself, a proxy layer container, and a Docker network. We recommend that a volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
+Download the [`docker-compose.yml`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/docker/docker-compose.yml) file and make any necessary changes for your configuration. The compose file consists of three pieces, the Enterprise Gateway container itself, a proxy layer container, and a Docker network. We recommend that a volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
 
 ## Docker (Traditional)
 
-Same instructions as for Docker Swarm using [`docker-compose.yml`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/docker-compose.yml). Please note that you can still run Enterprise Gateway as a traditional docker container within a Docker Swarm cluster, yet have the kernel containers launched as Docker Swarm services since how the kernels are launched is a function of their configured process proxy class.
+Same instructions as for Docker Swarm using [`docker-compose.yml`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/docker/docker-compose.yml). Please note that you can still run Enterprise Gateway as a traditional docker container within a Docker Swarm cluster, yet have the kernel containers launched as Docker Swarm services since how the kernels are launched is a function of their configured process proxy class.
 
 For more information, check our [repo](https://github.com/jupyter-server/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

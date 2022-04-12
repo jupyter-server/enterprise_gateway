@@ -145,7 +145,7 @@ kubectl delete clusterrolebinding -l app=enterprise-gateway
 
 Enterprise Gateway manifests itself as a Kubernetes deployment, exposed externally by a Kubernetes service. By default, it is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
 
-Enterprise Gateway Kubernetes service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available. Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to the same pod (see deployment), thereby diminishing the need for a `LoadBalancer` type. Here's the service yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) (for helm you can change Service type by setting `service.type` value, see [service.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/service.yaml)):
+The service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available. Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to different deployment instances (see deployment) thereby diminishing the need for a `LoadBalancer` type. Here's the service yaml entry from [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml) (for helm, see [service.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/service.yaml)):
 
 ```yaml
 apiVersion: v1
@@ -169,7 +169,7 @@ spec:
   type: NodePort
 ```
 
-The deployment yaml essentially houses the pod description. By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster. This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels. Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) that defines the Kubernetes deployment and pod (for helm, see [deployement.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/deployment.yaml):
+The deployment yaml essentially houses the pod description. By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster. This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels. Here's the yaml portion from [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml) that defines the Kubernetes deployment and pod (for helm, see [deployement.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/deployment.yaml):
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -287,7 +287,7 @@ Although **not recommended**, installations requiring everything in the same nam
 
 Another best practice of Kubernetes applications is to define the minimally viable set of permissions for the application. Enterprise Gateway does this by defining role-based access control (RBAC) objects for both Enterprise Gateway and kernels.
 
-Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and role bindings, a cluster-scoped role binding is required. The cluster role binding `enterprise-gateway-controller` also references the subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and also created by the yaml file or [`clusterrolebinding.yaml`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/clusterrolebinding.yaml)) helm chart.
+Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and role bindings, a cluster-scoped role binding is required. The cluster role binding `enterprise-gateway-controller` also references the subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and also created by the yaml file or [`clusterrolebinding.yaml`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/clusterrolebinding.yaml)) helm chart.
 
 ```yaml
 apiVersion: v1
@@ -340,7 +340,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-The `enterprise-gateway.yaml` file and [`clusterrole.yaml`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/helm/enterprise-gateway/templates/clusterrole.yaml) helm chart also define the minimally viable roles for a kernel pod - most of which are required for Spark support. Since kernels, by default, reside within their own namespace created upon their launch, a cluster role is used within a namespace-scoped role binding created when the kernel's namespace is created. The name of the kernel cluster role is `kernel-controller` and, when Enterprise Gateway creates the namespace and role binding, is also the name of the role binding instance.
+The `enterprise-gateway.yaml` file and [`clusterrole.yaml`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/clusterrole.yaml) helm chart also define the minimally viable roles for a kernel pod - most of which are required for Spark support. Since kernels, by default, reside within their own namespace created upon their launch, a cluster role is used within a namespace-scoped role binding created when the kernel's namespace is created. The name of the kernel cluster role is `kernel-controller` and, when Enterprise Gateway creates the namespace and role binding, is also the name of the role binding instance.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -490,7 +490,7 @@ spec:
 ```
 
 ```{tip}
-Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
+Because the kernel pod definition file, [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2), resides in the kernelspecs hierarchy, customizations to the deployments of future kernel instances can now also take place.  In addition, these same entries can be added to the kernel-pod.yaml definitions if access to the same or other NFS mount points are desired within kernel pods. (We'll be looking at ways to make modifications to per-kernel configurations more manageable.)
 ```
 
 Use of more formal persistent volume types must include the [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes) and corresponding Persistent Volume Claim stanzas.
@@ -523,7 +523,7 @@ There are essentially two kinds of kernels (independent of language) launched wi
 
 When _vanilla_ kernels are launched, Enterprise Gateway is responsible for creating the corresponding pod. On the other hand, _spark-on-kubernetes_ kernels are launched via `spark-submit` with a specific `master` URI - which then creates the corresponding pod(s) (including executor pods). Images can be launched using both forms provided they have the appropriate support for Spark installed.
 
-Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2)) serves as a template where each of the tags surrounded with `{{` and `}}` represent variables that are substituted at the time of the kernel's launch. All `{{ kernel_xxx }}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
+Here's the yaml configuration used when _vanilla_ kernels are launched. As noted in the `KubernetesProcessProxy` section below, this file ([kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2)) serves as a template where each of the tags surrounded with `{{` and `}}` represent variables that are substituted at the time of the kernel's launch. All `{{ kernel_xxx }}` parameters correspond to `KERNEL_XXX` environment variables that can be specified from the client in the kernel creation request's json body.
 
 ```yaml+jinja
 apiVersion: v1
@@ -697,7 +697,7 @@ _(Please note that the use of `VERSION` in docker image tags is a placeholder fo
 }
 ```
 
-As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json files. However, when launching _vanilla_ kernels in a kubernetes environment, what gets invoked isn't the kernel's launcher, but, instead, a python script that is responsible for using the [Kubernetes Python API](https://github.com/kubernetes-client/python) to create the corresponding pod instance. The pod is _configured_ by applying the values to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) file previously displayed. This file resides in the same `scripts` directory as the kubernetes launch script - `launch_kubernetes.py` - which is referenced by the kernel.json's `argv:` stanza:
+As always, kernels are launched by virtue of the `argv:` stanza in their respective kernel.json files. However, when launching _vanilla_ kernels in a kubernetes environment, what gets invoked isn't the kernel's launcher, but, instead, a python script that is responsible for using the [Kubernetes Python API](https://github.com/kubernetes-client/python) to create the corresponding pod instance. The pod is _configured_ by applying the values to each of the substitution parameters into the [kernel-pod.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) file previously displayed. This file resides in the same `scripts` directory as the kubernetes launch script - `launch_kubernetes.py` - which is referenced by the kernel.json's `argv:` stanza:
 
 ```json
 {
@@ -799,7 +799,7 @@ kube-system          service/tiller-deploy                            ClusterIP 
 
 Once you have a Ingress controller installed, you can use the `Ingress` resource in kubernetes to direct traffic to your
 Enterprise Gateway service. The EG helm chart is configured with an ingress template, which
-can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/enterprise-gateway/templates/ingress.yaml)
+can be found at [here](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kubernetes/helm/enterprise-gateway/templates/ingress.yaml)
 for Enterprise Gateway.
 
 Example - Enable ingress and edit etc/kubernetes/helm/values.yaml to the desired configurations and install EG as normal via helm.

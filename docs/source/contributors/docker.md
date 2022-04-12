@@ -1,6 +1,6 @@
 # Docker Images
 
-All docker images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/docker).
+All docker images can be pulled from docker hub's [elyra organization](https://hub.docker.com/u/elyra/) and their docker files can be found in the github repository in the appropriate directory of [etc/docker](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/docker).
 
 Local images can also be built via `make docker-images`.
 
@@ -8,7 +8,7 @@ The following sections describe the docker images used within Kubernetes and Doc
 
 ## elyra/enterprise-gateway
 
-The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) contains the Enterprise Gateway server software and default kernel specifications. For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml) file or [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/enterprise-gateway). For Docker Swarm, deployment can be accomplished using [docker-componse.yml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/docker-compose.yml).
+The primary image for Kubernetes and Docker Swarm support, [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) contains the Enterprise Gateway server software and default kernel specifications. For Kubernetes it is deployed using the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml) file or [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kubernetes/helm/enterprise-gateway). For Docker Swarm, deployment can be accomplished using [docker-componse.yml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/docker/docker-compose.yml).
 
 We recommend that a persistent/mounted volume be used so that the kernel specifications can be accessed outside the container since we've found those to require post-deployment modifications from time to time.
 
