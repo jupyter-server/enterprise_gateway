@@ -23,7 +23,7 @@ git clone https://github.com/jupyter-server/enterprise_gateway.git
 
 ## Make
 
-Enterprise Gateway's build environment is centered around `make` and the corresponding [`Makefile`](https://github.com/jupyter-server/enterprise_gateway/blob/master/Makefile).
+Enterprise Gateway's build environment is centered around `make` and the corresponding [`Makefile`](https://github.com/jupyter-server/enterprise_gateway/blob/main/Makefile).
 
 Entering `make` with no parameters yields the following:
 

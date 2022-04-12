@@ -212,7 +212,7 @@ Scenario: **My kernel keeps dying when processing jobs that require large amount
 
 This is usually seen when you are trying to use more resources then what is available for your kernel.
 To address this issue, increase the amount of memory available for your Hadoop YARN application or another
-resource manager managing the kernel. For example, on Kubernetes, this may be a time when the kernel specification's [kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) file should be extended with resource quotas.
+resource manager managing the kernel. For example, on Kubernetes, this may be a time when the kernel specification's [kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) file should be extended with resource quotas.
 
 ## Spark and Python Versions
 

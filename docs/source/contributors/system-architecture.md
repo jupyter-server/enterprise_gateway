@@ -99,7 +99,7 @@ place of the process instance used in today's implementation. Any interaction wi
 place via the process proxy.
 
 Both `RemoteMappingKernelManager` and `RemoteKernelManager` class definitions can be found in
-[remotemanager.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/enterprise_gateway/services/kernels/remotemanager.py)
+[remotemanager.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/enterprise_gateway/services/kernels/remotemanager.py)
 
 ## Process Proxy
 
@@ -147,7 +147,7 @@ string) in a remote shell since the host is determined by Enterprise Gateway, el
 its implementation.
 
 These class definitions can be found in the
-[processproxies package](https://github.com/jupyter-server/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies). However,
+[processproxies package](https://github.com/jupyter-server/enterprise_gateway/blob/main/enterprise_gateway/services/processproxies). However,
 Enterprise Gateway is architected such that additional process proxy implementations can be provided and are not
 required to be located within the Enterprise Gateway hierarchy - i.e., we embrace a _bring your own process proxy_ model.
 
@@ -299,8 +299,8 @@ With the popularity of Kubernetes within the enterprise, Enterprise Gateway prov
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API. Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
 cluster as a _Service_ and _Deployment_. The primary vehicle by which this is accomplished is via the
-[enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kubernetes/enterprise-gateway.yaml)
-file that contains the necessary metadata to define its deployment. Enterprise Gateway also provides a [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/master/etc/kubernetes/helm/enterprise-gateway) for those deployments utilizing [Helm](https://helm.sh/).
+[enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml)
+file that contains the necessary metadata to define its deployment. Enterprise Gateway also provides a [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kubernetes/helm/enterprise-gateway) for those deployments utilizing [Helm](https://helm.sh/).
 
 ```{seealso}
 [Kubernetes deployments](../operators/deploy-kubernetes.md) in the Operators Guide for details.
@@ -348,14 +348,14 @@ many components of a Spark-on-Kubernetes application.
 If you are going to extend `CustomResourceProcessProxy`, just follow steps below:
 
 - override custom resource related variables(i.e. `group`, `version` and `plural`
-  and `get_container_status` method, wrt [launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py).
+  and `get_container_status` method, wrt [launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py).
 
 - define a jinja template like
-  [kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2).
+  [kernel-pod.yaml.j2](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2).
   As a generic design, the template file should be named as {crd_group}-{crd_version} so that you can reuse
-  [launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py) in the kernelspec.
+  [launch_kubernetes.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py) in the kernelspec.
 
-- define a kernel specification like [spark_python_operator/kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_operator/kernel.json).
+- define a kernel specification like [spark_python_operator/kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernelspecs/spark_python_operator/kernel.json).
 
 ### Process Proxy Configuration
 
@@ -418,7 +418,7 @@ The response address is identified by the parameter `--RemoteProcessProxy.respon
 
 The public key is identified by the parameter `--RemoteProcessProxy.public-key`. Its value (`{public_key}`) is used to encrypt an AES key created by the launcher to encrypt the kernel's connection information. The server, upon receipt of the response, uses the corresponding private key to decrypt the AES key, which it then uses to decrypt the connection information. Both the public and private keys are ephemeral; created upon Enterprise Gateway's startup. They can be ephemeral because they are only needed during a kernel's startup and never again.
 
-Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
+Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) file illustrating these parameters...
 
 ```json
 {
@@ -463,9 +463,9 @@ Other options supported by launchers include:
 
 Kernel.json files also include a `LAUNCH_OPTS:` section in the `env` stanza to allow for custom
 parameters to be conveyed in the launcher's environment. `LAUNCH_OPTS` are then referenced in
-the [run.sh](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
+the [run.sh](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh)
 script as the initial arguments to the launcher
-(see [launch_ipykernel.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
+(see [launch_ipykernel.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/python/scripts/launch_ipykernel.py)) ...
 
 ```bash
 eval exec \
