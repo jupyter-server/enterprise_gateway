@@ -8,51 +8,53 @@ import getpass
 import logging
 import os
 import signal
-import socket
 import ssl
 import sys
 import time
 import weakref
 from typing import Optional
 
-from zmq.eventloop import ioloop
-from tornado import httpserver
-from tornado import web
-from tornado.log import enable_pretty_logging
-
-from traitlets.config import Configurable
-from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_client.kernelspec import KernelSpecManager
+from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_server.serverapp import random_ports
 from jupyter_server.utils import url_path_join
+from tornado import httpserver, web
+from tornado.log import enable_pretty_logging
+from traitlets.config import Configurable
+from zmq.eventloop import ioloop
 
 from ._version import __version__
-
 from .base.handlers import default_handlers as default_base_handlers
+from .mixins import EnterpriseGatewayConfigMixin
 from .services.api.handlers import default_handlers as default_api_handlers
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
-from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
-from .services.sessions.handlers import default_handlers as default_session_handlers
-
-from .services.sessions.kernelsessionmanager import FileKernelSessionManager
-from .services.sessions.sessionmanager import SessionManager
 from .services.kernels.remotemanager import RemoteMappingKernelManager
 from .services.kernelspecs import KernelSpecCache
+from .services.kernelspecs.handlers import (
+    default_handlers as default_kernelspec_handlers,
+)
+from .services.sessions.handlers import default_handlers as default_session_handlers
+from .services.sessions.kernelsessionmanager import FileKernelSessionManager
+from .services.sessions.sessionmanager import SessionManager
 
-from .mixins import EnterpriseGatewayConfigMixin
-
+try:
+    from jupyter_server.auth.authorizer import AllowAllAuthorizer
+except ImportError:
+    AllowAllAuthorizer = object
 
 # Add additional command line aliases
 aliases = dict(base_aliases)
-aliases.update({
-    'ip': 'EnterpriseGatewayApp.ip',
-    'port': 'EnterpriseGatewayApp.port',
-    'port_retries': 'EnterpriseGatewayApp.port_retries',
-    'keyfile': 'EnterpriseGatewayApp.keyfile',
-    'certfile': 'EnterpriseGatewayApp.certfile',
-    'client-ca': 'EnterpriseGatewayApp.client_ca',
-    'ssl_version': 'EnterpriseGatewayApp.ssl_version'
-})
+aliases.update(
+    {
+        "ip": "EnterpriseGatewayApp.ip",
+        "port": "EnterpriseGatewayApp.port",
+        "port_retries": "EnterpriseGatewayApp.port_retries",
+        "keyfile": "EnterpriseGatewayApp.keyfile",
+        "certfile": "EnterpriseGatewayApp.certfile",
+        "client-ca": "EnterpriseGatewayApp.client_ca",
+        "ssl_version": "EnterpriseGatewayApp.ssl_version",
+    }
+)
 
 
 class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
@@ -65,7 +67,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     - creates a Tornado HTTP server
     - starts the Tornado event loop
     """
-    name = 'jupyter-enterprise-gateway'
+
+    name = "jupyter-enterprise-gateway"
     version = __version__
     description = """
         Jupyter Enterprise Gateway
@@ -88,7 +91,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         argv
             Command line arguments
         """
-        super(EnterpriseGatewayApp, self).initialize(argv)
+        super().initialize(argv)
         self.init_configurables()
         self.init_webapp()
         self.init_http_server()
@@ -99,45 +102,39 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         """
         self.kernel_spec_manager = KernelSpecManager(parent=self)
 
-        # Only pass a default kernel name when one is provided. Otherwise,
-        # adopt whatever default the kernel manager wants to use.
-        kwargs = {}
-        if self.default_kernel_name:
-            kwargs['default_kernel_name'] = self.default_kernel_name
-
         self.kernel_spec_manager = self.kernel_spec_manager_class(
             parent=self,
         )
 
         self.kernel_spec_cache = self.kernel_spec_cache_class(
-            parent=self,
-            kernel_spec_manager=self.kernel_spec_manager,
-            **kwargs
+            parent=self, kernel_spec_manager=self.kernel_spec_manager
         )
+
+        # Only pass a default kernel name when one is provided. Otherwise,
+        # adopt whatever default the kernel manager wants to use.
+        kwargs = {}
+        if self.default_kernel_name:
+            kwargs["default_kernel_name"] = self.default_kernel_name
 
         self.kernel_manager = self.kernel_manager_class(
             parent=self,
             log=self.log,
             connection_dir=self.runtime_dir,
             kernel_spec_manager=self.kernel_spec_manager,
-            **kwargs
+            **kwargs,
         )
 
-        self.session_manager = SessionManager(
-            log=self.log,
-            kernel_manager=self.kernel_manager
-        )
+        self.session_manager = SessionManager(log=self.log, kernel_manager=self.kernel_manager)
 
         self.kernel_session_manager = self.kernel_session_manager_class(
             parent=self,
             log=self.log,
             kernel_manager=self.kernel_manager,
             config=self.config,  # required to get command-line options visible
-            **kwargs
         )
 
         # Attempt to start persisted sessions
-        # Commented as part of https://github.com/jupyter/enterprise_gateway/pull/737#issuecomment-567598751
+        # Commented as part of https://github.com/jupyter-server/enterprise_gateway/pull/737#issuecomment-567598751
         # self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
@@ -152,14 +149,14 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         # append tuples for the standard kernel gateway endpoints
         for handler in (
-            default_api_handlers +
-            default_kernel_handlers +
-            default_kernelspec_handlers +
-            default_session_handlers +
-            default_base_handlers
+            default_api_handlers
+            + default_kernel_handlers
+            + default_kernelspec_handlers
+            + default_session_handlers
+            + default_base_handlers
         ):
             # Create a new handler pattern rooted at the base_url
-            pattern = url_path_join('/', self.base_url, handler[0])
+            pattern = url_path_join("/", self.base_url, handler[0])
             # Some handlers take args, so retain those in addition to the
             # handler class ref
             new_handler = tuple([pattern] + list(handler[1:]))
@@ -178,7 +175,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             try:
                 ssl.match_hostname(ssl_cert, authorized_hostname)
             except ssl.SSLCertVerificationError:
-                raise web.HTTPError(403, 'Forbidden')
+                raise web.HTTPError(403, "Forbidden")
             base_prepare(self)
 
         handler[1].prepare = wrapped_prepare
@@ -227,12 +224,13 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             allow_remote_access=True,
             # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
             # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
-            ws_ping_interval=self.ws_ping_interval * 1000
+            ws_ping_interval=self.ws_ping_interval * 1000,
+            # Add a pass-through authorizer for now
+            authorizer=AllowAllAuthorizer(),
         )
 
     def _build_ssl_options(self) -> Optional[ssl.SSLContext]:
-        """Build an SSLContext for the tornado HTTP server.
-        """
+        """Build an SSLContext for the tornado HTTP server."""
         if not any((self.certfile, self.keyfile, self.client_ca)):
             # None indicates no SSL config
             return None
@@ -254,18 +252,18 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         the same logic as the Jupyer Notebook server.
         """
         ssl_options = self._build_ssl_options()
-        self.http_server = httpserver.HTTPServer(self.web_app,
-                                                 xheaders=self.trust_xheaders,
-                                                 ssl_options=ssl_options)
+        self.http_server = httpserver.HTTPServer(
+            self.web_app, xheaders=self.trust_xheaders, ssl_options=ssl_options
+        )
 
         for port in random_ports(self.port, self.port_retries + 1):
             try:
                 self.http_server.listen(port, self.ip)
-            except socket.error as e:
+            except OSError as e:
                 if e.errno == errno.EADDRINUSE:
-                    self.log.info('The port %i is already in use, trying another port.' % port)
+                    self.log.info("The port %i is already in use, trying another port." % port)
                     continue
-                elif e.errno in (errno.EACCES, getattr(errno, 'WSAEACCES', errno.EACCES)):
+                elif e.errno in (errno.EACCES, getattr(errno, "WSAEACCES", errno.EACCES)):
                     self.log.warning("Permission to listen on port %i denied" % port)
                     continue
                 else:
@@ -274,29 +272,36 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                 self.port = port
                 break
         else:
-            self.log.critical('ERROR: the gateway server could not be started because '
-                              'no available port could be found.')
+            self.log.critical(
+                "ERROR: the gateway server could not be started because "
+                "no available port could be found."
+            )
             self.exit(1)
 
     def start(self):
-        """Starts an IO loop for the application. """
+        """Starts an IO loop for the application."""
 
-        super(EnterpriseGatewayApp, self).start()
+        super().start()
 
-        self.log.info('Jupyter Enterprise Gateway {} is available at http{}://{}:{}'.format(
-            EnterpriseGatewayApp.version, 's' if self.keyfile else '', self.ip, self.port
-        ))
+        self.log.info(
+            "Jupyter Enterprise Gateway {} is available at http{}://{}:{}".format(
+                EnterpriseGatewayApp.version, "s" if self.keyfile else "", self.ip, self.port
+            )
+        )
         # If impersonation is enabled, issue a warning message if the gateway user is not in unauthorized_users.
         if self.impersonation_enabled:
             gateway_user = getpass.getuser()
             if gateway_user.lower() not in self.unauthorized_users:
-                self.log.warning("Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
-                                 "unauthorized users!  Kernels may execute as that user with elevated privileges.".
-                                 format(gateway_user))
+                self.log.warning(
+                    "Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
+                    "unauthorized users!  Kernels may execute as that user with elevated privileges.".format(
+                        gateway_user
+                    )
+                )
 
         self.io_loop = ioloop.IOLoop.current()
 
-        if sys.platform != 'win32':
+        if sys.platform != "win32":
             signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
         signal.signal(signal.SIGTERM, self._signal_stop)
@@ -314,7 +319,9 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         """Shuts down all running kernels."""
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            asyncio.get_event_loop().run_until_complete(self.kernel_manager.shutdown_kernel(kid, now=True))
+            asyncio.get_event_loop().run_until_complete(
+                self.kernel_manager.shutdown_kernel(kid, now=True)
+            )
 
     def stop(self):
         """
@@ -346,7 +353,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         for file in self.loaded_config_files:
             mod_time = int(os.path.getmtime(file))
             if mod_time > self._last_config_update:
-                self.log.debug("Config file was updated: {}!".format(file))
+                self.log.debug(f"Config file was updated: {file}!")
                 self._last_config_update = mod_time
                 updated = True
 
@@ -364,8 +371,10 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                     configurable.update_config(self.config)
                 configs.append(config_name)
 
-            self.log.info("Configuration file changes detected.  Instances for the following "
-                          "configurables have been updated: {}".format(configs))
+            self.log.info(
+                "Configuration file changes detected.  Instances for the following "
+                "configurables have been updated: {}".format(configs)
+            )
         return updated
 
     def add_dynamic_configurable(self, config_name, configurable):
@@ -376,7 +385,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         :param configurable: the configurable instance corresponding to that config
         """
         if not isinstance(configurable, Configurable):
-            raise RuntimeError("'{}' is not a subclass of Configurable!".format(configurable))
+            raise RuntimeError(f"'{configurable}' is not a subclass of Configurable!")
 
         self._dynamic_configurables[config_name] = weakref.proxy(configurable)
 
@@ -388,23 +397,29 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         :return:
         """
         if self.dynamic_config_interval > 0:
-            self.add_dynamic_configurable('EnterpriseGatewayApp', self)
-            self.add_dynamic_configurable('MappingKernelManager', self.kernel_manager)
-            self.add_dynamic_configurable('KernelSpecManager', self.kernel_spec_manager)
-            self.add_dynamic_configurable('KernelSessionManager', self.kernel_session_manager)
+            self.add_dynamic_configurable("EnterpriseGatewayApp", self)
+            self.add_dynamic_configurable("MappingKernelManager", self.kernel_manager)
+            self.add_dynamic_configurable("KernelSpecManager", self.kernel_spec_manager)
+            self.add_dynamic_configurable("KernelSessionManager", self.kernel_session_manager)
 
-            self.log.info("Dynamic updates have been configured.  Checking every {} seconds.".
-                          format(self.dynamic_config_interval))
+            self.log.info(
+                "Dynamic updates have been configured.  Checking every {} seconds.".format(
+                    self.dynamic_config_interval
+                )
+            )
 
-            self.log.info("The following configuration options will not be subject to dynamic updates "
-                          "(configured via CLI):")
+            self.log.info(
+                "The following configuration options will not be subject to dynamic updates "
+                "(configured via CLI):"
+            )
             for config, options in self.cli_config.items():
                 for option, value in options.items():
-                    self.log.info("    '{}.{}': '{}'".format(config, option, value))
+                    self.log.info(f"    '{config}.{option}': '{value}'")
 
             if self.dynamic_config_poller is None:
-                self.dynamic_config_poller = ioloop.PeriodicCallback(self.update_dynamic_configurables,
-                                                                     self.dynamic_config_interval * 1000)
+                self.dynamic_config_poller = ioloop.PeriodicCallback(
+                    self.update_dynamic_configurables, self.dynamic_config_interval * 1000
+                )
             self.dynamic_config_poller.start()
 
 

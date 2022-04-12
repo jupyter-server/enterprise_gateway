@@ -26,4 +26,3 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 USER jovyan
 ENV KERNEL_LANGUAGE R
 CMD /usr/local/bin/bootstrap-kernel.sh
-

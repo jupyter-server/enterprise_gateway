@@ -1,7 +1,15 @@
 Using the REST API
 ===============================
 
-The REST API is used to author new applications that need to interact with Enterprise Gateway.  Generally speaking, only the ``/api/kernels`` and ``/api/kernelspecs`` endpoints are used.  The ``/api/sessions`` endpoint *can* be used to manage a kernel's lifecycle, but it is not necessary.  For example, while the Jupyter Notebook and JupyterLab applications start kernels using ``/api/sessions``, the only interaction they perform with Enterprise Gateway is via the ``/api/kernelspecs`` to retrieve a list of available kernel specifications, and ``/api/kernels`` to start, stop, interrupt and restart a kernel.  The "session" remains on the client.
+The REST API is used to author new applications that need to interact with
+Enterprise Gateway.  Generally speaking, only the ``/api/kernels`` and
+``/api/kernelspecs`` endpoints are used.  The ``/api/sessions`` endpoint *can*
+be used to manage a kernel's lifecycle, but it is not necessary.  For example,
+while the Jupyter Notebook and JupyterLab applications start kernels using
+``/api/sessions``, the only interaction they perform with Enterprise Gateway is
+via the ``/api/kernelspecs`` to retrieve a list of available kernel
+specifications, and ``/api/kernels`` to start, stop, interrupt and restart a
+kernel.  The "session" remains on the client.
 
 General sequence
 ----------------
@@ -9,11 +17,20 @@ Here's the general sequence of events to implement a REST-based application to *
 
 Kernel discovery
 ~~~~~~~~~~~~~~~~
-Issue a `GET` request against the ``/api/kernelspecs`` endpoint to discover available kernel specifications. Each entry corresponds to a ``kernel.json`` file located in a directory that corresponds to the kernel's name.  This *name* is what will be used in the subsequent start request.
+Issue a `GET` request against the ``/api/kernelspecs`` endpoint to discover
+available kernel specifications. Each entry corresponds to a ``kernel.json``
+file located in a directory that corresponds to the kernel's name.  This *name*
+is what will be used in the subsequent start request.
 
-The response is a JSON object where the ``default`` is a string specifying the name of the default kernel.  This kernel specification will be used if the start request (e.g., ``POST /api/kernels``) does not specify a kernel name in its JSON body.
+The response is a JSON object where the ``default`` is a string specifying the
+name of the default kernel.  This kernel specification will be used if the
+start request (e.g., ``POST /api/kernels``) does not specify a kernel name in
+its JSON body.
 
-The other key in the response is `kernelspecs` and consists of a JSON indexed by kernel name with a value corresponding to the corresponding ``kernel.json`` in addition to any *resources* associated with the kernel.  These are typically the icon filenames to be used by the front-end application.
+The other key in the response is `kernelspecs` and consists of a JSON indexed
+by kernel name with a value corresponding to the corresponding ``kernel.json``
+in addition to any *resources* associated with the kernel.  These are typically
+the icon filenames to be used by the front-end application.
 
 .. code-block:: console
 
@@ -297,7 +314,10 @@ The other key in the response is `kernelspecs` and consists of a JSON indexed by
 
 Kernel start
 ~~~~~~~~~~~~~~~~
-A kernel is started by issuing a ``POST`` request against the ``/api/kernels`` endpoint.  The JSON body can take a ``name``, indicating the kernel to start, and an ``env`` JSON, corresponding to environment variables to set in the kernel's environment.
+A kernel is started by issuing a ``POST`` request against the ``/api/kernels``
+endpoint.  The JSON body can take a ``name``, indicating the kernel to start,
+and an ``env`` JSON, corresponding to environment variables to set in the
+kernel's environment.
 
 In this example, we will start the ``spark_python_yarn_cluster`` kernel with a ``KERNEL_USERNAME`` environment variable of ``jovyan``.
 
@@ -363,7 +383,6 @@ An expected response of ``Status Code`` equal ``204`` (No Content) is returned.
 
 OpenAPI Specification
 ~~~~~~~~~~~~~~~~~~~~~
-Here's the current `OpenAPI <https://www.openapis.org/>`_ specification available from Enterprise Gateway.  An interactive version is available `here <https://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter-server/enterprise_gateway/master/enterprise_gateway/services/api/swagger.yaml>`_.
+Here's the current `OpenAPI <https://www.openapis.org/>`_ specification available from Enterprise Gateway.  An interactive version is available `here <https://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter-server/enterprise_gateway/main/enterprise_gateway/services/api/swagger.yaml>`_.
 
 .. openapi:: ../../../enterprise_gateway/services/api/swagger.yaml
-

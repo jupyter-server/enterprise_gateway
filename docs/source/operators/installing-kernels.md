@@ -1,10 +1,12 @@
 # Installing supported kernels (common)
+
 Enterprise Gateway includes kernel specifications that support the following kernels:
+
 - IPython kernel (Python)
 - Apache Toree (Scala)
 - IRKernel (R)
 
-Refer to the following for instructions on installing the respective kernels.  For cluster-based environments, these steps should be performed on each applicable node of the cluster, unless noted otherwise.
+Refer to the following for instructions on installing the respective kernels. For cluster-based environments, these steps should be performed on each applicable node of the cluster, unless noted otherwise.
 
 ## Python Kernel (IPython kernel)
 
@@ -19,13 +21,13 @@ This step is also required for the IRkernel (see below).  However, it is **not**
 
 ## Scala Kernel (Apache Toree)
 
-We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support.  Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
+We have tested the latest version of [Apache Toree](https://toree.apache.org/) with Scala 2.11 support. Please note that the Apache Toree kernel is now bundled in the kernelspecs tar file for each of the Scala kernelspecs provided by Enterprise Gateway.
 
-The sample kernel specifications included in Enterprise Gateway include the necessary Apach Toree libraries so its installation is not necessary.  In addition, because Apache Toree targets Spark installations, its distribution can be achieved via `spark-submit` and its installation is not necessary on worker nodes - except for [distributed deployments](deploy-distributed.md).
+The sample kernel specifications included in Enterprise Gateway include the necessary Apach Toree libraries so its installation is not necessary. In addition, because Apache Toree targets Spark installations, its distribution can be achieved via `spark-submit` and its installation is not necessary on worker nodes - except for [distributed deployments](deploy-distributed.md).
 
 ## R Kernel (IRkernel)
 
-Perform the following steps on Jupyter Enterprise Gateway hosting system as well as all worker nodes.  Please refer to the [IRKernel documentation](https://irkernel.github.io/) for further details.
+Perform the following steps on Jupyter Enterprise Gateway hosting system as well as all worker nodes. Please refer to the [IRKernel documentation](https://irkernel.github.io/) for further details.
 
 ```Bash
 conda install --yes --quiet -c r r-essentials r-irkernel r-argparse

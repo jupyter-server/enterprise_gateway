@@ -9,12 +9,8 @@
       "url": "https://jupyter.org"
     }
   },
-  "produces": [
-    "application/json"
-  ],
-  "consumes": [
-    "application/json"
-  ],
+  "produces": ["application/json"],
+  "consumes": ["application/json"],
   "parameters": {
     "kernel": {
       "name": "kernel_id",
@@ -59,9 +55,7 @@
     "/api": {
       "get": {
         "summary": "Get API info",
-        "tags": [
-          "api"
-        ],
+        "tags": ["api"],
         "responses": {
           "200": {
             "description": "Returns information about the API",
@@ -74,13 +68,9 @@
     },
     "/api/swagger.yaml": {
       "get": {
-        "produces": [
-          "text/x-yaml"
-        ],
+        "produces": ["text/x-yaml"],
         "summary": "Get API info",
-        "tags": [
-          "api"
-        ],
+        "tags": ["api"],
         "responses": {
           "200": {
             "description": "Returns a swagger specification in yaml"
@@ -91,9 +81,7 @@
     "/api/swagger.json": {
       "get": {
         "summary": "Get API info",
-        "tags": [
-          "api"
-        ],
+        "tags": ["api"],
         "responses": {
           "200": {
             "description": "Returns a swagger specification in json"
@@ -104,15 +92,13 @@
     "/api/kernelspecs": {
       "get": {
         "summary": "Get kernel specs",
-        "tags": [
-          "kernelspecs"
-        ],
+        "tags": ["kernelspecs"],
         "parameters": {
-            "name": "user",
-            "required": false,
-            "in": "query",
-            "description": "When present, kernelspec results will be filtered based on the configured authorization of specified value.",
-            "type": "string"
+          "name": "user",
+          "required": false,
+          "in": "query",
+          "description": "When present, kernelspec results will be filtered based on the configured authorization of specified value.",
+          "type": "string"
         },
         "responses": {
           "200": {
@@ -139,9 +125,7 @@
     "/api/kernels": {
       "get": {
         "summary": "List the JSON data for all currently running kernels",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "responses": {
           "200": {
             "description": "List of running kernels",
@@ -162,9 +146,7 @@
       },
       "post": {
         "summary": "Start a kernel and return the uuid",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "parameters": [
           {
             "name": "start_kernel_body",
@@ -218,9 +200,7 @@
       ],
       "get": {
         "summary": "Get kernel information",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "responses": {
           "200": {
             "description": "Information about the kernel",
@@ -232,9 +212,7 @@
       },
       "delete": {
         "summary": "Kill a kernel and delete the kernel id",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "responses": {
           "204": {
             "description": "Kernel deleted"
@@ -250,9 +228,7 @@
       ],
       "get": {
         "summary": "Upgrades the connection to a websocket connection.",
-        "tags": [
-          "channels"
-        ],
+        "tags": ["channels"],
         "responses": {
           "200": {
             "description": "The connection will be upgraded to a websocket."
@@ -268,9 +244,7 @@
       ],
       "post": {
         "summary": "Interrupt a kernel",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "responses": {
           "204": {
             "description": "Kernel interrupted"
@@ -286,9 +260,7 @@
       ],
       "post": {
         "summary": "Restart a kernel",
-        "tags": [
-          "kernels"
-        ],
+        "tags": ["kernels"],
         "responses": {
           "200": {
             "description": "Kernel interrupted",
@@ -309,9 +281,7 @@
     "/api/sessions": {
       "get": {
         "summary": "List available sessions",
-        "tags": [
-          "sessions"
-        ],
+        "tags": ["sessions"],
         "responses": {
           "200": {
             "description": "List of current sessions",
@@ -332,9 +302,7 @@
       },
       "post": {
         "summary": "Create a new session, or return an existing session if a session of the same name already exists.",
-        "tags": [
-          "sessions"
-        ],
+        "tags": ["sessions"],
         "parameters": [
           {
             "name": "session",
@@ -375,9 +343,7 @@
       ],
       "get": {
         "summary": "Get session",
-        "tags": [
-          "sessions"
-        ],
+        "tags": ["sessions"],
         "responses": {
           "200": {
             "description": "Session",
@@ -389,9 +355,7 @@
       },
       "patch": {
         "summary": "This can be used to rename the session.",
-        "tags": [
-          "sessions"
-        ],
+        "tags": ["sessions"],
         "parameters": [
           {
             "name": "model",
@@ -419,9 +383,7 @@
       },
       "delete": {
         "summary": "Delete a session",
-        "tags": [
-          "sessions"
-        ],
+        "tags": ["sessions"],
         "responses": {
           "204": {
             "description": "Session (and kernel) were deleted"
@@ -483,11 +445,7 @@
     },
     "KernelSpecFile": {
       "description": "Kernel spec json file",
-      "required": [
-        "argv",
-        "display_name",
-        "language"
-      ],
+      "required": ["argv", "display_name", "language"],
       "properties": {
         "language": {
           "type": "string",
@@ -525,10 +483,7 @@
           "description": "Help items to be displayed in the help menu in the notebook UI.",
           "items": {
             "type": "object",
-            "required": [
-              "text",
-              "url"
-            ],
+            "required": ["text", "url"],
             "properties": {
               "text": {
                 "type": "string",
@@ -546,10 +501,7 @@
     },
     "Kernel": {
       "description": "Kernel information",
-      "required": [
-        "id",
-        "name"
-      ],
+      "required": ["id", "name"],
       "properties": {
         "id": {
           "type": "string",

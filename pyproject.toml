@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.jupyter-releaser.options]
+ignore-links = ["http://my-gateway-server.com:8888"]
+
+[tool.pytest.ini_options]
+addopts = "-raXs --durations 10 --color=yes --doctest-modules"
+testpaths = [
+    "enterprise_gateway/tests/"
+]
+filterwarnings = [
+  "error",
+  "ignore:There is no current event loop:DeprecationWarning",
+  "ignore:Passing unrecognized arguments to super:DeprecationWarning:jupyter_client",
+]

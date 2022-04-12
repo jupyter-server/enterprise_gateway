@@ -1,7 +1,9 @@
-import unittest
 import os
-from .test_base import TestBase
+import unittest
+
 from enterprise_gateway.client.gateway_client import GatewayClient
+
+from .test_base import TestBase
 
 
 class PythonKernelBaseTestCase(TestBase):
@@ -15,7 +17,7 @@ class PythonKernelBaseTestCase(TestBase):
 
     def test_hello_world(self):
         result = self.kernel.execute("print('Hello World')")
-        self.assertRegex(result, 'Hello World')
+        self.assertRegex(result, "Hello World")
 
     def test_restart(self):
 
@@ -30,7 +32,7 @@ class PythonKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("y = x + 1")
-        self.assertRegex(error_result, 'NameError')
+        self.assertRegex(error_result, "NameError")
 
     def test_interrupt(self):
 
@@ -58,7 +60,7 @@ class PythonKernelBaseTestCase(TestBase):
         interrupted_result = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
-        self.assertRegex(interrupted_result, 'KeyboardInterrupt')
+        self.assertRegex(interrupted_result, "KeyboardInterrupt")
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
@@ -70,7 +72,7 @@ class PythonKernelBaseTestCase(TestBase):
 
     def test_scope(self):
         # Ensure global variable is accessible in function.
-        # See https://github.com/jupyter/enterprise_gateway/issues/687
+        # See https://github.com/jupyter-server/enterprise_gateway/issues/687
         # Build the example code...
         scope_code = list()
         scope_code.append("a = 42\n")
@@ -115,9 +117,9 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
         pi_code.append("    y = random() * 2 - 1\n")
         pi_code.append("    return 1 if x ** 2 + y ** 2 <= 1 else 0\n")
         pi_code.append("count = sc.parallelize(range(1, n + 1), partitions).map(f).reduce(add)\n")
-        pi_code.append("print(\"Pi is roughly %f\" % (4.0 * count / n))\n")
+        pi_code.append('print("Pi is roughly %f" % (4.0 * count / n))\n')
         result = self.kernel.execute(pi_code)
-        self.assertRegex(result, 'Pi is roughly 3.14*')
+        self.assertRegex(result, "Pi is roughly 3.14*")
 
 
 class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
@@ -125,8 +127,8 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPythonKernelLocal, cls).setUpClass()
-        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().setUpClass()
+        print(f"\nStarting Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -134,20 +136,22 @@ class TestPythonKernelLocal(unittest.TestCase, PythonKernelBaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPythonKernelLocal, cls).tearDownClass()
-        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().tearDownClass()
+        print(f"\nShutting down Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_DISTRIBUTED_NAME", "python_distributed")  # python_kubernetes for k8s
+    KERNELSPEC = os.getenv(
+        "PYTHON_KERNEL_DISTRIBUTED_NAME", "python_distributed"
+    )  # python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
-        super(TestPythonKernelDistributed, cls).setUpClass()
-        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().setUpClass()
+        print(f"\nStarting Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -155,20 +159,22 @@ class TestPythonKernelDistributed(unittest.TestCase, PythonKernelBaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPythonKernelDistributed, cls).tearDownClass()
-        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().tearDownClass()
+        print(f"\nShutting down Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseSparkTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client")  # spark_python_kubernetes for k8s
+    KERNELSPEC = os.getenv(
+        "PYTHON_KERNEL_CLIENT_NAME", "spark_python_yarn_client"
+    )  # spark_python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
-        super(TestPythonKernelClient, cls).setUpClass()
-        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().setUpClass()
+        print(f"\nStarting Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -176,20 +182,22 @@ class TestPythonKernelClient(unittest.TestCase, PythonKernelBaseSparkTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPythonKernelClient, cls).tearDownClass()
-        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().tearDownClass()
+        print(f"\nShutting down Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
 class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseSparkTestCase):
-    KERNELSPEC = os.getenv("PYTHON_KERNEL_CLUSTER_NAME", "spark_python_yarn_cluster")  # spark_python_kubernetes for k8s
+    KERNELSPEC = os.getenv(
+        "PYTHON_KERNEL_CLUSTER_NAME", "spark_python_yarn_cluster"
+    )  # spark_python_kubernetes for k8s
 
     @classmethod
     def setUpClass(cls):
-        super(TestPythonKernelCluster, cls).setUpClass()
-        print('\nStarting Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().setUpClass()
+        print(f"\nStarting Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # initialize environment
         cls.gatewayClient = GatewayClient()
@@ -197,12 +205,12 @@ class TestPythonKernelCluster(unittest.TestCase, PythonKernelBaseSparkTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPythonKernelCluster, cls).tearDownClass()
-        print('\nShutting down Python kernel using {} kernelspec'.format(cls.KERNELSPEC))
+        super().tearDownClass()
+        print(f"\nShutting down Python kernel using {cls.KERNELSPEC} kernelspec")
 
         # shutdown environment
         cls.gatewayClient.shutdown_kernel(cls.kernel)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

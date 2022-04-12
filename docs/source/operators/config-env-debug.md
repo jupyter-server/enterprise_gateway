@@ -1,5 +1,7 @@
 # Environment variables that assist in troubleshooting
+
 The following environment variables may be useful for troubleshooting:
+
 ```text
   EG_DOCKER_LOG_LEVEL=WARNING
     By default, the docker client library is too verbose for its logging.  This
@@ -23,7 +25,7 @@ The following environment variables may be useful for troubleshooting:
     should rarely be necessary.
 
   EG_POLL_INTERVAL=0.5
-    The interval (in seconds) to wait before checking poll results again.  
+    The interval (in seconds) to wait before checking poll results again.
 
   EG_REMOVE_CONTAINER=True
     Used by launch_docker.py, indicates whether the kernel's docker container should be

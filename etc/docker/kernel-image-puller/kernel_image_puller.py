@@ -1,16 +1,14 @@
 import logging
 import os
 import queue
-import requests
 import time
+from subprocess import CalledProcessError, run
+from threading import Thread
+from typing import List, Optional
 
+import requests
 from docker.client import DockerClient
 from docker.errors import NotFound
-from subprocess import run
-from subprocess import CalledProcessError
-from threading import Thread
-from typing import List
-from typing import Optional
 
 gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:8888")
 num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
@@ -33,7 +31,7 @@ DOCKER_CLIENT = "docker"
 CONTAINERD_CLIENT = "containerd"
 supported_container_runtimes = (DOCKER_CLIENT, CONTAINERD_CLIENT)
 
-logging.basicConfig(format='[%(levelname)1.1s %(asctime)s %(name)s.%(threadName)s] %(message)s')
+logging.basicConfig(format="[%(levelname)1.1s %(asctime)s %(name)s.%(threadName)s] %(message)s")
 
 
 def get_kernelspecs():
@@ -58,26 +56,28 @@ def fetch_image_names():
     kspecs = None
     try:
         kspecs_response = get_kernelspecs()
-        kspecs = kspecs_response.get('kernelspecs')
+        kspecs = kspecs_response.get("kernelspecs")
     except Exception as ex:
-        logger.error(f"Got exception attempting to retrieve kernelspecs - retrying. Exception was: {ex}")
-    finally:
-        if kspecs is None:
-            return False
+        logger.error(
+            f"Got exception attempting to retrieve kernelspecs - retrying. Exception was: {ex}"
+        )
+
+    if kspecs is None:
+        return False
 
     # Locate the configured images within the kernelspecs and add to set for duplicate management
     images = set()
     for key in kspecs.keys():
-        metadata = kspecs.get(key).get('spec').get('metadata')
+        metadata = kspecs.get(key).get("spec").get("metadata")
         if metadata is not None:
-            process_proxy = metadata.get('process_proxy')
+            process_proxy = metadata.get("process_proxy")
             if process_proxy is not None:
-                config = process_proxy.get('config')
+                config = process_proxy.get("config")
                 if config is not None:
-                    image_name = config.get('image_name')
+                    image_name = config.get("image_name")
                     if image_name is not None:
                         images.add(image_name)
-                    executor_image_name = config.get('executor_image_name')
+                    executor_image_name = config.get("executor_image_name")
                     if executor_image_name is not None:
                         images.add(executor_image_name)
 
@@ -101,11 +101,15 @@ def pull_image(image_name):
         if image_name in pulled_images:
             # Image has been pulled, but make sure it still exists.  If it doesn't exist
             # let this drop through to actual pull
-            logger.info(f"Image '{image_name}' already pulled and policy is '{policy}'.  Checking existence.")
+            logger.info(
+                f"Image '{image_name}' already pulled and policy is '{policy}'.  Checking existence."
+            )
             if image_exists(image_name):
                 return
             pulled_images.remove(image_name)
-            logger.warning(f"Previously pulled image '{image_name}' was not found - attempting pull...")
+            logger.warning(
+                f"Previously pulled image '{image_name}' was not found - attempting pull..."
+            )
 
     logger.info(f"Pulling image '{image_name}'...")
     if download_image(image_name):
@@ -115,11 +119,11 @@ def pull_image(image_name):
 
 
 def get_absolute_image_name(image_name: str) -> str:
-    """Ensures the image name is prefixed with a "registry". """
+    """Ensures the image name is prefixed with a "registry"."""
     # We will check for the form 'registry/repo/image:tag' if the 'registry/' prefix
     # is missing (based on the absence of two slashes), then we'll prefix the image
     # name with the KIP_DEFAULT_CONTAINER_REGISTRY env value.
-    image_pieces = image_name.split('/')
+    image_pieces = image_name.split("/")
     if len(image_pieces) < 3:  # we're missing a registry specifier, use env
         return f"{default_container_registry}/{image_name}"
     return image_name  # take our chances
@@ -136,13 +140,15 @@ def image_exists(image_name: str) -> bool:
         except NotFound:
             result = False
     elif container_runtime == CONTAINERD_CLIENT:
-        argv = ['crictl', '-r', runtime_endpoint, 'inspecti', '-q', absolute_image_name]
+        argv = ["crictl", "-r", runtime_endpoint, "inspecti", "-q", absolute_image_name]
         result = execute_cmd(argv)
     else:  # invalid container runtime
         logger.error(f"Invalid container runtime detected: '{container_runtime}'!")
         result = False
     t1 = time.time()
-    logger.debug(f"Checked existence of image '{image_name}' in {(t1 - t0):.3f} secs.  exists = {result}")
+    logger.debug(
+        f"Checked existence of image '{image_name}' in {(t1 - t0):.3f} secs.  exists = {result}"
+    )
     return result
 
 
@@ -157,7 +163,7 @@ def download_image(image_name: str) -> bool:
         except NotFound:
             result = False
     elif container_runtime == CONTAINERD_CLIENT:
-        argv = ['crictl', '-r', runtime_endpoint, 'pull', absolute_image_name]
+        argv = ["crictl", "-r", runtime_endpoint, "pull", absolute_image_name]
         result = execute_cmd(argv)
     else:  # invalid container runtime
         logger.error(f"Invalid container runtime detected: '{container_runtime}'!")
@@ -206,10 +212,14 @@ def puller():
             except Exception as ex:
                 i += 1
                 if i < num_retries:
-                    logger.warning(f"Attempt {i} to pull image '{image_name}' encountered exception - retrying.  "
-                                   f"Exception was: {ex}.")
+                    logger.warning(
+                        f"Attempt {i} to pull image '{image_name}' encountered exception - retrying.  "
+                        f"Exception was: {ex}."
+                    )
                 else:
-                    logger.error(f"Attempt {i} to pull image '{image_name}' failed with exception: {ex}")
+                    logger.error(
+                        f"Attempt {i} to pull image '{image_name}' failed with exception: {ex}"
+                    )
         name_queue.task_done()
 
 
@@ -228,7 +238,7 @@ def get_container_runtime() -> Optional[str]:
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger('kernel_image_puller')
+    logger = logging.getLogger("kernel_image_puller")
     logger.setLevel(log_level)
 
     container_runtime = get_container_runtime()
@@ -236,8 +246,10 @@ if __name__ == "__main__":
     # Determine pull policy.
     pulled_images = set()
     if policy not in policies:
-        logger.warning(f"Invalid pull policy detected in KIP_PULL_POLICY: '{policy}'.  "
-                       f"Using policy '{POLICY_IF_NOT_PRESENT}'.")
+        logger.warning(
+            f"Invalid pull policy detected in KIP_PULL_POLICY: '{policy}'.  "
+            f"Using policy '{POLICY_IF_NOT_PRESENT}'."
+        )
         policy = POLICY_IF_NOT_PRESENT
 
     logger.info("Starting Kernel Image Puller with the following parameters:")
@@ -253,8 +265,10 @@ if __name__ == "__main__":
     if is_runtime_endpoint_recognized():
         logger.info(f"Detected container runtime: {container_runtime}")
     else:
-        logger.warning(f"This node's container runtime interface could not be detected from "
-                       f"endpoint: {runtime_endpoint}, proceeding with {container_runtime} client...")
+        logger.warning(
+            f"This node's container runtime interface could not be detected from "
+            f"endpoint: {runtime_endpoint}, proceeding with {container_runtime} client..."
+        )
 
     # Create an empty queue and start the puller threads.  The number of puller threads is configurable.
     name_queue = queue.Queue()

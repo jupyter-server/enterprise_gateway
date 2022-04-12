@@ -28,14 +28,14 @@ to the kernel pod, providing necessary power for training Deep Learning models.
 
 <br/>
 
-### Deployment  
+### Deployment
 
 <br/>
 
 Jupyter Enterprise Gateway can easily be deployed into your Kubernetes cluster:
 
 <div>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/jupyter/enterprise_gateway/master/etc/kubernetes/enterprise-gateway.yaml</code></pre>  
+<pre><code>kubectl apply -f https://raw.githubusercontent.com/jupyter/enterprise_gateway/main/etc/kubernetes/enterprise-gateway.yaml</code></pre>
 </div>
 
 
@@ -48,4 +48,3 @@ test environments, these scripts might be useful for users trying to get started
 on a Kubernetes environment.
 
 * Ansible Deployment scripts : <a href="https://github.com/lresende/ansible-spark-cluster">ansible-kubernetes-cluster</a>
-

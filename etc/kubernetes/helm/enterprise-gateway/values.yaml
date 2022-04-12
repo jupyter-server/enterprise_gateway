@@ -53,8 +53,8 @@ nfs:
 
 kernelspecsPvc:
   enabled: false
-  # PVC name. Required if want mount kernelspecs without nfs. PVC should create in the same namespace before EG deployed. 
-  name: 
+  # PVC name. Required if want mount kernelspecs without nfs. PVC should create in the same namespace before EG deployed.
+  name:
 
 ingress:
   enabled: false
@@ -96,4 +96,3 @@ kip:
   defaultContainerRegistry: docker.io
   # The name of a secret with type 'kubernetes.io/dockerconfigjson' for pulling kernel images from private Docker registries
   imagePullSecret: ""
-
