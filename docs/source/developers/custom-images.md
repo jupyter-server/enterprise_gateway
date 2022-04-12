@@ -29,7 +29,7 @@ Custom kernel images require some support files from the Enterprise Gateway repo
 
 #### Bootstrap-kernel.sh
 
-Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala. When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables. The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
+Enterprise Gateway provides a single [bootstrap-kernel.sh](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/bootstrap/bootstrap-kernel.sh) script that handles the three kernel languages supported out of the box - Python, R, and Scala. When a kernel image is started by Enterprise Gateway, parameters used within the bootstrap-kernel.sh script are conveyed via environment variables. The bootstrap script is then responsible for validating and converting those parameters to meaningful arguments to the appropriate launcher.
 
 #### Kernel Launcher
 

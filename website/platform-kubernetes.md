@@ -35,7 +35,7 @@ to the kernel pod, providing necessary power for training Deep Learning models.
 Jupyter Enterprise Gateway can easily be deployed into your Kubernetes cluster:
 
 <div>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/jupyter/enterprise_gateway/master/etc/kubernetes/enterprise-gateway.yaml</code></pre>
+<pre><code>kubectl apply -f https://raw.githubusercontent.com/jupyter/enterprise_gateway/main/etc/kubernetes/enterprise-gateway.yaml</code></pre>
 </div>
 
 
