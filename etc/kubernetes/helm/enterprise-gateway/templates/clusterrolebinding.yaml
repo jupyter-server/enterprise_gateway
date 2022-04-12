@@ -10,7 +10,7 @@ metadata:
     heritage: {{ .Release.Service }}
 subjects:
   - kind: ServiceAccount
-    name: enterprise-gateway-sa
+    name: {{ .Values.global.serviceAccountName }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole

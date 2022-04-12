@@ -18,7 +18,7 @@ spec:
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
     spec:
-      serviceAccountName: enterprise-gateway-sa
+      serviceAccountName: {{ .Values.global.serviceAccountName }}
       containers:
       - name: kernel-image-puller
         image: {{ .Values.kip.image }}
