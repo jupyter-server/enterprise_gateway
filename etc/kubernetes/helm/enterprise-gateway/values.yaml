@@ -1,4 +1,6 @@
 global:
+  # Craete RBAC resources
+  rbac: true
   serviceAccountName: 'enterprise-gateway-sa'
   # ImagePullSecrets for all ServiceAccount, list of secrets in the same namespace
   # to use for pulling any images in pods that reference this ServiceAccount.
