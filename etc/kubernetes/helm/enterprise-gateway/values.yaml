@@ -2,11 +2,24 @@ global:
   # Craete RBAC resources
   rbac: true
   serviceAccountName: 'enterprise-gateway-sa'
-  # ImagePullSecrets for all ServiceAccount, list of secrets in the same namespace
+  # ImagePullSecrets for a ServiceAccount, list of secrets in the same namespace
   # to use for pulling any images in pods that reference this ServiceAccount.
   # Must be set for any cluster configured with private docker registry.
   imagePullSecrets: []
   # - private-registry-key
+
+# You can optionally create imagePull Secrets
+imagePullSecretsCreate:
+  enabled: false
+  annotations: {}
+    # this annotatoin allows to keep secret even if helm release is deleted
+    # "helm.sh/resource-policy": "keep"
+  secrets: []
+    # - name: "private"
+    # # base64 encoded value
+    #   --set imagePullSecret.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
+    # - name: "private2"
+    #   --set imagePullSecret.secrets[1].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
 
 # Enterprise Gateway image name and tag to use.
 image: elyra/enterprise-gateway:dev
@@ -92,9 +105,9 @@ ingress:
   enabled: false
   hostName: "" # Ingress resource host
   pathType: "Prefix"
-  # nginx:
+  # for nginx:
   # path: /gateway/?(.*)
-  # traefik:
+  # for traefik:
   # path: "/gateway"
   path: "/gateway"
   annotations: {}
