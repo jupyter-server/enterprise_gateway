@@ -17,9 +17,9 @@ imagePullSecretsCreate:
   secrets: []
     # - name: "private"
     # # base64 encoded value
-    #   --set imagePullSecret.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
+    #   --set imagePullSecretsCreate.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
     # - name: "private2"
-    #   --set imagePullSecret.secrets[1].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
+    #   --set imagePullSecretsCreate.secrets[1].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
 
 # Enterprise Gateway image name and tag to use.
 image: elyra/enterprise-gateway:dev
