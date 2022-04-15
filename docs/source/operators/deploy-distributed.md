@@ -75,7 +75,7 @@ _Environment_:
 export EG_LOAD_BALANCING_ALGORITHM=round-robin
 ```
 
-Since _round-robin_ is the defualt load-balancing algorithm, this option is not necessary.
+Since _round-robin_ is the default load-balancing algorithm, this option is not necessary.
 
 ### Least-connection
 
