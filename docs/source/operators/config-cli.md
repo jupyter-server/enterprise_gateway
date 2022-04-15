@@ -185,6 +185,11 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     /api/sessions. (EG_LIST_KERNELS env var) Note: Jupyter Notebook allows this
     by default but Jupyter Enterprise Gateway does not.
     Default: False
+--EnterpriseGatewayApp.load_balancing_algorithm=<Unicode>
+    Specifies which load balancing algorithm DistributedProcessProxy should use.
+    Must be one of "round-robin" or "least-connection".
+    (EG_LOAD_BALANCING_ALGORITHM env var)
+    Default: 'round-robin'
 --EnterpriseGatewayApp.log_datefmt=<Unicode>
     The date format used by logging formatters for %(asctime)s
     Default: '%Y-%m-%d %H:%M:%S'
