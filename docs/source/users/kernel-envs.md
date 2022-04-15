@@ -2,7 +2,7 @@
 
 The Enterprise Gateway client software will also include _any_ environment variables prefixed with `KERNEL_` in the start kernel request sent to the Enterprise Gateway Server. This enables the ability to _statically parameterize_ aspects of kernel start requests relative to other clients using the same Enterprise Gateway instance.
 
-There are several supported `KERNEL_` variables that the Enterprise Gateway server looks for and uses, but others can be sent to customize behaviors. The following kernel-specific environment variables are used by Enterprise Gateway. As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's json body will be available to the kernel for its launch.
+There are several supported `KERNEL_` variables that the Enterprise Gateway server looks for and uses, but others can be sent to customize behaviors. The following kernel-specific environment variables are used by Enterprise Gateway. As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's JSON body will be available to the kernel for its launch.
 
 ```text
   KERNEL_GID=<from user> or 100
@@ -76,6 +76,10 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     it is the user's responsibility that KERNEL_POD_NAME is unique relative to
     any pods in the target namespace.  In addition, the pod must NOT exist -
     unlike the case if KERNEL_NAMESPACE is provided.
+
+  KERNEL_REMOTE_HOST=<remote host name>
+    DistributedProcessProxy only.  When specified, this value will override the
+    configured load-balancing algorithm.
 
   KERNEL_SERVICE_ACCOUNT_NAME=<from user> or EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
     Kubernetes only.  This value represents the name of the service account that
