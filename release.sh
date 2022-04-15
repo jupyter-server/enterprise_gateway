@@ -203,7 +203,9 @@ function update_version_to_release {
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm chart and values files
+    sed -i .bak "s@appVersion: [0-9,\.,a-z]*@appVersion: $RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
     sed -i .bak "s@version: [0-9,\.,a-z]*@version: $RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 
@@ -228,7 +230,11 @@ function update_version_to_development {
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm chart and values files
-    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $DEVELOPMENT_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+    sed -i .bak "s@appVersion: [0-9,\.,a-z]*@appVersion: $DEVELOPMENT_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+    # We need to strip off any ".devN" suffix from the dev version for 'version:' since it must follow strict semantic version rules.
+    k8s_version=`echo $DEVELOPMENT_VERSION | sed 's/\.dev.//'`
+    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 
