@@ -35,6 +35,8 @@ logging.basicConfig(format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]
 logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
 
+DEFAULT_KERNEL_CLASS_NAME = "ipykernel.ipkernel.IPythonKernel"
+
 
 class ExceptionThread(Thread):
     # Wrap thread to handle the exception
@@ -178,11 +180,15 @@ def _validate_port_range(port_range):
                 )
     except ValueError as ve:
         raise RuntimeError(
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
+            "Port range validation failed for range: '{port_range}'.  Error was: {ve}".format(
+                port_range=port_range, ve=ve
+            )
         )
     except IndexError as ie:
         raise RuntimeError(
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
+            "Port range validation failed for range: '{port_range}'.  Error was: {ie}".format(
+                port_range=port_range, ie=ie
+            )
         )
 
     return lower_port, upper_port
@@ -396,8 +402,42 @@ def server_listener(sock, parent_pid):
                 logger.info(f"server_listener got request: {request}")
 
 
-def start_ipython(namespace, cluster_type="spark", **kwargs):
-    from IPython import embed_kernel
+def import_item(name):
+    """Import and return ``bar`` given the string ``foo.bar``.
+    Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
+    executing the code ``from foo import bar``.
+    Parameters
+    ----------
+    name : string
+      The fully qualified name of the module/package being imported.
+    Returns
+    -------
+    mod : module object
+       The module that was imported.
+    """
+
+    parts = name.rsplit(".", 1)
+    if len(parts) == 2:
+        # called with 'foo.bar....'
+        package, obj = parts
+        module = __import__(package, fromlist=[obj])
+        try:
+            pak = getattr(module, obj)
+        except AttributeError:
+            raise ImportError("No module named %s" % obj)
+        return pak
+    else:
+        # called with un-dotted string
+        return __import__(parts[0])
+
+
+def start_ipython(
+    namespace, cluster_type="spark", kernel_class_name=DEFAULT_KERNEL_CLASS_NAME, **kwargs
+):
+    from ipykernel.kernelapp import IPKernelApp
+
+    # Capture the kernel class before removing 'import_item' from the namespace
+    kernel_class = import_item(kernel_class_name)
 
     # create an initial list of variables to clear
     # we do this without deleting to preserve the locals so that
@@ -411,8 +451,10 @@ def start_ipython(namespace, cluster_type="spark", **kwargs):
     for k in to_delete:
         del namespace[k]
 
-    # Start the kernel
-    embed_kernel(local_ns=namespace, **kwargs)
+    # Start the kernel.
+    app = IPKernelApp.instance(kernel_class=kernel_class, user_ns=namespace, **kwargs)
+    app.initialize([])
+    app.start()
 
 
 if __name__ == "__main__":
@@ -455,6 +497,13 @@ if __name__ == "__main__":
         dest="cluster_type",
         nargs="?",
         help="the kind of cluster to initialize: spark, dask, or none",
+    )
+    parser.add_argument(
+        "--kernel-class-name",
+        dest="kernel_class_name",
+        nargs="?",
+        default=DEFAULT_KERNEL_CLASS_NAME,
+        help="Indicates the name of the kernel class to use.  Must be a subclass of 'ipykernel.kernelbase.Kernel'.",
     )
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default values for --spark-context-initialization-mode (none) and --cluster-type (spark)
@@ -513,6 +562,7 @@ if __name__ == "__main__":
     )
     spark_init_mode = arguments["init_mode"] or arguments["rpp_init_mode"]
     cluster_type = arguments["cluster_type"] or arguments["rpp_cluster_type"]
+    kernel_class_name = arguments["kernel_class_name"]
     ip = "0.0.0.0"
 
     if connection_file is None and kernel_id is None:
@@ -562,7 +612,13 @@ if __name__ == "__main__":
         cluster_type = "none"
 
     # launch the IPython kernel instance
-    start_ipython(locals(), cluster_type=cluster_type, connection_file=connection_file, ip=ip)
+    start_ipython(
+        locals(),
+        cluster_type=cluster_type,
+        connection_file=connection_file,
+        ip=ip,
+        kernel_class_name=kernel_class_name,
+    )
 
     try:
         os.remove(connection_file)
