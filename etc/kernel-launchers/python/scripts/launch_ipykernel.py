@@ -203,7 +203,7 @@ def determine_connection_file(conn_file, kid):
             basename = os.path.splitext(os.path.basename(conn_file))[0]
         fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
         os.close(fd)
-        logger.debug("Using connection file '{conn_file}'.".format(conn_file=conn_file))
+        logger.debug(f"Using connection file '{conn_file}'.")
 
     return conn_file
 
@@ -279,9 +279,9 @@ def return_connection_info(
     try:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding="utf-8")
-        logger.debug("JSON Payload '{json_content}".format(json_content=json_content))
+        logger.debug(f"JSON Payload '{json_content}")
         payload = _encrypt(json_content, public_key)
-        logger.debug("Encrypted Payload '{payload}".format(payload=payload))
+        logger.debug(f"Encrypted Payload '{payload}")
         s.send(payload)
     finally:
         s.close()
@@ -399,7 +399,7 @@ def server_listener(sock, parent_pid):
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
             if signum != 0:
-                logger.info("server_listener got request: {request}".format(request=request))
+                logger.info(f"server_listener got request: {request}")
 
 
 def import_item(name):
