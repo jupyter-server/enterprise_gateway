@@ -32,33 +32,26 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
-      - name: Build Jupyter Enterprise Gateway conda env
-        run: |
-          SA="source $CONDA_HOME/bin/activate" make env
       - name: Build and install Jupyter Enterprise Gateway
         uses: nick-invision/retry@v1.0.0
         with:
           timeout_minutes: 10
           max_attempts: 2
           command: |
-            SA="source $CONDA_HOME/bin/activate" make clean dist enterprise-gateway-demo
-            python -m pip install --upgrade dist/*.whl
+            make clean dist enterprise-gateway-demo test-install-wheel
       - name: Log current Python dependencies version
         run: |
           pip freeze
-      - name: Log current Enterprise Gateway version
-        run: |
-          jupyter enterprisegateway --help
-      - name: Run tests
+      - name: Run unit tests
         uses: nick-invision/retry@v1.0.0
         with:
           timeout_minutes: 3
           max_attempts: 1
           command: |
-            pytest -vv
+            make test
       - name: Run integration tests
         run: |
-          SA="source $CONDA_HOME/bin/activate" make itest-yarn
+          make itest-yarn
       - name: Collect logs
         run: |
           python --version
@@ -101,5 +94,4 @@ jobs:
       - name: Build Docs
         run: |
           cd docs
-          pip install -r doc-requirements.txt
-          make html SPHINXOPTS="-W"
+          make requirements html SPHINXOPTS="-W"
