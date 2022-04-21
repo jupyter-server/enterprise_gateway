@@ -25,6 +25,7 @@ endif
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
 WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
 
+HELM_DESIRED_VERSION:=v3.8.2  # Pin the version of helm to use (v3.8.2 is latest as of 4/21/22)
 HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway/Chart.yaml | sed 's/version: //')
 HELM_CHART:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
 HELM_CHART_DIR:=etc/kubernetes/helm/enterprise-gateway
@@ -106,7 +107,7 @@ helm-install: $(HELM_INSTALL_DIR)/helm
 $(HELM_INSTALL_DIR)/helm: # Download and install helm
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o /tmp/get_helm.sh \
 	&& chmod +x /tmp/get_helm.sh \
-	&& /tmp/get_helm.sh \
+	&& DESIRED_VERSION=$(HELM_DESIRED_VERSION) /tmp/get_helm.sh \
 	&& rm -f /tmp/get_helm.sh
 
 helm-lint: helm-clean
