@@ -1,8 +1,8 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs install sdist test release clean-images clean-enterprise-gateway \
-    clean-demo-base clean-kernel-images clean-enterprise-gateway \
+.PHONY: help build clean nuke dev dev-http docs install bdist sdist test release check_dists \
+    clean-images clean-enterprise-gateway clean-demo-base clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-demo-base \
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
@@ -20,8 +20,11 @@ else
 endif
 
 
-WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
-WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
+#WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
+WHEEL_FILES:=$(shell find enterprise_gateway -type f )
+WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py3-none-any.whl
+SDIST_FILE:=dist/jupyter_enterprise_gateway-$(VERSION).tar.gz
+DIST_FILES=$(WHEEL_FILE) $(SDIST_FILE)
 
 HELM_CHART:=dist/jupyter_enterprise_gateway_helm-$(VERSION).tgz
 HELM_CHART_FILES:=$(shell find etc/kubernetes/helm -type f)
@@ -68,15 +71,16 @@ test-install-tar:
 	pip install dist/jupyter_enterprise_gateway-*.tar.gz && \
 		jupyter enterprisegateway --help
 
-bdist: lint
-	make $(WHEEL_FILE)
+bdist: $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)
-	python setup.py bdist_wheel $(POST_SDIST) \
+	pip install build && python -m build --wheel . \
 		&& rm -rf *.egg-info
 
-sdist:
-	python setup.py sdist $(POST_SDIST) \
+sdist: $(SDIST_FILE)
+
+$(SDIST_FILE): $(WHEEL_FILES)
+	pip install build && python -m build --sdist . \
 		&& rm -rf *.egg-info
 
 helm-chart: ## Make helm chart distribution
@@ -101,8 +105,11 @@ else
 	pytest -vv $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
-release: POST_SDIST=upload
-release: bdist sdist ## Make a wheel + source release on PyPI
+release: dist check_dists ## Make a wheel + source release on PyPI
+	twine upload $(DIST_FILES)
+
+check_dists:
+	pip install twine && twine check --strict $(DIST_FILES)
 
 # Here for doc purposes
 docker-images:  ## Build docker images (includes kernel-based images)
