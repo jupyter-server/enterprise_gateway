@@ -84,4 +84,6 @@ For container-based environments, the `argv` may instead reference a script that
 }
 ```
 
+When using the `launch_ipykernel` launcher (aka the Python kernel launcher), subclasses of `ipykernel.kernelbase.Kernel` can be launched. By default, this launcher uses the classname `"ipykernel.ipkernel.IPythonKernel"`, but other subclasses of `ipykernel.kernelbase.Kernel` can be specified by adding a `--kernel-class-name` parameter to the `argv` stanza. See [Invoking subclasses of `ipykernel.kernelbase.Kernel`](kernel-launcher.md#invoking-subclasses-of-ipykernelkernelbasekernel) for more information.
+
 As should be evident, kernel specifications are highly tuned to the runtime environment so your needs may be different, but _should_ resemble the approaches we've taken so far.

@@ -27,7 +27,49 @@ The payload is then [sent back on a socket](https://github.com/jupyter-server/en
 
 ## Invoking the target kernel
 
-For the Python kernel launcher it merely [embeds](https://github.com/jupyter-server/enterprise_gateway/blob/54c8e31d9b17418f35454b49db691d2ce5643c22/etc/kernel-launchers/python/scripts/launch_ipykernel.py#L382) the kernel using a facility provided by the IPython kernel. For the R kernel launcher, the kernel is started using [`IRKernel::main()`](https://github.com/jupyter-server/enterprise_gateway/blob/54c8e31d9b17418f35454b49db691d2ce5643c22/etc/kernel-launchers/R/scripts/launch_IRkernel.R#L252). The scala kernel launcher works similarly in that the kernel provides an "entrypoint" to start the kernel.
+For the R kernel launcher, the kernel is started using [`IRKernel::main()`](https://github.com/jupyter-server/enterprise_gateway/blob/54c8e31d9b17418f35454b49db691d2ce5643c22/etc/kernel-launchers/R/scripts/launch_IRkernel.R#L252) after the `SparkContext` is initialized based on the `spark-context-initialization-mode` parameter.
+
+The scala kernel launcher works similarly in that the Apache Toree kernel provides an ["entrypoint" to start the kernel](https://github.com/jupyter-server/enterprise_gateway/blob/00d7376b932eacd347b3c32c863691bfbad53b86/etc/kernel-launchers/scala/toree-launcher/src/main/scala/launcher/ToreeLauncher.scala#L332), however, because the Toree kernel initializes a `SparkContext` itself, the need to do so is conveyed directly to the kernel.
+
+For the Python kernel launcher, it creates a namespace instance that contains the `SparkContext` information, if requested to do so via the `spark-context-initialization-mode` parameter, instantiates an `IPKernelApp` instance using the configured namespace, then calls the [`start()`](https://github.com/ipython/ipykernel/blob/6f448d280dadbff7245f4b28b5e210c899d79342/ipykernel/kernelapp.py#L694) method.
+
+### Invoking subclasses of `ipykernel.kernelbase.Kernel`
+
+Because the python kernel launcher uses `IPKernelApp`, support for any subclass of `ipykernel.kernelbase.Kernel` can be launched by EG's Python kernel launcher.
+
+To specify an alternate subclass, add `--kernel-class-name` (along with the specified dotted class string) to the `kernel.json` file's `argv` stanza. EG's Python launcher will import that class and pass it as a parameter to `IPKernelApp.initialize()`.
+
+Here's an example `kernel.json` file that launches the "echo" kernel using the `DistributedProcessProxy`:
+
+```JSON
+{
+  "display_name": "Echo",
+  "language": "text",
+  "metadata": {
+    "process_proxy": {
+      "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
+    }
+  },
+  "argv": [
+    "python",
+    "/usr/local/share/jupyter/kernels/echo/scripts/launch_ipykernel.py",
+    "--RemoteProcessProxy.kernel-id",
+    "{kernel_id}",
+    "--RemoteProcessProxy.response-address",
+    "{response_address}",
+    "--RemoteProcessProxy.public-key",
+    "{public_key}",
+    "--RemoteProcessProxy.spark-context-initialization-mode",
+    "none",
+    "--kernel-class-name",
+    "echo_kernel.kernel.EchoKernel"
+  ]
+}
+```
+
+```{admonition} Important!
+The referenced `kernel-class-name` package must first be properly installed on all nodes where the associated process-proxy will run.
+```
 
 ## Listening for interrupt and shutdown requests
 
