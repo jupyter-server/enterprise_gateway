@@ -14,7 +14,6 @@ from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
-from future.utils import raise_from
 from jupyter_client.connect import write_connection_file
 
 LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
@@ -149,14 +148,12 @@ class WaitingForSparkSessionToBeInitialized:
             self._init_thread.join(timeout=None)
             exc = self._init_thread.exc
             if exc:
-                raise_from(
-                    RuntimeError(
-                        "Variable: {} was not initialized properly.".format(
-                            self._spark_session_variable
-                        )
-                    ),
-                    exc,
-                )
+                raise RuntimeError(
+                    "Variable: {} was not initialized properly.".format(
+                        self._spark_session_variable
+                    )
+                ) from exc
+
             # now return attribute/function reference from actual Spark object
             return getattr(self._namespace[self._spark_session_variable], name)
 
