@@ -149,9 +149,7 @@ class WaitingForSparkSessionToBeInitialized:
             exc = self._init_thread.exc
             if exc:
                 raise RuntimeError(
-                    "Variable: {} was not initialized properly.".format(
-                        self._spark_session_variable
-                    )
+                    f"Variable: {self._spark_session_variable} was not initialized properly."
                 ) from exc
 
             # now return attribute/function reference from actual Spark object
@@ -172,20 +170,16 @@ def _validate_port_range(port_range):
         if port_range_size != 0:
             if port_range_size < min_port_range_size:
                 raise RuntimeError(
-                    "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
-                    " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size)
+                    f"Port range validation failed for range: '{port_range}'.  Range size must be at least "
+                    f"{min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE"
                 )
     except ValueError as ve:
         raise RuntimeError(
-            "Port range validation failed for range: '{port_range}'.  Error was: {ve}".format(
-                port_range=port_range, ve=ve
-            )
+            f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
         )
     except IndexError as ie:
         raise RuntimeError(
-            "Port range validation failed for range: '{port_range}'.  Error was: {ie}".format(
-                port_range=port_range, ie=ie
-            )
+            f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
         )
 
     return lower_port, upper_port
@@ -200,7 +194,7 @@ def determine_connection_file(conn_file, kid):
             basename = os.path.splitext(os.path.basename(conn_file))[0]
         fd, conn_file = tempfile.mkstemp(suffix=".json", prefix=basename + "_")
         os.close(fd)
-        logger.debug("Using connection file '{conn_file}'.".format(conn_file=conn_file))
+        logger.debug(f"Using connection file '{conn_file}'.")
 
     return conn_file
 
@@ -243,8 +237,7 @@ def return_connection_info(
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error(
-            "Invalid format for response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid format for response address '{response_addr}'. Assuming 'pull' mode..."
         )
         return
 
@@ -253,8 +246,7 @@ def return_connection_info(
         response_port = int(response_parts[1])
     except ValueError:
         logger.error(
-            "Invalid port component found in response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid port component found in response address '{response_addr}'. Assuming 'pull' mode..."
         )
         return
 
@@ -276,9 +268,9 @@ def return_connection_info(
     try:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding="utf-8")
-        logger.debug("JSON Payload '{json_content}".format(json_content=json_content))
+        logger.debug(f"JSON Payload '{json_content}")
         payload = _encrypt(json_content, public_key)
-        logger.debug("Encrypted Payload '{payload}".format(payload=payload))
+        logger.debug(f"Encrypted Payload '{payload}")
         s.send(payload)
     finally:
         s.close()
@@ -293,9 +285,7 @@ def prepare_comm_socket(lower_port, upper_port):
     """
     sock = _select_socket(lower_port, upper_port)
     logger.info(
-        "Signal socket bound to host: {}, port: {}".format(
-            sock.getsockname()[0], sock.getsockname()[1]
-        )
+        f"Signal socket bound to host: {sock.getsockname()[0]}, port: {sock.getsockname()[1]}"
     )
     sock.listen(1)
     sock.settimeout(5)
@@ -334,9 +324,8 @@ def _select_socket(lower_port, upper_port):
             retries = retries + 1
             if retries > max_port_range_retries:
                 raise RuntimeError(
-                    "Failed to locate port within range {}..{} after {} retries!".format(
-                        lower_port, upper_port, max_port_range_retries
-                    )
+                    f"Failed to locate port within range {lower_port}..{upper_port} "
+                    f"after {max_port_range_retries} retries!"
                 )
     return sock
 
@@ -396,7 +385,7 @@ def server_listener(sock, parent_pid):
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
             if signum != 0:
-                logger.info("server_listener got request: {request}".format(request=request))
+                logger.info(f"server_listener got request: {request}")
 
 
 def import_item(name):

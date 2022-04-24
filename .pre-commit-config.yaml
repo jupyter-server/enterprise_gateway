@@ -46,7 +46,6 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
-        exclude: etc/kernel-launchers/python/scripts/launch_ipykernel.py
 
   - repo: https://github.com/PyCQA/doc8
     rev: 0.11.1
