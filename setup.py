@@ -29,6 +29,7 @@ A lightweight, multi-tenant, scalable and secure gateway that enables
 Jupyter Notebooks to share resources across distributed clusters such as
 Apache Spark, Kubernetes and others..
 """,
+    long_description_content_type="text/plain",
     version=version_ns["__version__"],
     license="BSD",
     platforms="Linux, Mac OS X, Windows",
