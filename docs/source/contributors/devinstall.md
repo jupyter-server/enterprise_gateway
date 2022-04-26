@@ -6,7 +6,7 @@ running tests, building docs, packaging kernel specifications, etc.
 
 ## Prerequisites
 
-Install [miniconda](https://conda.io/miniconda.html) and [GNU make](https://www.gnu.org/software/make/) on your system.
+Install [GNU make](https://www.gnu.org/software/make/) on your system.
 
 ## Clone the repo
 
@@ -28,17 +28,13 @@ Enterprise Gateway's build environment is centered around `make` and the corresp
 Entering `make` with no parameters yields the following:
 
 ```
-activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
 clean-images                   Remove docker images (includes kernel-based images)
 clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
-dev                            Make a server in jupyter_websocket mode
 dist                           Make source, binary, kernelspecs and helm chart distributions to dist folder
 docker-images                  Build docker images (includes kernel-based images)
 docs                           Make HTML documentation
-env                            Make a dev environment
 helm-chart                     Make helm chart distribution
-install                        Make a conda env with dist/jupyter_enterprise_gateway-*.whl and dist/jupyter_enterprise_gateway-*.tar.gz installed
 itest-docker-debug             Run integration tests (optionally) against docker container with print statements
 itest-docker                   Run integration tests (optionally) against docker swarm
 itest-yarn-debug               Run integration tests (optionally) against docker demo (YARN) container with print statements
@@ -46,34 +42,13 @@ itest-yarn                     Run integration tests (optionally) against docker
 kernel-images                  Build kernel-based docker images
 kernelspecs                    Create archives with sample kernelspecs
 lint                           Check code style
-nuke                           Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
+run-dev                        Make a server in jupyter_websocket mode
+test-install                   Install and minimally run EG with the wheel and tar distributions
 test                           Run unit tests
 ```
 
 Some of the more useful commands are listed below.
-
-## Build the conda environment
-
-Build a Python 3 conda environment containing the necessary dependencies for
-running the enterprise gateway server, running tests, and building documentation.
-
-```bash
-make env
-```
-
-By default, the env built will be named `enterprise-gateway-dev`. To produce a different conda env,
-you can specify the name via the `ENV=` parameter.
-
-```bash
-make ENV=my-conda-env env
-```
-
-```{admonition} Important!
-:class: warning
-If using a non-default conda env, all `make` commands should include the `ENV=` parameter,
-otherwise the command will use the default environment.
-```
 
 ## Build the wheel file
 
@@ -114,7 +89,7 @@ make dist
 Run an instance of the Enterprise Gateway server.
 
 ```bash
-make dev
+make run-dev
 ```
 
 Then access the running server at the URL printed in the console.
