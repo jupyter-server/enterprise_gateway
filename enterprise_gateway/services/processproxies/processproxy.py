@@ -33,7 +33,6 @@ from socket import (
     timeout,
 )
 
-import paramiko
 import pexpect
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
@@ -41,6 +40,8 @@ from Cryptodome.Util.Padding import unpad
 from jupyter_client import launch_kernel, localinterfaces
 from jupyter_server import _tz
 from jupyter_server.serverapp import random_ports
+from paramiko.client import AutoAddPolicy, RejectPolicy, SSHClient
+from paramiko.ssh_exception import AuthenticationException, SSHException
 from tornado import web
 from tornado.ioloop import PeriodicCallback
 from traitlets.config import SingletonConfigurable
@@ -659,15 +660,15 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         ssh = None
 
         try:
-            ssh = paramiko.SSHClient()
+            ssh = SSHClient()
             ssh.load_system_host_keys()
             host_ip = gethostbyname(host)
             if self.use_gss:
                 self.log.debug("Connecting to remote host via GSS.")
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.set_missing_host_key_policy(AutoAddPolicy())
                 ssh.connect(host_ip, port=ssh_port, gss_auth=True)
             else:
-                ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+                ssh.set_missing_host_key_policy(RejectPolicy())
                 if self.remote_pwd:
                     self.log.debug("Connecting to remote host with username and password.")
                     ssh.connect(
@@ -688,7 +689,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     type(e).__name__, current_host, host, ssh_port, self.remote_user, e
                 )
             )
-            if e is paramiko.SSHException or paramiko.AuthenticationException:
+            if e is SSHException or AuthenticationException:
                 http_status_code = 403
                 error_message_prefix = "Failed to authenticate SSHClient with password"
                 error_message = error_message_prefix + (

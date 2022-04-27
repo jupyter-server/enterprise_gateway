@@ -14,4 +14,8 @@ filterwarnings = [
   "error",
   "ignore:There is no current event loop:DeprecationWarning",
   "ignore:Passing unrecognized arguments to super:DeprecationWarning:jupyter_client",
+  # The following needs to remain in place until a new paramiko release is available
+  # that resolves this issue: https://github.com/paramiko/paramiko/issues/2038
+  # Otherwise, pytest execution fails when the deprecation warning is encountered.
+  "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning"
 ]
