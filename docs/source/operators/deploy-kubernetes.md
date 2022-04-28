@@ -1,4 +1,5 @@
 # Deploying Enterprise Gateway on Kubernetes
+
 ## Overview
 
 This section describes how to deploy Enterprise Gateway into an existing Kubernetes cluster.
@@ -16,7 +17,7 @@ The following sample kernel specifications apply to Kubernetes deployments:
 - spark_python_kubernetes
 - spark_scala_kubernetes
 
-Enterprise Gateway deployment is using  [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) image under Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/) along with other kubernetes-based images. See [Docker Images](../contributors/docker.md) for image details.
+Enterprise Gateway deployment is using [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) image under Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/) along with other kubernetes-based images. See [Docker Images](../contributors/docker.md) for image details.
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
 
@@ -30,16 +31,14 @@ There are two main deployment scenarious, if RBAC is enabled in your Kubernetes 
 ## Prerequisites
 
 - Install and configure [kubectl](https://kubernetes.io/docs/tasks/tools/) and [helm3](https://helm.sh/docs/intro/install/) on your workstation.
--  Create kubernetes namespace where you want to deploy `enterprise-gateway`, for example:
-    ```sh
-    kubectl create namespace enterprise-gateway
-    ```
+- Create kubernetes namespace where you want to deploy `enterprise-gateway`, for example:
+  ```sh
+  kubectl create namespace enterprise-gateway
+  ```
 - If you use RBAC, you will need cluster Admin access to configure RBAC resources
 - If you plan to use Private docker registry, you will need to have credentials (see configuration steps below)
 
-
 Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working, it is time to deploy Enterprise Gateway. There are a couple of different deployment options - using helm or kubectl.
-
 
 ## Deploying with helm
 
@@ -73,11 +72,12 @@ Take a look at Kuernetes [documentation](https://kubernetes.io/docs/tasks/access
 Kubernetes Ingress is the most user friendly way of interacting with the service and that is what we will cover in this section.
 If you do not have Kubernetes Ingress configured on your cluster the easiest way to get access will be using NodePort service.
 
-## Kubernetes Ingress Setup 
+## Kubernetes Ingress Setup
+
 ##### Prerequisites
 
 - Ingress controller deployed on your kubernetes cluster. Review Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for evailable options.
-- Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller 
+- Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller
 - Review specific Ingress controller configuration to enable wildcard path support if you are using Kubernetes version < v1.18
 - With Kubernetes v1.18 Ingress uses `PathType` parameter which is set to `Prefix` in the helm chart by default, so no additional configuration is required
 - Refer to your ingress controller documentation on how to setup TLS with your ingress
@@ -85,6 +85,7 @@ If you do not have Kubernetes Ingress configured on your cluster the easiest way
 ###### Update Helm deployment to enable ingress
 
 Create file `values-ingress.yaml` with the following content:
+
 ```bash
 ingress:
   enabled: true
@@ -92,6 +93,7 @@ ingress:
   hostName: "jupiter-e-gw.example.com"
 
 ```
+
 Add this file to your helm command and apply to the cluster replacing [PLACEHOLDER] with appropriate values for your environment:
 
 ```bash
@@ -105,10 +107,12 @@ helm  upgrade --install  jupyter-e-gw \
 ## Basic Full Configuration Example of Enterprise Gateway Deployment
 
 ### Option 1. Use Kuernetes Ingress:
+
 Create file `values-full.yaml` with the following content:
+
 ```bash
 service:
-  type: "ClusterIP" 
+  type: "ClusterIP"
   ports:
     # The primary port on which Enterprise Gateway is servicing requests.
     - name: "http"
@@ -141,10 +145,12 @@ ingress:
 ```
 
 ### Option 2. Use NodePort Service:
+
 Create file `values-full.yaml` with the following content, you can set nodeport value or have Kubernetes allocate random port:
+
 ```bash
 service:
-  type: "NodePort" 
+  type: "NodePort"
   ports:
     # The primary port on which Enterprise Gateway is servicing requests.
     - name: "http"
@@ -179,6 +185,7 @@ ingress:
 ### Option 2. Use NodePort Service with Private Docker Registry:
 
 Create file `values-full.yaml` with the following content, you can set nodeport value or have Kubernetes allocate random port:
+
 ```bash
 global:
   # Craete RBAC resources
@@ -199,7 +206,7 @@ imagePullSecretsCreate:
     - private-registry-key # provide the name of the secret to creata
 
 service:
-  type: "NodePort" 
+  type: "NodePort"
   ports:
     # The primary port on which Enterprise Gateway is servicing requests.
     - name: "http"
@@ -248,10 +255,12 @@ helm  upgrade --install \
    --namespace [namespace-name] \
    -f values-full.yaml
 ```
-if you are using private registry add setting base64 encoded secret value to you command: 
+
+if you are using private registry add setting base64 encoded secret value to you command:
 `--set imagePullSecretsCreate.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"`
 
 ### Deploy with kubectl
+
 Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like helm.
 
 Add values file to your helm command and generate `yaml` files replacing [PLACEHOLDER] with appropriate values for your environment:
@@ -265,13 +274,15 @@ helm template \
    -f values-full.yaml
 ```
 
-if you are using private registry add setting base64 encoded secret value to you command: 
+if you are using private registry add setting base64 encoded secret value to you command:
 `--set imagePullSecretsCreate.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"`
 
 Now you can review generated `yaml` files and apply them to your Kubernetes cluster:
+
 ```bash
 kubectl apply -f /tmp/mydeployment/enterprise-gateway/templates/
 ```
+
 _**NOTE: Do not store secrets in the source control.**_
 
 ### Validation
@@ -319,8 +330,9 @@ helm  upgrade --install \
 ```
 
 ###### 2. Helm release to deploy Kernel Image Puller.
+
 - Tipically this will be done by Cluster Admininstrator.
-  
+
 Create `values-kip.yaml` file with the following content:
 
 ```bash
@@ -348,6 +360,7 @@ kip:
       cpu: 50m
       memory: 100Mi
 ```
+
 Run helm deploy:
 
 ```bash
@@ -360,6 +373,7 @@ helm  upgrade --install \
 ```
 
 ###### 3. Helm release to deploy Enterprise Gateway.
+
 - This can be done by namespace Administrator.
 
 Create `values-eg.yaml` file with the following content:
@@ -403,6 +417,7 @@ kip:
   enabled: false
 
 ```
+
 Run helm deploy:
 
 ```bash
@@ -414,7 +429,6 @@ helm  upgrade --install \
    -f values-eg.yaml
 ```
 
-
 ## Helm Configuration Parameters
 
 Here are the values that you can set when deploying the helm chart. You
@@ -423,7 +437,7 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | **Parameter**                           | **Description**                                                                                                                                                                                                                                  | **Default**                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | `global.rbac`                           | Create Kubernetes RBAC resources                                                                                                                                                                                                                 | `true`                                                                         |
-| `global.commonLabels`                           | Common labels to apply to daemonset and deployment resources                                                                                                                                                                                                                 | `{}`                                                                         |
+| `global.commonLabels`                   | Common labels to apply to daemonset and deployment resources                                                                                                                                                                                     | `{}`                                                                           |
 | `global.imagePullSecrets`               | Optional array of image pull secrets for Service Account for pulling images from private service registries                                                                                                                                      | []                                                                             |
 | `imagePullSecretsCreate.enabled`        | Optional enable creation of the Kubernetes secrets to access private registries.                                                                                                                                                                 | 'false'                                                                        |
 | `imagePullSecretsCreate.annotations`    | Annotations for Kubernetes secrets                                                                                                                                                                                                               | '{}'                                                                           |
@@ -437,8 +451,8 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `service.ports[0].port`                 | The primary port on which Enterprise Gateway is servicing requests.                                                                                                                                                                              | `8888`                                                                         |
 | `service.ports[1].name`                 | The port name on which Enterprise Gateway will receive kernel connection info responses.                                                                                                                                                         | `http-response`                                                                |
 | `service.ports[1].port`                 | The port on which Enterprise Gateway will receive kernel connection info responses.                                                                                                                                                              | `8877`                                                                         |
-| `deployment.enabled`             | flag to enable  run Enterprise Gateway  deployment                                                                                                                                                                                           | `true`                                                        |
-| `deployment.serviceAccountName`             | Kubernetes Service Account to run Enterprise Gateway                                                                                                                                                                                             | `enterprise-gateway-sa`                                                        |
+| `deployment.enabled`                    | flag to enable run Enterprise Gateway deployment                                                                                                                                                                                                 | `true`                                                                         |
+| `deployment.serviceAccountName`         | Kubernetes Service Account to run Enterprise Gateway                                                                                                                                                                                             | `enterprise-gateway-sa`                                                        |
 | `deployment.resources`                  | set Enterprise Gateway container resources.                                                                                                                                                                                                      | valid Yaml reources, see values file for example                               |
 | `deployment.replicas`                   | Update to deploy multiple replicas of EG.                                                                                                                                                                                                        | `1`                                                                            |
 | `logLevel`                              | Log output level.                                                                                                                                                                                                                                | `DEBUG`                                                                        |
@@ -460,13 +474,13 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `ingress.enabled`                       | Whether to include an EG ingress resource during deployment.                                                                                                                                                                                     | `false`                                                                        |
 | `ingress.hostName`                      | Kubernetes Ingress hostname, required. .                                                                                                                                                                                                         | nil                                                                            |
 | `ingress.pathType`                      | Kubernnetes Ingress PathType (`ImplementationSpecific`,`Prefix`).                                                                                                                                                                                | `Prefix`                                                                       |
-| `ingress.path`                          | Kubernnetes Ingress Path.                                                                                                                                                                                                                        | `/`                                                                     |
+| `ingress.path`                          | Kubernnetes Ingress Path.                                                                                                                                                                                                                        | `/`                                                                            |
 | `ingress.annotations`                   | Use annotations to configure ingress. See examples for Traefik and nginx. NOTE: A traefik or nginx controllers must be installed and `ingress.enabled` must be set to `true`.                                                                    | see values file for examples                                                   |
 | `kip.enabled`                           | Whether the Kernel Image Puller should be used                                                                                                                                                                                                   | `true`                                                                         |
-| `kip.podSecurityPolicy.create`                           | enable creation of PSP for Image Puller, requires `global.rbac: true` and non-empy KIP service account                                                                                                                                                                                                   | `false`                                                                         |
-| `kip.podSecurityPolicy.annotatons`                           | annotations for Image Puller PSP account                                                                                                                                                                                                   | `{}`                                                                         |
-| `kip.serviceAccountName`             | Kubernetes Service Account to run Kernel Image Puller Gateway                                                                                                                                                                                             | `kernel-image-puller-sa`                                                        |
-| `kip.resources`                  | set Kernel Image Puller container resources.                                                                                                                                                                                                      | valid Yaml reources, see values file for example                               |
+| `kip.podSecurityPolicy.create`          | enable creation of PSP for Image Puller, requires `global.rbac: true` and non-empy KIP service account                                                                                                                                           | `false`                                                                        |
+| `kip.podSecurityPolicy.annotatons`      | annotations for Image Puller PSP account                                                                                                                                                                                                         | `{}`                                                                           |
+| `kip.serviceAccountName`                | Kubernetes Service Account to run Kernel Image Puller Gateway                                                                                                                                                                                    | `kernel-image-puller-sa`                                                       |
+| `kip.resources`                         | set Kernel Image Puller container resources.                                                                                                                                                                                                     | valid Yaml reources, see values file for example                               |
 | `kip.image`                             | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run.                                                                                                       | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
 | `kip.imagePullPolicy`                   | Kernel Image Puller image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control. Since formal tags will be release-specific this policy should be sufficient for them as well. | `IfNotPresent`                                                                 |
 | `kip.interval`                          | The interval (in seconds) at which the Kernel Image Puller fetches kernelspecs to pull kernel images.                                                                                                                                            | `300`                                                                          |
@@ -484,14 +498,13 @@ helm delete enterprise-gateway \
    --namespace [namespace-name] \
 ```
 
-
 ## Enterprise Gateway Deployment Details
 
 Enterprise Gateway manifests itself as a Kubernetes deployment, exposed externally by a Kubernetes service. By default, it is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
 
-The service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available. Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to different deployment instances (see deployment) thereby diminishing the need for a `LoadBalancer` type. 
+The service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available. Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to different deployment instances (see deployment) thereby diminishing the need for a `LoadBalancer` type.
 
-The deployment yaml essentially houses the pod description. By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster. This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels. 
+The deployment yaml essentially houses the pod description. By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster. This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels.
 
 ### Namespaces
 
@@ -521,9 +534,9 @@ Although **not recommended**, installations requiring everything in the same nam
 
 Another best practice of Kubernetes applications is to define the minimally viable set of permissions for the application. Enterprise Gateway does this by defining role-based access control (RBAC) objects for both Enterprise Gateway and kernels.
 
-Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and role bindings, a cluster-scoped role binding is required. 
+Because the Enterprise Gateway pod must create kernel namespaces, pods, services (for Spark support) and role bindings, a cluster-scoped role binding is required.
 
-The cluster role binding `enterprise-gateway-controller` also references the subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and also created by  [eg-clusterrolebinding.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/eg-clusterrolebinding.yaml)).
+The cluster role binding `enterprise-gateway-controller` also references the subject, `enterprise-gateway-sa`, which is the service account associated with the Enterprise Gateway namespace and also created by [eg-clusterrolebinding.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/eg-clusterrolebinding.yaml)).
 
 The [`eg-clusterrole.yaml`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/helm/enterprise-gateway/templates/eg-clusterrole.yaml) defines the minimally viable roles for a kernel pod - most of which are required for Spark support.
 
@@ -598,7 +611,6 @@ If the Enterprise Gateway defines an authentication token (`EG_AUTH_TOKEN`) then
 The Kernel Image Puller also supports multiple container runtimes since Docker is no longer configured by default in Kubernetes. KIP currently supports Docker and Containerd runtimes. If another runtime is encountered, KIP will try to proceed using the Containerd client `crictl` against the configured socket. As a result, it is import that the `criSocket` value be appropriately configured relative to the container runtime. If the runtime is something other than Docker or Containerd and `crictl` isn't able to pull images, it may be necessary to manually pre-seed images or incur kernel start timeouts the first time a given node is asked to start a kernel associated with a non-resident image.
 
 KIP also supports the notion of a _default container registry_ whereby image names that do not specify a registry (e.g., `docker.io` or `quay.io`) KIP will apply the configured default. Ideally, the image name should be fully qualified.
-
 
 ### Kernelspec Modifications
 
@@ -913,8 +925,6 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you ar
 ```
 
 The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook server will vary depending on whether you choose to define an external IP or not. If and external IP is defined, you'll set `JUPYTER_GATEWAY_URL=<externalIP>:8888` else you'll set `JUPYTER_GATEWAY_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.** As a result, use of the `externalIPs:` value is highly recommended.
-
-
 
 ## Kubernetes Tips
 

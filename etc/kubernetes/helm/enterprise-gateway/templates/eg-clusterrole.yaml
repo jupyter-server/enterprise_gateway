@@ -37,6 +37,3 @@ rules:
     resources: ["pods"]
     verbs: ["get", "watch", "list", "create", "delete"]
 {{- end }}
-
-
-

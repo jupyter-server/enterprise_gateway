@@ -28,6 +28,3 @@ rules:
       - use
   {{- end }}
 {{- end }}
-
-
-
