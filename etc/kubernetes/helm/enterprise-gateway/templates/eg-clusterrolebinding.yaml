@@ -1,0 +1,24 @@
+{{- if and  (.Values.deployment.serviceAccountName) (.Values.global.rbac) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: enterprise-gateway-controller
+  labels:
+    app: enterprise-gateway
+    component: enterprise-gateway
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{- range $key, $val := .Values.global.commonLabels }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.deployment.serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: enterprise-gateway-controller
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
