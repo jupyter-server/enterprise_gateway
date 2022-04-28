@@ -1,3 +1,4 @@
+{{- if and .Values.deployment.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,6 +8,10 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  {{- range $key, $val := .Values.global.commonLabels }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
+
   name: enterprise-gateway
   namespace: {{ .Release.Namespace }}
 spec:
@@ -21,7 +26,8 @@ spec:
     gateway-selector: enterprise-gateway
   sessionAffinity: ClientIP
   type: {{ .Values.service.type }}
-{{- if .Values.service.externalIPs.k8sMasterPublicIP }}
+  {{- if .Values.service.externalIPs.k8sMasterPublicIP }}
   externalIPs:
   - {{ .Values.sertvice.externalIPs.k8sMasterPublicIP }}
+  {{- end }}
 {{- end }}

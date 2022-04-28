@@ -1,3 +1,4 @@
+{{- if .Values.deployment.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,6 +11,9 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  {{- range $key, $val := .Values.global.commonLabels }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
 spec:
   replicas: {{ .Values.deployment.replicas }}
   selector:
@@ -21,10 +25,13 @@ spec:
         gateway-selector: enterprise-gateway
         app: enterprise-gateway
         component: enterprise-gateway
+      {{- range $key, $val := .Values.global.commonLabels }}
+        {{ $key }}: "{{ $val }}"
+      {{- end }}
     spec:
       # Created by this chart.
-      serviceAccountName: {{ .Values.global.serviceAccountName }}
-{{- if .Values.kernelspecs.image }}
+      serviceAccountName: {{ .Values.deployment.serviceAccountName }}
+  {{- if .Values.kernelspecs.image }}
       initContainers:
       - name: kernelspecs
         image: {{ .Values.kernelspecs.image }}
@@ -33,7 +40,7 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-{{- end }}
+  {{- end }}
       containers:
       - name: enterprise-gateway
         image: {{ .Values.image }}
@@ -83,7 +90,7 @@ spec:
         {{- end }}
 
 
-{{- if .Values.nfs.enabled }}
+  {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -92,7 +99,7 @@ spec:
         nfs:
           server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
-{{- else if .Values.kernelspecsPvc.enabled }}
+  {{- else if .Values.kernelspecsPvc.enabled }}
         volumeMounts:
         - name: pvc-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -100,7 +107,7 @@ spec:
       - name: pvc-kernelspecs
         persistentVolumeClaim:
           claimName: {{ .Values.kernelspecsPvc.name }}
-{{- else if .Values.kernelspecs.image }}
+  {{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -108,4 +115,5 @@ spec:
       - name: image-kernelspecs
         emptyDir:
           medium: Memory
+  {{- end }}
 {{- end }}

@@ -1,12 +1,13 @@
 global:
   # Craete RBAC resources
   rbac: true
-  serviceAccountName: 'enterprise-gateway-sa'
   # ImagePullSecrets for a ServiceAccount, list of secrets in the same namespace
   # to use for pulling any images in pods that reference this ServiceAccount.
   # Must be set for any cluster configured with private docker registry.
   imagePullSecrets: []
-  # - private-registry-key
+    # - private-registry-key
+  commonLabels: {}
+    # app.kubernetes.io/name: [your app name]
 
 # You can optionally create imagePull Secrets
 imagePullSecretsCreate:
@@ -44,6 +45,8 @@ service:
       # nodePort: 30481 # optional nodePort
 
 deployment:
+  enabled: true
+  serviceAccountName: 'enterprise-gateway-sa'
   resources: {}
   #   limits:
   #     cpu: 2
@@ -105,28 +108,22 @@ ingress:
   enabled: false
   hostName: "" # Ingress resource host
   pathType: "Prefix"
-  # for nginx:
-  # path: /gateway/?(.*)
-  # for traefik:
-  # path: "/gateway"
-  path: "/gateway"
+  path: "/"
   annotations: {}
-  # Ingress resource annotations to be included depending in ingress controller.
-  # traefik:
-  # annotations:
-  #   kubernetes.io/ingress.class: "traefik"
-  #   traefik.frontend.rule.type: PathPrefixStrip
-  #################################################
-  # nginx:
-  # annotations:
-  #   kubernetes.io/ingress.class: "nginx"
-  #   nginx.ingress.kubernetes.io/rewrite-target: /$1
-  #   nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  #   nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  # Optional TLS section
+  # tls:
+  #   - secretName: "mysecret-name-tls"
+  #     hosts:
+  #       - myhost.example.com
+
 
 # Kernel Image Puller (daemonset)
 kip:
   enabled: true
+  serviceAccountName: 'kernel-image-puller-sa'
+  podSecurityPolicy:
+    create: true
+    annotatons: {}
   # Kernel Image Puller image name and tag to use.
   image: elyra/kernel-image-puller:dev
   # Kernel Image Puller image pull policy.
@@ -139,3 +136,10 @@ kip:
   criSocket: /var/run/docker.sock
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
+  resources: {}
+  #   limits:
+  #     cpu: 1
+  #     memory: 1Gi
+  #   requests:
+  #     cpu: 1
+  #     memory: 1Gi
