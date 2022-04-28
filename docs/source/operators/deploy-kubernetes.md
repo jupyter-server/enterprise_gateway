@@ -67,7 +67,7 @@ helm  upgrade --install  enterprise-gateway \
 
 ## Access to Enterprise Gateway from outside the cluster
 
-Take a look at Kuernetes [documentation](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster-services/#ways-to-connect) on how you can access Kubernetes service from outside the cluster.
+Take a look at Kubernetes [documentation](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster-services/#ways-to-connect) on how you can access Kubernetes service from outside the cluster.
 
 Kubernetes Ingress is the most user friendly way of interacting with the service and that is what we will cover in this section.
 If you do not have Kubernetes Ingress configured on your cluster the easiest way to get access will be using NodePort service.
