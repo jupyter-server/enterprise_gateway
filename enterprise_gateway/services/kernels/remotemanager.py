@@ -562,6 +562,10 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             Any options specified here will overwrite those used to launch the
             kernel.
         """
+        # this is added for only auto-restarter as it directly call this method.
+        self.log.info(f"restarting kernel with value for now: {now}")
+        if now:
+            self.restarting = True
         kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace(
             "kernel-", ""
         ).replace(".json", "")
@@ -592,6 +596,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # Refresh persisted state.
         if self.kernel_session_manager:
             self.kernel_session_manager.refresh_session(kernel_id)
+        if now:
+            self.restarting = False
 
     async def signal_kernel(self, signum):
         """
