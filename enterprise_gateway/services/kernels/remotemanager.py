@@ -23,6 +23,7 @@ from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv('EG_KERNEL_LAUNCH_TIMEOUT', '30'))
 
+
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
     Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
@@ -195,46 +196,46 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
     async def restart_kernel(self, kernel_id):
         kernel = self.get_kernel(kernel_id)
-        self.log.debug(f"Current value of the Kernel Restarting: {kernel.restarting}")
+        self.log.debug(f"Current value of the kernel.restarting: {kernel.restarting}")
         if kernel.restarting:  # assuming duplicate request.
-            await self.wait_and_poll_for_restart_to_complete(kernel_id, "restart")
+            await self.wait_for_restart_finish(kernel_id, "restart")
             self.log.info(
-                f"Done with waiting for restart to complete. Current value of restarting: {kernel.restarting}. "
-                f"Skipping restarting kernel.")
+                f"Done with waiting for restart to complete. Current value of kernel.restarting: {kernel.restarting}. "
+                f"Skipping kernel restart.")
             return
-        self.log.info("Going ahead to process restart kernel request.")
+        self.log.info("Going ahead to process kernel restart request.")
         try:
             kernel.restarting = True  # Moved in out of RemoteKernelManager
             await super(RemoteMappingKernelManager, self).restart_kernel(kernel_id)
         finally:
-            self.log.debug("Resetting `restarting` flag to False.")
+            self.log.debug("Resetting kernel.restarting flag to False.")
             kernel.restarting = False
 
     async def shutdown_kernel(self, kernel_id, now=False, restart=False):
         kernel = self.get_kernel(kernel_id)
         self.log.debug(f"Current value of the Kernel Restarting: {kernel.restarting}")
         if kernel.restarting:
-            await self.wait_and_poll_for_restart_to_complete(kernel_id, "shutdown")
+            await self.wait_for_restart_finish(kernel_id, "shutdown")
         try:
             await super(RemoteMappingKernelManager, self).shutdown_kernel(kernel_id, now, restart)
         except KeyError as ke:  # this is hit for multiple shutdown request.
             self.log.exception(f"Exception while shutting Kernel: {kernel_id}: {ke}")
 
-    async def wait_and_poll_for_restart_to_complete(self, kernel_id, action="shutdown"):
+    async def wait_for_restart_finish(self, kernel_id, action="shutdown"):
         kernel = self.get_kernel(kernel_id)
-        start_time = int(time.time())  # epoc time in seconds
+        start_time = float(time.time())  # epoc time
         timeout = kernel.kernel_launch_timeout
-        poll_time = 1  # TODO can be read from a new config.
-        self.log.info(f"Kernel is restarting when {action} request received. Polling every {poll_time} "
+        poll_time = 1  # TODO can be read from a new config if need be.
+        self.log.info(f"kernel is restarting when {action} request received. Polling every {poll_time} "
                       f"seconds for next {timeout} seconds for kernel '{kernel_id}'"
                       f" to complete its restart.")
         while kernel.restarting:
-            now = int(time.time())
+            now = float(time.time())
             if (now - start_time) > timeout:
                 self.log.info(f"Wait_Timeout: Existing out of the restart wait loop to {action} kernel.")
                 break
             await asyncio.sleep(poll_time)
-        self.log.info(f"Returning with current value of the Kernel Restarting: {kernel.restarting}.")
+        self.log.info(f"Returning with current value of the kernel.restarting: {kernel.restarting}.")
         return
 
     def _enforce_kernel_limits(self, username: str) -> None:
