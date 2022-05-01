@@ -21,7 +21,7 @@ Enterprise Gateway deployments use the [elyra/enterprise-gateway](https://hub.do
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
 
-We are using helm templates to manage Kubernetes resource configurations which, allows enduser easily customize their Enterprise Gateway deployment.
+We are using helm templates to manage Kubernetes resource configurations, which allows an end user to easily customize their Enterprise Gateway deployment.
 
 There are two main deployment scenarios if RBAC is enabled in your Kubernetes cluster:
 
