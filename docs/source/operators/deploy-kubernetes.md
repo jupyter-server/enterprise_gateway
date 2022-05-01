@@ -31,7 +31,7 @@ There are two main deployment scenarios if RBAC is enabled in your Kubernetes cl
 ## Prerequisites
 
 - Install and configure [kubectl](https://kubernetes.io/docs/tasks/tools/) and [helm3](https://helm.sh/docs/intro/install/) on your workstation.
-- Create kubernetes namespace where you want to deploy `enterprise-gateway`, for example:
+- Create the kubernetes namespace where you want to deploy `enterprise-gateway`, for example:
   ```sh
   kubectl create namespace enterprise-gateway
   ```
