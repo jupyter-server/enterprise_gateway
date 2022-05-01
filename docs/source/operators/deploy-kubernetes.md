@@ -46,7 +46,7 @@ Choose this option if you want to deploy via a [helm](https://helm.sh/) chart. Y
 
 ### Create the Enterprise Gateway kubernetes service and deployment
 
-You can execute helm command from checked out release of the Enterprise Gateway git [repository](https://github.com/jupyter-server/enterprise_gateway.git):
+You can execute the helm command from the checked-out release of the Enterprise Gateway git [repository](https://github.com/jupyter-server/enterprise_gateway.git):
 
 ```bash
 helm  upgrade --install  enterprise-gateway \
