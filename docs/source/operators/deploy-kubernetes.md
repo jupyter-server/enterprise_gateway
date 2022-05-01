@@ -26,7 +26,7 @@ We are using helm templates to manage Kubernetes resource configurations which, 
 There are two main deployment scenarious, if RBAC is enabled in your Kubernetes cluster:
 
 1. Deployment user has **_Cluster Administrator Access_**. In this scenario, you have full access to the cluster and can deploy all components as needed.
-2. Deployment user has **_Namespace Admininistrator Access_**. This is typical for shared multitenant environments where each Team has control over thier namespace, but not the cluster. In this case your cluster Administrator can deploy creation of RBAC resources and Kernel Image Puller and you can deploy Enterprise Gateway.
+2. Deployment user has **_Namespace Administrator Access_**. This is typical for shared multitenant environments where each Team has control over their namespace, but not the cluster. In this scenario, your cluster Administrator can deploy the RBAC resources and Kernel Image Puller and you can deploy Enterprise Gateway.
 
 ## Prerequisites
 
