@@ -76,7 +76,7 @@ If you do not have a Kubernetes Ingress configured on your cluster the easiest w
 
 ##### Prerequisites
 
-- Ingress controller deployed on your kubernetes cluster. Review Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for evailable options.
+- Ingress controller deployed on your Kubernetes cluster. Review the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for available options.
 - Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller
 - Review specific Ingress controller configuration to enable wildcard path support if you are using Kubernetes version < v1.18
 - With Kubernetes v1.18 Ingress uses `PathType` parameter which is set to `Prefix` in the helm chart by default, so no additional configuration is required
