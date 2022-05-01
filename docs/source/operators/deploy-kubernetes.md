@@ -331,7 +331,7 @@ helm  upgrade --install \
 
 ###### 2. Helm release to deploy Kernel Image Puller.
 
-- Tipically this will be done by Cluster Admininstrator.
+- Typically this will be done by the Cluster Administrator.
 
 Create `values-kip.yaml` file with the following content:
 
