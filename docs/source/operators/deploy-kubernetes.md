@@ -90,7 +90,7 @@ Create file `values-ingress.yaml` with the following content:
 ingress:
   enabled: true
   # Ingress resource host
-  hostName: "jupiter-e-gw.example.com"
+  hostName: "[unique-fully-qualified-domanin-name]"
 
 ```
 
