@@ -17,7 +17,7 @@ The following sample kernel specifications apply to Kubernetes deployments:
 - spark_python_kubernetes
 - spark_scala_kubernetes
 
-Enterprise Gateway deployment is using [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) image under Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/) along with other kubernetes-based images. See [Docker Images](../contributors/docker.md) for image details.
+Enterprise Gateway deployments use the [elyra/enterprise-gateway](https://hub.docker.com/r/elyra/enterprise-gateway/) image from the Enterprise Gateway dockerhub organization [elyra](https://hub.docker.com/r/elyra/) along with other kubernetes-based images. See [Docker Images](../contributors/docker.md) for image details.
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
 
