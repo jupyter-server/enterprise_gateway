@@ -182,7 +182,7 @@ ingress:
   enabled: false
 ```
 
-### Option 2. Use NodePort Service with Private Docker Registry:
+### Option 3. Use NodePort Service with Private Docker Registry:
 
 Create file `values-full.yaml` with the following content, you can set nodeport value or have Kubernetes allocate random port:
 
