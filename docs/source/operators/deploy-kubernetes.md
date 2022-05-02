@@ -488,7 +488,7 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kip.criSocket`                         | The container runtime interface socket, use `/run/containerd/containerd.sock` for containerd installations                                                                                                                                       | `/var/run/docker.sock`                                                         |
 | `kip.defaultContainerRegistry`          | Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.6.0)                                                                                                                                         | `docker.io`                                                                    |
 
-#### Uninstalling Enterprise Gateway
+## Uninstalling Enterprise Gateway
 
 When using helm, you can uninstall Enterprise Gateway with the following command:
 
