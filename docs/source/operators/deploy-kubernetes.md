@@ -329,7 +329,7 @@ helm  upgrade --install \
    -f values-rbac.yaml
 ```
 
-###### 2. Helm release to deploy Kernel Image Puller.
+### 2. Helm release to deploy Kernel Image Puller.
 
 - Typically this will be done by the Cluster Administrator.
 
