@@ -188,7 +188,7 @@ Create file `values-full.yaml` with the following content, you can set nodeport 
 
 ```bash
 global:
-  # Craete RBAC resources
+  # Create RBAC resources
   rbac: true
   # ImagePullSecrets for a ServiceAccount, list of secrets in the same namespace
   # to use for pulling any images in pods that reference this ServiceAccount.
