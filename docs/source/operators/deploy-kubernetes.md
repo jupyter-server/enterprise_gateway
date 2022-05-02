@@ -82,7 +82,7 @@ If you do not have a Kubernetes Ingress configured on your cluster the easiest w
 - With Kubernetes v1.18 Ingress uses `PathType` parameter which is set to `Prefix` in the helm chart by default, so no additional configuration is required
 - Refer to your ingress controller documentation on how to setup TLS with your ingress
 
-###### Update Helm deployment to enable ingress
+#### Update Helm deployment to enable ingress
 
 Create file `values-ingress.yaml` with the following content:
 
