@@ -411,7 +411,7 @@ deployment:
 ingress:
   enabled: true
   # Ingress resource host
-  hostName: "jupiter-e-gw.example.com"
+  hostName: "jupyter-e-gw.example.com"
 
 kip:
   enabled: false
