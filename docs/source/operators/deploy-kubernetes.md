@@ -287,7 +287,7 @@ _**NOTE: Do not store secrets in the source control.**_
 
 ### Validation
 
-You can start jupiter notebook to connect to the configured endpoint `http://jupiter-e-gw.example.com`
+You can start jupyter notebook to connect to the configured endpoint `http://jupyter-e-gw.example.com`
 
 ## Advanced Configuration Example of Enterprise Gateway Deployment
 
