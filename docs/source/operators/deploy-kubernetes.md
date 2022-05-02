@@ -74,7 +74,7 @@ If you do not have a Kubernetes Ingress configured on your cluster the easiest w
 
 ## Kubernetes Ingress Setup
 
-##### Prerequisites
+### Prerequisites
 
 - Ingress controller deployed on your Kubernetes cluster. Review the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for available options.
 - Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller
