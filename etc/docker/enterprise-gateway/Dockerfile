@@ -24,8 +24,7 @@ RUN apt update && apt install -yq curl openjdk-8-jdk
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp/
-RUN chmod 0755 /tmp/jupyter_enterprise_gateway*.whl
-RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
+RUN pip install --user /tmp/jupyter_enterprise_gateway*.whl && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
