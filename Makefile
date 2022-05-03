@@ -75,13 +75,13 @@ bdist: $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)
 	pip install build && python -m build --wheel . \
-		&& rm -rf *.egg-info
+		&& rm -rf *.egg-info && chmod 0755 dist/*.*
 
 sdist: $(SDIST_FILE)
 
 $(SDIST_FILE): $(WHEEL_FILES)
 	pip install build && python -m build --sdist . \
-		&& rm -rf *.egg-info
+		&& rm -rf *.egg-info && chmod 0755 dist/*.*
 
 helm-chart: ## Make helm chart distribution
 	make $(HELM_CHART)
