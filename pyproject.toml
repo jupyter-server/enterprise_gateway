@@ -45,7 +45,7 @@ name = "Jupyter Development Team"
 email = "jupyter@googlegroups.com"
 
 [project.readme]
-text = "A lightweight, multi-tenant, scalable and secure gateway that enables\nJupyter Notebooks to share resources across distributed clusters such as\nApache Spark, Kubernetes and others.."
+text = "A lightweight, multi-tenant, scalable, and secure gateway that enables\nJupyter Notebooks to share resources across distributed clusters such as\nApache Spark, Kubernetes and others."
 content-type = "text/plain"
 
 [project.urls]
