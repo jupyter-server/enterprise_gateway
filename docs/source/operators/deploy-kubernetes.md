@@ -65,16 +65,16 @@ helm  upgrade --install  enterprise-gateway \
    --namespace [namespace-name]
 ```
 
-## Access to Enterprise Gateway from outside the cluster
+### Access to Enterprise Gateway from outside the cluster
 
 Take a look at the Kubernetes [documentation](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster-services/#ways-to-connect) on how you can access the Kubernetes service from outside the cluster.
 
 A Kubernetes Ingress is the most user-friendly way of interacting with the service and that is what we will cover in this section.
 If you do not have a Kubernetes Ingress configured on your cluster the easiest way to get access will be using the NodePort service.
 
-## Kubernetes Ingress Setup
+#### Kubernetes Ingress Setup
 
-### Prerequisites
+##### Prerequisites
 
 - Ingress controller deployed on your Kubernetes cluster. Review the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for available options.
 - Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller
@@ -82,7 +82,7 @@ If you do not have a Kubernetes Ingress configured on your cluster the easiest w
 - With Kubernetes v1.18 Ingress uses `PathType` parameter which is set to `Prefix` in the helm chart by default, so no additional configuration is required
 - Refer to your ingress controller documentation on how to setup TLS with your ingress
 
-#### Update Helm deployment to enable ingress
+##### Update Helm deployment to enable ingress
 
 Create file `values-ingress.yaml` with the following content:
 
@@ -106,7 +106,7 @@ helm  upgrade --install  jupyter-e-gw \
 
 ## Basic Full Configuration Example of Enterprise Gateway Deployment
 
-### Option 1. Use Kuernetes Ingress:
+### Option 1. Use Kubernetes Ingress:
 
 Create file `values-full.yaml` with the following content:
 
@@ -140,7 +140,7 @@ kip:
 ingress:
   enabled: true
   # Ingress resource host
-  hostName: "jupyter-e-gw.example.com"
+  hostName: "[unique-fully-qualified-domanin-name]"
 
 ```
 
@@ -372,7 +372,7 @@ helm  upgrade --install \
    -f values-kip.yaml
 ```
 
-###### 3. Helm release to deploy Enterprise Gateway.
+### 3. Helm release to deploy Enterprise Gateway.
 
 - This can be done by namespace Administrator.
 
@@ -411,7 +411,7 @@ deployment:
 ingress:
   enabled: true
   # Ingress resource host
-  hostName: "jupyter-e-gw.example.com"
+  hostName: "[unique-fully-qualified-domanin-name]"
 
 kip:
   enabled: false
