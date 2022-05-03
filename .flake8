@@ -1,10 +1,3 @@
-[bdist_wheel]
-#universal=1
-
-[metadata]
-description-file=README.md
-license_file = LICENSE.md
-
 [flake8]
 ignore = E501, W503, E402
 builtins = c, get_config
