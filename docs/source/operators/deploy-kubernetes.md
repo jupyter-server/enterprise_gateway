@@ -293,7 +293,7 @@ You can start jupyter notebook to connect to the configured endpoint `http://jup
 
 If you need to deploy Enterprise Gateway to a restrictred Kubernetes cluster with _RBAC_ and _PodSecurityPolicies_ enabled, you may want to consider deploying Enterprise Gateway components as separate helm releases:
 
-###### 1. Helm release which will configure required RBAC, PSP and service accounts.
+### 1. Helm release which will configure required RBAC, PSP, and service accounts.
 
 - Tipically this will be done by Cluster Admininstrator.
 
