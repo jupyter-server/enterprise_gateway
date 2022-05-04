@@ -1,6 +1,71 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "jupyter_enterprise_gateway"
+description = "A web server for spawning and communicating with remote Jupyter kernels"
+license = { file = "LICENSE.md" }
+keywords = ["Interactive","Interpreter","Kernel", "Web", "Cloud"]
+classifiers = [
+  "Intended Audience :: Developers", "Intended Audience :: Science/Research",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10"
+]
+requires-python = ">=3.7"
+dependencies = [
+  "docker>=3.5.0",
+  "future",
+  "jinja2>=3.1",
+  "jupyter_client~=6.1",  # Remove cap once EG supports kernel provisioners
+  "jupyter_core>=4.6.0",
+  "kubernetes>=4.0.0",
+  "jupyter_server>=1.2",
+  "paramiko>=2.1.2",
+  "pexpect>=4.2.0",
+  "pycryptodomex>=3.9.7",
+  "pyzmq>=17.0.0",
+  "requests>=2.7",
+  "tornado>=6.1",
+  "traitlets>=4.3.3",
+  "watchdog>=2.1.3",
+  "yarn-api-client>=1.0"
+]
+dynamic = ["version"]
+
+[[project.authors]]
+name = "Jupyter Development Team"
+email = "jupyter@googlegroups.com"
+
+[project.readme]
+text = "A lightweight, multi-tenant, scalable, and secure gateway that enables\nJupyter Notebooks to share resources across distributed clusters such as\nApache Spark, Kubernetes and others."
+content-type = "text/plain"
+
+[project.urls]
+Homepage = "http://github.com/jupyter/enterprise_gateway"
+
+[project.optional-dependencies]
+test = [
+  "coverage",
+  "pytest",
+  "pytest-tornasync",
+  "ipykernel",
+  "pre-commit",
+  "websocket-client"
+]
+
+[tool.flit.module]
+name = "enterprise_gateway"
+
+[project.scripts]
+jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
 
 [tool.jupyter-releaser.options]
 ignore-links = ["http://my-gateway-server.com:8888"]
