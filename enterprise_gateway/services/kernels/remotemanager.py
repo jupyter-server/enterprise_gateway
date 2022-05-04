@@ -23,7 +23,6 @@ default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"
 kernel_restart_status_poll_interval = float(os.getenv("EG_RESTART_STATUS_POLL_INTERVAL", 1.0))
 
 
-
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
     Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
@@ -264,7 +263,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             if self.parent.max_kernels_per_user >= 0:
                 if self.parent.kernel_session_manager:
                     active_and_pending = (
-                            self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                        self.parent.kernel_session_manager.active_sessions(username) + pending_user
                     )
                     if active_and_pending >= self.parent.max_kernels_per_user:
                         error_message = (
@@ -288,7 +287,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
-            self, kernel_id, kernel_name, connection_info, process_info, launch_args
+        self, kernel_id, kernel_name, connection_info, process_info, launch_args
     ):
         """
         Starts a kernel from a persisted kernel session.
@@ -460,7 +459,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         """
         env = kwargs.get("env", {})
         # If KERNEL_LAUNCH_TIMEOUT is passed in the payload, override it.
-        self.kernel_launch_timeout = float(env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout))
+        self.kernel_launch_timeout = float(
+            env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout)
+        )
         self.user_overrides.update(
             {
                 key: value
