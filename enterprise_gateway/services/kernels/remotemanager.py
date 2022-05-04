@@ -20,7 +20,9 @@ from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
-kernel_restart_finish_poll_internal = float(os.getenv("EG_RESTART_FINISH_POLL_INTERVAL", 1.0))
+kernel_restart_status_poll_interval = float(os.getenv("EG_RESTART_STATUS_POLL_INTERVAL", 1.0))
+
+
 
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
@@ -211,13 +213,14 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         try:
             await super().shutdown_kernel(kernel_id, now, restart)
         except KeyError as ke:  # this is hit for multiple shutdown request.
-            self.log.exception(f"Exception while shutting Kernel: {kernel_id}: {ke}")
+            self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
+            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
 
     async def wait_for_restart_finish(self, kernel_id, action="shutdown"):
         kernel = self.get_kernel(kernel_id)
         start_time = float(time.time())  # epoc time
         timeout = kernel.kernel_launch_timeout
-        poll_time = kernel_restart_finish_poll_internal
+        poll_time = kernel_restart_status_poll_interval
         self.log.info(
             f"Kernel '{kernel_id}' was restarting when {action} request received. Polling every {poll_time} "
             f"seconds for next {timeout} seconds for kernel to complete its restart."
@@ -261,7 +264,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             if self.parent.max_kernels_per_user >= 0:
                 if self.parent.kernel_session_manager:
                     active_and_pending = (
-                        self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                            self.parent.kernel_session_manager.active_sessions(username) + pending_user
                     )
                     if active_and_pending >= self.parent.max_kernels_per_user:
                         error_message = (
@@ -285,7 +288,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
-        self, kernel_id, kernel_name, connection_info, process_info, launch_args
+            self, kernel_id, kernel_name, connection_info, process_info, launch_args
     ):
         """
         Starts a kernel from a persisted kernel session.
@@ -456,9 +459,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         of the kernelspec env stanza that would have otherwise overridden the user-provided values.
         """
         env = kwargs.get("env", {})
-        # see if KERNEL_LAUNCH_TIMEOUT was included from user.  If so, override default
-        if env.get("KERNEL_LAUNCH_TIMEOUT", None):
-            self.kernel_launch_timeout = float(env.get("KERNEL_LAUNCH_TIMEOUT"))
+        # If KERNEL_LAUNCH_TIMEOUT is passed in the payload, override it.
+        self.kernel_launch_timeout = float(env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout))
         self.user_overrides.update(
             {
                 key: value
