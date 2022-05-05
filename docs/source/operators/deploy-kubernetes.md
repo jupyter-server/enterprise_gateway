@@ -283,7 +283,9 @@ Now you can review generated `yaml` files and apply them to your Kubernetes clus
 kubectl apply -f /tmp/mydeployment/enterprise-gateway/templates/
 ```
 
-_**NOTE: Do not store secrets in the source control.**_
+```{important}
+Never store secrets in your source code control files!
+\`\`\`
 
 ### Validation
 
