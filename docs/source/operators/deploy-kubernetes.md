@@ -364,9 +364,8 @@ kip:
 Run helm deploy:
 
 ```bash
-helm  upgrade --install \
-  jupyter-e-gw-rbac \
-  jupyter-server/enterprise_gateway/etc/kubernetes/helm/enterprise-gateway \
+helm  upgrade --install enterprise-gateway \
+  etc/kubernetes/helm/enterprise-gateway \
    --kube-context [mycluster-context-name] \
    --namespace [namespace-name] \
    -f values-kip.yaml
