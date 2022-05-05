@@ -283,7 +283,7 @@ Now you can review generated `yaml` files and apply them to your Kubernetes clus
 kubectl apply -f /tmp/mydeployment/enterprise-gateway/templates/
 ```
 
-```{important}
+````{important}
 Never store secrets in your source code control files!
 \`\`\`
 
@@ -318,7 +318,7 @@ kip:
   serviceAccountName: 'kernel-image-puller-sa'
   podSecurityPolicy:
     create: true
-```
+````
 
 Run helm deploy:
 
