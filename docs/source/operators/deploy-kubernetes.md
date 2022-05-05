@@ -284,7 +284,7 @@ kubectl apply -f /tmp/mydeployment/enterprise-gateway/templates/
 
 ````{important}
 Never store secrets in your source code control files!
-\`\`\`
+```
 
 ### Validation
 
@@ -498,11 +498,16 @@ helm uninstall enterprise-gateway \
 
 ## Enterprise Gateway Deployment Details
 
-Enterprise Gateway manifests itself as a Kubernetes deployment, exposed externally by a Kubernetes service. By default, it is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
+Enterprise Gateway is deployed as a Kubernetes deployment and exposed by a Kubernetes service. It can be accessed by the service name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
 
-The service is currently configured as type `NodePort` but is intended for type `LoadBalancer` when appropriate network plugins are available. Because kernels are stateful, the service is also configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to different deployment instances (see deployment) thereby diminishing the need for a `LoadBalancer` type.
+The Enterprise Gateway Kubernetes service  _type_ can be: 
+- `NodePort`: allows to access Enterprise Gateway with `http://[worker IP]:[NodePort]` or having a loadbalancer route traffic to `http://[worker IP's]:[NodePort]`
+- `LoadBalancer`: requires appropriate network plugin available
+- `ClusterIP`: requires Kubernetes Ingress Controller 
 
-The deployment yaml essentially houses the pod description. By increasing the number of `replicas` a configuration can experience instant benefits of distributing Enterprise Gateway instances across the cluster. This implies that once session persistence is finalized, we should be able to provide highly available (HA) kernels.
+Kernels are stateful, therefore service is configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to the same pod.
+
+Increase the number of `replicas` of Enterprise Gateway Deployment to improve deployment availability, but because  `sessionAffinity` of `ClientIP`, traffic from the same client will be send to the same pod of the Enterprise Gateway and if that pod goes down, client will get an error and will need to reestablish connection to another pod of the Enterprise Gateway.
 
 ### Namespaces
 
