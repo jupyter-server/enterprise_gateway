@@ -495,7 +495,7 @@ When using helm, you can uninstall Enterprise Gateway with the following command
 ```bash
 helm delete enterprise-gateway \
   --kube-context [mycluster-context-name] \
-   --namespace [namespace-name] \
+   --namespace [namespace-name]
 ```
 
 ## Enterprise Gateway Deployment Details
