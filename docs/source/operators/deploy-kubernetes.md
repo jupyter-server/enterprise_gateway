@@ -50,7 +50,7 @@ You can execute the helm command from the checked-out release of the Enterprise 
 
 ```bash
 helm  upgrade --install  enterprise-gateway \
-  jupyter-server/enterprise_gateway/etc/kubernetes/helm/enterprise-gateway \
+  etc/kubernetes/helm/enterprise-gateway \
    --kube-context [mycluster-context-name] \
    --namespace [namespace-name]
 
