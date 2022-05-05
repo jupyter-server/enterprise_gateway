@@ -248,9 +248,8 @@ ingress:
 Add values file to your helm command and apply to the cluster replacing [PLACEHOLDER] with appropriate values for your environment:
 
 ```bash
-helm  upgrade --install \
-  jupyter-e-gw \
-  jupyter-server/enterprise_gateway/etc/kubernetes/helm/enterprise-gateway \
+helm  upgrade --install enterprise-gateway
+  etc/kubernetes/helm/enterprise-gateway \
    --kube-context [mycluster-context-name] \
    --namespace [namespace-name] \
    -f values-full.yaml
