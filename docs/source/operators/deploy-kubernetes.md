@@ -493,7 +493,7 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 When using helm, you can uninstall Enterprise Gateway with the following command:
 
 ```bash
-helm delete enterprise-gateway \
+helm uninstall enterprise-gateway \
   --kube-context [mycluster-context-name] \
    --namespace [namespace-name]
 ```
