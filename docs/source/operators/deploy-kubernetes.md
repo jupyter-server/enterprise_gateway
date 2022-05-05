@@ -268,7 +268,7 @@ Add values file to your helm command and generate `yaml` files replacing [PLACEH
 ```bash
 helm template \
   --output-dir [/tmp/mydeployment] \
-  jupyter-e-gw \
+  enterprise-gateway \
   etc/kubernetes/helm/enterprise-gateway \
    --namespace [namespace-name] \
    -f values-full.yaml
