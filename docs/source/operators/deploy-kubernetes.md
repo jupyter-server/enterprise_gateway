@@ -500,14 +500,15 @@ helm uninstall enterprise-gateway \
 
 Enterprise Gateway is deployed as a Kubernetes deployment and exposed by a Kubernetes service. It can be accessed by the service name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have the kubernetes label of `app=enterprise-gateway` applied.
 
-The Enterprise Gateway Kubernetes service  _type_ can be: 
+The Enterprise Gateway Kubernetes service _type_ can be:
+
 - `NodePort`: allows to access Enterprise Gateway with `http://[worker IP]:[NodePort]` or having a loadbalancer route traffic to `http://[worker IP's]:[NodePort]`
 - `LoadBalancer`: requires appropriate network plugin available
-- `ClusterIP`: requires Kubernetes Ingress Controller 
+- `ClusterIP`: requires Kubernetes Ingress Controller
 
 Kernels are stateful, therefore service is configured with a `sessionAffinity` of `ClientIP`. As a result, kernel creation requests will be routed to the same pod.
 
-Increase the number of `replicas` of Enterprise Gateway Deployment to improve deployment availability, but because  `sessionAffinity` of `ClientIP`, traffic from the same client will be send to the same pod of the Enterprise Gateway and if that pod goes down, client will get an error and will need to reestablish connection to another pod of the Enterprise Gateway.
+Increase the number of `replicas` of Enterprise Gateway Deployment to improve deployment availability, but because `sessionAffinity` of `ClientIP`, traffic from the same client will be send to the same pod of the Enterprise Gateway and if that pod goes down, client will get an error and will need to reestablish connection to another pod of the Enterprise Gateway.
 
 ### Namespaces
 
