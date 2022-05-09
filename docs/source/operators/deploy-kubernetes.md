@@ -317,7 +317,7 @@ kip:
   serviceAccountName: 'kernel-image-puller-sa'
   podSecurityPolicy:
     create: true
-````
+```
 
 Run helm deploy:
 
