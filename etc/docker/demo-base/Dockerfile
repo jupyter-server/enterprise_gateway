@@ -135,7 +135,7 @@ RUN ls -la /usr/hdp/current/hadoop/etc/hadoop/*-env.sh && \
 
 # Install Toree
 RUN cd /tmp && \
-    curl -O https://dist.apache.org/repos/dist/dev/incubator/toree/0.5.0-incubating-rc5/toree-pip/toree-0.5.0.tar.gz && \
+    curl -O https://archive.apache.org/dist/incubator/toree/0.5.0-incubating/toree-pip/toree-0.5.0.tar.gz && \
     pip install --upgrade setuptools --user && \
     pip install /tmp/toree-0.5.0.tar.gz && \
     jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark $SPARK_VER" --interpreters=Scala && \
