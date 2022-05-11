@@ -6,6 +6,7 @@ import os
 import re
 import signal
 import uuid
+from typing import Dict, List, Optional
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
@@ -17,6 +18,8 @@ from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
 from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
+
+UNIVERSAL_TENANT_ID: str = "27182818-2845-9045-2353-602874713527"
 
 
 def import_item(name):
@@ -148,6 +151,9 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
     pending_requests = TrackPendingRequests()  # Used to enforce max-kernel limits
 
+    _tenant_to_kernels: Dict[str, List[str]] = {}  # Maps a tenant_id to its kernel ids
+    _kernel_to_tenant: Dict[str, str] = {}  # Maps a kernel_id to its tenant_id
+
     def _kernel_manager_class_default(self):
         return "enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager"
 
@@ -177,17 +183,36 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
                 kernel_name=kwargs["kernel_name"], username=username
             )
         )
-
         # Check max kernel limits
         self._enforce_kernel_limits(username)
 
         RemoteMappingKernelManager.pending_requests.increment(username)
+        tenant_id = kwargs.pop(
+            "tenant_id", UNIVERSAL_TENANT_ID
+        )  # Remove tenant_id from forwarded kwargs
         try:
             kernel_id = await super().start_kernel(*args, **kwargs)
         finally:
             RemoteMappingKernelManager.pending_requests.decrement(username)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
+
+        # Map tenant_id to kernel, and vice versa
+        kernels_for_tenant = self._tenant_to_kernels.get(tenant_id, [])
+        kernels_for_tenant.append(kernel_id)
+        self._tenant_to_kernels[tenant_id] = kernels_for_tenant
+        self._kernel_to_tenant[kernel_id] = tenant_id
+
         return kernel_id
+
+    async def shutdown_kernel(self, kernel_id, now=False, restart=False):
+        await super().shutdown_kernel(kernel_id, now=now, restart=restart)
+        # Remove this kernel's association from its tenant
+        tenant_id = self._kernel_to_tenant.get(kernel_id)
+        if tenant_id:
+            kernels = self._tenant_to_kernels.get(tenant_id)
+            if kernel_id in kernels:
+                kernels.remove(kernel_id)
+            self._kernel_to_tenant.pop(kernel_id)
 
     def _enforce_kernel_limits(self, username: str) -> None:
         """
@@ -240,6 +265,18 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
         super().remove_kernel(kernel_id)
         self.parent.kernel_session_manager.delete_session(kernel_id)
+
+    def list_kernels(self, tenant_id: Optional[str] = UNIVERSAL_TENANT_ID):
+        """Returns a list of kernel_id's of kernels running."""
+        kernels = []
+        kernel_ids = self._tenant_to_kernels.get(tenant_id) or []
+        for kernel_id in kernel_ids:
+            try:
+                model = self.kernel_model(kernel_id)
+                kernels.append(model)
+            except (web.HTTPError, KeyError):
+                pass  # Probably due to a (now) non-existent kernel, continue building the list
+        return kernels
 
     def start_kernel_from_session(
         self, kernel_id, kernel_name, connection_info, process_info, launch_args

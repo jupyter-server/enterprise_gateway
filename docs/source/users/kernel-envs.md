@@ -88,6 +88,15 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     identified by EG_KERNEL_CLUSTER_ROLE.  If not provided, it will be derived
     from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
 
+  KERNEL_TENANT_ID=<system provided>
+    Indicates the tenant ID (UUID string) corresponding to the kernel.  This value
+    is derived from the optional `tenant_id` provided by the client application and
+    is meant to represent the entity or organization in which the client application
+    is associated.  If `tenant_id` is not provided on the kernel start request, then
+    `KERNEL_TENANT_ID` will hold a value of ``"27182818-2845-9045-2353-602874713527"`
+    (the `UNIVERSAL_TENANT_ID`), which provides for backwards compatible support for
+    older applications.
+
   KERNEL_UID=<from user> or 1000
     Containers only. This value represents the user id in which the container will run.
     The default value is 1000 representing the jovyan user - which is how all kernel images

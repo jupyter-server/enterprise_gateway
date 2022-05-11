@@ -11,6 +11,7 @@ from tornado.httpclient import HTTPRequest
 from tornado.testing import gen_test
 from tornado.websocket import websocket_connect
 
+from ..services.kernels.remotemanager import UNIVERSAL_TENANT_ID
 from .test_gatewayapp import RESOURCES, TestGatewayAppBase
 
 
@@ -343,6 +344,90 @@ class TestDefaults(TestHandlers):
         kernels = json_decode(response.body)
         self.assertEqual(len(kernels), 1)
         self.assertEqual(kernels[0]["id"], kernel["id"])
+
+    @gen_test
+    def test_get_tenant_kernels(self):
+        """Server should respond with running kernel information."""
+        my_tenant_id = "6e22b538-cbe2-42b6-8598-e5c58be997b1"
+        other_tenant_id = "1529760d-945c-48fa-a45f-15064883e3bb"
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={my_tenant_id}")
+        )
+        self.assertEqual(response.code, 200)
+        kernels = json_decode(response.body)
+        self.assertEqual(len(kernels), 0)
+
+        # Launch a kernel for this tenant
+        response = yield self.http_client.fetch(
+            self.get_url("/api/kernels"), method="POST", body=f'{{"tenant_id":"{my_tenant_id}"}}'
+        )
+        self.assertEqual(response.code, 201)
+        my_kernel = json_decode(response.body)
+
+        # Launch a kernel for a different tenant
+        response = yield self.http_client.fetch(
+            self.get_url("/api/kernels"), method="POST", body=f'{{"tenant_id":"{other_tenant_id}"}}'
+        )
+        self.assertEqual(response.code, 201)
+        other_kernel = json_decode(response.body)
+
+        # Launch another kernel for this tenant
+        response = yield self.http_client.fetch(
+            self.get_url("/api/kernels"), method="POST", body=f'{{"tenant_id":"{my_tenant_id}"}}'
+        )
+        self.assertEqual(response.code, 201)
+        my_kernel2 = json_decode(response.body)
+
+        # Check the list again for our tenant
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={my_tenant_id}")
+        )
+        self.assertEqual(response.code, 200)
+        my_kernels = json_decode(response.body)
+        self.assertEqual(len(my_kernels), 2)
+        self.assertTrue(my_kernels[0]["id"] in [my_kernel["id"], my_kernel2["id"]])
+        self.assertTrue(my_kernels[1]["id"] in [my_kernel["id"], my_kernel2["id"]])
+
+        # Check the list for the other tenant
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={other_tenant_id}")
+        )
+        self.assertEqual(response.code, 200)
+        other_kernels = json_decode(response.body)
+        self.assertEqual(len(other_kernels), 1)
+        self.assertEqual(other_kernels[0]["id"], other_kernel["id"])
+
+        # Delete the other tenant's kernel and ensure its not listed
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels/{other_kernel['id']}"), method="DELETE"
+        )
+        self.assertEqual(response.code, 204)
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={other_tenant_id}")
+        )
+        self.assertEqual(response.code, 200)
+        other_kernels = json_decode(response.body)
+        self.assertEqual(len(other_kernels), 0)
+
+        # Delete one of my tenant's kernels and ensure only the other is still listed
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels/{ my_kernel['id']}"), method="DELETE"
+        )
+        self.assertEqual(response.code, 204)
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={my_tenant_id}")
+        )
+        self.assertEqual(response.code, 200)
+        my_kernels = json_decode(response.body)
+        self.assertEqual(len(my_kernels), 1)
+        self.assertEqual(my_kernels[0]["id"], my_kernel2["id"])
+
+        # Check the list using the default (Universal) tenant_id.  Since we didn't allow kernel lists,
+        # we expect a 403
+        response = yield self.http_client.fetch(
+            self.get_url(f"/api/kernels?tenant_id={UNIVERSAL_TENANT_ID}"), raise_error=False
+        )
+        self.assertEqual(response.code, 403)
 
     @gen_test
     def test_kernel_comm(self):

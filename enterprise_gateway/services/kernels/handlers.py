@@ -8,9 +8,11 @@ from functools import partial
 import jupyter_server.services.kernels.handlers as jupyter_server_handlers
 import tornado
 from jupyter_client.jsonutil import date_default
+from jupyter_server.utils import ensure_async
 from tornado import web
 
 from ...mixins import CORSMixin, JSONErrorsMixin, TokenAuthorizationMixin
+from ..kernels.remotemanager import UNIVERSAL_TENANT_ID
 
 
 class MainKernelHandler(
@@ -45,35 +47,41 @@ class MainKernelHandler(
             if len(kernels) >= max_kernels:
                 raise tornado.web.HTTPError(403, "Resource Limit")
 
-        # Try to get env vars from the request body
+        tenant_id = UNIVERSAL_TENANT_ID
+        env = {}
+        # Try to get tenant_id and env vars from the request body
         model = self.get_json_body()
-        if model is not None and "env" in model:
-            if not isinstance(model["env"], dict):
-                raise tornado.web.HTTPError(400)
-            # Start with the PATH from the current env. Do not provide the entire environment
-            # which might contain server secrets that should not be passed to kernels.
-            env = {"PATH": os.getenv("PATH", "")}
-            # Whitelist environment variables from current process environment
-            env.update(
-                {
-                    key: value
-                    for key, value in os.environ.items()
-                    if key in self.env_process_whitelist
-                }
-            )
-            # Whitelist KERNEL_* args and those allowed by configuration from client.  If all
-            # envs are requested, just use the keys from the payload.
-            env_whitelist = self.env_whitelist
-            if env_whitelist == ["*"]:
-                env_whitelist = model["env"].keys()
-            env.update(
-                {
-                    key: value
-                    for key, value in model["env"].items()
-                    if key.startswith("KERNEL_") or key in env_whitelist
-                }
-            )
+        if model is not None:
+            tenant_id = model.get("tenant_id", UNIVERSAL_TENANT_ID)
+            if "env" in model:
+                if not isinstance(model["env"], dict):
+                    raise tornado.web.HTTPError(400)
+                # Start with the PATH from the current env. Do not provide the entire environment
+                # which might contain server secrets that should not be passed to kernels.
+                env = {"PATH": os.getenv("PATH", "")}
+                # Whitelist environment variables from current process environment
+                env.update(
+                    {
+                        key: value
+                        for key, value in os.environ.items()
+                        if key in self.env_process_whitelist
+                    }
+                )
+                # Whitelist KERNEL_* args and those allowed by configuration from client.  If all
+                # envs are requested, just use the keys from the payload.
+                env_whitelist = self.env_whitelist
+                if env_whitelist == ["*"]:
+                    env_whitelist = model["env"].keys()
+                env.update(
+                    {
+                        key: value
+                        for key, value in model["env"].items()
+                        if key.startswith("KERNEL_") or key in env_whitelist
+                    }
+                )
 
+            # Set KERNEL_TENANT_ID.  If already present, we override with the value in the body
+            env["KERNEL_TENANT_ID"] = tenant_id
             # If kernel_headers are configured, fetch each of those and include in start request
             kernel_headers = {}
             missing_headers = []
@@ -97,7 +105,10 @@ class MainKernelHandler(
             # so do a temporary partial (ugh)
             orig_start = self.kernel_manager.start_kernel
             self.kernel_manager.start_kernel = partial(
-                self.kernel_manager.start_kernel, env=env, kernel_headers=kernel_headers
+                self.kernel_manager.start_kernel,
+                env=env,
+                kernel_headers=kernel_headers,
+                tenant_id=tenant_id,
             )
             try:
                 await super().post()
@@ -117,10 +128,16 @@ class MainKernelHandler(
         tornado.web.HTTPError
             403 Forbidden if kernel listing is disabled
         """
-        if not self.settings.get("eg_list_kernels"):
+
+        tenant_id_filter = self.request.query_arguments.get("tenant_id") or UNIVERSAL_TENANT_ID
+        if isinstance(tenant_id_filter, list):
+            tenant_id_filter = tenant_id_filter[0].decode("utf-8")
+        if not self.settings.get("eg_list_kernels") and tenant_id_filter == UNIVERSAL_TENANT_ID:
             raise tornado.web.HTTPError(403, "Forbidden")
         else:
-            await super().get()
+            km = self.kernel_manager
+            kernels = await ensure_async(km.list_kernels(tenant_id=tenant_id_filter))
+            self.finish(json.dumps(kernels, default=date_default))
 
     def options(self, **kwargs):
         """Method for properly handling CORS pre-flight"""
