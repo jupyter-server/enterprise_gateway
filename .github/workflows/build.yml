@@ -61,7 +61,7 @@ jobs:
       - name: Bump versions
         run: |
           pip install tbump
-          tbump 100.100.100rc0
+          tbump --dry-run 100.100.100rc0
 
   link_check:
     runs-on: ubuntu-latest
