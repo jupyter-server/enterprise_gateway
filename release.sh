@@ -193,8 +193,9 @@ function checkout_code {
 function update_version_to_release {
     cd $SOURCE_DIR
 
+    # Update tbump-managed versions
     pip install tbump
-    tbump $RELEASE_VERSION
+    tbump --non-interactive $RELEASE_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
@@ -216,8 +217,9 @@ function update_version_to_release {
 function update_version_to_development {
     cd $SOURCE_DIR
 
+    # Update tbump-managed versions
     pip install tbump
-    tbump $RELEASE_VERSION
+    tbump --non-interactive $RELEASE_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
