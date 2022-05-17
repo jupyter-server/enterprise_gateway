@@ -219,7 +219,7 @@ function update_version_to_development {
 
     # Update tbump-managed versions
     pip install tbump
-    tbump --non-interactive --no-tag --no-push $RELEASE_VERSION
+    tbump --non-interactive --no-tag --no-push $DEVELOPMENT_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
