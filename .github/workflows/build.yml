@@ -58,6 +58,10 @@ jobs:
           pip --version
           pip list
           docker logs itest-yarn
+      - name: Bump versions
+        run: |
+          pip install tbump
+          tbump 100.100.100rc0
 
   link_check:
     runs-on: ubuntu-latest
