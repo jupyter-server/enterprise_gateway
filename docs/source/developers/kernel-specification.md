@@ -6,7 +6,7 @@ Kernelspecs reside in well-known directories. For Enterprise Gateway, we general
 
 One approach the sample Enterprise Gateway kernel specifications take is to include a shell script that actually issues the `spark-submit` request. It is this shell script (typically named `run.sh`) that is referenced in the `argv` stanza.
 
-Here's an example from the [`spark_python_yarn_cluster`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) kernel specification:
+Here's an example from the [`spark_python_yarn_cluster`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernelspecs/spark_python_yarn_cluster/kernel.json) kernel specification:
 
 ```JSON
 {
@@ -41,7 +41,7 @@ Here's an example from the [`spark_python_yarn_cluster`](https://github.com/jupy
 }
 ```
 
-where [`run.sh`](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) issues `spark-submit` specifying the kernel launcher as the "application":
+where [`run.sh`](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernelspecs/spark_python_yarn_cluster/bin/run.sh) issues `spark-submit` specifying the kernel launcher as the "application":
 
 ```bash
 eval exec \
@@ -53,7 +53,7 @@ eval exec \
      "$@"
 ```
 
-For container-based environments, the `argv` may instead reference a script that is meant to create the container pod (for Kubernetes). For these, we use a [template file](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) that operators can adjust to meet the needs of their environment. Here's how that `kernel.json` looks:
+For container-based environments, the `argv` may instead reference a script that is meant to create the container pod (for Kubernetes). For these, we use a [template file](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/kubernetes/scripts/kernel-pod.yaml.j2) that operators can adjust to meet the needs of their environment. Here's how that `kernel.json` looks:
 
 ```json
 {
@@ -83,5 +83,7 @@ For container-based environments, the `argv` may instead reference a script that
   ]
 }
 ```
+
+When using the `launch_ipykernel` launcher (aka the Python kernel launcher), subclasses of `ipykernel.kernelbase.Kernel` can be launched. By default, this launcher uses the classname `"ipykernel.ipkernel.IPythonKernel"`, but other subclasses of `ipykernel.kernelbase.Kernel` can be specified by adding a `--kernel-class-name` parameter to the `argv` stanza. See [Invoking subclasses of `ipykernel.kernelbase.Kernel`](kernel-launcher.md#invoking-subclasses-of-ipykernelkernelbasekernel) for more information.
 
 As should be evident, kernel specifications are highly tuned to the runtime environment so your needs may be different, but _should_ resemble the approaches we've taken so far.

@@ -49,6 +49,60 @@ tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz --strip 1 --direct
 You may find it easier to install all kernel specifications on each node, then remove directories corresponding to specification you're not interested in using.
 ```
 
+## Specifying a load-balancing algorithm
+
+Jupyter Enterprise Gateway provides two ways to configure how kernels are distributed across the configured set of hosts: round-robin or least-connection.
+
+### Round-robin
+
+The round-robin algorithm simply uses an index into the set of configured hosts, incrementing the index on each kernel startup so that it points to the next host in the configured set. To specify the use of round-robin, use one of the following:
+
+_Command-line_:
+
+```bash
+--EnterpriseGatewayApp.load_balancing_algorithm=round-robin
+```
+
+_Configuration_:
+
+```python
+c.EnterpriseGatewayApp.load_balancing_algorithm="round-robin"
+```
+
+_Environment_:
+
+```bash
+export EG_LOAD_BALANCING_ALGORITHM=round-robin
+```
+
+Since _round-robin_ is the default load-balancing algorithm, this option is not necessary.
+
+### Least-connection
+
+The least-connection algorithm tracks the hosts that are currently servicing kernels spawned by the Enterprise Gateway instance. Using this information, Enterprise Gateway selects the host with the least number of kernels. It does not consider other information, or whether there is _another_ Enterprise Gateway instance using the same set of hosts. To specify the use of least-connection, use one of the following:
+
+_Command-line_:
+
+```bash
+--EnterpriseGatewayApp.load_balancing_algorithm=least-connection
+```
+
+_Configuration_:
+
+```python
+c.EnterpriseGatewayApp.load_balancing_algorithm="least-connection"
+```
+
+_Environment_:
+
+```bash
+export EG_LOAD_BALANCING_ALGORITHM=least-connection
+```
+
+### Pinning a kernel to a host
+
+A kernel's start request can specify a specific remote host on which to run by specifying that host in the `KERNEL_REMOTE_HOST` environment variable within the request's body. When specified, the configured load-balancing algorithm will be by-passed and the kernel will be started on the specified host.
+
 ## YARN Client Mode
 
 YARN client mode kernel specifications can be considered _distributed mode kernels_. They just happen to use `spark-submit` from different nodes in the cluster but use the `DistributedProcessProxy` to manage their lifecycle.

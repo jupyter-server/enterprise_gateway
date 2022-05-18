@@ -76,7 +76,7 @@ def launch_kubernetes_kernel(
     #
     # Creation for additional kinds of k8s objects can be added below.  Refer to
     # https://github.com/kubernetes-client/python for API signatures.  Other examples can be found in
-    # https://github.com/jupyter-incubator/enterprise_gateway/blob/master/enterprise_gateway/services/processproxies/k8s.py
+    # https://github.com/jupyter-server/enterprise_gateway/tree/main/enterprise_gateway/services/processproxies/k8s.py
     #
     pod_template = None
     kernel_namespace = keywords["kernel_namespace"]

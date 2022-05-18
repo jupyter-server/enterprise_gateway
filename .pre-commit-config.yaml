@@ -3,7 +3,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.2.0
     hooks:
       - id: end-of-file-fixer
       - id: check-case-conflict
@@ -32,7 +32,7 @@ repos:
         args: [--profile=black]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.6.1
+    rev: v2.6.2
     hooks:
       - id: prettier
         exclude: |
@@ -42,7 +42,7 @@ repos:
           )$
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.1
+    rev: v2.32.1
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
@@ -65,7 +65,7 @@ repos:
           ]
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.14.2
+    rev: 0.15.0
     hooks:
       - id: check-jsonschema
         name: "Check GitHub Workflows"

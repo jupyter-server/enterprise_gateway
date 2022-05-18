@@ -17,28 +17,66 @@ kernel_log_dir = os.getenv(
 )  # would prefer /var/log, but its only writable by root
 
 
+class TrackKernelOnHost:
+    _host_kernels = {}
+    _kernel_host_mapping = {}
+
+    def add_kernel_id(self, host: str, kernel_id: str):
+        self._kernel_host_mapping[kernel_id] = host
+        self.increment(host)
+
+    def delete_kernel_id(self, kernel_id: str):
+        host = self._kernel_host_mapping.get(kernel_id)
+        if host:
+            self.decrement(host)
+            del self._kernel_host_mapping[kernel_id]
+
+    def min_or_remote_host(self, remote_host=None) -> str:
+        if remote_host:
+            return remote_host
+        return min(self._host_kernels, key=lambda k: self._host_kernels[k])
+
+    def increment(self, host: str) -> None:
+        val = int(self._host_kernels.get(host, 0))
+        self._host_kernels[host] = val + 1
+
+    def decrement(self, host: str) -> None:
+        val = int(self._host_kernels.get(host, 0))
+        self._host_kernels[host] = val - 1
+
+    def init_host_kernels(self, hosts) -> None:
+        if len(self._host_kernels) == 0:
+            self._host_kernels.update({key: 0 for key in hosts})
+
+
 class DistributedProcessProxy(RemoteProcessProxy):
     """
     Manages the lifecycle of kernels distributed across a set of hosts.
     """
 
     host_index = 0
+    kernel_on_host = TrackKernelOnHost()
 
     def __init__(self, kernel_manager, proxy_config):
         super().__init__(kernel_manager, proxy_config)
         self.kernel_log = None
+        self.least_connection = kernel_manager.load_balancing_algorithm == "least-connection"
         if proxy_config.get("remote_hosts"):
             self.hosts = proxy_config.get("remote_hosts").split(",")
         else:
             self.hosts = kernel_manager.remote_hosts  # from command line or env
 
+        if self.least_connection:
+            DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
+
     async def launch_process(self, kernel_cmd, **kwargs):
         """
         Launches a kernel process on a selected host.
         """
+        env_dict = kwargs.get("env")
         await super().launch_process(kernel_cmd, **kwargs)
 
-        self.assigned_host = self._determine_next_host()
+        self.assigned_host = self._determine_next_host(env_dict)
         self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
         self.assigned_ip = self.ip
 
@@ -122,11 +160,25 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         return cmd
 
-    def _determine_next_host(self):
-        """Simple round-robin index into list of hosts."""
-        next_host = self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
-        DistributedProcessProxy.host_index += 1
+    def _determine_next_host(self, env_dict):
+        """Simple round-robin index into list of hosts or use least-connection ."""
+        remote_host = env_dict.get("KERNEL_REMOTE_HOST")
+        if self.least_connection:
+            next_host = DistributedProcessProxy.kernel_on_host.min_or_remote_host(remote_host)
+            DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
+        else:
+            next_host = (
+                remote_host
+                if remote_host
+                else self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
+            )
+            DistributedProcessProxy.host_index += 1
+
         return next_host
+
+    def _unregister_assigned_host(self):
+        if self.least_connection:
+            DistributedProcessProxy.kernel_on_host.delete_kernel_id(self.kernel_id)
 
     async def confirm_remote_startup(self):
         """Confirms the remote kernel has started by obtaining connection information from the remote host."""
@@ -170,6 +222,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         # DistributedProcessProxy can have a tendency to leave zombies, particularly when EG is
         # abruptly terminated.  This extra call to shutdown_lister does the trick.
         self.shutdown_listener()
+        self._unregister_assigned_host()
         super(RemoteProcessProxy, self).cleanup()
 
     def shutdown_listener(self):

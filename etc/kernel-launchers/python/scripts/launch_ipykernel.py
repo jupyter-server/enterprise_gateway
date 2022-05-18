@@ -14,7 +14,6 @@ from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad
-from future.utils import raise_from
 from jupyter_client.connect import write_connection_file
 
 LAUNCHER_VERSION = 1  # Indicate to server the version of this launcher (payloads may vary)
@@ -34,6 +33,8 @@ logging.basicConfig(format="[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]
 
 logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
+
+DEFAULT_KERNEL_CLASS_NAME = "ipykernel.ipkernel.IPythonKernel"
 
 
 class ExceptionThread(Thread):
@@ -147,14 +148,10 @@ class WaitingForSparkSessionToBeInitialized:
             self._init_thread.join(timeout=None)
             exc = self._init_thread.exc
             if exc:
-                raise_from(
-                    RuntimeError(
-                        "Variable: {} was not initialized properly.".format(
-                            self._spark_session_variable
-                        )
-                    ),
-                    exc,
-                )
+                raise RuntimeError(
+                    f"Variable: {self._spark_session_variable} was not initialized properly."
+                ) from exc
+
             # now return attribute/function reference from actual Spark object
             return getattr(self._namespace[self._spark_session_variable], name)
 
@@ -173,8 +170,8 @@ def _validate_port_range(port_range):
         if port_range_size != 0:
             if port_range_size < min_port_range_size:
                 raise RuntimeError(
-                    "Port range validation failed for range: '{}'.  Range size must be at least {} as specified by"
-                    " env EG_MIN_PORT_RANGE_SIZE".format(port_range, min_port_range_size)
+                    f"Port range validation failed for range: '{port_range}'.  Range size must be at least "
+                    f"{min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE"
                 )
     except ValueError as ve:
         raise RuntimeError(
@@ -240,8 +237,7 @@ def return_connection_info(
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error(
-            "Invalid format for response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid format for response address '{response_addr}'. Assuming 'pull' mode..."
         )
         return
 
@@ -250,8 +246,7 @@ def return_connection_info(
         response_port = int(response_parts[1])
     except ValueError:
         logger.error(
-            "Invalid port component found in response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid port component found in response address '{response_addr}'. Assuming 'pull' mode..."
         )
         return
 
@@ -290,9 +285,7 @@ def prepare_comm_socket(lower_port, upper_port):
     """
     sock = _select_socket(lower_port, upper_port)
     logger.info(
-        "Signal socket bound to host: {}, port: {}".format(
-            sock.getsockname()[0], sock.getsockname()[1]
-        )
+        f"Signal socket bound to host: {sock.getsockname()[0]}, port: {sock.getsockname()[1]}"
     )
     sock.listen(1)
     sock.settimeout(5)
@@ -331,9 +324,8 @@ def _select_socket(lower_port, upper_port):
             retries = retries + 1
             if retries > max_port_range_retries:
                 raise RuntimeError(
-                    "Failed to locate port within range {}..{} after {} retries!".format(
-                        lower_port, upper_port, max_port_range_retries
-                    )
+                    f"Failed to locate port within range {lower_port}..{upper_port} "
+                    f"after {max_port_range_retries} retries!"
                 )
     return sock
 
@@ -396,8 +388,42 @@ def server_listener(sock, parent_pid):
                 logger.info(f"server_listener got request: {request}")
 
 
-def start_ipython(namespace, cluster_type="spark", **kwargs):
-    from IPython import embed_kernel
+def import_item(name):
+    """Import and return ``bar`` given the string ``foo.bar``.
+    Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
+    executing the code ``from foo import bar``.
+    Parameters
+    ----------
+    name : string
+      The fully qualified name of the module/package being imported.
+    Returns
+    -------
+    mod : module object
+       The module that was imported.
+    """
+
+    parts = name.rsplit(".", 1)
+    if len(parts) == 2:
+        # called with 'foo.bar....'
+        package, obj = parts
+        module = __import__(package, fromlist=[obj])
+        try:
+            pak = getattr(module, obj)
+        except AttributeError:
+            raise ImportError("No module named %s" % obj)
+        return pak
+    else:
+        # called with un-dotted string
+        return __import__(parts[0])
+
+
+def start_ipython(
+    namespace, cluster_type="spark", kernel_class_name=DEFAULT_KERNEL_CLASS_NAME, **kwargs
+):
+    from ipykernel.kernelapp import IPKernelApp
+
+    # Capture the kernel class before removing 'import_item' from the namespace
+    kernel_class = import_item(kernel_class_name)
 
     # create an initial list of variables to clear
     # we do this without deleting to preserve the locals so that
@@ -411,8 +437,10 @@ def start_ipython(namespace, cluster_type="spark", **kwargs):
     for k in to_delete:
         del namespace[k]
 
-    # Start the kernel
-    embed_kernel(local_ns=namespace, **kwargs)
+    # Start the kernel.
+    app = IPKernelApp.instance(kernel_class=kernel_class, user_ns=namespace, **kwargs)
+    app.initialize([])
+    app.start()
 
 
 if __name__ == "__main__":
@@ -455,6 +483,13 @@ if __name__ == "__main__":
         dest="cluster_type",
         nargs="?",
         help="the kind of cluster to initialize: spark, dask, or none",
+    )
+    parser.add_argument(
+        "--kernel-class-name",
+        dest="kernel_class_name",
+        nargs="?",
+        default=DEFAULT_KERNEL_CLASS_NAME,
+        help="Indicates the name of the kernel class to use.  Must be a subclass of 'ipykernel.kernelbase.Kernel'.",
     )
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default values for --spark-context-initialization-mode (none) and --cluster-type (spark)
@@ -513,6 +548,7 @@ if __name__ == "__main__":
     )
     spark_init_mode = arguments["init_mode"] or arguments["rpp_init_mode"]
     cluster_type = arguments["cluster_type"] or arguments["rpp_cluster_type"]
+    kernel_class_name = arguments["kernel_class_name"]
     ip = "0.0.0.0"
 
     if connection_file is None and kernel_id is None:
@@ -562,7 +598,13 @@ if __name__ == "__main__":
         cluster_type = "none"
 
     # launch the IPython kernel instance
-    start_ipython(locals(), cluster_type=cluster_type, connection_file=connection_file, ip=ip)
+    start_ipython(
+        locals(),
+        cluster_type=cluster_type,
+        connection_file=connection_file,
+        ip=ip,
+        kernel_class_name=kernel_class_name,
+    )
 
     try:
         os.remove(connection_file)

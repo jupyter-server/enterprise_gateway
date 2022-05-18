@@ -1,6 +1,102 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=0.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyter_enterprise_gateway"
+version = "3.0.0.dev0"
+description = "A web server for spawning and communicating with remote Jupyter kernels"
+license = { file = "LICENSE.md" }
+keywords = ["Interactive","Interpreter","Kernel", "Web", "Cloud"]
+classifiers = [
+  "Intended Audience :: Developers", "Intended Audience :: Science/Research",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10"
+]
+requires-python = ">=3.7"
+dependencies = [
+  "docker>=3.5.0",
+  "future",
+  "jinja2>=3.1",
+  "jupyter_client~=6.1",  # Remove cap once EG supports kernel provisioners
+  "jupyter_core>=4.6.0",
+  "kubernetes>=4.0.0",
+  "jupyter_server>=1.2",
+  "paramiko>=2.1.2",
+  "pexpect>=4.2.0",
+  "pycryptodomex>=3.9.7",
+  "pyzmq>=17.0.0",
+  "requests>=2.7",
+  "tornado>=6.1",
+  "traitlets>=4.3.3",
+  "watchdog>=2.1.3",
+  "yarn-api-client>=1.0"
+]
+
+[[project.authors]]
+name = "Jupyter Development Team"
+email = "jupyter@googlegroups.com"
+
+[project.readme]
+text = "A lightweight, multi-tenant, scalable, and secure gateway that enables\nJupyter Notebooks to share resources across distributed clusters such as\nApache Spark, Kubernetes and others."
+content-type = "text/plain"
+
+[project.urls]
+Homepage = "http://github.com/jupyter/enterprise_gateway"
+
+[project.optional-dependencies]
+test = [
+  "coverage",
+  "pytest",
+  "pytest-tornasync",
+  "ipykernel",
+  "pre-commit",
+  "websocket-client"
+]
+
+[project.scripts]
+jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
+
+[tool.hatch.build.targets.wheel]
+include = ["enterprise_gateway"]
+
+[tool.tbump.version]
+current = "3.0.0.dev0"
+regex = '''
+  (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
+  ((?P<channel>a|b|rc|.dev)(?P<release>\d+))?
+'''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[[tool.tbump.file]]
+src = "enterprise_gateway/_version.py"
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+
+[[tool.tbump.file]]
+src = "Makefile"
+
+[[tool.tbump.file]]
+src = "etc/kubernetes/helm/enterprise-gateway/Chart.yaml"
+
+[[tool.tbump.field]]
+name = "channel"
+default = ""
+
+[[tool.tbump.field]]
+name = "release"
+default = ""
 
 [tool.jupyter-releaser.options]
 ignore-links = ["http://my-gateway-server.com:8888"]
@@ -14,4 +110,8 @@ filterwarnings = [
   "error",
   "ignore:There is no current event loop:DeprecationWarning",
   "ignore:Passing unrecognized arguments to super:DeprecationWarning:jupyter_client",
+  # The following needs to remain in place until a new paramiko release is available
+  # that resolves this issue: https://github.com/paramiko/paramiko/issues/2038
+  # Otherwise, pytest execution fails when the deprecation warning is encountered.
+  "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning"
 ]

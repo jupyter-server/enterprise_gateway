@@ -16,7 +16,7 @@ The following sample kernelspecs are currently available on Docker and Docker Sw
 
 Enterprise Gateway manifests itself as a Docker Swarm service. It is identified by the name `enterprise-gateway` within the cluster. In addition, all objects related to Enterprise Gateway, including kernel instances, have a label of `app=enterprise-gateway` applied.
 
-The current deployment uses a compose stack definition, [docker-compose.yml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/docker-compose.yml) which creates an overlay network intended for use solely by Enterprise Gateway and any kernel-based services it launches.
+The current deployment uses a compose stack definition, [docker-compose.yml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/docker/docker-compose.yml) which creates an overlay network intended for use solely by Enterprise Gateway and any kernel-based services it launches.
 
 To deploy the stack to a swarm cluster from a manager node, use:
 
@@ -34,7 +34,7 @@ Once session affinity has been figured out, we can (theretically) configure Ente
 
 ## Docker deployment
 
-An alternative deployment of Enterprise Gateway in docker environments is to deploy Enterprise Gateway as a traditional docker container. This can be accomplished via the [docker-compose.yml](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/docker/docker-compose.yml) file. However, keep in mind that in choosing this deployment approach, one loses leveraging swarm's monitoring & restart capabilities. That said, choosing this approach does not preclude one from leveraging swarm's scheduling capabilities for launching kernels. As noted below, kernel instances, and how they manifest as docker-based entities (i.e., a swarm service or a docker container), is purely a function of the process proxy class to which they're associated.
+An alternative deployment of Enterprise Gateway in docker environments is to deploy Enterprise Gateway as a traditional docker container. This can be accomplished via the [docker-compose.yml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/docker/docker-compose.yml) file. However, keep in mind that in choosing this deployment approach, one loses leveraging swarm's monitoring & restart capabilities. That said, choosing this approach does not preclude one from leveraging swarm's scheduling capabilities for launching kernels. As noted below, kernel instances, and how they manifest as docker-based entities (i.e., a swarm service or a docker container), is purely a function of the process proxy class to which they're associated.
 
 To start the stack using compose:
 
@@ -48,9 +48,9 @@ The documentation for managing a compose stack can be found [here](https://docs.
 
 One of the more common areas of customization we see occur within the kernelspec files located in /usr/local/share/jupyter/kernels. To customize the kernel definitions, the kernels directory can be exposed as a mounted volume thereby making it available to all containers within the swarm cluster.
 
-As an example, we have included the necessary commands to mount these volumes, both in the deployment script and in the [launch_docker.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py) file used to launch docker-based kernels. By default, these references are commented out as they require the system administrator to ensure the directories are available throughout the cluster.
+As an example, we have included the necessary commands to mount these volumes, both in the deployment script and in the [launch_docker.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/docker/scripts/launch_docker.py) file used to launch docker-based kernels. By default, these references are commented out as they require the system administrator to ensure the directories are available throughout the cluster.
 
-Note that because the kernel launch script, [launch_docker.py](https://github.com/jupyter-server/enterprise_gateway/blob/master/etc/kernel-launchers/docker/scripts/launch_docker.py), resides in the kernelspecs hierarchy, updates or modifications to docker-based kernel instances can now also take place.
+Note that because the kernel launch script, [launch_docker.py](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kernel-launchers/docker/scripts/launch_docker.py), resides in the kernelspecs hierarchy, updates or modifications to docker-based kernel instances can now also take place.
 
 ## Docker and Docker Swarm Kernel Instances
 

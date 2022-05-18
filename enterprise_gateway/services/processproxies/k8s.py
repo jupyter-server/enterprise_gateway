@@ -112,26 +112,33 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # Delete the namespace or pod...
         try:
-            # What gets returned from this call is a 'V1Status'.  It looks a bit like JSON but appears to be
-            # intentionally obfuscated.  Attempts to load the status field fail due to malformed json.  As a
-            # result, we'll see if the status field contains either 'Succeeded' or 'Failed' - since that should
-            # indicate the phase value.
+            status = None
+            termination_stati = ["Succeeded", "Failed", "Terminating"]
 
             if self.delete_kernel_namespace and not self.kernel_manager.restarting:
+                # Status is a return value for calls that don't return other objects.
+                # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#status-v1-meta
                 v1_status = client.CoreV1Api().delete_namespace(
                     name=self.kernel_namespace, body=body
                 )
+                if v1_status:
+                    status = v1_status.status
             else:
-                v1_status = client.CoreV1Api().delete_namespaced_pod(
+                # Deleting a Pod will return a v1.Pod if found and its status will be a PodStatus containing
+                # a phase string property
+                # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#podstatus-v1-core
+                v1_pod = client.CoreV1Api().delete_namespaced_pod(
                     namespace=self.kernel_namespace, body=body, name=self.container_name
                 )
-            if v1_status and v1_status.status:
-                termination_stati = ["Succeeded", "Failed", "Terminating"]
-                if any(status in v1_status.status for status in termination_stati):
+                if v1_pod and v1_pod.status:
+                    status = v1_pod.status.phase
+
+            if status:
+                if any(s in status for s in termination_stati):
                     result = True
 
             if not result:
-                self.log.warning(f"Unable to delete {object_name}: {v1_status}")
+                self.log.warning(f"Unable to delete {object_name}: {status}")
         except Exception as err:
             if isinstance(err, client.rest.ApiException) and err.status == 404:
                 result = True  # okay if its not found

@@ -41,7 +41,7 @@ an enterprise. Inspired by Jupyter Kernel Gateway, Jupyter Enterprise Gateway pr
 - Persistent kernel sessions
 - Ability to associate profiles consisting of configuration settings to a kernel for a given user (see [Project Roadmap](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/contributors/roadmap.html))
 
-![Deployment Diagram](https://github.com/jupyter-server/enterprise_gateway/blob/master/docs/source/images/deployment.png?raw=true)
+![Deployment Diagram](https://github.com/jupyter-server/enterprise_gateway/blob/main/docs/source/images/deployment.png?raw=true)
 
 ## Installation
 
