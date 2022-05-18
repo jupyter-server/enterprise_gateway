@@ -89,6 +89,7 @@ src = "Makefile"
 
 [[tool.tbump.file]]
 src = "etc/kubernetes/helm/enterprise-gateway/Chart.yaml"
+search = 'appVersion: {current_version}'
 
 [[tool.tbump.field]]
 name = "channel"
