@@ -192,11 +192,10 @@ function checkout_code {
 
 function update_version_to_release {
     cd $SOURCE_DIR
-    # Update Python _version.py
-    sed -i .bak "s@^__version__.*@__version__ = '$RELEASE_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Makefile
-    sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
+    # Update tbump-managed versions
+    pip install tbump
+    tbump --non-interactive --no-tag --no-push $RELEASE_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
@@ -217,11 +216,10 @@ function update_version_to_release {
 
 function update_version_to_development {
     cd $SOURCE_DIR
-    # Update Python _version.py
-    sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Makefile
-    sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
+    # Update tbump-managed versions
+    pip install tbump
+    tbump --non-interactive --no-tag --no-push $DEVELOPMENT_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
