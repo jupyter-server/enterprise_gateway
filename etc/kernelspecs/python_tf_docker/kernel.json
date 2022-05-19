@@ -7,10 +7,10 @@
       "config": {
         "image_name": "elyra/kernel-tf-py:VERSION"
       }
-    }
+    },
+    "debugger": true
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_tf_docker/scripts/launch_docker.py",

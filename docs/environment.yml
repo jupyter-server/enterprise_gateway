@@ -5,9 +5,6 @@ channels:
   - free
 dependencies:
   - pip
-  - python=3.7
+  - python=3.8
   - pip:
-    - recommonmark
-    - sphinx_rtd_theme
-    - sphinx>=3
-    - sphinx-markdown-tables
+      - -r doc-requirements.txt

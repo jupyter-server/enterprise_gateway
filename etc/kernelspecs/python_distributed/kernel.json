@@ -1,10 +1,11 @@
 {
   "display_name": "Python 3 (distributed)",
-  "language": "python", 
+  "language": "python",
   "metadata": {
     "process_proxy": {
       "class_name": "enterprise_gateway.services.processproxies.distributed.DistributedProcessProxy"
-    }
+    },
+    "debugger": true
   },
   "argv": [
     "python",

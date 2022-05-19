@@ -2,11 +2,12 @@
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel specs."""
 import os
+from typing import List
 
 from jupyter_server.utils import ensure_async
 from tornado import web
+
 from ...mixins import CORSMixin
-from typing import List
 
 
 class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
@@ -14,8 +15,7 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
 
     @staticmethod
     def get_resource_metadata() -> tuple:
-        """Returns the (resource, mime-type) for the handlers spec.
-        """
+        """Returns the (resource, mime-type) for the handlers spec."""
         pass
 
     def initialize(self) -> None:
@@ -27,10 +27,9 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
         web.StaticFileHandler.initialize(self, path=os.path.dirname(__file__))
 
     async def get(self) -> None:
-        """Handler for a get on a specific handler
-        """
+        """Handler for a get on a specific handler"""
         resource_name, content_type = self.get_resource_metadata()
-        self.set_header('Content-Type', content_type)
+        self.set_header("Content-Type", content_type)
         res = web.StaticFileHandler.get(self, resource_name)
         await ensure_async(res)
 
@@ -41,19 +40,21 @@ class BaseSpecHandler(CORSMixin, web.StaticFileHandler):
 
 class SpecJsonHandler(BaseSpecHandler):
     """Exposes a JSON swagger specification"""
+
     @staticmethod
     def get_resource_metadata() -> tuple:
-        return 'swagger.json', 'application/json'
+        return "swagger.json", "application/json"
 
 
 class APIYamlHandler(BaseSpecHandler):
     """Exposes a YAML swagger specification"""
+
     @staticmethod
     def get_resource_metadata() -> tuple:
-        return 'swagger.yaml', 'text/x-yaml'
+        return "swagger.yaml", "text/x-yaml"
 
 
 default_handlers: List[str] = [
-    ('/api/{}'.format(SpecJsonHandler.get_resource_metadata()[0]), SpecJsonHandler),
-    ('/api/{}'.format(APIYamlHandler.get_resource_metadata()[0]), APIYamlHandler)
+    (f"/api/{SpecJsonHandler.get_resource_metadata()[0]}", SpecJsonHandler),
+    (f"/api/{APIYamlHandler.get_resource_metadata()[0]}", APIYamlHandler),
 ]

@@ -1,0 +1,36 @@
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: {{ kernel_resource_name }}
+spec:
+  type: Python
+  pythonVersion: "3"
+  sparkVersion: 2.4.5
+  image: {{ kernel_image }}
+  mainApplicationFile: "local:///usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py"
+  arguments:
+    - "--kernel-id"
+    - "{{ kernel_id }}"
+    - "--spark-context-initialization-mode"
+    - "{{ spark_context_initialization_mode }}"
+    - "--response-address"
+    - "{{ eg_response_address }}"
+    - "--port-range"
+    - "{{ eg_port_range }}"
+    - "--public-key"
+    - "{{ eg_public_key }}"
+  driver:
+    serviceAccount: "{{ kernel_service_account_name }}"
+    labels:
+      kernel_id: "{{ kernel_id }}"
+      app: enterprise-gateway
+      component: kernel
+    cores: 1
+    coreLimit: 1000m
+    memory: 1g
+  executor:
+    image: {{ kernel_executor_image }}
+    instances: 2
+    cores: 1
+    coreLimit: 1000m
+    memory: 1g

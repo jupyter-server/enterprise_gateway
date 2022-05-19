@@ -7,10 +7,10 @@
       "config": {
         "image_name": "elyra/kernel-tf-gpu-py:VERSION"
       }
-    }
+    },
+    "debugger": true
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/python_tf_gpu_kubernetes/scripts/launch_kubernetes.py",

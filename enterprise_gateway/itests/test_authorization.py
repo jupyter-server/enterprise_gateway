@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from enterprise_gateway.client.gateway_client import GatewayClient
 
 
@@ -8,8 +9,8 @@ class TestAuthorization(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestAuthorization, cls).setUpClass()
-        print('>>>')
+        super().setUpClass()
+        print(">>>")
 
         # initialize environment
         cls.gateway_client = GatewayClient()
@@ -23,7 +24,7 @@ class TestAuthorization(unittest.TestCase):
     def test_authorized_users(self):
         kernel = None
         try:
-            kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username='bob')
+            kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username="bob")
             result = kernel.execute("print('The cow jumped over the moon.')")
             self.assertEqual(result, "The cow jumped over the moon.\n")
         finally:
@@ -33,14 +34,16 @@ class TestAuthorization(unittest.TestCase):
     def test_unauthorized_users(self):
         kernel = None
         try:
-            kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username='bad_guy')
+            kernel = self.gateway_client.start_kernel(
+                TestAuthorization.KERNELSPEC, username="bad_guy"
+            )
             self.assertTrue(False, msg="Unauthorization exception expected!")
         except Exception as be:
-            self.assertRegexpMatches(be.args[0], "403")
+            self.assertRegex(be.args[0], "403")
         finally:
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

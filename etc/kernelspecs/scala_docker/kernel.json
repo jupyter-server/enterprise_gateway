@@ -9,8 +9,7 @@
       }
     }
   },
-  "env": {
-  },
+  "env": {},
   "argv": [
     "python",
     "/usr/local/share/jupyter/kernels/scala_docker/scripts/launch_docker.py",

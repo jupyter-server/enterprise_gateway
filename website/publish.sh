@@ -75,5 +75,3 @@ echo "   https://jupyter.github.io/enterprise_gateway/"
 
 
 cd "$BASE_DIR" #return to base dir
-
-

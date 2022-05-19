@@ -10,13 +10,6 @@
       }
     }
   },
-  "env": {
-  },
-  "argv": [
-    "python",
-    "-m",
-    "ipykernel_launcher",
-    "-f",
-    "{connection_file}"
-  ]
+  "env": {},
+  "argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"]
 }

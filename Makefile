@@ -1,15 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean nuke dev dev-http docs install sdist test release clean-images clean-enterprise-gateway \
-    clean-demo-base clean-kernel-images clean-enterprise-gateway \
+.PHONY: help build clean nuke dev dev-http docs install bdist sdist test release check_dists \
+    clean-images clean-enterprise-gateway clean-demo-base clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-demo-base \
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
     push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
-SA?=source activate
-ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
 VERSION?=3.0.0.dev0
@@ -22,23 +20,22 @@ else
 endif
 
 
-WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py2.py3-none-any.whl
-WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
+#WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
+WHEEL_FILES:=$(shell find enterprise_gateway -type f )
+WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py3-none-any.whl
+SDIST_FILE:=dist/jupyter_enterprise_gateway-$(VERSION).tar.gz
+DIST_FILES=$(WHEEL_FILE) $(SDIST_FILE)
 
-HELM_CHART:=dist/jupyter_enterprise_gateway_helm-$(VERSION).tgz
-HELM_CHART_FILES:=$(shell find etc/kubernetes/helm -type f)
+HELM_DESIRED_VERSION:=v3.8.2  # Pin the version of helm to use (v3.8.2 is latest as of 4/21/22)
+HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway/Chart.yaml | sed 's/version: //')
+HELM_CHART:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
+HELM_CHART_DIR:=etc/kubernetes/helm/enterprise-gateway
+HELM_CHART_FILES:=$(shell find $(HELM_CHART_DIR) -type f ! -name .DS_Store)
+HELM_INSTALL_DIR:=/usr/local/bin
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-build:
-env: ## Make a dev environment
-	-conda env create --file requirements.yml --name $(ENV)
-	-conda env config vars set PYTHONPATH=$(PWD) --name $(ENV)
-
-activate: ## Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
-	@echo "Run \`$(SA) $(ENV)\` to activate the environment."
 
 clean: ## Make a clean source tree
 	-rm -rf dist
@@ -50,57 +47,64 @@ clean: ## Make a clean source tree
 	-find website -name '.sass-cache' -type d -exec rm -fr {} +
 	-find website -name '_site' -type d -exec rm -fr {} +
 	-find website -name 'build' -type d -exec rm -fr {} +
-	-$(SA) $(ENV) && make -C docs clean
-	-$(SA) $(ENV) && make -C etc clean
+	-make -C docs clean
+	-make -C etc clean
 
 lint: ## Check code style
-	$(SA) $(ENV) && flake8 enterprise_gateway
+	pre-commit run --all-files
 
-nuke: ## Make clean + remove conda env
-	-conda env remove -n $(ENV) -y
-
-dev: ## Make a server in jupyter_websocket mode
-	$(SA) $(ENV) && python enterprise_gateway
+run-dev: test-install-wheel ## Make a server in jupyter_websocket mode
+	python enterprise_gateway
 
 docs: ## Make HTML documentation
-	$(SA) $(ENV) && make -C docs html
+	make -C docs requirements html
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
 	make VERSION=$(VERSION) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C  etc $@
 
-install: ## Make a conda env with dist/jupyter_enterprise_gateway-*.whl and dist/jupyter_enterprise_gateway-*.tar.gz installed
-	-conda env remove -y -n $(ENV)-install
-	conda create -y -n $(ENV)-install python=3 pip
-	$(SA) $(ENV)-install && \
-		pip install dist/jupyter_enterprise_gateway-*.whl && \
-			jupyter enterprisegateway --help && \
-			pip uninstall -y jupyter_enterprise_gateway
-	conda env remove -y -n $(ENV)-install
+test-install: test-install-wheel test-install-tar ## Install and minimally run EG with the wheel and tar distributions
 
-	conda create -y -n $(ENV)-install python=3 pip
-	$(SA) $(ENV)-install && \
-		pip install dist/jupyter_enterprise_gateway-*.tar.gz && \
-			jupyter enterprisegateway --help && \
-			pip uninstall -y jupyter_enterprise_gateway
-	conda env remove -y -n $(ENV)-install
+test-install-wheel:
+	pip uninstall -y jupyter_enterprise_gateway
+	pip install dist/jupyter_enterprise_gateway-*.whl && \
+		jupyter enterprisegateway --help
 
-bdist: lint
-	make $(WHEEL_FILE)
+test-install-tar:
+	pip uninstall -y jupyter_enterprise_gateway
+	pip install dist/jupyter_enterprise_gateway-*.tar.gz && \
+		jupyter enterprisegateway --help
+
+bdist: $(WHEEL_FILE)
 
 $(WHEEL_FILE): $(WHEEL_FILES)
-	$(SA) $(ENV) && python setup.py bdist_wheel $(POST_SDIST) \
-		&& rm -rf *.egg-info
+	pip install build && python -m build --wheel . \
+		&& rm -rf *.egg-info && chmod 0755 dist/*.*
 
-sdist:
-	$(SA) $(ENV) && python setup.py sdist $(POST_SDIST) \
-		&& rm -rf *.egg-info
+sdist: $(SDIST_FILE)
 
-helm-chart: ## Make helm chart distribution
-	make $(HELM_CHART)
+$(SDIST_FILE): $(WHEEL_FILES)
+	pip install build && python -m build --sdist . \
+		&& rm -rf *.egg-info && chmod 0755 dist/*.*
+
+helm-chart: helm-install helm-lint $(HELM_CHART) ## Make helm chart distribution
+
+helm-install: $(HELM_INSTALL_DIR)/helm
+
+$(HELM_INSTALL_DIR)/helm: # Download and install helm
+	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o /tmp/get_helm.sh \
+	&& chmod +x /tmp/get_helm.sh \
+	&& DESIRED_VERSION=$(HELM_DESIRED_VERSION) /tmp/get_helm.sh \
+	&& rm -f /tmp/get_helm.sh
+
+helm-lint: helm-clean
+	helm lint $(HELM_CHART_DIR)
+
+helm-clean: # Remove any .DS_Store files that might wind up in the package
+	$(shell find etc/kubernetes/helm -type f -name '.DS_Store' -exec rm -f {} \;)
 
 $(HELM_CHART): $(HELM_CHART_FILES)
-	(mkdir -p dist; cd etc/kubernetes/helm; tar -cvzf ../../../$(HELM_CHART) enterprise-gateway)
+	helm package $(HELM_CHART_DIR) -d dist
 
 dist: lint bdist sdist kernelspecs helm-chart ## Make source, binary, kernelspecs and helm chart distributions to dist folder
 
@@ -112,14 +116,17 @@ test-debug:
 test: TEST?=
 test: ## Run unit tests
 ifeq ($(TEST),)
-	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests
+	pytest -vv $(TEST_DEBUG_OPTS)
 else
 # e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
-	$(SA) $(ENV) && pytest -v -s $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
+	pytest -vv $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
-release: POST_SDIST=upload
-release: bdist sdist ## Make a wheel + source release on PyPI
+release: dist check_dists ## Make a wheel + source release on PyPI
+	twine upload $(DIST_FILES)
+
+check_dists:
+	pip install twine && twine check --strict $(DIST_FILES)
 
 # Here for doc purposes
 docker-images:  ## Build docker images (includes kernel-based images)
@@ -188,7 +195,7 @@ itest-yarn: ## Run integration tests (optionally) against docker demo (YARN) con
 ifeq (1, $(PREP_ITEST_YARN))
 	make itest-yarn-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
+	(GATEWAY_HOST=$(ITEST_YARN_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) SPARK_VERSION=$(SPARK_VERSION) ITEST_HOSTNAME_PREFIX=$(ITEST_HOSTNAME_PREFIX) pytest -vv $(TEST_DEBUG_OPTS) $(ITEST_YARN_TESTS))
 	@echo "Run \`docker logs itest-yarn\` to see enterprise-gateway log."
 
 PREP_TIMEOUT?=60
@@ -213,10 +220,10 @@ itest-docker: ## Run integration tests (optionally) against docker swarm
 ifeq (1, $(PREP_ITEST_DOCKER))
 	make itest-docker-prep
 endif
-	($(SA) $(ENV) && GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -v -s $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
+	(GATEWAY_HOST=$(ITEST_DOCKER_HOST) LOG_LEVEL=$(LOG_LEVEL) KERNEL_USERNAME=$(ITEST_USER) KERNEL_LAUNCH_TIMEOUT=$(ITEST_KERNEL_LAUNCH_TIMEOUT) $(ITEST_DOCKER_KERNELS) ITEST_HOSTNAME_PREFIX=$(ITEST_USER) pytest -vv $(TEST_DEBUG_OPTS) $(ITEST_DOCKER_TESTS))
 	@echo "Run \`docker service logs itest-docker\` to see enterprise-gateway log."
 
-PREP_TIMEOUT?=60
+PREP_TIMEOUT?=180
 itest-docker-prep:
 	@-docker service rm enterprise-gateway_enterprise-gateway enterprise-gateway_enterprise-gateway-proxy
 	@-docker swarm leave --force

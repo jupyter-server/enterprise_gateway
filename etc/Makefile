@@ -5,7 +5,7 @@
     clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
     kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker clean-kernel-image-puller
 
-SA:=source activate
+SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
@@ -52,9 +52,10 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@echo ../build/kernelspecs/spark_python_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/python/scripts
 	@echo ../build/kernelspecs/spark_R_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/R/scripts
 	@echo ../build/kernelspecs/spark_scala_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/scala/lib
-	# Container-based kernelspecs just get the container launchers
+	# Container-based kernelspecs (and operators) just get the container launchers
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
+	@echo ../build/kernelspecs/spark_python_operator | xargs -t -n 1 cp -r kernel-launchers/operators/*
         # Populate kernel resources.  Because tensorflow is also python, it should be last.
 	@echo ../build/kernelspecs/*R* | xargs -t -n 1 cp -r kernel-resources/ir/*
 	@echo ../build/kernelspecs/*scala* | xargs -t -n 1 cp -r kernel-resources/apache_toree/*
@@ -68,7 +69,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 PATTERN_kernelspecs_all := *
 PATTERN_kernelspecs_yarn := *_yarn_*
 PATTERN_kernelspecs_conductor := *_conductor_*
-PATTERN_kernelspecs_kubernetes := *_kubernetes
+PATTERN_kernelspecs_kubernetes := {*_kubernetes,*_operator}
 PATTERN_kernelspecs_docker := *_docker
 
 define BUILD_KERNELSPEC
