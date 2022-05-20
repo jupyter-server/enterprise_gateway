@@ -29,7 +29,7 @@ dependencies = [
   "jupyter_core>=4.6.0",
   "kubernetes>=4.0.0",
   "jupyter_server>=1.2",
-  "paramiko>=2.1.2",
+  "paramiko>=2.11",
   "pexpect>=4.2.0",
   "pycryptodomex>=3.9.7",
   "pyzmq>=17.0.0",
@@ -89,6 +89,7 @@ src = "Makefile"
 
 [[tool.tbump.file]]
 src = "etc/kubernetes/helm/enterprise-gateway/Chart.yaml"
+search = 'appVersion: {current_version}'
 
 [[tool.tbump.field]]
 name = "channel"
@@ -110,8 +111,4 @@ filterwarnings = [
   "error",
   "ignore:There is no current event loop:DeprecationWarning",
   "ignore:Passing unrecognized arguments to super:DeprecationWarning:jupyter_client",
-  # The following needs to remain in place until a new paramiko release is available
-  # that resolves this issue: https://github.com/paramiko/paramiko/issues/2038
-  # Otherwise, pytest execution fails when the deprecation warning is encountered.
-  "ignore:Blowfish has been deprecated:cryptography.utils.CryptographyDeprecationWarning"
 ]

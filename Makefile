@@ -26,8 +26,12 @@ WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py3-none-any.whl
 SDIST_FILE:=dist/jupyter_enterprise_gateway-$(VERSION).tar.gz
 DIST_FILES=$(WHEEL_FILE) $(SDIST_FILE)
 
-HELM_CHART:=dist/jupyter_enterprise_gateway_helm-$(VERSION).tgz
-HELM_CHART_FILES:=$(shell find etc/kubernetes/helm -type f)
+HELM_DESIRED_VERSION:=v3.8.2  # Pin the version of helm to use (v3.8.2 is latest as of 4/21/22)
+HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway/Chart.yaml | sed 's/version: //')
+HELM_CHART:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
+HELM_CHART_DIR:=etc/kubernetes/helm/enterprise-gateway
+HELM_CHART_FILES:=$(shell find $(HELM_CHART_DIR) -type f ! -name .DS_Store)
+HELM_INSTALL_DIR:=/usr/local/bin
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -83,11 +87,24 @@ $(SDIST_FILE): $(WHEEL_FILES)
 	pip install build && python -m build --sdist . \
 		&& rm -rf *.egg-info && chmod 0755 dist/*.*
 
-helm-chart: ## Make helm chart distribution
-	make $(HELM_CHART)
+helm-chart: helm-install helm-lint $(HELM_CHART) ## Make helm chart distribution
+
+helm-install: $(HELM_INSTALL_DIR)/helm
+
+$(HELM_INSTALL_DIR)/helm: # Download and install helm
+	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o /tmp/get_helm.sh \
+	&& chmod +x /tmp/get_helm.sh \
+	&& DESIRED_VERSION=$(HELM_DESIRED_VERSION) /tmp/get_helm.sh \
+	&& rm -f /tmp/get_helm.sh
+
+helm-lint: helm-clean
+	helm lint $(HELM_CHART_DIR)
+
+helm-clean: # Remove any .DS_Store files that might wind up in the package
+	$(shell find etc/kubernetes/helm -type f -name '.DS_Store' -exec rm -f {} \;)
 
 $(HELM_CHART): $(HELM_CHART_FILES)
-	(mkdir -p dist; cd etc/kubernetes/helm; tar -cvzf ../../../$(HELM_CHART) enterprise-gateway)
+	helm package $(HELM_CHART_DIR) -d dist
 
 dist: lint bdist sdist kernelspecs helm-chart ## Make source, binary, kernelspecs and helm chart distributions to dist folder
 

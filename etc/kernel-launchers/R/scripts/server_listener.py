@@ -94,16 +94,13 @@ def return_connection_info(
     cf_json["comm_port"] = comm_sock.getsockname()[1]
     cf_json["kernel_id"] = kernel_id
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding="utf-8")
         logger.debug(f"JSON Payload '{json_content}")
         payload = _encrypt(json_content, public_key)
         logger.debug(f"Encrypted Payload '{payload}")
         s.send(payload)
-    finally:
-        s.close()
 
     return comm_sock
 

@@ -6,7 +6,7 @@ from typing import Dict
 
 import urllib3
 import yaml
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client, config
 
 urllib3.disable_warnings()
@@ -21,7 +21,17 @@ def generate_kernel_pod_yaml(keywords):
     - substitute template variables with keywords items.
     """
     j_env = Environment(
-        loader=FileSystemLoader(os.path.dirname(__file__)), trim_blocks=True, lstrip_blocks=True
+        loader=FileSystemLoader(os.path.dirname(__file__)),
+        trim_blocks=True,
+        lstrip_blocks=True,
+        autoescape=select_autoescape(
+            disabled_extensions=(
+                "j2",
+                "yaml",
+            ),
+            default_for_string=True,
+            default=True,
+        ),
     )
     # jinja2 template substitutes template variables with None though keywords doesn't
     # contain corresponding item. Therefore, no need to check if any are left unsubstituted.

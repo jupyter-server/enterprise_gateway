@@ -1,0 +1,7 @@
+name: "Enterprise Gateway CodeQL config"
+
+queries:
+  - uses: security-and-quality
+
+paths-ignore:
+  - enterprise_gateway/tests
