@@ -46,9 +46,6 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.last_known_state = None
         self.candidate_queue = None
         self.candidate_partition = None
-        self.local_proc = None
-        self.pid = None
-        self.ip = None
 
         self.yarn_endpoint = proxy_config.get("yarn_endpoint", kernel_manager.yarn_endpoint)
         self.alt_yarn_endpoint = proxy_config.get(
