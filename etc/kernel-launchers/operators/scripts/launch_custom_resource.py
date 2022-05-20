@@ -15,9 +15,14 @@ def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
         loader=FileSystemLoader(os.path.dirname(__file__)),
         trim_blocks=True,
         lstrip_blocks=True,
-        autoescape=select_autoescape(disabled_extensions=('j2', 'yaml',),
-                                     default_for_string=True,
-                                     default=True)
+        autoescape=select_autoescape(
+            disabled_extensions=(
+                "j2",
+                "yaml",
+            ),
+            default_for_string=True,
+            default=True,
+        ),
     )
     k8s_yaml = j_env.get_template("/" + kernel_crd_template + ".yaml.j2").render(**keywords)
 
