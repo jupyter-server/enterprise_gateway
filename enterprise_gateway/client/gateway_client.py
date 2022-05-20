@@ -202,8 +202,8 @@ class KernelClient:
                         )
                     break
 
-        except BaseException as b:
-            self.log.debug(b)
+        except Exception as e:
+            self.log.debug(e)
 
         return "".join(response)
 

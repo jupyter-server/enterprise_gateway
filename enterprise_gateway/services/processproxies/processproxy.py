@@ -1248,9 +1248,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
         # Ideally, keep-alive interval should be greater than cull_idle_timeout. So, we
         # will add 60 seconds to cull_idle_timeout to come up with the value for keep-alive
-        # interval for the rest of the kernel channels.  If culling isn't configured, use
-        # `max_keep_alive_interval`.
-        return cull_idle_timeout + 60 if cull_idle_timeout > 0 else max_keep_alive_interval
+        # interval for the rest of the kernel channels.
+        return cull_idle_timeout + 60
 
     async def receive_connection_info(self):
         """

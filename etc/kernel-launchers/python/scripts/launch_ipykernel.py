@@ -68,7 +68,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
                 "A spark context was desired but the pyspark distribution is not present.  "
                 "Spark context creation will not occur."
             )
-            return {}
+            return
 
         def initialize_spark_session():
             import atexit
@@ -137,12 +137,8 @@ class WaitingForSparkSessionToBeInitialized:
     # call to the real Spark objects
     def __getattr__(self, name):
         # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
-        if name.startswith("__"):
-            pass
-        elif name.startswith("_ipython_"):
-            pass
-        elif name.startswith("_repr_"):
-            pass
+        if name.startswith("__") or name.startswith("_ipython_") or name.startswith("_repr_"):
+            return
         else:
             # wait on thread to initialize the Spark session variables in global variable scope
             self._init_thread.join(timeout=None)
@@ -264,16 +260,13 @@ def return_connection_info(
     cf_json["comm_port"] = comm_sock.getsockname()[1]
     cf_json["kernel_id"] = kernel_id
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((response_ip, response_port))
         json_content = json.dumps(cf_json).encode(encoding="utf-8")
         logger.debug(f"JSON Payload '{json_content}")
         payload = _encrypt(json_content, public_key)
         logger.debug(f"Encrypted Payload '{payload}")
         s.send(payload)
-    finally:
-        s.close()
 
     return comm_sock
 
@@ -608,5 +601,5 @@ if __name__ == "__main__":
 
     try:
         os.remove(connection_file)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Could not delete connection file '{connection_file}' at exit due to error: {e}")
