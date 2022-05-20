@@ -11,7 +11,7 @@
 SHELL:=/bin/bash
 
 VERSION?=3.0.0.dev0
-SPARK_VERSION?=2.4.6
+SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
     TAG:=dev

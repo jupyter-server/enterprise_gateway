@@ -1,16 +1,15 @@
 ARG BASE_CONTAINER=ubuntu:bionic
 FROM $BASE_CONTAINER
 
-MAINTAINER akchinSTC
-
 ARG SPARK_VERSION
+ARG SPARKR_VERSION=3.1.2
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
 
 USER root
 
-ENV HADOOP_PREFIX=/usr/hdp/current/hadoop \
+ENV HADOOP_HOME=/usr/hdp/current/hadoop \
     ANACONDA_HOME=/opt/conda
 
 ENV SHELL=/bin/bash \
@@ -23,13 +22,13 @@ ENV SHELL=/bin/bash \
     JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 \
     SPARK_HOME=/usr/hdp/current/spark2-client \
     PYSPARK_PYTHON=$ANACONDA_HOME/bin/python \
-    HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+    HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 ENV HOME=/home/$NB_USER \
-    PATH=$ANACONDA_HOME/bin:$HADOOP_PREFIX/bin:$JAVA_HOME/bin:$SPARK_HOME/bin:$PATH
+    PATH=$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin:$SPARK_HOME/bin:$PATH
 
 ENV SPARK_VER $SPARK_VERSION
-ENV HADOOP_VER 2.7.7
+ENV HADOOP_VER 3.3.1
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
 RUN apt-get update && apt-get -yq dist-upgrade \
@@ -88,9 +87,9 @@ RUN mkdir /home/$NB_USER/work && \
 
 # DOWNLOAD HADOOP AND SPARK
 RUN curl -sL https://archive.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
-RUN curl -sL https://archive.apache.org/dist/spark/spark-$SPARK_VER/spark-$SPARK_VER-bin-hadoop2.7.tgz | tar -xz -C /usr/hdp/current
+RUN curl -sL https://archive.apache.org/dist/spark/spark-$SPARK_VER/spark-$SPARK_VER-bin-hadoop3.2.tgz | tar -xz -C /usr/hdp/current
 # SETUP SPARK AND HADOOP SYMLINKS
-RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$SPARK_VER-bin-hadoop2.7 spark2-client
+RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$SPARK_VER-bin-hadoop3.2 spark2-client
 
 # INSTALL MINI-CONDA AND PYTHON PACKAGES
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O ~/miniconda.sh && \
@@ -113,21 +112,21 @@ RUN conda install --yes --quiet \
 
 USER $NB_UID
 
-#Package ‘SparkR’ was removed from the CRAN repository.
+#Package ‘SparkR’ currently supports 3.1.2, so we'll set its own ARG
 #https://cran.r-project.org/src/contrib/Archive/SparkR/
 
 RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.edu/CRAN/", lib="/opt/conda/lib/R/library")' \
             -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_$SPARK_VER.tar.gz", destfile = "SparkR_$SPARK_VER.tar.gz")' \
-            -e 'install.packages(pkgs="SparkR_$SPARK_VER.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
-            -e 'unlink("SparkR_$SPARK_VER.tar.gz")'
+            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_$SPARKR_VERSION.tar.gz", destfile = "SparkR_$SPARKR_VERSION.tar.gz")' \
+            -e 'install.packages(pkgs="SparkR_$SPARKR_VERSION.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
+            -e 'unlink("SparkR_$SPARKR_VERSION.tar.gz")'
 
 # SETUP HADOOP CONFIGS
-RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_PREFIX=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
-RUN sed -i '/^export HADOOP_CONF_DIR/ s:.*:export HADOOP_CONF_DIR=/usr/hdp/current/hadoop/etc/hadoop/:' $HADOOP_PREFIX/etc/hadoop/hadoop-env.sh
+RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_HOME=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
+RUN sed -i '/^export HADOOP_CONF_DIR/ s:.*:export HADOOP_CONF_DIR=/usr/hdp/current/hadoop/etc/hadoop/:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 # SETUP PSEUDO - DISTRIBUTED CONFIGS FOR HADOOP
 COPY ["core-site.xml.template", "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml.template", \
-      "$HADOOP_PREFIX/etc/hadoop/"]
+      "$HADOOP_HOME/etc/hadoop/"]
 
 # working around docker.io build error
 RUN ls -la /usr/hdp/current/hadoop/etc/hadoop/*-env.sh && \
@@ -136,11 +135,11 @@ RUN ls -la /usr/hdp/current/hadoop/etc/hadoop/*-env.sh && \
 
 # Install Toree
 RUN cd /tmp && \
-    curl -O https://dist.apache.org/repos/dist/release/incubator/toree/0.4.0-incubating/toree-pip/toree-0.4.0.tar.gz && \
+    curl -O https://archive.apache.org/dist/incubator/toree/0.5.0-incubating/toree-pip/toree-0.5.0.tar.gz && \
     pip install --upgrade setuptools --user && \
-    pip install /tmp/toree-0.4.0.tar.gz && \
+    pip install /tmp/toree-0.5.0.tar.gz && \
     jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark $SPARK_VER" --interpreters=Scala && \
-    rm -f /tmp/toree-0.4.0.tar.gz && \
+    rm -f /tmp/toree-0.5.0.tar.gz && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
