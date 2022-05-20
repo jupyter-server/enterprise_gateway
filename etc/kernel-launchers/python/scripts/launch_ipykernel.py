@@ -602,4 +602,6 @@ if __name__ == "__main__":
     try:
         os.remove(connection_file)
     except Exception as e:
-        logger.warning(f"Could not delete connection file '{connection_file}' at exit due to error: {e}")
+        logger.warning(
+            f"Could not delete connection file '{connection_file}' at exit due to error: {e}"
+        )
