@@ -88,6 +88,12 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     identified by EG_KERNEL_CLUSTER_ROLE.  If not provided, it will be derived
     from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
 
+  KERNEL_SPARKAPP_CONFIG_MAP=<from user> or None
+    Spark k8s-operator only. The name of a Kubernetes ConfigMap which will be used to configure
+    the SparkApplication. See the SparkApplicationSpec
+    (https://googlecloudplatform.github.io/spark-on-k8s-operator/docs/api-docs.html#sparkoperator.k8s.io/v1beta2.SparkApplicationSpec)
+    sparkConfigMap for more information.
+
   KERNEL_UID=<from user> or 1000
     Containers only. This value represents the user id in which the container will run.
     The default value is 1000 representing the jovyan user - which is how all kernel images
@@ -114,10 +120,4 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     Gateway will set the container's working directory to the value specified in
     KERNEL_WORKING_DIR.  If EG_MIRROR_WORKING_DIRS is False, KERNEL_WORKING_DIR will
     not be available for use during the kernel's launch.  See also EG_MIRROR_WORKING_DIRS.
-
-  KERNEL_SPARKAPP_CONFIG_MAP=<from user> or None
-    Spark k8s-operator only. The name of a Kubernetes ConfigMap which will be used to configure
-    the SparkApplication. See the SparkApplicationSpec
-    (https://googlecloudplatform.github.io/spark-on-k8s-operator/docs/api-docs.html#sparkoperator.k8s.io/v1beta2.SparkApplicationSpec)
-    sparkConfigMap for more information.
 ```
