@@ -25,9 +25,10 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self.environ)
 
-    def _assert_envs_to_traitlets(self):
+    def _assert_envs_to_traitlets(self, env_prefix: str):
 
         app = EnterpriseGatewayApp()
+        app.init_configurables()
 
         self.assertEqual(app.port, 1234)
         self.assertEqual(app.port_retries, 4321)
@@ -46,6 +47,9 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.certfile, "/test/fake.crt")
         self.assertEqual(app.client_ca, "/test/fake_ca.crt")
         self.assertEqual(app.ssl_version, 3)
+        if env_prefix == "EG_":  # These options did not exist in JKG
+            self.assertEqual(app.kernel_session_manager.enable_persistence, True)
+            self.assertEqual(app.availability_mode, "active-active")
 
     def test_config_env_vars_bc(self):
         """B/C env vars should be honored for traitlets."""
@@ -68,7 +72,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["KG_CLIENT_CA"] = "/test/fake_ca.crt"
         os.environ["KG_SSL_VERSION"] = "3"
 
-        self._assert_envs_to_traitlets()
+        self._assert_envs_to_traitlets("KG_")
 
     def test_config_env_vars(self):
         """Env vars should be honored for traitlets."""
@@ -90,8 +94,9 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["EG_CERTFILE"] = "/test/fake.crt"
         os.environ["EG_CLIENT_CA"] = "/test/fake_ca.crt"
         os.environ["EG_SSL_VERSION"] = "3"
+        os.environ["EG_KERNEL_SESSION_PERSISTENCE"] = "True"  # availability mode will be defaulted to active-active
 
-        self._assert_envs_to_traitlets()
+        self._assert_envs_to_traitlets("EG_")
 
     def test_ssl_options_no_config(self):
         app = EnterpriseGatewayApp()

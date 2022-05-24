@@ -20,6 +20,7 @@ from jupyter_server.serverapp import random_ports
 from jupyter_server.utils import url_path_join
 from tornado import httpserver, web
 from tornado.log import enable_pretty_logging
+from traitlets import TraitError
 from traitlets.config import Configurable
 from zmq.eventloop import ioloop
 
@@ -141,9 +142,22 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             config=self.config,  # required to get command-line options visible
         )
 
-        # Attempt to start persisted sessions
-        # Commented as part of https://github.com/jupyter-server/enterprise_gateway/pull/737#issuecomment-567598751
-        # self.kernel_session_manager.start_sessions()
+        # For B/C purposes, check if session persistence is enabled.  If so, and availability
+        # mode is not enabled, go ahead and default availability mode to 'active-active'.
+        if self.kernel_session_manager.enable_persistence and self.availability_mode is None:
+            self.availability_mode = "active-active"
+            self.log.info(f"Kernel session persistence is enabled but availability mode is not.  "
+                          f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'.")
+
+        if self.availability_mode is not None:
+            if self.kernel_session_manager.enable_persistence is False:
+                raise TraitError(f"Availability mode is configured as '{self.availability_mode}', "
+                                 f"yet kernel session persistence has not been enabled.  Configure "
+                                 f"KernelSessionManager.enable_persistence and restart Enterprise Gateway.")
+
+            # If we're using active-passive availability, attempt to start persisted sessions
+            if self.availability_mode == "active-passive":
+                self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
 

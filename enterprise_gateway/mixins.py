@@ -13,6 +13,7 @@ from tornado import web
 from tornado.log import LogFormatter
 from traitlets import (
     Bool,
+    CaselessStrEnum,
     CBool,
     Instance,
     Integer,
@@ -269,7 +270,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         False,
         config=True,
         help="""Use x-* header values for overriding the remote-ip, useful when
-                           application is behing a proxy. (EG_TRUST_XHEADERS env var)""",
+                           application is behind a proxy. (EG_TRUST_XHEADERS env var)""",
     )
 
     @default("trust_xheaders")
@@ -633,7 +634,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         ws_ping_interval_default_value,
         config=True,
         help="""Specifies the ping interval(in seconds) that should be used by zmq port
-                                     associated withspawned kernels.Set this variable to 0 to disable ping mechanism.
+                                     associated with spawned kernels. Set this variable to 0 to disable ping mechanism.
                                     (EG_WS_PING_INTERVAL_SECS env var)""",
     )
 
@@ -679,6 +680,22 @@ class EnterpriseGatewayConfigMixin(Configurable):
                 self.init_dynamic_configs()  # Restart the poller
 
     dynamic_config_poller = None
+
+    # Availability Mode
+    availability_mode_env = "EG_AVAILABILITY_MODE"
+    availability_mode_default_value = None
+    availability_mode = CaselessStrEnum(
+        allow_none=True,
+        values=["active-active", "active-passive"],
+        config=True,
+        help="""Specifies the type of availability.  Values must be one of "active-active" or "active-passive".
+                Configuration of this this option requires that KernelSessionManager.enable_persistence is True.
+                (EG_AVAILABILITY_MODE env var)""",
+    )
+
+    @default("availability_mode")
+    def availability_mode_env_default(self):
+        return os.getenv(self.availability_mode_env)
 
     kernel_spec_manager = Instance("jupyter_client.kernelspec.KernelSpecManager", allow_none=True)
 
