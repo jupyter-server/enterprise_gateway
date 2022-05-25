@@ -47,7 +47,6 @@ class MainKernelHandler(
             if len(kernels) >= max_kernels:
                 raise tornado.web.HTTPError(403, "Resource Limit")
 
-        tenant_id = UNIVERSAL_TENANT_ID
         env = {}
         # Try to get tenant_id and env vars from the request body
         model = self.get_json_body()

@@ -93,6 +93,7 @@ class KernelSessionManager(LoggingConfigurable):
         # Compose the kernel_session entry
         kernel_session = dict()
         kernel_session["kernel_id"] = kernel_id
+        kernel_session["tenant_id"] = self.kernel_manager.tenant_kernels.get_tenant_id(kernel_id)
         kernel_session["username"] = KernelSessionManager.get_kernel_username(**kwargs)
         kernel_session["kernel_name"] = km.kernel_name
 
@@ -181,6 +182,7 @@ class KernelSessionManager(LoggingConfigurable):
             connection_info=kernel_session["connection_info"],
             process_info=kernel_session["process_info"],
             launch_args=kernel_session["launch_args"],
+            tenant_id=kernel_session["tenant_id"],
         )
         if not kernel_started:
             return False
