@@ -88,6 +88,12 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     identified by EG_KERNEL_CLUSTER_ROLE.  If not provided, it will be derived
     from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
 
+  KERNEL_SPARKAPP_CONFIG_MAP=<from user> or None
+    Spark k8s-operator only. The name of a Kubernetes ConfigMap which will be used to configure
+    the SparkApplication. See the SparkApplicationSpec
+    (https://googlecloudplatform.github.io/spark-on-k8s-operator/docs/api-docs.html#sparkoperator.k8s.io/v1beta2.SparkApplicationSpec)
+    sparkConfigMap for more information.
+
   KERNEL_TENANT_ID=<system provided>
     Indicates the tenant ID (UUID string) corresponding to the kernel.  This value
     is derived from the optional `tenant_id` provided by the client application and

@@ -16,6 +16,7 @@ metadata:
     kernel_id: "{{ kernel_id }}"
     app: enterprise-gateway
     component: kernel
+    source: kernel-pod.yaml
 spec:
   restartPolicy: Never
   serviceAccountName: "{{ kernel_service_account_name }}"

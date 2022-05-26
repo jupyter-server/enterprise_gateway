@@ -63,8 +63,8 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
     if swarm_mode:
         networks = list()
         networks.append(docker_network)
-        mounts = list()
-        mounts.append("/usr/local/share/jupyter/kernels:/usr/local/share/jupyter/kernels:ro")
+        # mounts = list()  # Enable if necessary
+        # mounts.append("/usr/local/share/jupyter/kernels:/usr/local/share/jupyter/kernels:ro")
         endpoint_spec = EndpointSpec(mode="dnsrr")
         restart_policy = RestartPolicy(condition="none")
 
@@ -79,14 +79,14 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
             kwargs["workdir"] = param_env.get("KERNEL_WORKING_DIR")
         # kwargs['mounts'] = mounts   # Enable if necessary
         # print("service args: {}".format(kwargs))  # useful for debug
-        kernel_service = client.services.create(image_name, **kwargs)  # noqa
+        client.services.create(image_name, **kwargs)  # noqa
     else:
-        volumes = {  # noqa
-            "/usr/local/share/jupyter/kernels": {
-                "bind": "/usr/local/share/jupyter/kernels",
-                "mode": "ro",
-            }
-        }
+        # volumes = {  # Enable if necessary
+        #     "/usr/local/share/jupyter/kernels": {
+        #         "bind": "/usr/local/share/jupyter/kernels",
+        #         "mode": "ro",
+        #     }
+        # }
 
         # finish args setup
         kwargs["environment"] = param_env
@@ -98,7 +98,7 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
             kwargs["working_dir"] = param_env.get("KERNEL_WORKING_DIR")
         # kwargs['volumes'] = volumes   # Enable if necessary
         # print("container args: {}".format(kwargs))  # useful for debug
-        kernel_container = client.containers.run(image_name, **kwargs)  # noqa
+        client.containers.run(image_name, **kwargs)  # noqa
 
 
 if __name__ == "__main__":

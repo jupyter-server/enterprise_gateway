@@ -60,6 +60,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
     def __init__(self, kernel_manager, proxy_config):
         super().__init__(kernel_manager, proxy_config)
         self.kernel_log = None
+        self.local_stdout = None
         self.least_connection = kernel_manager.load_balancing_algorithm == "least-connection"
         if proxy_config.get("remote_hosts"):
             self.hosts = proxy_config.get("remote_hosts").split(",")
@@ -114,8 +115,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
+            self.local_stdout = open(self.kernel_log, mode="a")
             self.local_proc = self.launch_kernel(
-                cmd, stdout=open(self.kernel_log, mode="a"), stderr=STDOUT, **kwargs
+                cmd, stdout=self.local_stdout, stderr=STDOUT, **kwargs
             )
             result_pid = str(self.local_proc.pid)
         else:
@@ -223,7 +225,10 @@ class DistributedProcessProxy(RemoteProcessProxy):
         # abruptly terminated.  This extra call to shutdown_lister does the trick.
         self.shutdown_listener()
         self._unregister_assigned_host()
-        super(RemoteProcessProxy, self).cleanup()
+        if self.local_stdout:
+            self.local_stdout.close()
+            self.local_stdout = None
+        super().cleanup()
 
     def shutdown_listener(self):
         """Ensure that kernel process is terminated."""

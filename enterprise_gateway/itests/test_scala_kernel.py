@@ -36,7 +36,7 @@ class ScalaKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result = self.kernel.execute("var y = x + 1")
-        self.assertRegex(error_result, "Compile Error")
+        self.assertRegex(error_result, "not found: value x")
 
     def test_interrupt(self):
 

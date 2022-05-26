@@ -1,3 +1,4 @@
+{{- if .Values.deployment.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,8 +11,11 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  {{- range $key, $val := .Values.global.commonLabels }}
+    {{ $key }}: "{{ $val }}"
+  {{- end }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.deployment.replicas }}
   selector:
     matchLabels:
       gateway-selector: enterprise-gateway
@@ -21,10 +25,13 @@ spec:
         gateway-selector: enterprise-gateway
         app: enterprise-gateway
         component: enterprise-gateway
+      {{- range $key, $val := .Values.global.commonLabels }}
+        {{ $key }}: "{{ $val }}"
+      {{- end }}
     spec:
       # Created by this chart.
-      serviceAccountName: enterprise-gateway-sa
-{{- if .Values.kernelspecs.image }}
+      serviceAccountName: {{ .Values.deployment.serviceAccountName }}
+  {{- if .Values.kernelspecs.image }}
       initContainers:
       - name: kernelspecs
         image: {{ .Values.kernelspecs.image }}
@@ -33,16 +40,20 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-{{- end }}
+  {{- end }}
       containers:
       - name: enterprise-gateway
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         env:
         - name: EG_PORT
-          value: !!str {{ .Values.port }}
+          {{ with index .Values.service.ports 0 }}
+          value: !!str {{ .port }}
+          {{- end }}
         - name: EG_RESPONSE_PORT
-          value: !!str {{ .Values.response_port }}
+          {{ with index .Values.service.ports 1 }}
+          value: !!str {{ .port }}
+          {{- end }}
         - name: EG_NAMESPACE
           value: {{ .Release.Namespace }}
         - name: EG_KERNEL_CLUSTER_ROLE
@@ -67,9 +78,19 @@ spec:
           value: {{ .Values.authToken }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.port }}
-        - containerPort: {{ .Values.response_port }}
-{{- if .Values.nfs.enabled }}
+        {{ with index .Values.service.ports 0 }}
+        - containerPort: {{ .port }}
+        {{- end }}
+        {{ with index .Values.service.ports 1 }}
+        - containerPort: {{ .port }}
+        {{- end }}
+        {{- if .Values.deployment.resources }}
+        resources:
+          {{- toYaml .Values.deployment.resources | nindent 10 }}
+        {{- end }}
+
+
+  {{- if .Values.nfs.enabled }}
         volumeMounts:
         - name: nfs-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -78,7 +99,7 @@ spec:
         nfs:
           server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
-{{- else if .Values.kernelspecsPvc.enabled }}
+  {{- else if .Values.kernelspecsPvc.enabled }}
         volumeMounts:
         - name: pvc-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -86,7 +107,7 @@ spec:
       - name: pvc-kernelspecs
         persistentVolumeClaim:
           claimName: {{ .Values.kernelspecsPvc.name }}
-{{- else if .Values.kernelspecs.image }}
+  {{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
@@ -94,4 +115,5 @@ spec:
       - name: image-kernelspecs
         emptyDir:
           medium: Memory
+  {{- end }}
 {{- end }}

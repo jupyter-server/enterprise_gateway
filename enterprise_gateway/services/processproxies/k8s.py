@@ -23,6 +23,7 @@ default_kernel_service_account_name = os.environ.get(
 )
 kernel_cluster_role = os.environ.get("EG_KERNEL_CLUSTER_ROLE", "cluster-admin")
 share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lower() == "true")
+kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")
 
 config.load_incluster_config()
 
@@ -160,6 +161,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                     self.kernel_namespace, self.container_name, self.kernel_id
                 )
             )
+
+        # Check if there's a kernel pod template file for this kernel and silently delete it.
+        kpt_file = kpt_dir + "/kpt_" + self.kernel_id
+        try:
+            os.remove(kpt_file)
+        except OSError:
+            pass
+
         return result
 
     def _determine_kernel_pod_name(self, **kwargs):

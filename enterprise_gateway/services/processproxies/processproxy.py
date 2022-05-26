@@ -17,7 +17,6 @@ import subprocess
 import sys
 import time
 import warnings
-from asyncio import Event, TimeoutError
 from calendar import timegm
 from enum import Enum
 from socket import (
@@ -118,7 +117,7 @@ class KernelChannel(Enum):
     )
 
 
-class Response(Event):
+class Response(asyncio.Event):
     """Combines the event behavior with the kernel launch response."""
 
     _response = None
@@ -152,7 +151,7 @@ class ResponseManager(SingletonConfigurable):
        based on their registration (of kernel_id).
     """
 
-    KEY_SIZE = 1024  # Can be small since its only used to {en,de}crypt the AES key.
+    KEY_SIZE = 1024  # Can be small since it's only used to {en,de}crypt the AES key.
     _instance = None
 
     def __init__(self, **kwargs):
@@ -547,7 +546,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         """
         Wait for the process to become inactive.
         """
-        # If we have a local_proc, call its wait method.  This will cleanup any defunct processes when the kernel
+        # If we have a local_proc, call its wait method.  This will clean up any defunct processes when the kernel
         # is shutdown (when using waitAppCompletion = false).  Otherwise (if no local_proc) we'll use polling to
         # determine if a (remote or revived) process is still active.
         if self.local_proc:
@@ -1248,9 +1247,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
         # Ideally, keep-alive interval should be greater than cull_idle_timeout. So, we
         # will add 60 seconds to cull_idle_timeout to come up with the value for keep-alive
-        # interval for the rest of the kernel channels.  If culling isn't configured, use
-        # `max_keep_alive_interval`.
-        return cull_idle_timeout + 60 if cull_idle_timeout > 0 else max_keep_alive_interval
+        # interval for the rest of the kernel channels.
+        return cull_idle_timeout + 60
 
     async def receive_connection_info(self):
         """
@@ -1264,7 +1262,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             self._setup_connection_info(connect_info)
             ready_to_connect = True
         except Exception as e:
-            if type(e) is timeout or type(e) is TimeoutError:
+            if type(e) is timeout or type(e) is asyncio.TimeoutError:
                 self.log.debug(
                     "Waiting for KernelID '{}' to send connection info from host '{}' - retrying...".format(
                         self.kernel_id, self.assigned_host
@@ -1485,8 +1483,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                             # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
                             self.log.debug(
                                 "ERROR: OSError(ENOTCONN) raised on socket shutdown, "
-                                "listener likely not connected. Cannot send {request}",
-                                request=request,
+                                f"listener likely not connected. Cannot send {request}"
                             )
                         else:
                             self.log.warning(

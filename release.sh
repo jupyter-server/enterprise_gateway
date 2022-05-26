@@ -192,18 +192,18 @@ function checkout_code {
 
 function update_version_to_release {
     cd $SOURCE_DIR
-    # Update Python _version.py
-    sed -i .bak "s@^__version__.*@__version__ = '$RELEASE_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Makefile
-    sed -i .bak "s@$CURRENT_VERSION@$RELEASE_VERSION@g" Makefile
+    # Update tbump-managed versions
+    pip install tbump
+    tbump --non-interactive --no-tag --no-push $RELEASE_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
 
-    # Update Kubernetes Helm chart and values files
+    # Update Kubernetes Helm chart and values files (tbump will handle appVersion in Chart.yaml)
     sed -i .bak "s@version: [0-9,\.,a-z]*@version: $RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 
@@ -217,18 +217,20 @@ function update_version_to_release {
 
 function update_version_to_development {
     cd $SOURCE_DIR
-    # Update Python _version.py
-    sed -i .bak "s@^__version__.*@__version__ = '$DEVELOPMENT_VERSION'@g" enterprise_gateway/_version.py
 
-    # Update Makefile
-    sed -i .bak "s@$RELEASE_VERSION@$DEVELOPMENT_VERSION@g" Makefile
+    # Update tbump-managed versions
+    pip install tbump
+    tbump --non-interactive --no-tag --no-push $DEVELOPMENT_VERSION
 
     # Update Kubernetes deployment descriptor
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
-    # Update Kubernetes Helm chart and values files
-    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $DEVELOPMENT_VERSION@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+    # Update Kubernetes Helm chart and values files (tbump will handle appVersion in Chart.yaml)
+    # We need to strip off any ".devN" suffix from the dev version for 'version:' since it must follow strict semantic version rules.
+    k8s_version=`echo $DEVELOPMENT_VERSION | sed 's/\.dev.//'`
+    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
 

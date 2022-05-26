@@ -1,19 +1,67 @@
+global:
+  # Create RBAC resources
+  rbac: true
+  # ImagePullSecrets for a ServiceAccount, list of secrets in the same namespace
+  # to use for pulling any images in pods that reference this ServiceAccount.
+  # Must be set for any cluster configured with private docker registry.
+  imagePullSecrets: []
+    # - private-registry-key
+  commonLabels: {}
+    # app.kubernetes.io/name: [your app name]
+
+# You can optionally create imagePull Secrets
+imagePullSecretsCreate:
+  enabled: false
+  annotations: {}
+    # this annotatoin allows to keep secret even if helm release is deleted
+    # "helm.sh/resource-policy": "keep"
+  secrets: []
+    # - name: "private"
+    # # base64 encoded value
+    #   --set imagePullSecretsCreate.secrets[0].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
+    # - name: "private2"
+    #   --set imagePullSecretsCreate.secrets[1].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
+
 # Enterprise Gateway image name and tag to use.
 image: elyra/enterprise-gateway:dev
 # Enterprise Gateway image pull policy.
 imagePullPolicy: IfNotPresent
-# The primary port on which Enterprise Gateway is servicing requests.
-port: 8888
-# The  port on which Enterprise Gateway will receive kernel connection info responses.
-response_port: 8877
-# Update to deploy multiple replicas of EG.
-replicas: 1
+# K8s Enterprise Gateway Service
+service:
+  type: "NodePort"
+  externalIPs:
+    # Master public IP on which to expose EG.
+    k8sMasterPublicIP: ''
+  ports:
+    # The primary port on which Enterprise Gateway is servicing requests.
+    - name: "http"
+      port: 8888
+      targetPort: 8888
+      # nodePort: 32652 # optional nodePort
+    # The  port on which Enterprise Gateway will receive kernel connection info responses.
+    - name: "http-response"
+      port: 8877
+      targetPort: 8877
+      # nodePort: 30481 # optional nodePort
+
+deployment:
+  enabled: true
+  serviceAccountName: 'enterprise-gateway-sa'
+  resources: {}
+  #   limits:
+  #     cpu: 2
+  #     memory: 10Gi
+  #   requests:
+  #     cpu: 1
+  #     memory: 2Gi
+  # Update to deploy multiple replicas of EG.
+  replicas: 1
+
+
 # Log output level.
 logLevel: DEBUG
 # Whether to mirror working directories.
 mirrorWorkingDirs: false
-# Master public IP on which to expose EG.
-k8sMasterPublicIP:
 # Optional authorization token passed in all requests (see --EnterpriseGatewayApp.auth_token)
 authToken:
 
@@ -58,30 +106,24 @@ kernelspecsPvc:
 
 ingress:
   enabled: false
+  hostName: "" # Ingress resource host
+  pathType: "Prefix"
+  path: "/"
+  annotations: {}
+  # Optional TLS section
+  # tls:
+  #   - secretName: "mysecret-name-tls"
+  #     hosts:
+  #       - myhost.example.com
 
-  # Ingress resource host
-  hostName: ""
-
-  # Ingress resource annotations to be included depending in ingress controller.
-  traefik:
-    enabled: true
-    path: /gateway
-    annotations:
-      kubernetes.io/ingress.class: "traefik"
-      traefik.frontend.rule.type: PathPrefixStrip
-
-  nginx:
-    enabled: false
-    path: /gateway/?(.*)
-    annotations:
-      kubernetes.io/ingress.class: "nginx"
-      nginx.ingress.kubernetes.io/rewrite-target: /$1
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
 
 # Kernel Image Puller (daemonset)
 kip:
   enabled: true
+  serviceAccountName: 'kernel-image-puller-sa'
+  podSecurityPolicy:
+    create: true
+    annotatons: {}
   # Kernel Image Puller image name and tag to use.
   image: elyra/kernel-image-puller:dev
   # Kernel Image Puller image pull policy.
@@ -94,3 +136,10 @@ kip:
   criSocket: /var/run/docker.sock
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
+  resources: {}
+  #   limits:
+  #     cpu: 1
+  #     memory: 1Gi
+  #   requests:
+  #     cpu: 1
+  #     memory: 1Gi

@@ -34,3 +34,6 @@ spec:
     cores: 1
     coreLimit: 1000m
     memory: 1g
+{% if kernel_sparkapp_config_map %}
+  sparkConfigMap: {{ kernel_sparkapp_config_map }}
+{% endif %}
