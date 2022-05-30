@@ -31,6 +31,9 @@ spec:
     spec:
       # Created by this chart.
       serviceAccountName: {{ .Values.deployment.serviceAccountName }}
+  {{- if .Values.deployment.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+  {{- end }}
   {{- if .Values.kernelspecs.image }}
       initContainers:
       - name: kernelspecs
