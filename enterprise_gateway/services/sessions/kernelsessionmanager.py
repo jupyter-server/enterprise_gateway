@@ -6,11 +6,11 @@ import getpass
 import json
 import os
 import threading
-import requests
-from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import urllib.parse
 
+import requests
 from jupyter_core.paths import jupyter_data_dir
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from traitlets import Bool, Unicode, default
 from traitlets.config.configurable import LoggingConfigurable
 
@@ -389,6 +389,7 @@ class FileKernelSessionManager(KernelSessionManager):
             os.makedirs(path, 0o755)
         return path
 
+
 class WebhookKernelSessionManager(KernelSessionManager):
     """
     Performs kernel session persistence operations against URL provided (EG_WEBHOOK_URL). The URL must have 4 endpoints
@@ -446,19 +447,18 @@ class WebhookKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             self.log.info("Webhook kernel session persistence activated")
             self.auth = ""
-            if (self.auth_type):
-                if (self.webhook_username and self.webhook_password):
-                    if (self.auth_type.lower() == "basic"):
+            if self.auth_type:
+                if self.webhook_username and self.webhook_password:
+                    if self.auth_type.lower() == "basic":
                         self.auth = HTTPBasicAuth(self.webhook_username, self.webhook_password)
-                    elif (self.auth_type.lower() == "digest"):
+                    elif self.auth_type.lower() == "digest":
                         self.auth = HTTPDigestAuth(self.webhook_username, self.webhook_password)
-                    elif (self.auth_type.lower() == "none"):
+                    elif self.auth_type.lower() == "none":
                         self.auth = ""
                     else:
                         self.log.error("No such option for auth_type/EG_AUTH_TYPE")
                 else:
                     self.log.error("Username and/or password aren't set")
-                
 
     def delete_sessions(self, kernel_ids):
         """
@@ -469,7 +469,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             response = requests.delete(self.webhook_url, auth=self.auth, json=kernel_ids)
             self.log.debug(f"Webhook kernel session deleting: {kernel_ids}")
-            if (response.status_code != 204):
+            if response.status_code != 204:
                 self.log.error(response.raise_for_status())
 
     def save_session(self, kernel_id):
@@ -483,9 +483,11 @@ class WebhookKernelSessionManager(KernelSessionManager):
                 temp_session = dict()
                 temp_session[kernel_id] = self._sessions[kernel_id]
                 body = KernelSessionManager.pre_save_transformation(temp_session)
-                response = requests.post(f'{self.webhook_url}/{kernel_id}', auth=self.auth, json=body)
+                response = requests.post(
+                    f"{self.webhook_url}/{kernel_id}", auth=self.auth, json=body
+                )
                 self.log.debug(f"Webhook kernel session saving: {kernel_id}")
-                if (response.status_code != 204):
+                if response.status_code != 204:
                     self.log.error(response.raise_for_status())
 
     def load_sessions(self):
@@ -494,7 +496,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
         """
         if self.enable_persistence:
             response = requests.get(self.webhook_url, auth=self.auth)
-            if (response.status_code == 200):
+            if response.status_code == 200:
                 kernel_sessions = response.content
                 for kernel_session in kernel_sessions:
                     self._load_session_from_file(kernel_session)
@@ -509,8 +511,8 @@ class WebhookKernelSessionManager(KernelSessionManager):
         """
         if self.enable_persistence:
             if kernel_id is not None:
-                response = requests.get(f'{self.webhook_url}/{kernel_id}', auth=self.auth)
-                if (response.status_code == 200):
+                response = requests.get(f"{self.webhook_url}/{kernel_id}", auth=self.auth)
+                if response.status_code == 200:
                     kernel_session = response.content
                     self._load_session_from_file(kernel_session)
                 else:
@@ -523,4 +525,6 @@ class WebhookKernelSessionManager(KernelSessionManager):
         :param dictionary kernel: Kernel session information
         """
         self.log.debug(f"Loading saved session(s)")
-        self._sessions.update(KernelSessionManager.post_load_transformation(json.loads(kernel)["kernel"]))
+        self._sessions.update(
+            KernelSessionManager.post_load_transformation(json.loads(kernel)["kernel"])
+        )
