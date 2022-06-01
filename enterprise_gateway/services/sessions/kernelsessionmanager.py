@@ -523,7 +523,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
 
         :param dictionary kernel: Kernel session information
         """
-        self.log.debug(f"Loading saved session(s)")
+        self.log.debug("Loading saved session(s)")
         self._sessions.update(
             KernelSessionManager.post_load_transformation(json.loads(kernel)["kernel"])
         )
