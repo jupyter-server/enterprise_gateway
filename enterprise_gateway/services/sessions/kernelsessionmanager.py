@@ -6,7 +6,6 @@ import getpass
 import json
 import os
 import threading
-import urllib.parse
 
 import requests
 from jupyter_core.paths import jupyter_data_dir
