@@ -695,7 +695,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
 
     @default("availability_mode")
     def availability_mode_env_default(self):
-        return os.getenv(self.availability_mode_env)
+        return os.getenv(self.availability_mode_env, self.availability_mode_default_value)
 
     kernel_spec_manager = Instance("jupyter_client.kernelspec.KernelSpecManager", allow_none=True)
 
