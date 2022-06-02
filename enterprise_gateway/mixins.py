@@ -686,9 +686,9 @@ class EnterpriseGatewayConfigMixin(Configurable):
     availability_mode_default_value = None
     availability_mode = CaselessStrEnum(
         allow_none=True,
-        values=["active-active", "active-passive"],
+        values=["multi-instance", "single-instance"],
         config=True,
-        help="""Specifies the type of availability.  Values must be one of "active-active" or "active-passive".
+        help="""Specifies the type of availability.  Values must be one of "single-instance" or "multi-instance".
                 Configuration of this this option requires that KernelSessionManager.enable_persistence is True.
                 (EG_AVAILABILITY_MODE env var)""",
     )

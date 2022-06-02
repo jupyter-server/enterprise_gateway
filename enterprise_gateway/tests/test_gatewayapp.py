@@ -49,7 +49,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.ssl_version, 3)
         if env_prefix == "EG_":  # These options did not exist in JKG
             self.assertEqual(app.kernel_session_manager.enable_persistence, True)
-            self.assertEqual(app.availability_mode, "active-active")
+            self.assertEqual(app.availability_mode, "multi-instance")
 
     def test_config_env_vars_bc(self):
         """B/C env vars should be honored for traitlets."""
@@ -96,7 +96,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["EG_SSL_VERSION"] = "3"
         os.environ[
             "EG_KERNEL_SESSION_PERSISTENCE"
-        ] = "True"  # availability mode will be defaulted to active-active
+        ] = "True"  # availability mode will be defaulted to multi-instance
 
         self._assert_envs_to_traitlets("EG_")
 

@@ -143,9 +143,9 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         )
 
         # For B/C purposes, check if session persistence is enabled.  If so, and availability
-        # mode is not enabled, go ahead and default availability mode to 'active-active'.
+        # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
         if self.kernel_session_manager.enable_persistence and self.availability_mode is None:
-            self.availability_mode = "active-active"
+            self.availability_mode = "multi-instance"
             self.log.info(
                 f"Kernel session persistence is enabled but availability mode is not.  "
                 f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
@@ -159,8 +159,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                     f"KernelSessionManager.enable_persistence and restart Enterprise Gateway."
                 )
 
-            # If we're using active-passive availability, attempt to start persisted sessions
-            if self.availability_mode == "active-passive":
+            # If we're using single-instance availability, attempt to start persisted sessions
+            if self.availability_mode == "single-instance":
                 self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
