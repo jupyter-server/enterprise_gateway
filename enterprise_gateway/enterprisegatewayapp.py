@@ -20,7 +20,6 @@ from jupyter_server.serverapp import random_ports
 from jupyter_server.utils import url_path_join
 from tornado import httpserver, web
 from tornado.log import enable_pretty_logging
-from traitlets import TraitError
 from traitlets.config import Configurable
 from zmq.eventloop import ioloop
 
@@ -144,24 +143,26 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         # For B/C purposes, check if session persistence is enabled.  If so, and availability
         # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
-        if self.kernel_session_manager.enable_persistence and self.availability_mode is None:
-            self.availability_mode = "multi-instance"
-            self.log.info(
-                f"Kernel session persistence is enabled but availability mode is not.  "
-                f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
-            )
-
-        if self.availability_mode is not None:
-            if self.kernel_session_manager.enable_persistence is False:
-                raise TraitError(
-                    f"Availability mode is configured as '{self.availability_mode}', "
-                    f"yet kernel session persistence has not been enabled.  Configure "
-                    f"KernelSessionManager.enable_persistence and restart Enterprise Gateway."
+        if self.kernel_session_manager.enable_persistence:
+            if self.availability_mode is None:
+                self.availability_mode = "multi-instance"
+                self.log.info(
+                    f"Kernel session persistence is enabled but availability mode is not.  "
+                    f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
+                )
+        else:
+            # Persistence is not enabled, check if availability_mode is configured and, if so,
+            # auto-enable persistence
+            if self.availability_mode is not None:
+                self.kernel_session_manager.enable_persistence = True
+                self.log.info(
+                    f"Availability mode is set to '{self.availability_mode}' yet kernel session "
+                    "persistence is not enabled.  Enabling kernel session persistence."
                 )
 
-            # If we're using single-instance availability, attempt to start persisted sessions
-            if self.availability_mode == "single-instance":
-                self.kernel_session_manager.start_sessions()
+        # If we're using single-instance availability, attempt to start persisted sessions
+        if self.availability_mode == "single-instance":
+            self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
 

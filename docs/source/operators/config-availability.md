@@ -2,6 +2,10 @@
 
 Enterprise Gateway can be optionally configured in one of two "availability modes": _single-instance_ or _multi-instance_. When configured, Enterprise Gateway can recover from failures and reconnect to any active remote kernels that were previously managed by the terminated EG instance. As such, both modes require that kernel session persistence also be enabled via `KernelSessionManager.enable_persistence=True`.
 
+```{note}
+Kernel session persistence will be automtically enabled whenever availability mode is configured.
+```
+
 ```{caution}
 **Availability modes and kernel session persistence should be considered experimental!**
 
@@ -16,7 +20,7 @@ We hope to address these in future releaases (depending on demand).
 
 _Single-instance availability_ assumes that, upon failure of the original EG instance, another EG instance will be started. Upon startup of the second instance (following the termination of the first), EG will attempt to load and reconnect to all kernels that were deemed active when the previous instance terminated. This mode is somewhat analogous to the classic HA/DR mode of _active-passive_ and is typically used when node resources are at a premium or the number of replicas (in the Kubernetes sense) must remain at 1.
 
-To configure Enterprise Gateway for 'single-instance' availability, you must first enable session persistence as noted above and configure `EnterpiseGatewayApp.availability_mode=single-instance` or set env `EG_AVAILABILITY_MODE=single-instance`.
+To enable Enterprise Gateway for 'single-instance' availability, configure `EnterpiseGatewayApp.availability_mode=single-instance` or set env `EG_AVAILABILITY_MODE=single-instance`.
 
 Here's an example for starting Enterprise Gateway with single-instance availability:
 
@@ -27,7 +31,6 @@ LOG=/var/log/enterprise_gateway.log
 PIDFILE=/var/run/enterprise_gateway.pid
 
 jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=DEBUG \
-   --KernelSessionManager.enable_persistence=True \
    --EnterpriseGatewayApp.availability_mode=single-instance > $LOG 2>&1 &
 
 if [ "$?" -eq 0 ]; then
@@ -47,7 +50,7 @@ Configuring client affinity is **strongly recommended**, otherwise functionality
 
 In this mode, when one node goes down, the subsequent request will be routed to a different node that doesn't know about the kernel. Prior to returning a `404` (not found) status code, EG will check its persisted store to determine if the kernel was managed and, if so, attempt to "hydrate" a `KernelManager` instance associated with the remote kernel. (Of course, if the kernel was running local to the downed server, chances are it cannot be _revived_.) Upon successful "hydration" the request continues as if on the originating node. Because _client affinity_ is in place, subsequent requests should continue to be routed to the "servicing node".
 
-To configure Enterprise Gateway for 'multi-instance' availability, you must first enable session persistence as noted above and configure `EnterpiseGatewayApp.availability_mode=multi-instance` or set env `EG_AVAILABILITY_MODE=multi-instance`.
+To enable Enterprise Gateway for 'multi-instance' availability, configure `EnterpiseGatewayApp.availability_mode=multi-instance` or set env `EG_AVAILABILITY_MODE=multi-instance`.
 
 ```{attention}
 To preserve backwards compatibility, if only kernel session persistence is enabled via `KernelSessionManager.enable_persistence=True`, the availability mode will be automatically configured to 'multi-instance' if `EnterpiseGatewayApp.availability_mode` is not configured.
@@ -62,7 +65,6 @@ LOG=/var/log/enterprise_gateway.log
 PIDFILE=/var/run/enterprise_gateway.pid
 
 jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=DEBUG \
-   --KernelSessionManager.enable_persistence=True \
    --EnterpriseGatewayApp.availability_mode=multi-instance > $LOG 2>&1 &
 
 if [ "$?" -eq 0 ]; then
@@ -75,7 +77,7 @@ fi
 ## Kernel Session Persistence
 
 ```{attention}
-Due to its experimental nature, kernel session persistence is disabled by default. To enable this functionality, you must configure `KernelSessionManger.enable_persistence=True`.
+Due to its experimental nature, kernel session persistence is disabled by default. To enable this functionality, you must configure `KernelSessionManger.enable_persistence=True` or configure `EnterpriseGatewayApp.availability_mode` to either `single-instance` or `multi-instance`.
 ```
 
 As noted above, the availability modes rely on the persisted information relative to the kernel. This information consists of the arguments and options used to launch the kernel, along with its connection information. In essence, it consists of any information necessary to re-establish communication with the kernel.
@@ -83,12 +85,12 @@ As noted above, the availability modes rely on the persisted information relativ
 Kernel session persistence is unique to Enterprise Gateway and consists of a _bring-your-own_ model whereby subclasses of `KernelSessionManager` can be configured that manage their own persistent storage of kernel sessions. By default, Enterprise Gateway provides a `FileKernelSessionManager` that reads and writes kernel session information to a pre-configured directory. For use with `availability_mode` it is presumed that directory resides in a location accessible by all applicable nodes running Enterprise Gateway.
 
 ```{note}
-This option can be also be set on subclasses of `KernelSessionsManager` (e.g., `FileKernelSessionManager.enable_persistence=True`).
+This option can be also be set on subclasses of `KernelSessionManager` (e.g., `FileKernelSessionManager.enable_persistence=True`).
 ```
 
 By default, the directory used to store a given kernel's session information is the `JUPYTER_DATA_DIR`. This location can be configured using `FileKernelSessionManager.persistence_root` with a value of a fully-qualified path to an existing directory.
 
-To introduce a different implementation, you must configure the kernel session manager class. Here's an example for starting Enterprise Gateway using a custom `KernelSessionManager` and 'single-instance' availability:
+To introduce a different implementation, you must configure the kernel session manager class. Here's an example for starting Enterprise Gateway using a custom `KernelSessionManager` and 'single-instance' availability. Note that setting `--MyCustomKernelSessionManager.enable_persistence=True` is not necessary because an availability mode is specified, but displayed here for completeness:
 
 ```bash
 #!/bin/bash

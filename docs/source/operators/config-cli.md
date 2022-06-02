@@ -108,8 +108,7 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     Default: ''
 --EnterpriseGatewayApp.availability_mode=<CaselessStrEnum>
     Specifies the type of availability.  Values must be one of "single-instance"
-    or "multi-instance". Configuration of this option requires that
-    KernelSessionManager.enable_persistence is True. (EG_AVAILABILITY_MODE env var)
+    or "multi-instance".  (EG_AVAILABILITY_MODE env var)
     Choices: any of ['single-instance', 'multi-instance'] (case-insensitive) or None
     Default: None
 --EnterpriseGatewayApp.base_url=<Unicode>
