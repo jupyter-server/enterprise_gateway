@@ -95,7 +95,6 @@ RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$S
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -f -b -p $ANACONDA_HOME && \
     rm ~/miniconda.sh && \
-    conda clean -tipsy && \
     rm -rf /home/$NB_USER/.cache/yarn
 
 USER root
@@ -106,7 +105,7 @@ RUN conda install --yes --quiet \
     'r-devtools' \
     'r-stringr' \
     'r-argparse' && \
-    conda clean -tipsy && \
+    conda clean --all && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 

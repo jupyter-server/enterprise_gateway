@@ -5,7 +5,7 @@ FROM $BASE_CONTAINER
 RUN conda install --quiet --yes \
     'r-argparse' \
     pycryptodomex && \
-    conda clean -tipsy && \
+    conda clean --all && \
     fix-permissions $CONDA_DIR
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/

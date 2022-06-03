@@ -14,7 +14,7 @@ RUN conda install --quiet --yes \
     requests \
     future \
     pycryptodomex && \
-    conda clean -tipsy && \
+    conda clean --all && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
 
