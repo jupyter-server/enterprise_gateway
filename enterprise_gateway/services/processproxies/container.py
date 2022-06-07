@@ -175,6 +175,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         result = None
 
         if self.container_name:  # We only have something to terminate if we have a name
+            self.log.info(f"Killing Kernel with name: {self.container_name}")
             result = self.terminate_container_resources()
 
         return result
