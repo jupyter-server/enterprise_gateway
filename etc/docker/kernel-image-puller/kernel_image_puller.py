@@ -39,6 +39,7 @@ class KernelImagePuller:
         self.num_pullers = None
         self.num_retries = None
         self.policy = None
+        self.validate_cert = None
         self.load_static_env_values()
 
     def load_static_env_values(self):
@@ -54,6 +55,7 @@ class KernelImagePuller:
         # Add authentication token support to KIP
         self.auth_token = os.getenv("KIP_AUTH_TOKEN", None)
         self.interval = int(os.getenv("KIP_INTERVAL", "300"))
+        self.validate_cert = os.getenv("JUPYTER_GATEWAY_VALIDATE_CERT", "False").lower() == "true"
 
         if self.policy not in KernelImagePuller.policies:
             logger.warning(
@@ -69,9 +71,10 @@ class KernelImagePuller:
         logger.info(f"KIP_NUM_RETRIES: {self.num_retries}")
         logger.info(f"KIP_PULL_POLICY: {self.policy}")
         logger.info(f"KIP_LOG_LEVEL: {log_level}")
-        logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # i think we should avoid priting this.
+        logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # I think we should avoid printing this.
         logger.info(f"KIP_DEFAULT_CONTAINER_REGISTRY: {self.default_container_registry}")
         logger.info(f"KIP_CRI_ENDPOINT: {self.runtime_endpoint}")
+        logger.info(f"JUPYTER_GATEWAY_VALIDATE_CERT: {self.validate_cert}")
 
         if self.is_runtime_endpoint_recognized():
             logger.info(f"Detected container runtime: {self.container_runtime}")
@@ -127,9 +130,15 @@ class KernelImagePuller:
         """Fetches the set of kernelspecs from the gateway, returning a dict of configured kernel specs"""
         end_point = f"{self.gateway_host}/api/kernelspecs"
         logger.info(f"Fetching kernelspecs from '{end_point}' ...")
+        headers = {
+            "Content-Type": "application/json"
+        }
         if self.auth_token:
             end_point += f"?token={self.auth_token}"
-        resp = requests.get(end_point)
+            headers.update({
+                "Authorization": "token {}".format(self.auth_token)
+            })
+        resp = requests.get(end_point, headers=headers, verify=self.validate_cert)
         if not resp.ok:
             raise requests.exceptions.HTTPError(f"Gateway server response: {resp.status_code}")
         return resp.json()

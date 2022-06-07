@@ -344,7 +344,7 @@ Create `values-kip.yaml` file with the following content:
 ```bash
 global:
   # Create RBAC resources
-  rbac: false
+  rbac: true
 
 deployment:
   enabled: false
