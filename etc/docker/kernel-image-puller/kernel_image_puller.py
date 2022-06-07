@@ -130,14 +130,10 @@ class KernelImagePuller:
         """Fetches the set of kernelspecs from the gateway, returning a dict of configured kernel specs"""
         end_point = f"{self.gateway_host}/api/kernelspecs"
         logger.info(f"Fetching kernelspecs from '{end_point}' ...")
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         if self.auth_token:
             end_point += f"?token={self.auth_token}"
-            headers.update({
-                "Authorization": "token {}".format(self.auth_token)
-            })
+            headers.update({"Authorization": f"token {self.auth_token}"})
         resp = requests.get(end_point, headers=headers, verify=self.validate_cert)
         if not resp.ok:
             raise requests.exceptions.HTTPError(f"Gateway server response: {resp.status_code}")
