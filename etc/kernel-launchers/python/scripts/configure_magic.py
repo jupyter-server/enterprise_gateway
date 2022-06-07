@@ -4,10 +4,10 @@ import logging
 import os
 import sys
 import time
+from json import JSONDecodeError
 
 import requests
-from IPython.core.magic import Magics, magics_class, cell_magic
-from json import JSONDecodeError
+from IPython.core.magic import Magics, cell_magic, magics_class
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -23,8 +23,7 @@ RESERVED_SPARK_CONFIGS = [
     "spark.kubernetes.executor.container.image",
     "spark.kubernetes.namespace",
     "spark.kubernetes.driver.label.component",
-    "spark.kubernetes.executor.label.component"
-    "spark.kubernetes.driver.label.kernel_id",
+    "spark.kubernetes.executor.label.component" "spark.kubernetes.driver.label.kernel_id",
     "spark.kubernetes.executor.label.kernel_id",
     "spark.kubernetes.driver.label.app",
     "spark.kubernetes.executor.label.app",
@@ -44,18 +43,26 @@ class ConfigureMagic(Magics):
         "executorCores": " --conf spark.executor.cores={} ",
         "numExecutors": " --conf spark.executor.instances={} ",
         "conf": "--conf {}={} ",
-        "launchTimeout": "{}"
+        "launchTimeout": "{}",
     }
     MAX_LAUNCH_TIMEOUT = 500
 
-    KERNEL_ID_NOT_FOUND = "We could not find any associated Kernel to apply the magic. Please restart Kernel."
-    EMPTY_INVALID_MAGIC_PAYLOAD = "The magic payload is either empty or not in the correct format." \
-                                  " Please recheck and execute."
+    KERNEL_ID_NOT_FOUND = (
+        "We could not find any associated Kernel to apply the magic. Please restart Kernel."
+    )
+    EMPTY_INVALID_MAGIC_PAYLOAD = (
+        "The magic payload is either empty or not in the correct format."
+        " Please recheck and execute."
+    )
     INVALID_JSON_PAYLOAD = "The magic payload could not be parsed into a valid JSON object. Please recheck and execute."
     SERVER_ERROR = "An error occurred while updating the kernel configuration: {}."
     UNKNOWN_ERROR = "An error occurred while processing payload."
-    RESERVED_SPARK_CONFIGS_ERROR = "You are not allowed to override {} spark config as its reserved."
-    MAX_LAUNCH_TIMEOUT_ERROR = "The allowed range for Kernel launchTimeout is (0, {}).".format(MAX_LAUNCH_TIMEOUT)
+    RESERVED_SPARK_CONFIGS_ERROR = (
+        "You are not allowed to override {} spark config as its reserved."
+    )
+    MAX_LAUNCH_TIMEOUT_ERROR = "The allowed range for Kernel launchTimeout is (0, {}).".format(
+        MAX_LAUNCH_TIMEOUT
+    )
     INVALID_PAYLOAD_ERROR = "{} with error: {}"
 
     def __init__(self, shell=None, **kwargs):
@@ -71,8 +78,9 @@ class ConfigureMagic(Magics):
             self.endpoint_ip = "localhost"
             self.endpoint_port = 18888
             self.protocol = "http"
-        self.update_kernel_url = "{}://{}:{}/api/configure/{}".format(self.protocol, self.endpoint_ip, self.endpoint_port,
-                                                                    self.kernel_id)
+        self.update_kernel_url = "{}://{}:{}/api/configure/{}".format(
+            self.protocol, self.endpoint_ip, self.endpoint_port, self.kernel_id
+        )
         logger.debug(f"Kernel Update URL set to: {self.update_kernel_url}")
         self.headers = {
             "Content-Type": "application/json",
@@ -93,17 +101,28 @@ class ConfigureMagic(Magics):
                 logger.error(f"The payload is either empty or invalid. {magic_payload}")
                 return ConfigureMagic.EMPTY_INVALID_MAGIC_PAYLOAD
         except ValueError as ve:
-            logger.exception("Could not parse JSON object from input {}: error: {}.".format(cell, ve))
+            logger.exception(
+                f"Could not parse JSON object from input {cell}: error: {ve}."
+            )
             return ConfigureMagic.INVALID_JSON_PAYLOAD
         except JSONDecodeError as jde:
-            logger.exception("Could not parse JSON object from input: {}: error: {}.".format(cell, jde))
+            logger.exception(
+                f"Could not parse JSON object from input: {cell}: error: {jde}."
+            )
             return ConfigureMagic.INVALID_JSON_PAYLOAD
         except InvalidPayloadException as ipe:
             logger.exception(
-                "InvalidPayloadException occurred while processing magic payload: {}: error: {}".format(cell, ipe))
-            return ConfigureMagic.INVALID_PAYLOAD_ERROR.format(InvalidPayloadException.__name__, ipe)
+                "InvalidPayloadException occurred while processing magic payload: {}: error: {}".format(
+                    cell, ipe
+                )
+            )
+            return ConfigureMagic.INVALID_PAYLOAD_ERROR.format(
+                InvalidPayloadException.__name__, ipe
+            )
         except Exception as ex:
-            logger.exception("Exception occurred while processing magic payload: {}: error: {}".format(cell, ex))
+            logger.exception(
+                f"Exception occurred while processing magic payload: {cell}: error: {ex}"
+            )
             return ConfigureMagic.UNKNOWN_ERROR
         else:
             magic_payload["zmq_messages"] = self.prepare_zmq_messages()
@@ -122,42 +141,36 @@ class ConfigureMagic(Magics):
 
     def prepare_iopub_error_reply_payload(self):
         ipykernel = self.shell.kernel
-        reply_content = {
-            'ename': 'MagicExecutionError',
-            'evalue': 'UnknownError',
-            'traceback': []
-        }
+        reply_content = {"ename": "MagicExecutionError", "evalue": "UnknownError", "traceback": []}
         parent_headers = self.shell.parent_header["header"].copy()
         metadata = {}  # ipykernel.init_metadata(parent_headers)
-        error_payload = ipykernel.session.msg(msg_type="error", content=reply_content, parent=parent_headers,
-                                             metadata=metadata)
+        error_payload = ipykernel.session.msg(
+            msg_type="error", content=reply_content, parent=parent_headers, metadata=metadata
+        )
         error_payload["channel"] = "iopub"
         error_payload["buffers"] = []
         return error_payload
 
     def prepare_iopub_idle_reply_payload(self):
         ipykernel = self.shell.kernel
-        reply_content = {
-            'execution_state': 'idle'
-        }
+        reply_content = {"execution_state": "idle"}
         parent_headers = self.shell.parent_header["header"].copy()
         metadata = {}  # ipykernel.init_metadata(parent_headers)
-        idle_payload = ipykernel.session.msg(msg_type="status", content=reply_content, parent=parent_headers,
-                                             metadata=metadata)
+        idle_payload = ipykernel.session.msg(
+            msg_type="status", content=reply_content, parent=parent_headers, metadata=metadata
+        )
         idle_payload["channel"] = "iopub"
         idle_payload["buffers"] = []
         return idle_payload
 
     def prepare_iopub_stream_reply_payload(self):
         ipykernel = self.shell.kernel
-        reply_content = {
-            'name': 'stdout',
-            'text': ' '
-        }
+        reply_content = {"name": "stdout", "text": " "}
         parent_headers = self.shell.parent_header["header"].copy()
         metadata = ipykernel.init_metadata(parent_headers)
-        idle_payload = ipykernel.session.msg(msg_type="stream", content=reply_content, parent=parent_headers,
-                                             metadata=metadata)
+        idle_payload = ipykernel.session.msg(
+            msg_type="stream", content=reply_content, parent=parent_headers, metadata=metadata
+        )
         idle_payload["channel"] = "iopub"
         idle_payload["buffers"] = []
         return idle_payload
@@ -165,16 +178,20 @@ class ConfigureMagic(Magics):
     def prepare_shell_reply_payload(self):
         ipykernel = self.shell.kernel
         reply_content = {
-            'status': 'ok',
-            'execution_count': ipykernel.execution_count,
-            'user_expressions': {},
-            'payload': []
+            "status": "ok",
+            "execution_count": ipykernel.execution_count,
+            "user_expressions": {},
+            "payload": [],
         }
         parent_headers = self.shell.parent_header["header"].copy()
         metadata = ipykernel.init_metadata(parent_headers)
         metadata = ipykernel.finish_metadata(parent_headers, metadata, reply_content)
-        shell_payload = ipykernel.session.msg(msg_type="execute_reply", content=reply_content, parent=parent_headers,
-                                              metadata=metadata)
+        shell_payload = ipykernel.session.msg(
+            msg_type="execute_reply",
+            content=reply_content,
+            parent=parent_headers,
+            metadata=metadata,
+        )
         shell_payload["channel"] = "shell"
         shell_payload["buffers"] = []
         return shell_payload
@@ -192,13 +209,17 @@ class ConfigureMagic(Magics):
                     conf = " "
                     for k, v in conf_dict.items():
                         if k in RESERVED_SPARK_CONFIGS:
-                            raise InvalidPayloadException(ConfigureMagic.RESERVED_SPARK_CONFIGS_ERROR.format(k))
+                            raise InvalidPayloadException(
+                                ConfigureMagic.RESERVED_SPARK_CONFIGS_ERROR.format(k)
+                            )
                         conf += spark_conf.format(k, v)
                     spark_overrides += conf
                 elif magic_key == "launchTimeout":
                     if int(magic_prop) <= 0 or int(magic_prop) > ConfigureMagic.MAX_LAUNCH_TIMEOUT:
                         raise InvalidPayloadException(ConfigureMagic.MAX_LAUNCH_TIMEOUT_ERROR)
-                    self.populate_env_in_payload(magic_payload, "KERNEL_LAUNCH_TIMEOUT", str(magic_prop))
+                    self.populate_env_in_payload(
+                        magic_payload, "KERNEL_LAUNCH_TIMEOUT", str(magic_prop)
+                    )
                 else:
                     spark_overrides += spark_conf.format(magic_prop)
         logger.debug(f"KERNEL_EXTRA_SPARK_OPTS: {spark_overrides}")
@@ -208,40 +229,58 @@ class ConfigureMagic(Magics):
         return magic_payload
 
     def populate_env_in_payload(self, payload, env_key, env_value):
-        if not payload.get('env', None):
-            payload['env'] = {}
+        if not payload.get("env", None):
+            payload["env"] = {}
         if env_key and env_value:
-            payload['env'][env_key] = env_value
+            payload["env"][env_key] = env_value
         else:
             logger.error(f"Either key or value is not defined. {env_key}, {env_value}")
 
     def update_kernel(self, payload_dict):
         try:
-            logger.info(f"Sending request to update kernel. Please wait while the kernel will be refreshed.")
+            logger.info(
+                f"Sending request to update kernel. Please wait while the kernel will be refreshed."
+            )
             # Flush output before sending the request.
             sys.stdout.flush()
             sys.stderr.flush()
             time.sleep(0.005)  # small delay
-            response = requests.post(self.update_kernel_url, data=json.dumps(payload_dict, default=str),
-                                     headers=self.headers,
-                                     verify=False)
+            response = requests.post(
+                self.update_kernel_url,
+                data=json.dumps(payload_dict, default=str),
+                headers=self.headers,
+                verify=False,
+            )
             response_body = response.json() if response is not None else {}
             # the below lines are executed only if the request was not successful or runaway kernel case.
-            logger.debug(f"Response received for kernel update: {response.status_code}: body: {response_body}")
+            logger.debug(
+                f"Response received for kernel update: {response.status_code}: body: {response_body}"
+            )
             if response.status_code != 200:
-                error_message = response_body["message"] if response_body.get("message", None) else "Internal Error."
-                logger.error("An error occurred while updating kernel: {}: {}".format(response.status_code,
-                                                                                      error_message))
+                error_message = (
+                    response_body["message"]
+                    if response_body.get("message", None)
+                    else "Internal Error."
+                )
+                logger.error(
+                    "An error occurred while updating kernel: {}: {}".format(
+                        response.status_code, error_message
+                    )
+                )
                 return ConfigureMagic.SERVER_ERROR.format(error_message)
             else:
                 # if we have hit this, we have a runaway kernel as this pod should have gone down.
-                logger.error("Successfully updated kernel but with possible duplicate / runaway kernel scenario.")
-                return "Status: {}. Possible kernel leak.".format(response)
+                logger.error(
+                    "Successfully updated kernel but with possible duplicate / runaway kernel scenario."
+                )
+                return f"Status: {response}. Possible kernel leak."
         except Exception as ex:
             logger.exception("Runtime exception occurred: {}", ex)
             return ConfigureMagic.SERVER_ERROR.format(ex)
         except KeyboardInterrupt:
-            logger.info("Received Interrupt to shutdown kernel. Please wait while the kernel will be refreshed.")
+            logger.info(
+                "Received Interrupt to shutdown kernel. Please wait while the kernel will be refreshed."
+            )
 
 
 def load_ipython_extension(ipython):
