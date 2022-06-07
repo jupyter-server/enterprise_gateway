@@ -434,7 +434,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     auth_type_env = "EG_AUTH_TYPE"
     auth_type = Unicode(
         config=True,
-        help="""ROPC for webhook kernel session manager API auth Basic, Digest or None""",
+        help="""Authentication type for webhook kernel session manager API. Either Basic, Digest or None""",
     )
 
     @default("auth_type")
@@ -517,7 +517,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
                 else:
                     self.log.error(response.raise_for_status())
 
-    def _load_session_from_file(self, kernel):
+    def _load_session_from_response(self, kernel):
         """
         Loads kernel session to current session
 

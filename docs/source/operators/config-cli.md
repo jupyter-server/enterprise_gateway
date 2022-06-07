@@ -283,6 +283,29 @@ FileKernelSessionManager(KernelSessionManager) options
     reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)
     Default: ''
 
+WebhookKernelSessionManager(KernelSessionManager) options
+---------------------------------------------------------
+--WebhookKernelSessionManager.enable_persistence=<Bool>
+    Enable kernel session persistence (True or False). Default = False
+                                  (EG_KERNEL_SESSION_PERSISTENCE env var)
+    Default: False
+--WebhookKernelSessionManager.persistence_root=<Unicode>
+    Identifies the root 'directory' under which the 'kernel_sessions' node will
+                                   reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)
+    Default: ''
+--WebhookKernelSessionManager.webhook_url=<Unicode>
+    URL endpoint for webhook kernel session manager
+    Default: ''
+--WebhookKernelSessionManager.auth_type=<Unicode>
+    Authentication type for webhook kernel session manager API. Either Basic, Digest or None
+    Default: ''
+--WebhookKernelSessionManager.webhook_username=<Unicode>
+    Username for webhook kernel session manager API auth
+    Default: ''
+--WebhookKernelSessionManager.webhook_password=<Unicode>
+    Password for webhook kernel session manager API auth
+    Default: ''
+
 RemoteMappingKernelManager(AsyncMappingKernelManager) options
 -------------------------------------------------------------
 --RemoteMappingKernelManager.allowed_message_types=<list-item-1>...
