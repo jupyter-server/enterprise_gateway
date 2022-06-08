@@ -101,14 +101,10 @@ class ConfigureMagic(Magics):
                 logger.error(f"The payload is either empty or invalid. {magic_payload}")
                 return ConfigureMagic.EMPTY_INVALID_MAGIC_PAYLOAD
         except ValueError as ve:
-            logger.exception(
-                f"Could not parse JSON object from input {cell}: error: {ve}."
-            )
+            logger.exception(f"Could not parse JSON object from input {cell}: error: {ve}.")
             return ConfigureMagic.INVALID_JSON_PAYLOAD
         except JSONDecodeError as jde:
-            logger.exception(
-                f"Could not parse JSON object from input: {cell}: error: {jde}."
-            )
+            logger.exception(f"Could not parse JSON object from input: {cell}: error: {jde}.")
             return ConfigureMagic.INVALID_JSON_PAYLOAD
         except InvalidPayloadException as ipe:
             logger.exception(

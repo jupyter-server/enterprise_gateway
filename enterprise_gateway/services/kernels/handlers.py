@@ -164,15 +164,19 @@ class ConfigureMagicHandler(CORSMixin, JSONErrorsMixin, APIHandler):
         if payload is None:
             self.finish(
                 json.dumps(
-                    {"message": f"Empty payload received. No operation performed on kernel: {kernel_id}"},
-                    default=date_default
+                    {
+                        "message": f"Empty payload received. No operation performed on kernel: {kernel_id}"
+                    },
+                    default=date_default,
                 )
             )
             return
         if type(payload) != dict:
             raise web.HTTPError(400, f"Invalid JSON payload received for kernel: {kernel_id}.")
         if payload.get("env", None) is None:  # We only allow env field for now.
-            raise web.HTTPError(400, "Missing required field `env` in payload for kernel: {kernel_id}.")
+            raise web.HTTPError(
+                400, "Missing required field `env` in payload for kernel: {kernel_id}."
+            )
         kernel = km.get_kernel(kernel_id)
         if kernel.restarting:  # handle duplicate request.
             self.log.info(
@@ -198,7 +202,9 @@ class ConfigureMagicHandler(CORSMixin, JSONErrorsMixin, APIHandler):
             )
             raise he
         except Exception as e:
-            self.log.exception(f"An exception occurred while re-configuring kernel: {kernel_id}: {e}")
+            self.log.exception(
+                f"An exception occurred while re-configuring kernel: {kernel_id}: {e}"
+            )
             await km.shutdown_kernel(kernel_id)
             kernel.fire_kernel_event_callbacks(
                 event="kernel_refresh_failure", zmq_messages=payload.get("zmq_messages", {})
@@ -318,9 +324,7 @@ for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists
         default_handlers.append((path, globals()[cls.__name__]))
-    elif (
-        cls.__name__ == jupyter_server_handlers.ZMQChannelsHandler.__name__
-    ):
+    elif cls.__name__ == jupyter_server_handlers.ZMQChannelsHandler.__name__:
         default_handlers.append((path, RemoteZMQChannelsHandler))
     else:
         # Gen a new type with CORS and token auth
