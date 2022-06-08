@@ -71,9 +71,9 @@ class ConfigureMagic(Magics):
         super().__init__(shell=None, **kwargs)
         self.shell = shell
         self.kernel_id = os.environ.get("KERNEL_ID", None)
-        self.endpoint_ip = os.environ.get("ENDPOINT_IP", "").split(":")[0]
+        self.endpoint_ip = os.environ.get("ENDPOINT_IP", "")
         self.endpoint_port = int(os.environ.get("ENDPOINT_PORT", 8888))
-        self.protocol = "http"
+        self.protocol = "http"  # TODO make this configurable.
         if self.endpoint_ip == "" or self.endpoint_ip is None:
             logger.info("Environment var: ENDPOINT_IP not set. Falling back to using localhost.")
             self.endpoint_ip = "localhost"

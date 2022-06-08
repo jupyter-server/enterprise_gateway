@@ -543,7 +543,9 @@ if __name__ == "__main__":
     cluster_type = arguments["cluster_type"] or arguments["rpp_cluster_type"]
     kernel_class_name = arguments["kernel_class_name"]
     ip = "0.0.0.0"
-
+    os.environ["KERNEL_ID"] = str(kernel_id)
+    os.environ["ENDPOINT_IP"] = str(response_addr).split(":")[0]
+    os.environ["ENDPOINT_PORT"] = 8888  # TODO read this from the launcher by introducing a new argument.
     if connection_file is None and kernel_id is None:
         raise RuntimeError(
             "At least one of the parameters: 'connection_file' or '--kernel-id' must be provided!"
