@@ -457,7 +457,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
                         self.auth = HTTPBasicAuth(self.webhook_username, self.webhook_password)
                     elif self.auth_type == "digest":
                         self.auth = HTTPDigestAuth(self.webhook_username, self.webhook_password)
-                    elif self.auth_type == None:
+                    elif self.auth_type is None:
                         self.auth = ""
                     else:
                         self.log.error("No such option for auth_type/EG_AUTH_TYPE")
