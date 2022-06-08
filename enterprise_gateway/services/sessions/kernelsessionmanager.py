@@ -10,7 +10,7 @@ import threading
 import requests
 from jupyter_core.paths import jupyter_data_dir
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-from traitlets import Bool, Unicode, CaselessStrEnum, default
+from traitlets import Bool, CaselessStrEnum, Unicode, default
 from traitlets.config.configurable import LoggingConfigurable
 
 kernels_lock = threading.Lock()
@@ -530,5 +530,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
         """
         self.log.debug("Loading saved session(s)")
         self._sessions.update(
-            KernelSessionManager.post_load_transformation(json.loads(kernel_session)["kernel_session"])
+            KernelSessionManager.post_load_transformation(
+                json.loads(kernel_session)["kernel_session"]
+            )
         )
