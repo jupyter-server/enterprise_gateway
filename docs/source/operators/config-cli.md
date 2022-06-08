@@ -292,19 +292,19 @@ WebhookKernelSessionManager(KernelSessionManager) options
 --WebhookKernelSessionManager.persistence_root=<Unicode>
     Identifies the root 'directory' under which the 'kernel_sessions' node will
                                    reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)
-    Default: ''
+    Default: None
 --WebhookKernelSessionManager.webhook_url=<Unicode>
     URL endpoint for webhook kernel session manager
-    Default: ''
+    Default: None
 --WebhookKernelSessionManager.auth_type=<Unicode>
-    Authentication type for webhook kernel session manager API. Either Basic, Digest or None
-    Default: ''
+    Authentication type for webhook kernel session manager API. Either basic, digest or None
+    Default: None
 --WebhookKernelSessionManager.webhook_username=<Unicode>
     Username for webhook kernel session manager API auth
-    Default: ''
+    Default: None
 --WebhookKernelSessionManager.webhook_password=<Unicode>
     Password for webhook kernel session manager API auth
-    Default: ''
+    Default: None
 
 RemoteMappingKernelManager(AsyncMappingKernelManager) options
 -------------------------------------------------------------

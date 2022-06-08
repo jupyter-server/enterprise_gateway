@@ -19,8 +19,8 @@ Webhook Kernel Session Persistence stores all kernel sessions to any database. I
 
 ```
     {
-      kernel_id: KERNEL ID,
-      kernel: KERNEL SESSION OBJECT
+      kernel_id: UUID string,
+      kernel_session: JSON
     }
 ```
 

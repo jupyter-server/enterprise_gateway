@@ -10,7 +10,7 @@ import threading
 import requests
 from jupyter_core.paths import jupyter_data_dir
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-from traitlets import Bool, Unicode, default
+from traitlets import Bool, Unicode, CaselessStrEnum, default
 from traitlets.config.configurable import LoggingConfigurable
 
 kernels_lock = threading.Lock()
@@ -401,45 +401,50 @@ class WebhookKernelSessionManager(KernelSessionManager):
     webhook_url_env = "EG_WEBHOOK_URL"
     webhook_url = Unicode(
         config=True,
+        allow_none=True,
         help="""URL endpoint for webhook kernel session manager""",
     )
 
     @default("webhook_url")
     def webhook_url_default(self):
-        return os.getenv(self.webhook_url_env, "")
+        return os.getenv(self.webhook_url_env, None)
 
     # Webhook Username
     webhook_username_env = "EG_WEBHOOK_USERNAME"
     webhook_username = Unicode(
         config=True,
+        allow_none=True,
         help="""Username for webhook kernel session manager API auth""",
     )
 
     @default("webhook_username")
     def webhook_username_default(self):
-        return os.getenv(self.webhook_username_env, "")
+        return os.getenv(self.webhook_username_env, None)
 
     # Webhook Password
     webhook_password_env = "EG_WEBHOOK_PASSWORD"
     webhook_password = Unicode(
         config=True,
+        allow_none=True,
         help="""Password for webhook kernel session manager API auth""",
     )
 
     @default("webhook_password")
     def webhook_password_default(self):
-        return os.getenv(self.webhook_password_env, "")
+        return os.getenv(self.webhook_password_env, None)
 
     # Auth Type
     auth_type_env = "EG_AUTH_TYPE"
-    auth_type = Unicode(
+    auth_type = CaselessStrEnum(
         config=True,
-        help="""Authentication type for webhook kernel session manager API. Either Basic, Digest or None""",
+        allow_none=True,
+        values=["basic", "digest"],
+        help="""Authentication type for webhook kernel session manager API. Either basic, digest or None""",
     )
 
     @default("auth_type")
     def auth_type_default(self):
-        return os.getenv(self.auth_type_env, "")
+        return os.getenv(self.auth_type_env, None)
 
     def __init__(self, kernel_manager, **kwargs):
         super().__init__(kernel_manager, **kwargs)
@@ -448,11 +453,11 @@ class WebhookKernelSessionManager(KernelSessionManager):
             self.auth = ""
             if self.auth_type:
                 if self.webhook_username and self.webhook_password:
-                    if self.auth_type.lower() == "basic":
+                    if self.auth_type == "basic":
                         self.auth = HTTPBasicAuth(self.webhook_username, self.webhook_password)
-                    elif self.auth_type.lower() == "digest":
+                    elif self.auth_type == "digest":
                         self.auth = HTTPDigestAuth(self.webhook_username, self.webhook_password)
-                    elif self.auth_type.lower() == "none":
+                    elif self.auth_type == None:
                         self.auth = ""
                     else:
                         self.log.error("No such option for auth_type/EG_AUTH_TYPE")
@@ -498,7 +503,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
             if response.status_code == 200:
                 kernel_sessions = response.content
                 for kernel_session in kernel_sessions:
-                    self._load_session_from_file(kernel_session)
+                    self._load_session_from_response(kernel_session)
             else:
                 self.log.error(response.raise_for_status())
 
@@ -513,17 +518,17 @@ class WebhookKernelSessionManager(KernelSessionManager):
                 response = requests.get(f"{self.webhook_url}/{kernel_id}", auth=self.auth)
                 if response.status_code == 200:
                     kernel_session = response.content
-                    self._load_session_from_file(kernel_session)
+                    self._load_session_from_response(kernel_session)
                 else:
                     self.log.error(response.raise_for_status())
 
-    def _load_session_from_response(self, kernel):
+    def _load_session_from_response(self, kernel_session: dict):
         """
         Loads kernel session to current session
 
-        :param dictionary kernel: Kernel session information
+        :param dictionary kernel_session: Kernel session information
         """
         self.log.debug("Loading saved session(s)")
         self._sessions.update(
-            KernelSessionManager.post_load_transformation(json.loads(kernel)["kernel"])
+            KernelSessionManager.post_load_transformation(json.loads(kernel_session)["kernel_session"])
         )
