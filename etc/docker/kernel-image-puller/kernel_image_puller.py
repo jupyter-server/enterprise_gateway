@@ -55,7 +55,7 @@ class KernelImagePuller:
         # Add authentication token support to KIP
         self.auth_token = os.getenv("KIP_AUTH_TOKEN", None)
         self.interval = int(os.getenv("KIP_INTERVAL", "300"))
-        self.validate_cert = os.getenv("JUPYTER_GATEWAY_VALIDATE_CERT", "False").lower() == "true"
+        self.validate_cert = os.getenv("KIP_VALIDATE_CERT", "False").lower() == "true"
 
         if self.policy not in KernelImagePuller.policies:
             logger.warning(
@@ -71,10 +71,10 @@ class KernelImagePuller:
         logger.info(f"KIP_NUM_RETRIES: {self.num_retries}")
         logger.info(f"KIP_PULL_POLICY: {self.policy}")
         logger.info(f"KIP_LOG_LEVEL: {log_level}")
-        logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # I think we should avoid printing this.
+        # logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # Do not print
         logger.info(f"KIP_DEFAULT_CONTAINER_REGISTRY: {self.default_container_registry}")
         logger.info(f"KIP_CRI_ENDPOINT: {self.runtime_endpoint}")
-        logger.info(f"JUPYTER_GATEWAY_VALIDATE_CERT: {self.validate_cert}")
+        logger.info(f"KIP_VALIDATE_CERT: {self.validate_cert}")
 
         if self.is_runtime_endpoint_recognized():
             logger.info(f"Detected container runtime: {self.container_runtime}")

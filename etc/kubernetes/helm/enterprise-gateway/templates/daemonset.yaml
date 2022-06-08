@@ -41,7 +41,7 @@ spec:
           value: {{ .Values.logLevel }}
         - name: KIP_GATEWAY_HOST
           value: "{{ .Values.kip.server.protocol }}://{{ .Values.kip.serviceName }}.{{ .Release.Namespace }}:{{ .Values.kip.server.port }}"
-        - name: JUPYTER_GATEWAY_VALIDATE_CERT
+        - name: KIP_VALIDATE_CERT
           value: {{ .Values.kip.server.validate_cert | quote }}
         - name: KIP_INTERVAL
           value: !!str {{ .Values.kip.interval }}
