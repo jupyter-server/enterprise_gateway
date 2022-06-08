@@ -71,14 +71,14 @@ class ConfigureMagic(Magics):
         self.shell = shell
         self.kernel_id = os.environ.get("KERNEL_ID", None)
         self.endpoint_ip = os.environ.get("ENDPOINT_IP", "").split(":")[0]
-        self.endpoint_port = 9547
-        self.protocol = "https"
+        self.endpoint_port = int(os.environ.get("ENDPOINT_PORT", 8888))
+        self.protocol = "http"
         if self.endpoint_ip == "" or self.endpoint_ip is None:
             logger.info("Environment var: ENDPOINT_IP not set. Falling back to using localhost.")
             self.endpoint_ip = "localhost"
             self.endpoint_port = 18888
             self.protocol = "http"
-        self.update_kernel_url = "{}://{}:{}/api/configure/{}".format(
+        self.update_kernel_url = "{}://{}:{}/api/kernels/configure/{}".format(
             self.protocol, self.endpoint_ip, self.endpoint_port, self.kernel_id
         )
         logger.debug(f"Kernel Update URL set to: {self.update_kernel_url}")

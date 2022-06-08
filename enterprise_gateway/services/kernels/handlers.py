@@ -162,27 +162,24 @@ class ConfigureMagicHandler(CORSMixin, JSONErrorsMixin, APIHandler):
         payload = self.get_json_body()
         self.log.debug(f"Request payload: {payload}")
         if payload is None:
-            self.log.info("Empty payload in the request body.")
             self.finish(
                 json.dumps(
-                    {"message": "Empty payload received. No operation performed on the Kernel."},
-                    default=date_default,
+                    {"message": f"Empty payload received. No operation performed on kernel: {kernel_id}"},
+                    default=date_default
                 )
             )
             return
         if type(payload) != dict:
-            self.log.info("Payload is not in acceptable format.")
-            raise web.HTTPError(400, "Invalid JSON payload received.")
+            raise web.HTTPError(400, f"Invalid JSON payload received for kernel: {kernel_id}.")
         if payload.get("env", None) is None:  # We only allow env field for now.
-            self.log.info("Payload is missing the required env field.")
-            raise web.HTTPError(400, "Missing required field `env` in payload.")
+            raise web.HTTPError(400, "Missing required field `env` in payload for kernel: {kernel_id}.")
         kernel = km.get_kernel(kernel_id)
         if kernel.restarting:  # handle duplicate request.
             self.log.info(
                 "An existing restart request is still in progress. Skipping this request."
             )
             raise web.HTTPError(
-                400, "Duplicate Kernel update request received for Id: %s." % kernel_id
+                400, f"Duplicate configure kernel request received for kernel: {kernel_id}."
             )
         try:
             # update Kernel metadata
@@ -193,7 +190,7 @@ class ConfigureMagicHandler(CORSMixin, JSONErrorsMixin, APIHandler):
             )
         except web.HTTPError as he:
             self.log.exception(
-                f"HTTPError exception occurred in refreshing kernel: {kernel_id}: {he}"
+                f"HTTPError exception occurred while re-configuring kernel: {kernel_id}: {he}"
             )
             await km.shutdown_kernel(kernel_id)
             kernel.fire_kernel_event_callbacks(
@@ -201,18 +198,18 @@ class ConfigureMagicHandler(CORSMixin, JSONErrorsMixin, APIHandler):
             )
             raise he
         except Exception as e:
-            self.log.exception(f"An exception occurred in updating kernel : {kernel_id}: {e}")
+            self.log.exception(f"An exception occurred while re-configuring kernel: {kernel_id}: {e}")
             await km.shutdown_kernel(kernel_id)
             kernel.fire_kernel_event_callbacks(
                 event="kernel_refresh_failure", zmq_messages=payload.get("zmq_messages", {})
             )
             raise web.HTTPError(
                 500,
-                "Error occurred while refreshing Kernel: %s." % kernel_id,
+                f"Error occurred while re-configuring kernel: {kernel_id}",
                 reason=f"{e}",
             )
         else:
-            response_body = {"message": f"Successfully refreshed kernel with id: {kernel_id}"}
+            response_body = {"message": f"Successfully re-configured kernel: {kernel_id}."}
             self.finish(json.dumps(response_body, default=date_default))
             return
 
@@ -221,7 +218,7 @@ class RemoteZMQChannelsHandler(
     TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, jupyter_server_handlers.ZMQChannelsHandler
 ):
     def open(self, kernel_id):
-        self.log.info(f"Websocket open request received for kernel: {kernel_id}")
+        self.log.debug(f"Websocket open request received for kernel: {kernel_id}")
         super().open(kernel_id)
         km = self.kernel_manager
         km.add_kernel_event_callbacks(kernel_id, self.on_kernel_refresh, "kernel_refresh")
@@ -238,7 +235,7 @@ class RemoteZMQChannelsHandler(
             success_message = zmq_messages.get("stream_reply")
             success_message["content"] = {
                 "name": "stdout",
-                "text": "The Kernel is successfully refreshed.",
+                "text": "The kernel is successfully refreshed.",
             }
             self._send_ws_message(success_message)
         if "exec_reply" in zmq_messages:
@@ -252,15 +249,15 @@ class RemoteZMQChannelsHandler(
         )  # In the future, UI clients might start to consume this.
 
     def on_kernel_refresh_failure(self, **kwargs):
-        self.log.error("Kernel %s refresh failed!", self.kernel_id)
+        self.log.error("kernel %s refresh failed!", self.kernel_id)
         zmq_messages = kwargs.get("zmq_messages", {})
         if "error_reply" in zmq_messages:
             self.log.debug("Sending stream_reply error message.")
             error_message = zmq_messages.get("error_reply")
             error_message["content"] = {
                 "ename": "KernelRefreshFailed",
-                "evalue": "The Kernel refresh operation failed.",
-                "traceback": ["The Kernel refresh operation failed."],
+                "evalue": "The kernel refresh operation failed.",
+                "traceback": ["The kernel refresh operation failed."],
             }
             self._send_ws_message(error_message)
         if "exec_reply" in zmq_messages:
@@ -270,8 +267,8 @@ class RemoteZMQChannelsHandler(
                 exec_reply["metadata"]["status"] = "error"
             exec_reply["content"]["status"] = "error"
             exec_reply["content"]["ename"] = "KernelRefreshFailed."
-            exec_reply["content"]["evalue"] = "The Kernel refresh operation failed."
-            exec_reply["content"]["traceback"] = ["The Kernel refresh operation failed."]
+            exec_reply["content"]["evalue"] = "The kernel refresh operation failed."
+            exec_reply["content"]["traceback"] = ["The kernel refresh operation failed."]
             self._send_ws_message(exec_reply)
         if "idle_reply" in zmq_messages:
             self.log.info("Sending idle reply message.")
@@ -316,14 +313,14 @@ class RemoteZMQChannelsHandler(
 
 
 _kernel_id_regex = r"(?P<kernel_id>\w+-\w+-\w+-\w+-\w+)"
-default_handlers = [(r"/api/configure/%s" % _kernel_id_regex, ConfigureMagicHandler)]
+default_handlers = [(r"/api/kernels/configure/%s" % _kernel_id_regex, ConfigureMagicHandler)]
 for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists
         default_handlers.append((path, globals()[cls.__name__]))
     elif (
         cls.__name__ == jupyter_server_handlers.ZMQChannelsHandler.__name__
-    ):  # TODO: check for override.
+    ):
         default_handlers.append((path, RemoteZMQChannelsHandler))
     else:
         # Gen a new type with CORS and token auth
