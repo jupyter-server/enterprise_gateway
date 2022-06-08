@@ -402,7 +402,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.sigint_value = None
         self.kernel_id = None
         self.user_overrides = {}  # this is populated via create kernel request.
-        self.user_update_overrides = {}  # this is populated via update kernel request.
+        self.configure_kernel_overrides = {}  # this is populated via configure kernel request.
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
 
@@ -480,16 +480,15 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout)
         )
         # kwargs['env'] gets updated with each kernel start / restart.
-        if (
-            not self.user_overrides
-        ):  # user_overrides preserve the original envs with which the kernel is started.
+        # user_overrides preserve the original envs with which the kernel is started.
+        if not self.user_overrides:
             self.user_overrides.update(
                 {
                     key: value
                     for key, value in env.items()
                     if key.startswith("KERNEL_")
-                    or key in self.parent.parent.env_process_whitelist
-                    or key in self.parent.parent.env_whitelist
+                       or key in self.env_process_whitelist
+                       or key in self.env_whitelist
                 }
             )
         extra_env = self._capture_user_update_overrides(**kwargs)
@@ -543,11 +542,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
         self.log.debug(
             "Launching kernel: '{}' with command: {}".format(
-                self.kernel_spec.display_name, kernel_cmd
-            )
-        )
-        self.log.debug(
-            "Launching kernel: {} with command: {}".format(
                 self.kernel_spec.display_name, kernel_cmd
             )
         )
@@ -756,13 +750,13 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             return None
 
     def _capture_user_update_overrides(self, **kwargs):
-        whitelisted_override_keys = [
+        allowed_override_keys = [
             "KERNEL_EXTRA_SPARK_OPTS",
             "KERNEL_LAUNCH_TIMEOUT",
         ]  # TODO need to read this list from env variable
-        user_requested_env_overrides = self.user_update_overrides.get("env", {})
+        user_requested_env_overrides = self.configure_kernel_overrides.get("env", {})
         allowed_env_overrides = {}
-        for override_key in whitelisted_override_keys:
+        for override_key in allowed_override_keys:
             if override_key in user_requested_env_overrides:
                 self.log.info("Key exist in extra overrides..")
                 if override_key == "KERNEL_LAUNCH_TIMEOUT":
@@ -777,7 +771,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
     def set_user_extra_overrides(self, update_payload):
         # TODO need to read this list from env variable
-        whitelisted_override_keys = ["KERNEL_EXTRA_SPARK_OPTS", "KERNEL_LAUNCH_TIMEOUT"]
+        allowed_override_keys = ["KERNEL_EXTRA_SPARK_OPTS", "KERNEL_LAUNCH_TIMEOUT"]
         env_overrides = update_payload.get("env", {})
         if type(env_overrides) != dict:
             error_message = "Expected `env` be of type: {} but found: {}.".format(
@@ -787,9 +781,11 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             raise web.HTTPError(400, error_message)
         self.log.debug(f"Validating the user overrides: {env_overrides}")
         for env_name in env_overrides:
-            if env_name not in whitelisted_override_keys:
-                raise web.HTTPError(400, f"Updating ENV: `{env_name}` is not supported currently.")
-        self.user_update_overrides = update_payload
+            if env_name not in allowed_override_keys:
+                raise web.HTTPError(
+                    400, f"Updating ENV: `{env_name}` is not supported currently."
+                )
+        self.configure_kernel_overrides = update_payload
 
     def add_kernel_event_callbacks(self, callback_func, event="kernel_refresh"):
         """register a callback to fire on a particular event
@@ -800,7 +796,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         :return:
         """
         try:
-            self.log.info(
+            self.log.debug(
                 f"add_kernel_event_callbacks: called for event: {event}: callback: {callback_func.__name__}"
             )
             self.event_callbacks[event].append(callback_func)
@@ -820,7 +816,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         :return: nothing.
         """
 
-        self.log.info(
+        self.log.debug(
             f"remove_kernel_event_callbacks: called for event: {event}: callback: {callback_func.__name__}"
         )
         try:
@@ -836,10 +832,10 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     def fire_kernel_event_callbacks(self, **kwargs):
         """fire the callbacks for a particular kernel event"""
         event = kwargs.get("event")
-        self.log.info(f"fire_kernel_event_callbacks: called for event: {event}")
+        self.log.debug(f"fire_kernel_event_callbacks: called for event: {event}")
         for callback in self.event_callbacks[event]:
             try:
-                self.log.info(f"triggering callback to {callback.__name__}")
+                self.log.debug(f"triggering callback to {callback.__name__}")
                 callback(**kwargs)
             except Exception as e:
                 # TODO handle exception here..what should we do in this case if we are not able to refresh.
