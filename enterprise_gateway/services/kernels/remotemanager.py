@@ -487,8 +487,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                     key: value
                     for key, value in env.items()
                     if key.startswith("KERNEL_")
-                       or key in self.env_process_whitelist
-                       or key in self.env_whitelist
+                    or key in self.env_process_whitelist
+                    or key in self.env_whitelist
                 }
             )
         extra_env = self._capture_user_update_overrides(**kwargs)
@@ -782,9 +782,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.log.debug(f"Validating the user overrides: {env_overrides}")
         for env_name in env_overrides:
             if env_name not in allowed_override_keys:
-                raise web.HTTPError(
-                    400, f"Updating ENV: `{env_name}` is not supported currently."
-                )
+                raise web.HTTPError(400, f"Updating ENV: `{env_name}` is not supported currently.")
         self.configure_kernel_overrides = update_payload
 
     def add_kernel_event_callbacks(self, callback_func, event="kernel_refresh"):
