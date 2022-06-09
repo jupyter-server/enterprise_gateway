@@ -28,7 +28,7 @@ Enterprise Gateway's build environment is centered around `make` and the corresp
 Entering `make` with no parameters yields the following:
 
 ```
- activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
+activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
 clean-images                   Remove docker images (includes kernel-based images)
 clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
