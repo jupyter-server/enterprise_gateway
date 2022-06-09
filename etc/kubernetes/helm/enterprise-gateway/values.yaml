@@ -49,6 +49,7 @@ deployment:
   serviceAccountName: 'enterprise-gateway-sa'
   terminationGracePeriodSeconds: 30
   resources: {}
+  annotations: {}
   #   limits:
   #     cpu: 2
   #     memory: 10Gi
@@ -124,7 +125,7 @@ kip:
   serviceAccountName: 'kernel-image-puller-sa'
   podSecurityPolicy:
     create: true
-    annotatons: {}
+    annotations: {}
   # Kernel Image Puller image name and tag to use.
   image: elyra/kernel-image-puller:dev
   # Kernel Image Puller image pull policy.
@@ -138,6 +139,7 @@ kip:
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
   resources: {}
+  annotations: {}
   #   limits:
   #     cpu: 1
   #     memory: 1Gi
