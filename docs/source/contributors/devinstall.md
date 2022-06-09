@@ -44,7 +44,7 @@ itest-yarn                     Run integration tests (optionally) against docker
 kernel-images                  Build kernel-based docker images
 kernelspecs                    Create archives with sample kernelspecs
 lint                           Check code style
-remove-ev                      Make clean + remove conda env
+remove-env                     Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
 run-dev                        Make a server in jupyter_websocket mode
 test-install                   Install and minimally run EG with the wheel and tar distributions
