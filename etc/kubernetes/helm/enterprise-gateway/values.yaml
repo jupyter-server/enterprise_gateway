@@ -123,6 +123,11 @@ ingress:
 kip:
   enabled: true
   serviceAccountName: 'kernel-image-puller-sa'
+  serviceName: enterprise-gateway
+  server: # EG server properties.
+    protocol: http
+    port: 8888
+    validate_cert: false
   podSecurityPolicy:
     create: true
     annotations: {}
