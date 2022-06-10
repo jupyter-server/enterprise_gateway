@@ -31,5 +31,5 @@ dependencies:
   - flake8
 
   - pip:
-      - ..
+      - .
       - -r docs/doc-requirements.txt
