@@ -7,7 +7,7 @@ import re
 import signal
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import Optional
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager

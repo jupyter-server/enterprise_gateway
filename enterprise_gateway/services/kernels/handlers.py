@@ -79,7 +79,7 @@ class MainKernelHandler(
                     }
                 )
                 # Pull client-provided tenant_id from env, defaulting to UNIVERSAL_TENANT_ID.
-                tenant_id = model["env"].get('JUPYTER_GATEWAY_TENANT_ID', tenant_id)
+                tenant_id = model["env"].get("JUPYTER_GATEWAY_TENANT_ID", tenant_id)
 
             # Set KERNEL_TENANT_ID.  If already present, we override with the value in the body
             env["KERNEL_TENANT_ID"] = tenant_id
