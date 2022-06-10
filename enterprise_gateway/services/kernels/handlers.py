@@ -51,7 +51,7 @@ class MainKernelHandler(
         # Try to get tenant_id and env vars from the request body
         model = self.get_json_body()
         if model is not None:
-            tenant_id = model.get("tenant_id", UNIVERSAL_TENANT_ID)
+            tenant_id = UNIVERSAL_TENANT_ID
             if "env" in model:
                 if not isinstance(model["env"], dict):
                     raise tornado.web.HTTPError(400)
@@ -78,6 +78,8 @@ class MainKernelHandler(
                         if key.startswith("KERNEL_") or key in env_whitelist
                     }
                 )
+                # Pull client-provided tenant_id from env, defaulting to UNIVERSAL_TENANT_ID.
+                tenant_id = model["env"].get('JUPYTER_GATEWAY_TENANT_ID', tenant_id)
 
             # Set KERNEL_TENANT_ID.  If already present, we override with the value in the body
             env["KERNEL_TENANT_ID"] = tenant_id
@@ -107,7 +109,6 @@ class MainKernelHandler(
                 self.kernel_manager.start_kernel,
                 env=env,
                 kernel_headers=kernel_headers,
-                tenant_id=tenant_id,
             )
             try:
                 await super().post()
@@ -127,16 +128,16 @@ class MainKernelHandler(
         tornado.web.HTTPError
             403 Forbidden if kernel listing is disabled
         """
+        if not self.settings.get("eg_list_kernels"):
+            raise tornado.web.HTTPError(403, "Forbidden")
 
-        tenant_id_filter = self.request.query_arguments.get("tenant_id") or UNIVERSAL_TENANT_ID
+        tenant_id_filter = self.request.query_arguments.get("tenant_id")
         if isinstance(tenant_id_filter, list):
             tenant_id_filter = tenant_id_filter[0].decode("utf-8")
-        if not self.settings.get("eg_list_kernels") and tenant_id_filter == UNIVERSAL_TENANT_ID:
-            raise tornado.web.HTTPError(403, "Forbidden")
-        else:
-            km = self.kernel_manager
-            kernels = await ensure_async(km.list_kernels(tenant_id=tenant_id_filter))
-            self.finish(json.dumps(kernels, default=date_default))
+
+        km = self.kernel_manager
+        kernels = await ensure_async(km.list_kernels(tenant_id=tenant_id_filter))
+        self.finish(json.dumps(kernels, default=date_default))
 
     def options(self, **kwargs):
         """Method for properly handling CORS pre-flight"""

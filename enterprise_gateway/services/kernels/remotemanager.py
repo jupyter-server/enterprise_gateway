@@ -153,61 +153,12 @@ class TrackPendingRequests:
         return self._pending_requests_all, int(self._pending_requests_user.get(username, 0))
 
 
-class TenantToKernels:
-    """
-    Simple class to manage the association of a kernel to its tenant and vice versa.
-
-    This is necessary to accommodate installation wishing to use Enterprise Gateway as a multi-tenant
-    kernel service and allows things like "list kernels" to only return the kernel information
-    associated with the requesting tenant.
-
-    Requests that do not specify a tenant id will use the UNIVERSAL_TENANT_ID so that all
-    logic goes through the same path.
-
-    This class instance is essentially a singleton in that its single instance is contained within
-    the single instance of RemoteMappingKernelManager.
-    """
-
-    def __init__(self):
-        self._tenant_to_kernels: Dict[str, List[str]] = {}  # Maps a tenant_id to its kernel ids
-        self._kernel_to_tenant: Dict[str, str] = {}  # Maps a kernel_id to its tenant_id
-
-    def add(self, tenant_id: str, kernel_id: str) -> None:
-        """Adds a mapping between the given tenant_id and kernel_id."""
-
-        kernels_for_tenant = self._tenant_to_kernels.get(tenant_id, [])
-        # We could already have the kernel_id if this call is made on
-        # behalf of refreshing a persisted session.
-        if kernel_id not in kernels_for_tenant:
-            kernels_for_tenant.append(kernel_id)
-        self._tenant_to_kernels[tenant_id] = kernels_for_tenant
-        self._kernel_to_tenant[kernel_id] = tenant_id
-
-    def remove_kernel_id(self, kernel_id: str) -> None:
-        """Removes kernel's association from its tenant."""
-        tenant_id = self._kernel_to_tenant.get(kernel_id)
-        if tenant_id:
-            kernels = self._tenant_to_kernels.get(tenant_id)
-            if kernel_id in kernels:
-                kernels.remove(kernel_id)
-            self._kernel_to_tenant.pop(kernel_id)
-
-    def get_kernel_ids(self, tenant_id: str) -> List:
-        """Returns a list of kernel ids associated with this tenant."""
-        return self._tenant_to_kernels.get(tenant_id) or []
-
-    def get_tenant_id(self, kernel_id: str) -> str:
-        """Returns the tenant_id corresponding to this kernel_id."""
-        return self._kernel_to_tenant.get(kernel_id) or UNIVERSAL_TENANT_ID
-
-
 class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """
     Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy.
     """
 
     pending_requests = TrackPendingRequests()  # Used to enforce max-kernel limits
-    tenant_kernels = TenantToKernels()  # Manage kernel's association to its tenant
 
     def _kernel_manager_class_default(self):
         return "enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager"
@@ -242,15 +193,11 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self._enforce_kernel_limits(username)
 
         RemoteMappingKernelManager.pending_requests.increment(username)
-        tenant_id = kwargs.pop(
-            "tenant_id", UNIVERSAL_TENANT_ID
-        )  # Remove tenant_id from forwarded kwargs
         try:
             kernel_id = await super().start_kernel(*args, **kwargs)
         finally:
             RemoteMappingKernelManager.pending_requests.decrement(username)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
-        self.tenant_kernels.add(tenant_id, kernel_id)
         return kernel_id
 
     async def restart_kernel(self, kernel_id):
@@ -274,7 +221,6 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         except KeyError as ke:  # this is hit for multiple shutdown request.
             self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
             raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
-        self.tenant_kernels.remove_kernel_id(kernel_id)
 
     async def wait_for_restart_finish(self, kernel_id, action="shutdown"):
         kernel = self.get_kernel(kernel_id)
@@ -346,12 +292,14 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         super().remove_kernel(kernel_id)
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
-    def list_kernels(self, tenant_id: Optional[str] = UNIVERSAL_TENANT_ID):
-        """Returns a list of kernel_id's of kernels running."""
+    def list_kernels(self, tenant_id: Optional[str] = None):
+        """Returns a list of kernel_id's of kernels running, filtering on tenant_id if provided."""
         kernels = []
-        kernel_ids = self.tenant_kernels.get_kernel_ids(tenant_id)
-        for kernel_id in kernel_ids:
+        for kernel_id, kernel_manager in self._kernels.items():
             try:
+                # If requested, discard non-matching tenant_id kernels
+                if tenant_id and tenant_id != kernel_manager.tenant_id:
+                    continue
                 model = self.kernel_model(kernel_id)
                 kernels.append(model)
             except (web.HTTPError, KeyError):
@@ -403,6 +351,8 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             kernel_name=kernel_name,
             **constructor_kwargs,
         )
+        # Set the persisted tenant_id
+        km.tenant_id = tenant_id
 
         # Load connection info into member vars - no need to write out connection file
         km.load_connection_info(connection_info)
@@ -434,8 +384,6 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         func = getattr(self, "initialize_culler", None)
         if func:
             func()
-        # Make sure we've recorded the tenant/kernel association
-        self.tenant_kernels.add(tenant_id, kernel_id)
         return True
 
     def new_kernel_id(self, **kwargs):
@@ -461,6 +409,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.public_key = None
         self.sigint_value = None
         self.kernel_id = None
+        self.tenant_id = None
         self.user_overrides = {}
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
@@ -534,6 +483,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         of the kernelspec env stanza that would have otherwise overridden the user-provided values.
         """
         env = kwargs.get("env", {})
+        # Although this particular env is not "user-provided", we still handle its capture here.
+        self.tenant_id = env.get("KERNEL_TENANT_ID", UNIVERSAL_TENANT_ID)
+
         # If KERNEL_LAUNCH_TIMEOUT is passed in the payload, override it.
         self.kernel_launch_timeout = float(
             env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout)

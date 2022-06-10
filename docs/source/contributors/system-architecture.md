@@ -494,10 +494,10 @@ This topic is covered in the [Developers Guide](../developers/index.rst).
 
 ## Multiple Tenant Support
 
-Enterprise Gateway offers viably minimal support multi-tenant environments by tracking the managed kernels by their tenant _ID_. This is accomplished on the client request when starting a kernel by adding a UUID-formatted string to the kernel start request's body with an associated key of `tenant_id`.
+Enterprise Gateway offers viably minimal support multi-tenant environments by tracking the managed kernels by their tenant _ID_. This is accomplished on the client request when starting a kernel by adding a UUID-formatted string to the kernel start request's `env` stanza with an associated key of `JUPYTER_GATEWAY_TENANT_ID`.
 
 ```JSON
-{"tenant_id":"f730794d-d175-40fa-b819-2a67d5308210"}
+{"env": {"JUPYTER_GATEWAY_TENANT_ID": "f730794d-d175-40fa-b819-2a67d5308210"}}
 ```
 
 Likewise, when calling the `/api/kernels` endpoint to get the list of active kernels, tenant-aware applications should add a `tenant_id` query parameter in order to get appropriate managed kernel information.
@@ -506,8 +506,8 @@ Likewise, when calling the `/api/kernels` endpoint to get the list of active ker
 GET /api/kernels?tenant_id=f730794d-d175-40fa-b819-2a67d5308210
 ```
 
-Kernel start or list requests that do not include a `tenant_id` will have their kernels associated with the `UNIVERSAL_TENANT_ID` which merely acts a catch-all and allows common code usage relative to existing clients.
+Kernel start requests that do not include a `tenant_id` will have their kernels associated with the `UNIVERSAL_TENANT_ID` which merely acts a catch-all and allows common code usage relative to existing clients.
 
-Enterprise Gateway will add the environment variable `KERNEL_TENANT_ID` to the kernel's environment so that this value is available to the kernel's launch logic and the kernel itself. It should be noted that if the original request also included a `KERNEL_TENANT_ID` in the body's `env` stanza, it will be overwritten with the value corresponding to `tenant_id` (or `UNIVERSAL_TENANT_ID` if `tenant_id` was not provided).
+Enterprise Gateway will add the environment variable `KERNEL_TENANT_ID` to the kernel's _launch_ environment so that this value is available to the kernel's launch framework. This value is currently not available to the kernel itself. It should be noted that if the original request also included a `KERNEL_TENANT_ID` in the body's `env` stanza, it will be overwritten with the value corresponding to `tenant_id` (or `UNIVERSAL_TENANT_ID` if `tenant_id` was not provided).
 
 Kernel specifications and other resources do not currently adhere to tenant-based _partitioning_.

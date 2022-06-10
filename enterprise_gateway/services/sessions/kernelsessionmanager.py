@@ -93,7 +93,7 @@ class KernelSessionManager(LoggingConfigurable):
         # Compose the kernel_session entry
         kernel_session = dict()
         kernel_session["kernel_id"] = kernel_id
-        kernel_session["tenant_id"] = self.kernel_manager.tenant_kernels.get_tenant_id(kernel_id)
+        kernel_session["tenant_id"] = km.tenant_id
         kernel_session["username"] = KernelSessionManager.get_kernel_username(**kwargs)
         kernel_session["kernel_name"] = km.kernel_name
 
