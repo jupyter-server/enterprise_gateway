@@ -112,6 +112,13 @@ Run the unit test suite.
 make test
 ```
 
+To Run a test a subset of tests, we support passing "TEST" argument to the make command as below
+```
+make test TEST="test_gatewayapp.py"
+make test TEST="test_gatewayapp.py::TestGatewayAppConfig
+make test TEST="test_gatewayapp.py::TestGatewayAppConfig::test_config_env_vars_bc"
+```
+
 ## Run the integration tests
 
 Run the integration tests suite.

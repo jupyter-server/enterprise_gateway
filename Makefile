@@ -118,7 +118,7 @@ test: ## Run unit tests
 ifeq ($(TEST),)
 	pytest -vv $(TEST_DEBUG_OPTS)
 else
-# e.g., make test TEST="test_gatewayapp.TestGatewayAppConfig"
+# e.g, make test TEST="test_gatewayapp.py::TestGatewayAppConfig"
 	pytest -vv $(TEST_DEBUG_OPTS) enterprise_gateway/tests/$(TEST)
 endif
 
