@@ -62,7 +62,7 @@ clean: ## Make a clean source tree
 	-make -C etc clean
 
 lint: ## Check code style
-	pip install pre-commit
+	@pip install -q pre-commit
 	pre-commit run --all-files
 
 remove-env: ## Make clean + remove conda env
