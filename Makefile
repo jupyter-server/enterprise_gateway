@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build clean remove-env dev dev-http docs install bdist sdist test release check_dists \
+.PHONY: help clean remove-env dev dev-http docs install bdist sdist test release check_dists \
     clean-images clean-enterprise-gateway clean-demo-base clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-demo-base \
@@ -38,8 +38,6 @@ HELM_INSTALL_DIR:=/usr/local/bin
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-build: dist
 
 env: ## Make a dev environment
 	-conda env create --file requirements.yml --name $(ENV)
