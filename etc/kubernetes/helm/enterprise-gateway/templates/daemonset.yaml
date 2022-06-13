@@ -40,7 +40,9 @@ spec:
         - name: KIP_LOG_LEVEL
           value: {{ .Values.logLevel }}
         - name: KIP_GATEWAY_HOST
-          value: "http://enterprise-gateway.{{ .Release.Namespace }}:{{ .Values.port }}"
+          value: "{{ .Values.kip.server.protocol }}://{{ .Values.kip.serviceName }}.{{ .Release.Namespace }}:{{ .Values.kip.server.port }}"
+        - name: KIP_VALIDATE_CERT
+          value: {{ .Values.kip.server.validate_cert | quote }}
         - name: KIP_INTERVAL
           value: !!str {{ .Values.kip.interval }}
         - name: KIP_PULL_POLICY

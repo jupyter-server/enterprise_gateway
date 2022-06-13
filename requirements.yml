@@ -4,7 +4,7 @@ channels:
 dependencies:
   - docker-py>=3.5.0
   - future
-  - jinja2>=2.10
+  - jinja2>=3.1
   - jupyter_client>=6.1
   - jupyter_core>=4.6.0
   - jupyter_server>=1.2
@@ -31,5 +31,5 @@ dependencies:
   - flake8
 
   - pip:
-      - ..
+      - .
       - -r docs/doc-requirements.txt

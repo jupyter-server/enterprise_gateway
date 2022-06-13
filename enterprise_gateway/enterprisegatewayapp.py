@@ -34,7 +34,10 @@ from .services.kernelspecs.handlers import (
     default_handlers as default_kernelspec_handlers,
 )
 from .services.sessions.handlers import default_handlers as default_session_handlers
-from .services.sessions.kernelsessionmanager import FileKernelSessionManager
+from .services.sessions.kernelsessionmanager import (
+    FileKernelSessionManager,
+    WebhookKernelSessionManager,
+)
 from .services.sessions.sessionmanager import SessionManager
 
 try:
@@ -77,7 +80,12 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [KernelSpecCache, FileKernelSessionManager, RemoteMappingKernelManager]
+    classes = [
+        KernelSpecCache,
+        FileKernelSessionManager,
+        WebhookKernelSessionManager,
+        RemoteMappingKernelManager,
+    ]
 
     # Enable some command line shortcuts
     aliases = aliases
