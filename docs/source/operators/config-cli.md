@@ -107,9 +107,9 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     It does not support IP addresses. (EG_AUTHORIZED_ORIGIN env var)
     Default: ''
 --EnterpriseGatewayApp.availability_mode=<CaselessStrEnum>
-    Specifies the type of availability.  Values must be one of "single-instance"
-    or "multi-instance".  (EG_AVAILABILITY_MODE env var)
-    Choices: any of ['single-instance', 'multi-instance'] (case-insensitive) or None
+    Specifies the type of availability.  Values must be one of "standalone"
+    or "replication".  (EG_AVAILABILITY_MODE env var)
+    Choices: any of ['standalone', 'replication'] (case-insensitive) or None
     Default: None
 --EnterpriseGatewayApp.base_url=<Unicode>
     The base path for mounting all API resources (EG_BASE_URL env var)
