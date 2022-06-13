@@ -682,14 +682,15 @@ class EnterpriseGatewayConfigMixin(Configurable):
     dynamic_config_poller = None
 
     # Availability Mode
+    AVAILABILITY_STANDALONE = "standalone"
+    AVAILABILITY_REPLICATION = "replication"
     availability_mode_env = "EG_AVAILABILITY_MODE"
     availability_mode_default_value = None
     availability_mode = CaselessStrEnum(
         allow_none=True,
-        values=["multi-instance", "single-instance"],
+        values=[AVAILABILITY_REPLICATION, AVAILABILITY_STANDALONE],
         config=True,
-        help="""Specifies the type of availability.  Values must be one of "single-instance" or "multi-instance".
-                Configuration of this this option requires that KernelSessionManager.enable_persistence is True.
+        help="""Specifies the type of availability.  Values must be one of "standalone" or "replication".
                 (EG_AVAILABILITY_MODE env var)""",
     )
 

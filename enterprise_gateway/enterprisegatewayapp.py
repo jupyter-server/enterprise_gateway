@@ -145,7 +145,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
         if self.kernel_session_manager.enable_persistence:
             if self.availability_mode is None:
-                self.availability_mode = "multi-instance"
+                self.availability_mode = EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION
                 self.log.info(
                     f"Kernel session persistence is enabled but availability mode is not.  "
                     f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
@@ -161,7 +161,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                 )
 
         # If we're using single-instance availability, attempt to start persisted sessions
-        if self.availability_mode == "single-instance":
+        if self.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_STANDALONE:
             self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
@@ -272,11 +272,11 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         return ssl_context
 
     def init_http_server(self):
-        """Initializes a HTTP server for the Tornado web application on the
+        """Initializes an HTTP server for the Tornado web application on the
         configured interface and port.
 
         Tries to find an open port if the one configured is not available using
-        the same logic as the Jupyer Notebook server.
+        the same logic as the Jupyter Notebook server.
         """
         ssl_options = self._build_ssl_options()
         self.http_server = httpserver.HTTPServer(

@@ -163,10 +163,11 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
                 raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
 
     def _refresh_kernel(self, kernel_id) -> bool:
-        if not self.parent.availability_mode or self.parent.availability_mode == "single-instance":
-            return False
-        self.parent.kernel_session_manager.load_session(kernel_id)
-        return self.parent.kernel_session_manager.start_session(kernel_id)
+        if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
+            self.parent.kernel_session_manager.load_session(kernel_id)
+            return self.parent.kernel_session_manager.start_session(kernel_id)
+        # else we should throw 404 when not using an availability mode of 'replication'
+        return False
 
     async def start_kernel(self, *args, **kwargs):
         """
