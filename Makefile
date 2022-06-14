@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help clean remove-env dev dev-http docs install bdist sdist test release check_dists \
+.PHONY: help clean clean-env dev dev-http docs install bdist sdist test release check_dists \
     clean-images clean-enterprise-gateway clean-demo-base clean-kernel-images clean-enterprise-gateway \
     clean-kernel-py clean-kernel-spark-py clean-kernel-r clean-kernel-spark-r clean-kernel-scala clean-kernel-tf-py \
     clean-kernel-tf-gpu-py clean-kernel-image-puller push-images push-enterprise-gateway-demo push-demo-base \
@@ -59,12 +59,12 @@ clean: ## Make a clean source tree
 	-make -C docs clean
 	-make -C etc clean
 
+clean-env: ## Remove conda env
+	-conda env remove -n $(ENV) -y
+
 lint: ## Check code style
 	@pip install -q pre-commit
 	pre-commit run --all-files
-
-remove-env: ## Make clean + remove conda env
-	-conda env remove -n $(ENV) -y
 
 run-dev: test-install-wheel ## Make a server in jupyter_websocket mode
 	python enterprise_gateway
