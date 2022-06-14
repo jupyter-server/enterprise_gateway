@@ -7,10 +7,10 @@ import random
 import socket
 import tempfile
 import uuid
-import requests
 from multiprocessing import Process
 from threading import Thread
 
+import requests
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
@@ -38,7 +38,7 @@ logger.setLevel(log_level)
 DEFAULT_KERNEL_CLASS_NAME = "ipykernel.ipkernel.IPythonKernel"
 # If one needs to modify the Spark UI Port then the user
 # also needs to be add "spark.kubernetes.driverEnv.SPARK_UI_PORT" to the spark config
-SPARK_UI_PORT_KEY = 'SPARK_UI_PORT'
+SPARK_UI_PORT_KEY = "SPARK_UI_PORT"
 
 
 class ExceptionThread(Thread):
@@ -366,28 +366,30 @@ def get_server_request(sock):
 
 def get_application_id(ui_port):
     application_id = ""
-    url = 'http://localhost:{}/api/v1/applications/'.format(ui_port)
+    url = f"http://localhost:{ui_port}/api/v1/applications/"
     response = requests.get(url)
     if response.status_code == 200 and response.json():
-        application_id = response.json()[0].get('id')
+        application_id = response.json()[0].get("id")
 
     return application_id
 
 
 def get_active_jobs_id(ui_port, application_id):
     active_job_ids = []
-    url = 'http://localhost:{}/api/v1/applications/{}/jobs?status=running'.format(ui_port, application_id)
+    url = "http://localhost:{}/api/v1/applications/{}/jobs?status=running".format(
+        ui_port, application_id
+    )
     response = requests.get(url)
     if response.status_code == 200 and response.json():
         for job in response.json():
-            jobid = job.get('jobId')
+            jobid = job.get("jobId")
             active_job_ids.append(jobid)
 
     return active_job_ids
 
 
 def kill_job(ui_port, jobid):
-    url = 'http://localhost:{}/jobs/job/kill/?id={}'.format(ui_port, jobid)
+    url = f"http://localhost:{ui_port}/jobs/job/kill/?id={jobid}"
     response = requests.get(url)
     if response.status_code == 200:
         logger.info(f"Killed job with id: {jobid}")
@@ -396,7 +398,7 @@ def kill_job(ui_port, jobid):
 
 
 def get_ui_port_number():
-    return os.environ.get(SPARK_UI_PORT_KEY, '4040')
+    return os.environ.get(SPARK_UI_PORT_KEY, "4040")
 
 
 def kill_active_jobs():
@@ -434,7 +436,7 @@ def server_listener(sock, parent_pid, cluster_type):
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
-                if signum == 2 and cluster_type == 'spark':
+                if signum == 2 and cluster_type == "spark":
                     kill_active_jobs()
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
