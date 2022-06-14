@@ -7,6 +7,7 @@ import random
 import socket
 import tempfile
 import uuid
+import requests
 from multiprocessing import Process
 from threading import Thread
 
@@ -35,6 +36,9 @@ logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
 
 DEFAULT_KERNEL_CLASS_NAME = "ipykernel.ipkernel.IPythonKernel"
+# If one needs to modify the Spark UI Port then the user
+# also needs to be add "spark.kubernetes.driverEnv.SPARK_UI_PORT" to the spark config
+SPARK_UI_PORT_KEY = 'SPARK_UI_PORT'
 
 
 class ExceptionThread(Thread):
@@ -360,7 +364,62 @@ def get_server_request(sock):
     return request_info
 
 
-def server_listener(sock, parent_pid):
+def get_application_id(ui_port):
+    application_id = ""
+    url = 'http://localhost:{}/api/v1/applications/'.format(ui_port)
+    response = requests.get(url)
+    if response.status_code == 200 and response.json():
+        application_id = response.json()[0].get('id')
+
+    return application_id
+
+
+def get_active_jobs_id(ui_port, application_id):
+    active_job_ids = []
+    url = 'http://localhost:{}/api/v1/applications/{}/jobs?status=running'.format(ui_port, application_id)
+    response = requests.get(url)
+    if response.status_code == 200 and response.json():
+        for job in response.json():
+            jobid = job.get('jobId')
+            active_job_ids.append(jobid)
+
+    return active_job_ids
+
+
+def kill_job(ui_port, jobid):
+    url = 'http://localhost:{}/jobs/job/kill/?id={}'.format(ui_port, jobid)
+    response = requests.get(url)
+    if response.status_code == 200:
+        logger.info(f"Killed job with id: {jobid}")
+    else:
+        logger.warning(f"Failed to kill job with id: {jobid}")
+
+
+def get_ui_port_number():
+    return os.environ.get(SPARK_UI_PORT_KEY, '4040')
+
+
+def kill_active_jobs():
+    try:
+        ui_port = get_ui_port_number()
+        application_id = get_application_id(ui_port)
+        if not application_id:
+            logger.warning("Failed to fetch application id")
+            return
+        active_job_ids = get_active_jobs_id(ui_port, application_id)
+        if not active_job_ids:
+            logger.info("No active jobs available")
+            return
+        for active_job_id in active_job_ids:
+            try:
+                kill_job(ui_port, active_job_id)
+            except Exception as ex:
+                logger.warning(f"Error occurred while killing job {ex}")
+    except Exception as e:
+        logger.warning(f"Error occurred while interrupting jobs {e}")
+
+
+def server_listener(sock, parent_pid, cluster_type):
     """Waits for requests from the server and processes each when received.  Currently,
     these will be one of a sending a signal to the corresponding kernel process (signum) or
     stopping the listener and exiting the kernel (shutdown).
@@ -375,6 +434,8 @@ def server_listener(sock, parent_pid):
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
+                if signum == 2 and cluster_type == 'spark':
+                    kill_active_jobs()
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
             if signum != 0:
@@ -582,6 +643,7 @@ if __name__ == "__main__":
                     args=(
                         comm_socket,
                         os.getpid(),
+                        cluster_type,
                     ),
                 )
                 server_listener_process.start()
