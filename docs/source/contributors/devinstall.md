@@ -29,6 +29,7 @@ Entering `make` with no parameters yields the following:
 
 ```
 activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
+clean-env                      Remove conda env
 clean-images                   Remove docker images (includes kernel-based images)
 clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
@@ -44,7 +45,6 @@ itest-yarn                     Run integration tests (optionally) against docker
 kernel-images                  Build kernel-based docker images
 kernelspecs                    Create archives with sample kernelspecs
 lint                           Check code style
-remove-env                     Make clean + remove conda env
 release                        Make a wheel + source release on PyPI
 run-dev                        Make a server in jupyter_websocket mode
 test-install                   Install and minimally run EG with the wheel and tar distributions
@@ -70,6 +70,12 @@ you can specify the name via the `ENV=` parameter.
 
 ```bash
 make ENV=my-conda-env env
+```
+
+To delete your existing environment, use `clean-env` task.
+
+```bash
+make clean-env
 ```
 
 ## Build the wheel file
