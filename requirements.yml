@@ -11,6 +11,7 @@ dependencies:
   - paramiko>=2.1.2
   - pexpect>=4.2.0
   - pip
+  - pre-commit
   - pycryptodomex>=3.9.7
   - python-kubernetes>=4.0.0
   - pyzmq>=17.0.0
