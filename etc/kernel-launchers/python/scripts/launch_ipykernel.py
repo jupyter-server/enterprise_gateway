@@ -365,10 +365,10 @@ def get_server_request(sock):
     return request_info
 
 
- def interrupt_handler(sig, frame):
-     try:
-         __spark_context.cancelAllJobs()
-     except Exception as e:
+def interrupt_handler(sig, frame):
+    try:
+        __spark_context.cancelAllJobs()
+    except Exception as e:
         print(f"Error occurred while calling handler{e}")
 
 def server_listener(sock, parent_pid, cluster_type):
