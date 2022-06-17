@@ -377,7 +377,9 @@ class ResponseManager(SingletonConfigurable):
             self.log.error("No kernel id found in response!  Kernel launch will fail.")
             return
         if kernel_id not in self._response_registry:
-            self.log.error("Kernel id '{}' has not been registered and will not be processed!")
+            self.log.error(
+                f"Kernel id '{kernel_id}' has not been registered and will not be processed!"
+            )
             return
 
         self.log.debug(f"Connection info received for kernel '{kernel_id}': {connection_info}")
