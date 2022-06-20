@@ -1484,22 +1484,19 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                         if isinstance(e2, OSError) and e2.errno == errno.ENOTCONN:
                             # Listener is not connected.  This is probably a follow-on to ECONNREFUSED on connect
                             self.log.debug(
-                                "ERROR: OSError(ENOTCONN) raised on socket shutdown, "
-                                f"listener likely not connected. Cannot send {request}"
+                                f"OSError(ENOTCONN) raised on socket shutdown, listener "
+                                f"has likely already exited. Cannot send '{request}'"
                             )
                         else:
                             self.log.warning(
-                                "Exception occurred attempting to shutdown communication socket to {}:{} "
-                                "for KernelID '{}' (ignored): {}".format(
-                                    self.comm_ip, self.comm_port, self.kernel_id, str(e2)
-                                )
+                                f"Exception occurred attempting to shutdown communication "
+                                f"socket to {self.comm_ip}:{self.comm_port} "
+                                f"for KernelID '{self.kernel_id}' (ignored): {str(e2)}"
                             )
                 sock.close()
         else:
             self.log.debug(
-                "Invalid comm port, not sending request '{}' to comm_port '{}'.",
-                request,
-                self.comm_port,
+                f"Invalid comm port, not sending request '{request}' to comm_port '{self.comm_port}'."
             )
 
     def send_signal(self, signum):
