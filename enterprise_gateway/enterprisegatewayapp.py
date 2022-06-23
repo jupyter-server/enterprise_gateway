@@ -333,7 +333,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                     self.kernel_manager.shutdown_kernel(kid, now=True)
                 )
             except Exception as ex:
-                self.log.warning("Failed to shut down kernel {}: {}".format(kid, ex))
+                self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
         self.log.info("Shut down complete")
 
     def stop(self):
