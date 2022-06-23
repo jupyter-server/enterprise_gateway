@@ -325,11 +325,16 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
     def shutdown(self):
         """Shuts down all running kernels."""
+        self.log.info("Jupyter Enterprise Gateway is shutting down all running kernels")
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            asyncio.get_event_loop().run_until_complete(
-                self.kernel_manager.shutdown_kernel(kid, now=True)
-            )
+            try:
+                asyncio.get_event_loop().run_until_complete(
+                    self.kernel_manager.shutdown_kernel(kid, now=True)
+                )
+            except Exception as ex:
+                self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
+        self.log.info("Shut down complete")
 
     def stop(self):
         """
