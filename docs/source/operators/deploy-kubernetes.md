@@ -31,7 +31,7 @@ There are two main deployment scenarios if RBAC is enabled in your Kubernetes cl
 ## Prerequisites
 
 - Install and configure [kubectl](https://kubernetes.io/docs/tasks/tools/) and [helm3](https://helm.sh/docs/intro/install/) on your workstation.
-- Create the kubernetes namespace where you want to deploy `enterprise-gateway`, for example:
+- Create the kubernetes namespace where you want to deploy Enterprise Gateway, for example:
   ```sh
   kubectl create namespace enterprise-gateway
   ```
@@ -523,15 +523,7 @@ Increase the number of `replicas` of Enterprise Gateway Deployment to improve de
 
 A best practice for Kubernetes applications running in an enterprise is to isolate applications via namespaces. Since Enterprise Gateway also requires isolation at the kernel level, it makes sense to use a namespace for each kernel, by default.
 
-The initial namespace is created in the `enterprise-gateway.yaml` file using a default name of `enterprise-gateway`. This name is communicated to Enterprise Gateway via the env variable `EG_NAMESPACE`. All Enterprise Gateway components reside in this namespace.
-
-```yaml
-apiVersion: apps/v1beta2
-kind: Deployment
-metadata:
-  name: enterprise-gateway
-  namespace: enterprise-gateway
-```
+The primary namespace is created prior to the initial Helm deployment (e.g., `enterprise-gateway`). This value is communicated to Enterprise Gateway via the env variable `EG_NAMESPACE`. All Enterprise Gateway components reside in this namespace.
 
 By default, kernel namespaces are created when the respective kernel is launched. At that time, the kernel namespace name is computed from the kernel username (`KERNEL_USERNAME`) and its kernel ID (`KERNEL_ID`) just like the kernel pod name. Upon a kernel's termination, this namespace - provided it was created by Enterprise Gateway - will be deleted.
 
@@ -541,7 +533,7 @@ Installations wishing to pre-create the kernel namespace can do so by conveying 
 If you need to associate resources to users, one suggestion is to create a namespace per user and set `KERNEL_NAMESPACE = KERNEL_USERNAME` on the client (see [Kernel Environment Variables](../users/kernel-envs.md)).
 ```
 
-Although **not recommended**, installations requiring everything in the same namespace - Enterprise Gateway and all its kernels - can do so by setting env `EG_SHARED_NAMESPACE` to `True` (or by setting the helm chart value `kernel.shareGatewayNamespace` to `true`). When set, all kernels will run in the Enterprise Gateway namespace, essentially eliminating all aspects of isolation between kernel instances (and resources).
+Although **not recommended**, installations requiring everything in the same namespace - Enterprise Gateway and all its kernels - can do so by setting the helm chart value `kernel.shareGatewayNamespace` to `true` - which is then set into the `EG_SHARED_NAMESPACE` env. When set, all kernels will run in the Enterprise Gateway namespace, essentially eliminating all aspects of isolation between kernel instances (and resources).
 
 ### Role-Based Access Control (RBAC)
 
@@ -635,7 +627,7 @@ The kernels directory can be mounted as an NFS volume into the Enterprise Gatewa
 
 As an example, we have included the necessary entries for mounting an existing NFS mount point into the Enterprise Gateway pod. By default, these references are commented out as they require the operator to configure the appropriate NFS mounts and server IP. If you are deploying Enterprise Gateway via the helm chart, you can enable NFS directly via helm values.
 
-Here you can see how `enterprise-gateway.yaml` references use of the volume (ia `volumeMounts`
+Here you can see how `deployment.yaml` references use of the volume (ia `volumeMounts`
 for the container specification and `volumes` in the pod specification (non-applicable entries have been omitted):
 
 ```yaml
@@ -744,7 +736,7 @@ There are a number of items worth noting:
    Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces. To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`). This identifier also applies to those kernels launched within `spark-on-kubernetes`.
-1. Kernel pods use the specified `securityContext`. If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used. Similarly, for `KERNEL_GID`, whose default is `100` (the users group). In addition, Enterprise Gateway enforces a list of prohibited UID and GID values. By default, this list is initialized to the 0 (root) UID and GID. Administrators can configure the `EG_PROHIBITED_UIDS` and `EG_PROHIBITED_GIDS` environment variables via the `enterprise-gateway.yaml` file with comma-separated values to alter the set of user and group ids to be prevented.
+1. Kernel pods use the specified `securityContext`. If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used. Similarly, for `KERNEL_GID`, whose default is `100` (the users group). In addition, Enterprise Gateway enforces a list of prohibited UID and GID values. By default, this list is initialized to the 0 (root) UID and GID. Administrators can configure the `EG_PROHIBITED_UIDS` and `EG_PROHIBITED_GIDS` environment variables via the `deployment.yaml` file with comma-separated values to alter the set of user and group ids to be prevented.
 1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod. In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject. Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml.j2` as `{{ kernel_namespace }}` and `{{ kernel_service_account_name }}`, respectively.
 1. Kernel pods have restart policies of `Never`. This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
@@ -928,13 +920,7 @@ Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you ar
 (Note: if the number of replicas is > 1, then you will see two pods listed with different five-character suffixes.)
 
 ```{tip}
- You can avoid the need to point at a different port each time EG is launched by adding an `externalIPs:` entry to the `spec:` section of the `enterprise-gateway.yaml` file.  The file is delivered with this entry commented out.  Of course, you'll need to change the IP address to that of your kubernetes master node once the comments characters have been removed.
-```
-
-```text
-# Uncomment in order to use <k8s-master>:8888
-#  externalIPs:
-#  - 9.30.118.200
+ You can avoid the need to point at a different port each time EG is launched by adding an `externalIPs:` entry to the `spec:` section of the `service.yaml` file.  This entry can be specifed in the `values.yaml` via the `service.externalIPs.k8sMasterPublicIP` entry.
 ```
 
 The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook server will vary depending on whether you choose to define an external IP or not. If and external IP is defined, you'll set `JUPYTER_GATEWAY_URL=<externalIP>:8888` else you'll set `JUPYTER_GATEWAY_URL=<k8s-master>:32422` **but also need to restart clients each time Enterprise Gateway is started.** As a result, use of the `externalIPs:` value is highly recommended.

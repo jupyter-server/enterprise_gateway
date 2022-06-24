@@ -13,9 +13,7 @@ Pull this image, along with all of the elyra/kernel-\* images to each of your ma
 
 ## Kubernetes
 
-Download the [enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml) file and make any necessary changes for your configuration. We recommend that a persistent volume be used so that the kernelspec files can be accessed outside of the container since we've found those to require post-deployment modifications from time to time.
-
-Deploy Jupyter Enterprise Gateway using `kubectl apply -f enterprise-gateway.yaml`
+Enterprise Gateway is deployed into Kubernetes using [Helm](https://helm.sh/). See the [Kubernetes section of our Operator's Guide](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/operators/deploy-kubernetes.html) for further details.
 
 ## Docker Swarm
 
