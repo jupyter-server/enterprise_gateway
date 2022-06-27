@@ -106,6 +106,11 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     will be raised on a failed match.  This option requires TLS to be enabled.
     It does not support IP addresses. (EG_AUTHORIZED_ORIGIN env var)
     Default: ''
+--EnterpriseGatewayApp.availability_mode=<CaselessStrEnum>
+    Specifies the type of availability.  Values must be one of "standalone"
+    or "replication".  (EG_AVAILABILITY_MODE env var)
+    Choices: any of ['standalone', 'replication'] (case-insensitive) or None
+    Default: None
 --EnterpriseGatewayApp.base_url=<Unicode>
     The base path for mounting all API resources (EG_BASE_URL env var)
     Default: '/'
@@ -242,7 +247,7 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     Default: None
 --EnterpriseGatewayApp.trust_xheaders=<CBool>
     Use x-* header values for overriding the remote-ip, useful when application
-    is behing a proxy. (EG_TRUST_XHEADERS env var)
+    is behind a proxy. (EG_TRUST_XHEADERS env var)
     Default: False
 --EnterpriseGatewayApp.unauthorized_users=<set-item-1>...
     Comma-separated list of user names (e.g., ['root','admin']) against which
@@ -252,7 +257,7 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     Default: {'root'}
 --EnterpriseGatewayApp.ws_ping_interval=<Int>
     Specifies the ping interval(in seconds) that should be used by zmq port
-     associated withspawned kernels.Set this variable to 0 to disable ping mechanism.
+     associated with spawned kernels.Set this variable to 0 to disable ping mechanism.
     (EG_WS_PING_INTERVAL_SECS env var)
     Default: 30
 --EnterpriseGatewayApp.yarn_endpoint=<Unicode>

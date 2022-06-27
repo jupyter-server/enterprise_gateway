@@ -1,4 +1,4 @@
-# Deploying Enterprise Gateway on Kubernetes
+# Kubernetes deployments
 
 ## Overview
 

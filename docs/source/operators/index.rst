@@ -65,5 +65,5 @@ Jupyter Enterprise Gateway adheres to
    config-kernel-override
    config-dynamic
    config-culling
-   config-kernel-persistence
+   config-availability
    config-security
