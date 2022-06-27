@@ -435,6 +435,15 @@ def start_ipython(
     app.initialize([])
     app.start()
 
+    # cleanup
+    conn_file = kwargs["connection_file"]
+    try:
+        import os  # re-import os since it's removed during namespace manipulation during startup
+
+        os.remove(conn_file)
+    except Exception as e:
+        print(f"Could not delete connection file '{conn_file}' at exit due to error: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -598,10 +607,3 @@ if __name__ == "__main__":
         ip=ip,
         kernel_class_name=kernel_class_name,
     )
-
-    try:
-        os.remove(connection_file)
-    except Exception as e:
-        logger.warning(
-            f"Could not delete connection file '{connection_file}' at exit due to error: {e}"
-        )
