@@ -1,5 +1,5 @@
 # Ubuntu:xenial
-ARG BASE_CONTAINER=tensorflow/tensorflow:2.7.0-gpu-jupyter
+ARG BASE_CONTAINER=tensorflow/tensorflow:2.9.1-gpu
 FROM $BASE_CONTAINER
 
 ENV DEBIAN_FRONTEND=noninteractive
