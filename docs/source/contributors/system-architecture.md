@@ -298,9 +298,7 @@ process proxy configuration to override the global value - enabling finer-graine
 With the popularity of Kubernetes within the enterprise, Enterprise Gateway provides an implementation
 of a process proxy that communicates with the Kubernetes resource manager via the Kubernetes API. Unlike
 the other offerings, in the case of Kubernetes, Enterprise Gateway is itself deployed within the Kubernetes
-cluster as a _Service_ and _Deployment_. The primary vehicle by which this is accomplished is via the
-[enterprise-gateway.yaml](https://github.com/jupyter-server/enterprise_gateway/blob/main/etc/kubernetes/enterprise-gateway.yaml)
-file that contains the necessary metadata to define its deployment. Enterprise Gateway also provides a [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kubernetes/helm/enterprise-gateway) for those deployments utilizing [Helm](https://helm.sh/).
+cluster as a _Service_ and _Deployment_. The primary vehicle by which this is accomplished is via [Helm](https://helm.sh/) and Enterprise Gateway provides a set of [helm chart](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/kubernetes/helm/enterprise-gateway) files to simplify deployment.
 
 ```{seealso}
 [Kubernetes deployments](../operators/deploy-kubernetes.md) in the Operators Guide for details.

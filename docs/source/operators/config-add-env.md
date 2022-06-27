@@ -21,7 +21,7 @@ Besides those environment variables associated with configurable options, the fo
 
   EG_KERNEL_CLUSTER_ROLE=kernel-controller or cluster-admin
     Kubernetes only.  The role to use when binding with the kernel service account.
-    The enterprise-gateway.yaml script creates the cluster role 'kernel-controller'
+    The eg-clusterrole.yaml file creates the cluster role 'kernel-controller'
     and conveys that name via EG_KERNEL_CLUSTER_ROLE.  Should the deployment script
     not set this valuem, Enterprise Gateway will then use 'cluster-admin'.  It is
     recommended this value be set to something other than 'cluster-admin'.
@@ -67,8 +67,8 @@ Besides those environment variables associated with configurable options, the fo
   EG_NAMESPACE=enterprise-gateway or default
     Kubernetes only.  Used during Kubernetes deployment, this indicates the name of
     the namespace in which the Enterprise Gateway service is deployed.  The
-    enterprise-gateway.yaml file creates this namespace, then sets EG_NAMESPACE dring
-    deployment. This value is then used within Enterprise Gateway to coordinate kernel
+    namespace is created prior to deployment, and is set into the EG_NAMESPACE env via
+    deployment.yaml script. This value is then used within Enterprise Gateway to coordinate kernel
     configurations. Should this value not be set during deployment, Enterprise Gateway
     will default its value to namespace 'default'.
 
