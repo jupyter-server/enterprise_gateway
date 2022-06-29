@@ -371,6 +371,7 @@ def cancel_spark_jobs(sig, frame):
     except Exception as e:
         print(f"Error occurred while calling handler: {e}")
 
+
 def server_listener(sock, parent_pid, cluster_type):
     """Waits for requests from the server and processes each when received.  Currently,
     these will be one of a sending a signal to the corresponding kernel process (signum) or
@@ -386,7 +387,7 @@ def server_listener(sock, parent_pid, cluster_type):
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
-                if signum == 2 and cluster_type == 'spark':
+                if signum == 2 and cluster_type == "spark":
                     os.kill(parent_pid, signal.SIGUSR2)
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
