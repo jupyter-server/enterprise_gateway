@@ -365,11 +365,11 @@ def get_server_request(sock):
     return request_info
 
 
-def interrupt_handler(sig, frame):
+def cancel_spark_jobs(sig, frame):
     try:
         __spark_context.cancelAllJobs()
     except Exception as e:
-        print(f"Error occurred while calling handler{e}")
+        print(f"Error occurred while calling handler: {e}")
 
 def server_listener(sock, parent_pid, cluster_type):
     """Waits for requests from the server and processes each when received.  Currently,
@@ -568,6 +568,10 @@ if __name__ == "__main__":
     if public_key is None:
         raise RuntimeError("Parameter '--public-key' must be provided!")
 
+    # Initialize the kernel namespace for the given cluster type
+    if cluster_type == "spark" and spark_init_mode == "none":
+        cluster_type = "none"
+
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         key = str(uuid.uuid4()).encode()  # convert to bytes
@@ -600,11 +604,8 @@ if __name__ == "__main__":
                 )
                 server_listener_process.start()
 
-    # Initialize the kernel namespace for the given cluster type
-    if cluster_type == "spark" and spark_init_mode == "none":
-        cluster_type = "none"
-
-    signal.signal(signal.SIGUSR2, interrupt_handler)
+    if cluster_type == "spark":
+        signal.signal(signal.SIGUSR2, cancel_spark_jobs)
 
     # launch the IPython kernel instance
     start_ipython(
