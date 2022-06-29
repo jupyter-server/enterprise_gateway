@@ -35,7 +35,7 @@ class KernelImagePuller:
         self.log = kip_logger
         self.worker_queue = None
         self.threads = []
-        self.pulled_images = []
+        self.pulled_images = set()
         self.num_pullers = None
         self.num_retries = None
         self.policy = None
@@ -190,7 +190,7 @@ class KernelImagePuller:
         retries have been exceeded, the queue task is marked as done.
         """
         while True:
-            logger.info("waiting for new imag to pull")
+            logger.debug("Waiting for new image to pull")
             image_name = self.worker_queue.get()
             self.log.info(f"Task received to pull image: {image_name}")
             if image_name is None:
