@@ -369,7 +369,7 @@ def cancel_spark_jobs(sig, frame):
     try:
         __spark_context.cancelAllJobs()
     except Exception as e:
-        if e.__class__.__name__ == 'Py4JError':
+        if e.__class__.__name__ == "Py4JError":
             try:
                 __spark_context.cancelAllJobs()
             except Exception as ex:
