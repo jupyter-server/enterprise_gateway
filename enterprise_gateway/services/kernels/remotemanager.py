@@ -9,9 +9,10 @@ import time
 import uuid
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
+from jupyter_client.multikernelmanager import kernel_method
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from tornado import web
-from traitlets import directional_link
+from traitlets import Dict, directional_link
 from traitlets import log as traitlets_log
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
@@ -372,6 +373,14 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
         return new_kernel_id(kernel_id_fn=super().new_kernel_id, log=self.log, **kwargs)
 
+    @kernel_method
+    def add_kernel_event_callbacks(self, kernel_id, callback, event="kernel_refresh"):
+        """Add kernel related events."""
+
+    @kernel_method
+    def remove_kernel_event_callbacks(self, kernel_id, callback, event="kernel_refresh"):
+        """Remove event.."""
+
 
 class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager):
     """
@@ -381,6 +390,13 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
 
+    event_callbacks = Dict()
+
+    def _event_callbacks_default(self):
+        return dict(
+            kernel_refresh=[], kernel_refresh_failure=[]
+        )  # define new default when adding new event.
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.process_proxy = None
@@ -388,7 +404,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.public_key = None
         self.sigint_value = None
         self.kernel_id = None
-        self.user_overrides = {}
+        self.user_overrides = {}  # this is populated via create kernel request.
+        self.configure_kernel_overrides = {}  # this is populated via configure kernel request.
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
 
@@ -465,15 +482,23 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.kernel_launch_timeout = float(
             env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout)
         )
-        self.user_overrides.update(
-            {
-                key: value
-                for key, value in env.items()
-                if key.startswith("KERNEL_")
-                or key in self.env_process_whitelist
-                or key in self.env_whitelist
-            }
-        )
+        # kwargs['env'] gets updated with each kernel start / restart.
+        # user_overrides preserve the original envs with which the kernel is started.
+        if not self.user_overrides:
+            self.user_overrides.update(
+                {
+                    key: value
+                    for key, value in env.items()
+                    if key.startswith("KERNEL_")
+                    or key in self.env_process_whitelist
+                    or key in self.env_whitelist
+                }
+            )
+        extra_env = self._capture_user_update_overrides(**kwargs)
+        env.update(
+            self.user_overrides
+        )  # this is required to refresh the env variables present in kernel spec file.
+        env.update(extra_env)
 
     def format_kernel_cmd(self, extra_arguments=None):
         """
@@ -510,7 +535,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
         # Apply user_overrides to enable defaulting behavior from kernelspec.env stanza.  Note that we do this
         # BEFORE setting KERNEL_GATEWAY and removing {EG,KG}_AUTH_TOKEN so those operations cannot be overridden.
-        env.update(self.user_overrides)
 
         # No longer using Kernel Gateway, but retain references of B/C purposes
         env["KERNEL_GATEWAY"] = "1"
@@ -524,7 +548,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 self.kernel_spec.display_name, kernel_cmd
             )
         )
-
         proxy = await self.process_proxy.launch_process(kernel_cmd, **kwargs)
         return proxy
 
@@ -728,3 +751,98 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             return self.parent
         except AttributeError:
             return None
+
+    def _capture_user_update_overrides(self, **kwargs):
+        allowed_override_keys = [
+            "KERNEL_EXTRA_SPARK_OPTS",
+            "KERNEL_LAUNCH_TIMEOUT",
+        ]  # TODO need to read this list from env variable
+        user_requested_env_overrides = self.configure_kernel_overrides.get("env", {})
+        allowed_env_overrides = {}
+        for override_key in allowed_override_keys:
+            if override_key in user_requested_env_overrides:
+                self.log.info("Key exist in extra overrides..")
+                if override_key == "KERNEL_LAUNCH_TIMEOUT":
+                    allowed_env_overrides[override_key] = str(
+                        user_requested_env_overrides.get(override_key)
+                    )
+                else:
+                    allowed_env_overrides[override_key] = self.user_overrides.get(
+                        override_key, ""
+                    ) + user_requested_env_overrides.get(override_key)
+        return allowed_env_overrides
+
+    def set_user_extra_overrides(self, update_payload):
+        # TODO need to read this list from env variable
+        allowed_override_keys = ["KERNEL_EXTRA_SPARK_OPTS", "KERNEL_LAUNCH_TIMEOUT"]
+        env_overrides = update_payload.get("env", {})
+        if type(env_overrides) != dict:
+            error_message = "Expected `env` be of type: {} but found: {}.".format(
+                dict.__name__, type(env_overrides).__name__
+            )
+            self.log.info(error_message)
+            raise web.HTTPError(400, error_message)
+        self.log.debug(f"Validating the user overrides: {env_overrides}")
+        for env_name in env_overrides:
+            if env_name not in allowed_override_keys:
+                raise web.HTTPError(400, f"Updating ENV: `{env_name}` is not supported currently.")
+        self.configure_kernel_overrides = update_payload
+
+    def add_kernel_event_callbacks(self, callback_func, event="kernel_refresh"):
+        """register a callback to fire on a particular event
+
+        :param callback_func:
+        :param event:
+            - 'kernel_refresh' (default): kernel has received an update request and has successfully restarted.
+        :return:
+        """
+        try:
+            self.log.debug(
+                f"add_kernel_event_callbacks: called for event: {event}: callback: {callback_func.__name__}"
+            )
+            self.event_callbacks[event].append(callback_func)
+        except Exception as e:
+            self.log.error(
+                "Failed to add callback for event: {}: callback: {}".format(
+                    event, callback_func.__name__
+                ),
+                exc_info=True,
+            )
+
+    def remove_kernel_event_callbacks(self, callback_func, event="kernel_refresh"):
+        """Deregister a callback from this kernel event.
+
+        :param callback_func: the callback to be removed if exists.
+        :param event:  'kernel_refresh'
+        :return: nothing.
+        """
+
+        self.log.debug(
+            f"remove_kernel_event_callbacks: called for event: {event}: callback: {callback_func.__name__}"
+        )
+        try:
+            self.event_callbacks[event].remove(callback_func)
+        except Exception as e:
+            self.log.error(
+                "Failed to remove callback for event: {}: callback: {}".format(
+                    event, callback_func.__name__
+                ),
+                exc_info=True,
+            )
+
+    def fire_kernel_event_callbacks(self, **kwargs):
+        """fire the callbacks for a particular kernel event"""
+        event = kwargs.get("event")
+        self.log.debug(f"fire_kernel_event_callbacks: called for event: {event}")
+        for callback in self.event_callbacks[event]:
+            try:
+                self.log.debug(f"triggering callback to {callback.__name__}")
+                callback(**kwargs)
+            except Exception as e:
+                # TODO handle exception here..what should we do in this case if we are not able to refresh.
+                self.log.exception(
+                    "Exception while executing event: {} with callback {} failed".format(
+                        event, callback.__name__
+                    ),
+                    exc_info=True,
+                )
