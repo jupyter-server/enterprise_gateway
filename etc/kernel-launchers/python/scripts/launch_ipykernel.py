@@ -373,9 +373,9 @@ def cancel_spark_jobs(sig, frame):
             try:
                 __spark_context.cancelAllJobs()
             except Exception as ex:
-                print(f"Error occurred while calling interrupting kernel: {ex}")
+                print(f"Error occurred while interrupting the kernel: {ex}")
         else:
-            print(f"Error occurred  while calling interrupting kernel: {e}")
+            print(f"Error occurred while interrupting the kernel: {e}")
 
 
 def server_listener(sock, parent_pid, cluster_type):
