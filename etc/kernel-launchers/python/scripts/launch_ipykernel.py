@@ -369,7 +369,13 @@ def cancel_spark_jobs(sig, frame):
     try:
         __spark_context.cancelAllJobs()
     except Exception as e:
-        print(f"Error occurred while calling handler: {e}")
+        if e.__class__.__name__ == 'Py4JError':
+            try:
+                __spark_context.cancelAllJobs()
+            except Exception as ex:
+                print(f"Error occurred while calling interrupting kernel: {ex}")
+        else:
+            print(f"Error occurred  while calling interrupting kernel: {e}")
 
 
 def server_listener(sock, parent_pid, cluster_type):
