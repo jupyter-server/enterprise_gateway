@@ -129,7 +129,11 @@ kip:
     port: 8888
     validate_cert: false
   podSecurityPolicy:
-    create: true
+    # Note: PodSecurityPolicy is deprecated as of 1.21 and removed in 1.25.
+    # Operators deploying into k8s clusters >= 1.25 that require PSP equivalency will need to
+    # look into alternatives like Gatekeeper (https://github.com/open-policy-agent/gatekeeper).
+    # Creation of PSP in KIP is disabled by default.
+    create: false
     annotations: {}
   # Kernel Image Puller image name and tag to use.
   image: elyra/kernel-image-puller:dev
