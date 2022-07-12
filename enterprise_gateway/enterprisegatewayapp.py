@@ -34,10 +34,7 @@ from .services.kernelspecs.handlers import (
     default_handlers as default_kernelspec_handlers,
 )
 from .services.sessions.handlers import default_handlers as default_session_handlers
-from .services.sessions.kernelsessionmanager import (
-    FileKernelSessionManager,
-    WebhookKernelSessionManager,
-)
+from .services.sessions.kernelsessionmanager import FileKernelSessionManager
 from .services.sessions.sessionmanager import SessionManager
 
 try:
@@ -80,17 +77,12 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [
-        KernelSpecCache,
-        FileKernelSessionManager,
-        WebhookKernelSessionManager,
-        RemoteMappingKernelManager,
-    ]
+    classes = [KernelSpecCache, FileKernelSessionManager, RemoteMappingKernelManager]
 
     # Enable some command line shortcuts
     aliases = aliases
 
-    def initialize(self, argv=None):
+    def initialize(self, argv=None) -> None:
         """Initializes the base class, configurable manager instances, the
         Tornado web app, and the tornado HTTP server.
 
@@ -104,7 +96,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         self.init_webapp()
         self.init_http_server()
 
-    def init_configurables(self):
+    def init_configurables(self) -> None:
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and personality.
         """
@@ -141,34 +133,15 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             config=self.config,  # required to get command-line options visible
         )
 
-        # For B/C purposes, check if session persistence is enabled.  If so, and availability
-        # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
-        if self.kernel_session_manager.enable_persistence:
-            if self.availability_mode is None:
-                self.availability_mode = EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION
-                self.log.info(
-                    f"Kernel session persistence is enabled but availability mode is not.  "
-                    f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
-                )
-        else:
-            # Persistence is not enabled, check if availability_mode is configured and, if so,
-            # auto-enable persistence
-            if self.availability_mode is not None:
-                self.kernel_session_manager.enable_persistence = True
-                self.log.info(
-                    f"Availability mode is set to '{self.availability_mode}' yet kernel session "
-                    "persistence is not enabled.  Enabling kernel session persistence."
-                )
-
-        # If we're using single-instance availability, attempt to start persisted sessions
-        if self.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_STANDALONE:
-            self.kernel_session_manager.start_sessions()
+        # Attempt to start persisted sessions
+        # Commented as part of https://github.com/jupyter-server/enterprise_gateway/pull/737#issuecomment-567598751
+        # self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
 
         self.init_dynamic_configs()
 
-    def _create_request_handlers(self):
+    def _create_request_handlers(self) -> tuple:
         """Create default Jupyter handlers and redefine them off of the
         base_url path. Assumes init_configurables() has already been called.
         """
@@ -193,7 +166,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             handlers.append(new_handler)
         return handlers
 
-    def __add_authorized_hostname_match(self, handler: web.RequestHandler) -> None:
+    def __add_authorized_hostname_match(self, handler: tuple) -> None:
         base_prepare = handler[1].prepare
         authorized_hostname = self.authorized_origin
 
@@ -207,7 +180,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         handler[1].prepare = wrapped_prepare
 
-    def init_webapp(self):
+    def init_webapp(self) -> None:
         """Initializes Tornado web application with uri handlers.
 
         Adds the various managers and web-front configuration values to the
@@ -271,7 +244,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         return ssl_context
 
-    def init_http_server(self):
+    def init_http_server(self) -> None:
         """Initializes an HTTP server for the Tornado web application on the
         configured interface and port.
 
@@ -305,25 +278,23 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             )
             self.exit(1)
 
-    def start(self):
+    def start(self) -> None:
         """Starts an IO loop for the application."""
 
         super().start()
 
         self.log.info(
-            "Jupyter Enterprise Gateway {} is available at http{}://{}:{}".format(
-                EnterpriseGatewayApp.version, "s" if self.keyfile else "", self.ip, self.port
-            )
+            f"Jupyter Enterprise Gateway {EnterpriseGatewayApp.version} is available at "
+            f"http{'s' if self.keyfile else ''}://{self.ip}:{self.port}"
         )
+
         # If impersonation is enabled, issue a warning message if the gateway user is not in unauthorized_users.
         if self.impersonation_enabled:
             gateway_user = getpass.getuser()
             if gateway_user.lower() not in self.unauthorized_users:
                 self.log.warning(
-                    "Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
-                    "unauthorized users!  Kernels may execute as that user with elevated privileges.".format(
-                        gateway_user
-                    )
+                    f"Impersonation is enabled and gateway user '{gateway_user}' is NOT specified in the set "
+                    f"of unauthorized users! Kernels may execute as that user with elevated privileges."
                 )
 
         self.io_loop = ioloop.IOLoop.current()
@@ -342,20 +313,15 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         finally:
             self.shutdown()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shuts down all running kernels."""
-        self.log.info("Jupyter Enterprise Gateway is shutting down all running kernels")
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            try:
-                asyncio.get_event_loop().run_until_complete(
-                    self.kernel_manager.shutdown_kernel(kid, now=True)
-                )
-            except Exception as ex:
-                self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
-        self.log.info("Shut down complete")
+            asyncio.get_event_loop().run_until_complete(
+                self.kernel_manager.shutdown_kernel(kid, now=True)
+            )
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Stops the HTTP server and IO loop associated with the application.
         """
@@ -366,14 +332,14 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.io_loop.add_callback(_stop)
 
-    def _signal_stop(self, sig, frame):
+    def _signal_stop(self, sig, frame) -> None:
         self.log.info("Received signal to terminate Enterprise Gateway.")
         self.io_loop.add_callback_from_signal(self.io_loop.stop)
 
     _last_config_update = int(time.time())
     _dynamic_configurables = {}
 
-    def update_dynamic_configurables(self):
+    def update_dynamic_configurables(self) -> bool:
         """
         Called periodically, this checks the set of loaded configuration files for updates.
         If updates have been detected, reload the configuration files and update the list of
@@ -409,7 +375,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             )
         return updated
 
-    def add_dynamic_configurable(self, config_name, configurable):
+    def add_dynamic_configurable(self, config_name: str, configurable: Configurable) -> None:
         """
         Adds the configurable instance associated with the given name to the list of Configurables
         that can have their configurations updated when configuration file updates are detected.
@@ -421,7 +387,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self._dynamic_configurables[config_name] = weakref.proxy(configurable)
 
-    def init_dynamic_configs(self):
+    def init_dynamic_configs(self) -> None:
         """
         Initialize the set of configurables that should participate in dynamic updates.  We should
         also log that we're performing dynamic configuration updates, along with the list of CLI

@@ -8,6 +8,14 @@ import ssl
 import traceback
 from distutils.util import strtobool
 from http.client import responses
+from typing import (
+    Any,
+    Awaitable,
+    Dict,
+    List,
+    Optional,
+    Set,
+)
 
 from tornado import web
 from tornado.log import LogFormatter
@@ -17,8 +25,8 @@ from traitlets import (
     CBool,
     Instance,
     Integer,
-    List,
-    Set,
+    List as ListTrait,
+    Set as SetTrait,
     TraitError,
     Type,
     Unicode,
@@ -43,7 +51,7 @@ class CORSMixin:
         "eg_max_age": "Access-Control-Max-Age",
     }
 
-    def set_default_headers(self):
+    def set_default_headers(self) -> None:
         """
         Sets the CORS headers as the default for all responses.
 
@@ -60,7 +68,7 @@ class CORSMixin:
         # Don't set CSP: we're not serving frontend media types, only JSON
         self.clear_header("Content-Security-Policy")
 
-    def options(self):
+    def options(self) -> None:
         """
         Override the notebook implementation to return the headers
         configured in `set_default_headers instead of the hardcoded set
@@ -77,7 +85,7 @@ class TokenAuthorizationMixin:
     header_prefix = "token "
     header_prefix_len = len(header_prefix)
 
-    def prepare(self):
+    def prepare(self) -> Optional[Awaitable[None]]:
         """Ensures the correct auth token is present, either as a parameter
         `token=<value>` or as a header `Authorization: token <value>`.
         Does nothing unless an auth token is configured in eg_auth_token.
@@ -110,7 +118,7 @@ class JSONErrorsMixin:
     JSON format errors.
     """
 
-    def write_error(self, status_code, **kwargs):
+    def write_error(self, status_code: int, **kwargs) -> None:
         """Responds with an application/json error object.
 
         Overrides the APIHandler.write_error in the notebook server until it
@@ -164,7 +172,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("port")
-    def port_default(self):
+    def port_default(self) -> int:
         return int(os.getenv(self.port_env, os.getenv("KG_PORT", self.port_default_value)))
 
     port_retries_env = "EG_PORT_RETRIES"
@@ -177,7 +185,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("port_retries")
-    def port_retries_default(self):
+    def port_retries_default(self) -> int:
         return int(
             os.getenv(
                 self.port_retries_env, os.getenv("KG_PORT_RETRIES", self.port_retries_default_value)
@@ -191,7 +199,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("ip")
-    def ip_default(self):
+    def ip_default(self) -> str:
         return os.getenv(self.ip_env, os.getenv("KG_IP", self.ip_default_value))
 
     # Base URL
@@ -204,7 +212,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("base_url")
-    def base_url_default(self):
+    def base_url_default(self) -> str:
         return os.getenv(self.base_url_env, os.getenv("KG_BASE_URL", self.base_url_default_value))
 
     # Token authorization
@@ -214,7 +222,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("auth_token")
-    def _auth_token_default(self):
+    def _auth_token_default(self) -> str:
         return os.getenv(self.auth_token_env, os.getenv("KG_AUTH_TOKEN", ""))
 
     # Begin CORS headers
@@ -225,7 +233,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("allow_credentials")
-    def allow_credentials_default(self):
+    def allow_credentials_default(self) -> str:
         return os.getenv(self.allow_credentials_env, os.getenv("KG_ALLOW_CREDENTIALS", ""))
 
     allow_headers_env = "EG_ALLOW_HEADERS"
@@ -234,7 +242,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("allow_headers")
-    def allow_headers_default(self):
+    def allow_headers_default(self) -> str:
         return os.getenv(self.allow_headers_env, os.getenv("KG_ALLOW_HEADERS", ""))
 
     allow_methods_env = "EG_ALLOW_METHODS"
@@ -243,7 +251,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("allow_methods")
-    def allow_methods_default(self):
+    def allow_methods_default(self) -> str:
         return os.getenv(self.allow_methods_env, os.getenv("KG_ALLOW_METHODS", ""))
 
     allow_origin_env = "EG_ALLOW_ORIGIN"
@@ -252,7 +260,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("allow_origin")
-    def allow_origin_default(self):
+    def allow_origin_default(self) -> str:
         return os.getenv(self.allow_origin_env, os.getenv("KG_ALLOW_ORIGIN", ""))
 
     expose_headers_env = "EG_EXPOSE_HEADERS"
@@ -262,7 +270,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("expose_headers")
-    def expose_headers_default(self):
+    def expose_headers_default(self) -> str:
         return os.getenv(self.expose_headers_env, os.getenv("KG_EXPOSE_HEADERS", ""))
 
     trust_xheaders_env = "EG_TRUST_XHEADERS"
@@ -274,7 +282,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("trust_xheaders")
-    def trust_xheaders_default(self):
+    def trust_xheaders_default(self) -> bool:
         return strtobool(
             os.getenv(self.trust_xheaders_env, os.getenv("KG_TRUST_XHEADERS", "False"))
         )
@@ -288,7 +296,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("certfile")
-    def certfile_default(self):
+    def certfile_default(self) -> Optional[str]:
         return os.getenv(self.certfile_env, os.getenv("KG_CERTFILE"))
 
     keyfile_env = "EG_KEYFILE"
@@ -300,7 +308,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("keyfile")
-    def keyfile_default(self):
+    def keyfile_default(self) -> Optional[str]:
         return os.getenv(self.keyfile_env, os.getenv("KG_KEYFILE"))
 
     client_ca_env = "EG_CLIENT_CA"
@@ -313,7 +321,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("client_ca")
-    def client_ca_default(self):
+    def client_ca_default(self) -> Optional[str]:
         return os.getenv(self.client_ca_env, os.getenv("KG_CLIENT_CA"))
 
     ssl_version_env = "EG_SSL_VERSION"
@@ -327,7 +335,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("ssl_version")
-    def ssl_version_default(self):
+    def ssl_version_default(self) -> Optional[int]:
         ssl_from_env = os.getenv(self.ssl_version_env, os.getenv("KG_SSL_VERSION"))
         return ssl_from_env if ssl_from_env is None else int(ssl_from_env)
 
@@ -337,7 +345,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("max_age")
-    def max_age_default(self):
+    def max_age_default(self) -> str:
         return os.getenv(self.max_age_env, os.getenv("KG_MAX_AGE", ""))
 
     # End CORS headers
@@ -352,7 +360,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("max_kernels")
-    def max_kernels_default(self):
+    def max_kernels_default(self) -> Optional[int]:
         val = os.getenv(self.max_kernels_env, os.getenv("KG_MAX_KERNELS"))
         return val if val is None else int(val)
 
@@ -363,7 +371,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("default_kernel_name")
-    def default_kernel_name_default(self):
+    def default_kernel_name_default(self) -> str:
         # defaults to Jupyter's default kernel name on empty string
         return os.getenv(self.default_kernel_name_env, os.getenv("KG_DEFAULT_KERNEL_NAME", ""))
 
@@ -376,14 +384,14 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("list_kernels")
-    def list_kernels_default(self):
+    def list_kernels_default(self) -> bool:
         return (
             os.getenv(self.list_kernels_env, os.getenv("KG_LIST_KERNELS", "False")).lower()
             == "true"
         )
 
     env_whitelist_env = "EG_ENV_WHITELIST"
-    env_whitelist = List(
+    env_whitelist = ListTrait(
         config=True,
         help="""Environment variables allowed to be set when a client requests a
                          new kernel. Use '*' to allow all environment variables sent in the request.
@@ -391,38 +399,38 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("env_whitelist")
-    def env_whitelist_default(self):
+    def env_whitelist_default(self) -> List[str]:
         return os.getenv(self.env_whitelist_env, os.getenv("KG_ENV_WHITELIST", "")).split(",")
 
     env_process_whitelist_env = "EG_ENV_PROCESS_WHITELIST"
-    env_process_whitelist = List(
+    env_process_whitelist = ListTrait(
         config=True,
         help="""Environment variables allowed to be inherited
                                  from the spawning process by the kernel. (EG_ENV_PROCESS_WHITELIST env var)""",
     )
 
     @default("env_process_whitelist")
-    def env_process_whitelist_default(self):
+    def env_process_whitelist_default(self) -> List[str]:
         return os.getenv(
             self.env_process_whitelist_env, os.getenv("KG_ENV_PROCESS_WHITELIST", "")
         ).split(",")
 
     kernel_headers_env = "EG_KERNEL_HEADERS"
-    kernel_headers = List(
+    kernel_headers = ListTrait(
         config=True,
         help="""Request headers to make available to kernel launch framework.
                           (EG_KERNEL_HEADERS env var)""",
     )
 
     @default("kernel_headers")
-    def kernel_headers_default(self):
+    def kernel_headers_default(self) -> List[str]:
         default_headers = os.getenv(self.kernel_headers_env)
         return default_headers.split(",") if default_headers else []
 
     # Remote hosts
     remote_hosts_env = "EG_REMOTE_HOSTS"
     remote_hosts_default_value = "localhost"
-    remote_hosts = List(
+    remote_hosts = ListTrait(
         default_value=[remote_hosts_default_value],
         config=True,
         help="""Bracketed comma-separated list of hosts on which DistributedProcessProxy
@@ -431,7 +439,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("remote_hosts")
-    def remote_hosts_default(self):
+    def remote_hosts_default(self) -> List[str]:
         return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(",")
 
     # load_balancing_algorithm
@@ -447,16 +455,16 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("load_balancing_algorithm")
-    def load_balancing_algorithm_default(self):
+    def load_balancing_algorithm_default(self) -> str:
         return os.getenv(
             self.load_balancing_algorithm_env, self.load_balancing_algorithm_default_value
         )
 
     @validate("load_balancing_algorithm")
-    def _validate_load_balancing_algorithm(self, proposal):
+    def _validate_load_balancing_algorithm(self, proposal: Dict[str, str]) -> str:
         value = proposal["value"]
         try:
-            assert value == "round-robin" or value == "least-connection"
+            assert value in ["round-robin", "least-connection"]
         except ValueError:
             raise TraitError(
                 f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
@@ -475,7 +483,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("yarn_endpoint")
-    def yarn_endpoint_default(self):
+    def yarn_endpoint_default(self) -> Optional[str]:
         return os.getenv(self.yarn_endpoint_env)
 
     # Alt Yarn endpoint
@@ -492,7 +500,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("alt_yarn_endpoint")
-    def alt_yarn_endpoint_default(self):
+    def alt_yarn_endpoint_default(self) -> Optional[str]:
         return os.getenv(self.alt_yarn_endpoint_env)
 
     yarn_endpoint_security_enabled_env = "EG_YARN_ENDPOINT_SECURITY_ENABLED"
@@ -505,7 +513,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("yarn_endpoint_security_enabled")
-    def yarn_endpoint_security_enabled_default(self):
+    def yarn_endpoint_security_enabled_default(self) -> bool:
         return bool(
             os.getenv(
                 self.yarn_endpoint_security_enabled_env,
@@ -525,13 +533,13 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("conductor_endpoint")
-    def conductor_endpoint_default(self):
+    def conductor_endpoint_default(self) -> Optional[str]:
         return os.getenv(self.conductor_endpoint_env, self.conductor_endpoint_default_value)
 
     _log_formatter_cls = LogFormatter  # traitlet default is LevelFormatter
 
     @default("log_format")
-    def _default_log_format(self):
+    def _default_log_format(self) -> str:
         """override default log format to include milliseconds"""
         return (
             "%(color)s[%(levelname)1.1s %(asctime)s.%(msecs).03d %(name)s]%(end_color)s %(message)s"
@@ -547,13 +555,13 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("impersonation_enabled")
-    def impersonation_enabled_default(self):
+    def impersonation_enabled_default(self) -> bool:
         return bool(os.getenv(self.impersonation_enabled_env, "false").lower() == "true")
 
     # Unauthorized users
     unauthorized_users_env = "EG_UNAUTHORIZED_USERS"
     unauthorized_users_default_value = "root"
-    unauthorized_users = Set(
+    unauthorized_users = SetTrait(
         default_value={unauthorized_users_default_value},
         config=True,
         help="""Comma-separated list of user names (e.g., ['root','admin']) against which
@@ -563,14 +571,14 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("unauthorized_users")
-    def unauthorized_users_default(self):
+    def unauthorized_users_default(self) -> Set[str]:
         return os.getenv(self.unauthorized_users_env, self.unauthorized_users_default_value).split(
             ","
         )
 
     # Authorized users
     authorized_users_env = "EG_AUTHORIZED_USERS"
-    authorized_users = Set(
+    authorized_users = SetTrait(
         config=True,
         help="""Comma-separated list of user names (e.g., ['bob','alice']) against which
                            KERNEL_USERNAME will be compared.  Any match (case-sensitive) will allow the kernel's
@@ -581,7 +589,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("authorized_users")
-    def authorized_users_default(self):
+    def authorized_users_default(self) -> Set[str]:
         au_env = os.getenv(self.authorized_users_env)
         return au_env.split(",") if au_env is not None else []
 
@@ -608,7 +616,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("port_range")
-    def port_range_default(self):
+    def port_range_default(self) -> str:
         return os.getenv(self.port_range_env, self.port_range_default_value)
 
     # Max Kernels per User
@@ -623,7 +631,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("max_kernels_per_user")
-    def max_kernels_per_user_default(self):
+    def max_kernels_per_user_default(self) -> int:
         return int(
             os.getenv(self.max_kernels_per_user_env, self.max_kernels_per_user_default_value)
         )
@@ -639,7 +647,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("ws_ping_interval")
-    def ws_ping_interval_default(self):
+    def ws_ping_interval_default(self) -> int:
         return int(os.getenv(self.ws_ping_interval_env, self.ws_ping_interval_default_value))
 
     # Dynamic Update Interval
@@ -655,13 +663,13 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("dynamic_config_interval")
-    def dynamic_config_interval_default(self):
+    def dynamic_config_interval_default(self) -> int:
         return int(
             os.getenv(self.dynamic_config_interval_env, self.dynamic_config_interval_default_value)
         )
 
     @observe("dynamic_config_interval")
-    def dynamic_config_interval_changed(self, event):
+    def dynamic_config_interval_changed(self, event: Dict[str, Any]) -> None:
         prev_val = event["old"]
         self.dynamic_config_interval = event["new"]
         if self.dynamic_config_interval != prev_val:
