@@ -30,12 +30,20 @@ EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"'r_docker','python_docker','python_t
 export EG_KERNEL_WHITELIST=`echo ${EG_KERNEL_WHITELIST} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
 export EG_DEFAULT_KERNEL_NAME=${EG_DEFAULT_KERNEL_NAME:-python_docker}
 
+# Determine whether the kernels-allowed list should be added to the start command.
+# This is conveyed via a 'null' value for the env - which indicates no kernel names
+# were used in the helm chart.
+allowed_kernels_option="--KernelSpecManager.whitelist=[${EG_KERNEL_WHITELIST}]"
+if [ "${EG_KERNEL_WHITELIST}" == 'null' ]; then
+	allowed_kernels_option=""
+fi
+
 
 echo "Starting Jupyter Enterprise Gateway..."
 
 exec jupyter enterprisegateway \
 	--log-level=${EG_LOG_LEVEL} \
-	--KernelSpecManager.whitelist=[${EG_KERNEL_WHITELIST}] \
+	${allowed_kernels_option} \
 	--RemoteMappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
 	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \
