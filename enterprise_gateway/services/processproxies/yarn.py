@@ -9,10 +9,13 @@ import os
 import signal
 import socket
 import time
+from typing import Any, Optional, Type
 
 from jupyter_client import localinterfaces
+from yarn_api_client.base import Response
 from yarn_api_client.resource_manager import ResourceManager
 
+from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from .processproxy import RemoteProcessProxy
 
@@ -40,7 +43,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     initial_states = {"NEW", "SUBMITTED", "ACCEPTED", "RUNNING"}
     final_states = {"FINISHED", "KILLED", "FAILED"}
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
         self.application_id = None
         self.last_known_state = None
@@ -73,7 +76,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # and retry at fixed interval before pronouncing as not feasible to launch.
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
-    def _initialize_resource_manager(self, **kwargs):
+    def _initialize_resource_manager(self, **kwargs: Optional[dict[str, Any]]) -> None:
         """Initialize the Hadoop YARN Resource Manager instance used for this kernel's lifecycle."""
 
         endpoints = None
@@ -109,7 +112,9 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         self.rm_addr = self.resource_mgr.get_active_endpoint()
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> Type["YarnClusterProcessProxy"]:
         """
         Launches the specified process within a YARN cluster environment.
         """
@@ -135,7 +140,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def confirm_yarn_queue_availability(self, **kwargs):
+    def confirm_yarn_queue_availability(self, **kwargs: Optional[dict[str, Any]]) -> None:
         """
         Submitting jobs to yarn queue and then checking till the jobs are in running state
         will lead to orphan jobs being created in some scenarios.
@@ -239,7 +244,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             self.start_time, RemoteProcessProxy.get_current_time()
         )
 
-    def handle_yarn_queue_timeout(self):
+    def handle_yarn_queue_timeout(self) -> None:
 
         time.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(
@@ -253,7 +258,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=error_http_code, reason=reason)
 
-    def poll(self):
+    def poll(self) -> Optional[bool]:
         """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
@@ -272,7 +277,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         #               format(self.application_id, self.kernel_id, state))
         return result
 
-    def send_signal(self, signum):
+    def send_signal(self, signum: int) -> Optional[bool]:
         """Currently only support 0 as poll and other as kill.
 
         :param signum
@@ -288,7 +293,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             # signum value because altternate interrupt signals might be in play.
             return super().send_signal(signum)
 
-    def kill(self):
+    def kill(self) -> Optional[bool]:
         """Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
         """
@@ -317,7 +322,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         )
         return result
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """"""
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
@@ -338,7 +343,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # for cleanup, we should call the superclass last
         super().cleanup()
 
-    async def confirm_remote_startup(self):
+    async def confirm_remote_startup(self) -> None:
         """Confirms the yarn application is in a started state before returning.  Should post-RUNNING states be
         unexpectedly encountered (FINISHED, KILLED, FAILED) then we must throw,
         otherwise the rest of the gateway will believe its talking to a valid kernel.
@@ -374,7 +379,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             else:
                 self.detect_launch_failure()
 
-    async def handle_timeout(self):
+    async def handle_timeout(self) -> None:
         """Checks to see if the kernel launch timeout has been exceeded while awaiting connection info."""
         await asyncio.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(
@@ -411,18 +416,18 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
-    def get_process_info(self):
+    def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to YARN clusters."""
         process_info = super().get_process_info()
         process_info.update({"application_id": self.application_id})
         return process_info
 
-    def load_process_info(self, process_info):
+    def load_process_info(self, process_info: dict[str, Any]) -> None:
         """Loads the base information necessary for kernel persistence relative to YARN clusters."""
         super().load_process_info(process_info)
         self.application_id = process_info["application_id"]
 
-    def _get_application_state(self):
+    def _get_application_state(self) -> str:
         # Gets the current application state using the application_id already obtained.  Once the assigned host
         # has been identified, 'amHostHttpAddress' is nolonger accessed.
         app_state = self.last_known_state
@@ -439,7 +444,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         return app_state
 
-    def _get_application_id(self, ignore_final_states=False):
+    def _get_application_id(self, ignore_final_states: bool = False) -> str:
         # Return the kernel's YARN application ID if available, otherwise None.  If we're obtaining application_id
         # from scratch, do not consider kernels in final states.
         if not self.application_id:
@@ -471,7 +476,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 )
         return self.application_id
 
-    def _query_app_by_name(self, kernel_id):
+    def _query_app_by_name(self, kernel_id: str) -> dict:
         """Retrieve application by using kernel_id as the unique app name.
         With the started_time_begin as a parameter to filter applications started earlier than the target one from YARN.
         When submit a new app, it may take a while for YARN to accept and run and generate the application ID.
@@ -516,7 +521,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                         top_most_app_id = app.get("id")
         return target_app
 
-    def _query_app_by_id(self, app_id):
+    def _query_app_by_id(self, app_id: str) -> dict:
         """Retrieve an application by application ID.
 
         :param app_id
@@ -538,7 +543,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         return app
 
-    def _query_app_state_by_id(self, app_id):
+    def _query_app_state_by_id(self, app_id: str) -> str:
         """Return the state of an application. If a failure occurs, the last known state is returned.
 
         :param app_id:
@@ -558,7 +563,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         return state
 
-    def _kill_app_by_id(self, app_id):
+    def _kill_app_by_id(self, app_id: str) -> Response:
         """Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
 
         :param app_id

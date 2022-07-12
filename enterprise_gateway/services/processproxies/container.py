@@ -5,10 +5,12 @@
 import abc
 import os
 import signal
+from typing import Any, Optional, Type
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 from jupyter_client import localinterfaces
 
+from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import RemoteProcessProxy
 
 urllib3.disable_warnings()
@@ -36,12 +38,12 @@ class ContainerProcessProxy(RemoteProcessProxy):
     Kernel lifecycle management for container-based kernels.
     """
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
 
-    def _determine_kernel_images(self, **kwargs):
+    def _determine_kernel_images(self, **kwargs: Optional[dict[str, Any]]) -> None:
         """
         Determine which kernel images to use.
 
@@ -66,7 +68,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
             "KERNEL_EXECUTOR_IMAGE", kernel_executor_image
         )
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> Type["ContainerProcessProxy"]:
         """
         Launches the specified process within the container environment.
         """
@@ -99,7 +103,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _enforce_prohibited_ids(self, **kwargs):
+    def _enforce_prohibited_ids(self, **kwargs: Optional[dict[str, Any]]) -> None:
         """Determine UID and GID with which to launch container and ensure they are not prohibited."""
         kernel_uid = kwargs["env"].get("KERNEL_UID", default_kernel_uid)
         kernel_gid = kwargs["env"].get("KERNEL_GID", default_kernel_gid)
@@ -125,7 +129,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kwargs["env"]["KERNEL_UID"] = kernel_uid
         kwargs["env"]["KERNEL_GID"] = kernel_gid
 
-    def poll(self):
+    def poll(self) -> Optional[bool]:
         """Determines if container is still active.
 
         Submitting a new kernel to the container manager will take a while to be Running.
@@ -148,7 +152,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         return result
 
-    def send_signal(self, signum):
+    def send_signal(self, signum: int) -> Optional[bool]:
         """Send signal `signum` to container.
 
         Parameters
@@ -165,7 +169,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             # which should use the communication port.
             return super().send_signal(signum)
 
-    def kill(self):
+    def kill(self) -> Optional[bool]:
         """Kills a containerized kernel.
 
         Returns
@@ -179,14 +183,14 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         return result
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         # Since container objects don't necessarily go away on their own, we need to perform the same
         # cleanup we'd normally perform on forced kill situations.
 
         self.kill()
         super().cleanup()
 
-    async def confirm_remote_startup(self):
+    async def confirm_remote_startup(self) -> None:
         """Confirms the container has started and returned necessary connection information."""
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
@@ -206,7 +210,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             else:
                 self.detect_launch_failure()
 
-    def get_process_info(self):
+    def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to containers."""
         process_info = super().get_process_info()
         process_info.update(
@@ -216,7 +220,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         )
         return process_info
 
-    def load_process_info(self, process_info):
+    def load_process_info(self, process_info: dict[str, Any]) -> None:
         """Loads the base information necessary for kernel persistence relative to containers."""
         super().load_process_info(process_info)
         self.assigned_node_ip = process_info["assigned_node_ip"]

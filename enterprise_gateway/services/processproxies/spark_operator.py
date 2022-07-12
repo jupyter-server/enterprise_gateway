@@ -3,19 +3,20 @@
 
 import os
 
+from ..kernels.remotemanager import RemoteKernelManager
 from .crd import CustomResourceProcessProxy, client
 
 enterprise_gateway_namespace = os.environ.get("EG_NAMESPACE", "default")
 
 
 class SparkOperatorProcessProxy(CustomResourceProcessProxy):
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
         self.group = "sparkoperator.k8s.io"
         self.version = "v1beta2"
         self.plural = "sparkapplications"
 
-    def get_container_status(self, iteration):
+    def get_container_status(self, iteration: int) -> str:
         pod_status = pod_info = None
 
         try:

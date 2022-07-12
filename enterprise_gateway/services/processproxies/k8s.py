@@ -5,10 +5,12 @@
 import logging
 import os
 import re
+from typing import Any, Optional, Set, Type
 
 import urllib3
 from kubernetes import client, config
 
+from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from .container import ContainerProcessProxy
 
@@ -33,14 +35,16 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     Kernel lifecycle management for Kubernetes kernels.
     """
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
         self.kernel_pod_name = None
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> Type["KubernetesProcessProxy"]:
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
 
@@ -57,11 +61,11 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def get_initial_states(self):
+    def get_initial_states(self) -> Set:
         """Return list of states indicating container is starting (includes running)."""
         return {"Pending", "Running"}
 
-    def get_container_status(self, iteration):
+    def get_container_status(self, iteration: Optional[int]) -> Optional[str]:
         """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
@@ -96,7 +100,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return pod_status
 
-    def terminate_container_resources(self):
+    def terminate_container_resources(self) -> Optional[bool]:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # or pod associated with the kernel.  If we created the namespace and we're not in the
@@ -171,7 +175,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
-    def _determine_kernel_pod_name(self, **kwargs):
+    def _determine_kernel_pod_name(self, **kwargs: Optional[dict[str, Any]]) -> str:
         pod_name = kwargs["env"].get("KERNEL_POD_NAME")
         if pod_name is None:
             pod_name = KernelSessionManager.get_kernel_username(**kwargs) + "-" + self.kernel_id
@@ -187,7 +191,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return pod_name
 
-    def _determine_kernel_namespace(self, **kwargs):
+    def _determine_kernel_namespace(self, **kwargs: Optional[dict[str, Any]]) -> str:
 
         # Since we need the service account name regardless of whether we're creating the namespace or not,
         # get it now.
@@ -216,7 +220,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return namespace
 
     @staticmethod
-    def _determine_kernel_service_account_name(**kwargs):
+    def _determine_kernel_service_account_name(**kwargs: Optional[dict[str, Any]]) -> str:
         # Check if an account name was provided.  If not, set to the default name (which can be set
         # from the EG env as well).  Finally, ensure the env value is set.
         service_account_name = kwargs["env"].get(
@@ -225,7 +229,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         kwargs["env"]["KERNEL_SERVICE_ACCOUNT_NAME"] = service_account_name
         return service_account_name
 
-    def _create_kernel_namespace(self, service_account_name):
+    def _create_kernel_namespace(self, service_account_name: str) -> str:
         # Creates the namespace for the kernel based on the kernel username and kernel id.  Since we're creating
         # the namespace, we'll also note that it should be deleted as well.  In addition, the kernel pod may need
         # to list/create other pods (true for spark-on-k8s), so we'll also create a RoleBinding associated with
@@ -276,7 +280,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return namespace
 
-    def _create_role_binding(self, namespace, service_account_name):
+    def _create_role_binding(self, namespace: str, service_account_name: str) -> None:
         # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole named by
         # EG_KERNEL_CLUSTER_ROLE.
         # Note that roles referenced in RoleBindings are scoped to the namespace so re-using the cluster role prevents
@@ -311,7 +315,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             )
         )
 
-    def get_process_info(self):
+    def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to kubernetes."""
         process_info = super().get_process_info()
         process_info.update(
@@ -319,7 +323,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         )
         return process_info
 
-    def load_process_info(self, process_info):
+    def load_process_info(self, process_info: dict[str, Any]) -> None:
         """Loads the base information necessary for kernel persistence relative to kubernetes."""
         super().load_process_info(process_info)
         self.kernel_namespace = process_info["kernel_ns"]
