@@ -34,7 +34,10 @@ from .services.kernelspecs.handlers import (
     default_handlers as default_kernelspec_handlers,
 )
 from .services.sessions.handlers import default_handlers as default_session_handlers
-from .services.sessions.kernelsessionmanager import FileKernelSessionManager
+from .services.sessions.kernelsessionmanager import (
+    FileKernelSessionManager,
+    WebhookKernelSessionManager,
+)
 from .services.sessions.sessionmanager import SessionManager
 
 try:
@@ -77,7 +80,12 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [KernelSpecCache, FileKernelSessionManager, RemoteMappingKernelManager]
+    classes = [
+        KernelSpecCache,
+        FileKernelSessionManager,
+        WebhookKernelSessionManager,
+        RemoteMappingKernelManager,
+    ]
 
     # Enable some command line shortcuts
     aliases = aliases
@@ -133,9 +141,28 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             config=self.config,  # required to get command-line options visible
         )
 
-        # Attempt to start persisted sessions
-        # Commented as part of https://github.com/jupyter-server/enterprise_gateway/pull/737#issuecomment-567598751
-        # self.kernel_session_manager.start_sessions()
+        # For B/C purposes, check if session persistence is enabled.  If so, and availability
+        # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
+        if self.kernel_session_manager.enable_persistence:
+            if self.availability_mode is None:
+                self.availability_mode = EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION
+                self.log.info(
+                    f"Kernel session persistence is enabled but availability mode is not.  "
+                    f"Setting EnterpriseGatewayApp.availability_mode to '{self.availability_mode}'."
+                )
+        else:
+            # Persistence is not enabled, check if availability_mode is configured and, if so,
+            # auto-enable persistence
+            if self.availability_mode is not None:
+                self.kernel_session_manager.enable_persistence = True
+                self.log.info(
+                    f"Availability mode is set to '{self.availability_mode}' yet kernel session "
+                    "persistence is not enabled.  Enabling kernel session persistence."
+                )
+
+        # If we're using single-instance availability, attempt to start persisted sessions
+        if self.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_STANDALONE:
+            self.kernel_session_manager.start_sessions()
 
         self.contents_manager = None  # Gateways don't use contents manager
 
@@ -284,17 +311,19 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         super().start()
 
         self.log.info(
-            f"Jupyter Enterprise Gateway {EnterpriseGatewayApp.version} is available at "
-            f"http{'s' if self.keyfile else ''}://{self.ip}:{self.port}"
+            "Jupyter Enterprise Gateway {} is available at http{}://{}:{}".format(
+                EnterpriseGatewayApp.version, "s" if self.keyfile else "", self.ip, self.port
+            )
         )
-
         # If impersonation is enabled, issue a warning message if the gateway user is not in unauthorized_users.
         if self.impersonation_enabled:
             gateway_user = getpass.getuser()
             if gateway_user.lower() not in self.unauthorized_users:
                 self.log.warning(
-                    f"Impersonation is enabled and gateway user '{gateway_user}' is NOT specified in the set "
-                    f"of unauthorized users! Kernels may execute as that user with elevated privileges."
+                    "Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
+                    "unauthorized users!  Kernels may execute as that user with elevated privileges.".format(
+                        gateway_user
+                    )
                 )
 
         self.io_loop = ioloop.IOLoop.current()
@@ -315,11 +344,16 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
     def shutdown(self) -> None:
         """Shuts down all running kernels."""
+        self.log.info("Jupyter Enterprise Gateway is shutting down all running kernels")
         kids = self.kernel_manager.list_kernel_ids()
         for kid in kids:
-            asyncio.get_event_loop().run_until_complete(
-                self.kernel_manager.shutdown_kernel(kid, now=True)
-            )
+            try:
+                asyncio.get_event_loop().run_until_complete(
+                    self.kernel_manager.shutdown_kernel(kid, now=True)
+                )
+            except Exception as ex:
+                self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
+        self.log.info("Shut down complete")
 
     def stop(self) -> None:
         """
