@@ -8,32 +8,14 @@ import ssl
 import traceback
 from distutils.util import strtobool
 from http.client import responses
-from typing import (
-    Any,
-    Awaitable,
-    Dict,
-    List,
-    Optional,
-    Set,
-)
+from typing import Any, Awaitable, Dict, List, Optional, Set
 
 from tornado import web
 from tornado.log import LogFormatter
-from traitlets import (
-    Bool,
-    CaselessStrEnum,
-    CBool,
-    Instance,
-    Integer,
-    List as ListTrait,
-    Set as SetTrait,
-    TraitError,
-    Type,
-    Unicode,
-    default,
-    observe,
-    validate,
-)
+from traitlets import Bool, CaselessStrEnum, CBool, Instance, Integer
+from traitlets import List as ListTrait
+from traitlets import Set as SetTrait
+from traitlets import TraitError, Type, Unicode, default, observe, validate
 from traitlets.config import Configurable
 
 
