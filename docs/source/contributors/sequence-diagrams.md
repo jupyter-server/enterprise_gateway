@@ -1,12 +1,13 @@
 # Sequence Diagrams
 
-The following consists of various sequence diagrams you might find helpful.  We plan to add
+The following consists of various sequence diagrams you might find helpful. We plan to add
 diagrams based on demand and contributions.
 
 ## Kernel launch: Jupyter Lab to Enterprise Gateway
+
 This diagram depicts the interactions between components when a kernel start request
 is submitted from Jupyter Lab running against [Jupyter Server configured to use
-Enterprise Gateway](../users/connecting-to-eg.md).  The diagram also includes the
+Enterprise Gateway](../users/connecting-to-eg.md). The diagram also includes the
 retrieval of kernel specifications (kernelspecs) prior to the kernel's initialization.
 
 ```{mermaid}
