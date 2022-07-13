@@ -42,8 +42,7 @@ fi
 echo "Starting Jupyter Enterprise Gateway..."
 
 exec jupyter enterprisegateway \
-	--log-level=${EG_LOG_LEVEL} \
-	${allowed_kernels_option} \
+	--log-level=${EG_LOG_LEVEL} ${allowed_kernels_option} \
 	--RemoteMappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
 	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \
