@@ -4,6 +4,7 @@
 import json
 import os
 from functools import partial
+from typing import List
 
 import jupyter_server.services.kernels.handlers as jupyter_server_handlers
 import tornado
@@ -146,7 +147,7 @@ class KernelHandler(
         self.finish(json.dumps(model, default=date_default))
 
 
-default_handlers = []
+default_handlers: List[tuple] = []
 for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists

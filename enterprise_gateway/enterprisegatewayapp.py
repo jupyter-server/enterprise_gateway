@@ -12,7 +12,7 @@ import ssl
 import sys
 import time
 import weakref
-from typing import Optional
+from typing import List, Optional
 
 from jupyter_client.kernelspec import KernelSpecManager
 from jupyter_core.application import JupyterApp, base_aliases
@@ -90,7 +90,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     # Enable some command line shortcuts
     aliases = aliases
 
-    def initialize(self, argv=None) -> None:
+    def initialize(self, argv: Optional[List[str]] = None) -> None:
         """Initializes the base class, configurable manager instances, the
         Tornado web app, and the tornado HTTP server.
 
@@ -168,7 +168,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.init_dynamic_configs()
 
-    def _create_request_handlers(self) -> tuple:
+    def _create_request_handlers(self) -> List[tuple]:
         """Create default Jupyter handlers and redefine them off of the
         base_url path. Assumes init_configurables() has already been called.
         """
