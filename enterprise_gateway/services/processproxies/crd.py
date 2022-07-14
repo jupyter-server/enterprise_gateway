@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running based on k8s custom resource."""
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from kubernetes import client
 
@@ -17,9 +17,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
-    async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["CustomResourceProcessProxy"]:
+    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'CustomResourceProcessProxy':
         kwargs["env"][
             "KERNEL_RESOURCE_NAME"
         ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)

@@ -5,7 +5,7 @@
 import logging
 import os
 import re
-from typing import Any, Optional, Set, Type
+from typing import Any, Optional, Set
 
 import urllib3
 from kubernetes import client, config
@@ -42,9 +42,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
 
-    async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["KubernetesProcessProxy"]:
+    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'KubernetesProcessProxy':
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
 

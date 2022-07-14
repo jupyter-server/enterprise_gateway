@@ -8,7 +8,7 @@ import os
 import signal
 from socket import gethostbyname
 from subprocess import STDOUT
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import BaseProcessProxyABC, RemoteProcessProxy
@@ -72,9 +72,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if self.least_connection:
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
 
-    async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["DistributedProcessProxy"]:
+    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'DistributedProcessProxy':
         """
         Launches a kernel process on a selected host.
         """

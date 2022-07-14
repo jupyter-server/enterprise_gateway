@@ -11,7 +11,7 @@ import socket
 import subprocess
 import time
 from random import randint
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape
@@ -47,7 +47,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["ConductorClusterProcessProxy"]:
+    ) -> 'ConductorClusterProcessProxy':
         """
         Launches the specified process within a Conductor cluster environment.
         """
@@ -384,7 +384,6 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             else:
                 self.detect_launch_failure()
 
-    # confirm return typing
     def _get_application_state(self) -> str:
         """
         Gets the current application state using the application_id already obtained.  Once the assigned host
@@ -436,7 +435,6 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
-    # confirm return typing
     def _get_application_id(self, ignore_final_states: bool = False) -> str:
         """
         Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
@@ -476,7 +474,6 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 )
         return self.application_id
 
-    # confirm return typing
     def get_process_info(self) -> dict[str, Any]:
         """
         Captures the base information necessary for kernel persistence relative to Conductor clusters.
@@ -494,8 +491,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.application_id = process_info["application_id"]
         self.rest_credential = process_info["rest_credential"]
 
-    # confirm return typing
-    def _query_app_by_driver_id(self, driver_id: str) -> Optional[List[str]]:
+    def _query_app_by_driver_id(self, driver_id: str) -> Optional[dict]:
         """
         Retrieve application by using driver ID.
         :param driver_id: as the unique driver id for query
@@ -533,8 +529,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
         return response
 
-    # confirm return typing
-    def _query_app_by_id(self, app_id: str) -> Optional[List[str]]:
+    def _query_app_by_id(self, app_id: str) -> Optional[dict]:
         """
         Retrieve an application by application ID.
         :param app_id
@@ -569,8 +564,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
         return response
 
-    # confirm return typing
-    def _query_app_state_by_driver_id(self, driver_id: str):
+    def _query_app_state_by_driver_id(self, driver_id: str) -> Optional[dict]:
         """
         Return the state of an application.
         :param driver_id:
@@ -584,8 +578,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     response = app["state"]
         return response
 
-    # confirm return typing
-    def _get_driver_by_app_id(self, app_id: str):
+    def _get_driver_by_app_id(self, app_id: str) -> Optional[dict]:
         """
         Get driver info from application ID.
         :param app_id

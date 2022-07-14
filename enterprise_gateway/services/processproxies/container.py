@@ -5,7 +5,7 @@
 import abc
 import os
 import signal
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 from jupyter_client import localinterfaces
@@ -68,9 +68,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             "KERNEL_EXECUTOR_IMAGE", kernel_executor_image
         )
 
-    async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["ContainerProcessProxy"]:
+    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'ContainerProcessProxy':
         """
         Launches the specified process within the container environment.
         """

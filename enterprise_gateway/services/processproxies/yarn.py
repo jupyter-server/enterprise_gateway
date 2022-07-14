@@ -9,7 +9,7 @@ import os
 import signal
 import socket
 import time
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from jupyter_client import localinterfaces
 from yarn_api_client.base import Response
@@ -114,7 +114,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["YarnClusterProcessProxy"]:
+    ) -> 'YarnClusterProcessProxy':
         """
         Launches the specified process within a YARN cluster environment.
         """

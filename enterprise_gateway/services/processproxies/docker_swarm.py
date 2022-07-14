@@ -4,7 +4,7 @@
 
 import logging
 import os
-from typing import Any, Optional, Set, Type
+from typing import Any, Optional, Set
 
 from docker.client import DockerClient
 from docker.errors import NotFound
@@ -32,9 +32,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
-    def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["DockerSwarmProcessProxy"]:
+    def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'DockerSwarmProcessProxy':
         """
         Launches the specified process within a Docker Swarm environment.
         """
@@ -164,9 +162,7 @@ class DockerProcessProxy(ContainerProcessProxy):
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
-    def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> Type["DockerProcessProxy"]:
+    def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'DockerProcessProxy':
         """Launches the specified process within a Docker environment."""
         # Convey the network to the docker launch script
         kwargs["env"]["EG_DOCKER_NETWORK"] = docker_network
