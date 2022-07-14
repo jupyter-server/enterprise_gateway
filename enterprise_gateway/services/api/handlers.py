@@ -54,7 +54,7 @@ class APIYamlHandler(BaseSpecHandler):
         return "swagger.yaml", "text/x-yaml"
 
 
-default_handlers: List[str] = [
+default_handlers: List[tuple] = [
     (f"/api/{SpecJsonHandler.get_resource_metadata()[0]}", SpecJsonHandler),
     (f"/api/{APIYamlHandler.get_resource_metadata()[0]}", APIYamlHandler),
 ]
