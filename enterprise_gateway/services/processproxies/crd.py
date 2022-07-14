@@ -17,7 +17,9 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
-    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'CustomResourceProcessProxy':
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> "CustomResourceProcessProxy":
         kwargs["env"][
             "KERNEL_RESOURCE_NAME"
         ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)

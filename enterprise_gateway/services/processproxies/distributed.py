@@ -72,7 +72,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if self.least_connection:
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
 
-    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'DistributedProcessProxy':
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> "DistributedProcessProxy":
         """
         Launches a kernel process on a selected host.
         """

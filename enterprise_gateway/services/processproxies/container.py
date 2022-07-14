@@ -68,7 +68,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
             "KERNEL_EXECUTOR_IMAGE", kernel_executor_image
         )
 
-    async def launch_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> 'ContainerProcessProxy':
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+    ) -> "ContainerProcessProxy":
         """
         Launches the specified process within the container environment.
         """

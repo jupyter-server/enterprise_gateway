@@ -47,7 +47,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> 'ConductorClusterProcessProxy':
+    ) -> "ConductorClusterProcessProxy":
         """
         Launches the specified process within a Conductor cluster environment.
         """
