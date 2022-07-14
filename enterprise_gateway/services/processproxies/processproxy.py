@@ -396,7 +396,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
     by these methods - common to all subclasses.
     """
 
-    def __init__(self, kernel_manager: 'RemoteKernelManager', proxy_config: dict):
+    def __init__(self, kernel_manager: "RemoteKernelManager", proxy_config: dict):
         """
         Initialize the process proxy instance.
 
@@ -1029,7 +1029,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
     This process proxy is used when no other process proxy is configured.
     """
 
-    def __init__(self, kernel_manager: 'RemoteKernelManager', proxy_config: dict):
+    def __init__(self, kernel_manager: "RemoteKernelManager", proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
