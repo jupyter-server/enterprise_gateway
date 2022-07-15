@@ -77,7 +77,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # and retry at fixed interval before pronouncing as not feasible to launch.
         self.yarn_resource_check_wait_time = 0.20 * self.kernel_launch_timeout
 
-    def _initialize_resource_manager(self, **kwargs: Optional[dict[str, Any]]) -> None:
+    def _initialize_resource_manager(self, **kwargs: dict[str, Any] | None) -> None:
         """Initialize the Hadoop YARN Resource Manager instance used for this kernel's lifecycle."""
 
         endpoints = None
@@ -114,7 +114,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.rm_addr = self.resource_mgr.get_active_endpoint()
 
     async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "YarnClusterProcessProxy":
         """
         Launches the specified process within a YARN cluster environment.
@@ -141,7 +141,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def confirm_yarn_queue_availability(self, **kwargs: Optional[dict[str, Any]]) -> None:
+    def confirm_yarn_queue_availability(self, **kwargs: dict[str, Any] | None) -> None:
         """
         Submitting jobs to yarn queue and then checking till the jobs are in running state
         will lead to orphan jobs being created in some scenarios.
@@ -259,7 +259,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=error_http_code, reason=reason)
 
-    def poll(self) -> Optional[bool]:
+    def poll(self) -> bool | None:
         """Submitting a new kernel/app to YARN will take a while to be ACCEPTED.
         Thus application ID will probably not be available immediately for poll.
         So will regard the application as RUNNING when application ID still in ACCEPTED or SUBMITTED state.
@@ -278,7 +278,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         #               format(self.application_id, self.kernel_id, state))
         return result
 
-    def send_signal(self, signum: int) -> Optional[bool]:
+    def send_signal(self, signum: int) -> bool | None:
         """Currently only support 0 as poll and other as kill.
 
         :param signum
@@ -294,7 +294,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             # signum value because altternate interrupt signals might be in play.
             return super().send_signal(signum)
 
-    def kill(self) -> Optional[bool]:
+    def kill(self) -> bool | None:
         """Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
         """

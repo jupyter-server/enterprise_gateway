@@ -44,7 +44,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.container_name = ""
         self.assigned_node_ip = None
 
-    def _determine_kernel_images(self, **kwargs: Optional[dict[str, Any]]) -> None:
+    def _determine_kernel_images(self, **kwargs: dict[str, Any] | None) -> None:
         """
         Determine which kernel images to use.
 
@@ -70,7 +70,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         )
 
     async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "ContainerProcessProxy":
         """
         Launches the specified process within the container environment.
@@ -104,7 +104,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _enforce_prohibited_ids(self, **kwargs: Optional[dict[str, Any]]) -> None:
+    def _enforce_prohibited_ids(self, **kwargs: dict[str, Any] | None) -> None:
         """Determine UID and GID with which to launch container and ensure they are not prohibited."""
         kernel_uid = kwargs["env"].get("KERNEL_UID", default_kernel_uid)
         kernel_gid = kwargs["env"].get("KERNEL_GID", default_kernel_gid)
@@ -130,7 +130,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kwargs["env"]["KERNEL_UID"] = kernel_uid
         kwargs["env"]["KERNEL_GID"] = kernel_gid
 
-    def poll(self) -> Optional[bool]:
+    def poll(self) -> bool | None:
         """Determines if container is still active.
 
         Submitting a new kernel to the container manager will take a while to be Running.
@@ -153,7 +153,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         return result
 
-    def send_signal(self, signum: int) -> Optional[bool]:
+    def send_signal(self, signum: int) -> bool | None:
         """Send signal `signum` to container.
 
         Parameters
@@ -170,7 +170,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             # which should use the communication port.
             return super().send_signal(signum)
 
-    def kill(self) -> Optional[bool]:
+    def kill(self) -> bool | None:
         """Kills a containerized kernel.
 
         Returns

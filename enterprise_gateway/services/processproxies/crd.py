@@ -20,7 +20,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         super().__init__(kernel_manager, proxy_config)
 
     async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "CustomResourceProcessProxy":
         kwargs["env"][
             "KERNEL_RESOURCE_NAME"
@@ -32,7 +32,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def kill(self) -> Optional[bool]:
+    def kill(self) -> bool | None:
         result = None
 
         if self.kernel_resource_name:

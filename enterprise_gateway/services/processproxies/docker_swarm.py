@@ -34,8 +34,8 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         super().__init__(kernel_manager, proxy_config)
 
     def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> "DockerSwarmProcessProxy":
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
+    ) -> DockerSwarmProcessProxy:
         """
         Launches the specified process within a Docker Swarm environment.
         """
@@ -44,7 +44,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         kwargs["env"]["EG_DOCKER_MODE"] = "swarm"
         return super().launch_process(kernel_cmd, **kwargs)
 
-    def get_initial_states(self) -> Set:
+    def get_initial_states(self) -> set:
         """Return list of states indicating container is starting (includes running)."""
         return {"preparing", "starting", "running"}
 
@@ -85,7 +85,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
                 task = tasks[0]
         return task
 
-    def get_container_status(self, iteration: Optional[int]) -> str:
+    def get_container_status(self, iteration: int | None) -> str:
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the status indicates an initial state we
         # should be able to get at the NetworksAttachments and determine the associated container's IP address.
@@ -122,7 +122,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
             )
         return task_state
 
-    def terminate_container_resources(self) -> Optional[bool]:
+    def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Remove the docker service.
 
@@ -166,15 +166,15 @@ class DockerProcessProxy(ContainerProcessProxy):
         super().__init__(kernel_manager, proxy_config)
 
     def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
-    ) -> "DockerProcessProxy":
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
+    ) -> DockerProcessProxy:
         """Launches the specified process within a Docker environment."""
         # Convey the network to the docker launch script
         kwargs["env"]["EG_DOCKER_NETWORK"] = docker_network
         kwargs["env"]["EG_DOCKER_MODE"] = "docker"
         return super().launch_process(kernel_cmd, **kwargs)
 
-    def get_initial_states(self) -> Set:
+    def get_initial_states(self) -> set:
         """Return list of states indicating container is starting (includes running)."""
         return {"created", "running"}
 
@@ -196,7 +196,7 @@ class DockerProcessProxy(ContainerProcessProxy):
             container = containers[0]
         return container
 
-    def get_container_status(self, iteration: Optional[int]) -> str:
+    def get_container_status(self, iteration: int | None) -> str:
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.  Only used when docker mode == regular (non swarm)
@@ -242,7 +242,7 @@ class DockerProcessProxy(ContainerProcessProxy):
 
         return container_status
 
-    def terminate_container_resources(self) -> Optional[bool]:
+    def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Remove the container
 

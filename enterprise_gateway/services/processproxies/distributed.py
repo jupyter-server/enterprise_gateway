@@ -34,7 +34,7 @@ class TrackKernelOnHost:
             self.decrement(host)
             del self._kernel_host_mapping[kernel_id]
 
-    def min_or_remote_host(self, remote_host: Optional[str] = None) -> str:
+    def min_or_remote_host(self, remote_host: str | None = None) -> str:
         if remote_host:
             return remote_host
         return min(self._host_kernels, key=lambda k: self._host_kernels[k])
@@ -74,7 +74,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
 
     async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "DistributedProcessProxy":
         """
         Launches a kernel process on a selected host.
@@ -108,7 +108,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _launch_remote_process(self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]) -> str:
+    def _launch_remote_process(self, kernel_cmd: str, **kwargs: dict[str, Any] | None) -> str:
         """
         Launch the kernel as indicated by the argv stanza in the kernelspec.  Note that this method
         will bypass use of ssh if the remote host is also the local machine.
@@ -133,7 +133,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         return result_pid
 
-    def _build_startup_command(self, argv_cmd: str, **kwargs: Optional[dict[str, Any]]) -> str:
+    def _build_startup_command(self, argv_cmd: str, **kwargs: dict[str, Any] | None) -> str:
         """
         Builds the command to invoke by concatenating envs from kernelspec followed by the kernel argvs.
 

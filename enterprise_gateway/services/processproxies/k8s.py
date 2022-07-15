@@ -44,7 +44,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.delete_kernel_namespace = False
 
     async def launch_process(
-        self, kernel_cmd: str, **kwargs: Optional[dict[str, Any]]
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "KubernetesProcessProxy":
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call so we see these in the debug output
@@ -62,11 +62,11 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def get_initial_states(self) -> Set:
+    def get_initial_states(self) -> set:
         """Return list of states indicating container is starting (includes running)."""
         return {"Pending", "Running"}
 
-    def get_container_status(self, iteration: Optional[int]) -> Optional[str]:
+    def get_container_status(self, iteration: int | None) -> str | None:
         """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
@@ -101,7 +101,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return pod_status
 
-    def terminate_container_resources(self) -> Optional[bool]:
+    def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # or pod associated with the kernel.  If we created the namespace and we're not in the
@@ -176,7 +176,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
-    def _determine_kernel_pod_name(self, **kwargs: Optional[dict[str, Any]]) -> str:
+    def _determine_kernel_pod_name(self, **kwargs: dict[str, Any] | None) -> str:
         pod_name = kwargs["env"].get("KERNEL_POD_NAME")
         if pod_name is None:
             pod_name = KernelSessionManager.get_kernel_username(**kwargs) + "-" + self.kernel_id
@@ -192,7 +192,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return pod_name
 
-    def _determine_kernel_namespace(self, **kwargs: Optional[dict[str, Any]]) -> str:
+    def _determine_kernel_namespace(self, **kwargs: dict[str, Any] | None) -> str:
 
         # Since we need the service account name regardless of whether we're creating the namespace or not,
         # get it now.
@@ -221,7 +221,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return namespace
 
     @staticmethod
-    def _determine_kernel_service_account_name(**kwargs: Optional[dict[str, Any]]) -> str:
+    def _determine_kernel_service_account_name(**kwargs: dict[str, Any] | None) -> str:
         # Check if an account name was provided.  If not, set to the default name (which can be set
         # from the EG env as well).  Finally, ensure the env value is set.
         service_account_name = kwargs["env"].get(
