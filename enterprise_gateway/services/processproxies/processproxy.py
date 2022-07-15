@@ -996,9 +996,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             return 0
         return random.randint(self.lower_port, self.upper_port)
 
-    def log_and_raise(
-        self, http_status_code: int | None = None, reason: str | None = None
-    ) -> None:
+    def log_and_raise(self, http_status_code: int | None = None, reason: str | None = None) -> None:
         """
         Helper method that combines the logging and raising of exceptions.
 
