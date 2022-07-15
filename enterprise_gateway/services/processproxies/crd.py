@@ -1,6 +1,8 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running based on k8s custom resource."""
+from __future__ import annotations
+
 from typing import Any, Optional
 
 from kubernetes import client

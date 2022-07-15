@@ -1,6 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Code used for the generic distribution of kernels across a set of hosts."""
+from __future__ import annotations
 
 import asyncio
 import json

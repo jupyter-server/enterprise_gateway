@@ -1,6 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Kernel managers that operate against a remote process."""
+from __future__ import annotations
 
 import abc
 import asyncio
@@ -32,7 +33,6 @@ from socket import (
     timeout,
 )
 from typing import Any, List, Optional, Type
-
 import paramiko
 import pexpect
 from Cryptodome.Cipher import AES, PKCS1_v1_5
