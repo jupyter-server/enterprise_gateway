@@ -12,7 +12,7 @@ import socket
 import subprocess
 import time
 from random import randint
-from typing import Any, List, Optional
+from typing import Any
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape

@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import os
 import signal
-from typing import Any, Optional
+from typing import Any
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 from jupyter_client import localinterfaces

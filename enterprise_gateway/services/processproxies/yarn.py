@@ -10,7 +10,7 @@ import os
 import signal
 import socket
 import time
-from typing import Any, Optional
+from typing import Any
 
 from jupyter_client import localinterfaces
 from yarn_api_client.base import Response

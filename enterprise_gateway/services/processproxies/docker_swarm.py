@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional, Set
+from typing import Any
 
 from docker.client import DockerClient
 from docker.errors import NotFound

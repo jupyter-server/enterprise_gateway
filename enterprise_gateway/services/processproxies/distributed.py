@@ -9,7 +9,7 @@ import os
 import signal
 from socket import gethostbyname
 from subprocess import STDOUT
-from typing import Any, Optional
+from typing import Any
 
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import BaseProcessProxyABC, RemoteProcessProxy

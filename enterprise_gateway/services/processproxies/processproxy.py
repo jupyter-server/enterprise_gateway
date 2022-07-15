@@ -32,7 +32,7 @@ from socket import (
     socket,
     timeout,
 )
-from typing import Any, List, Optional, Type
+from typing import Any, List
 
 import paramiko
 import pexpect
