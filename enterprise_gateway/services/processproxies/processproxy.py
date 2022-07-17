@@ -570,6 +570,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     max_poll_attempts * poll_interval
                 )
             )
+        return None
 
     def send_signal(self, signum: int) -> bool | None:
         """
