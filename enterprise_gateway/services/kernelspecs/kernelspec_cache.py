@@ -3,7 +3,7 @@
 """Cache handling for kernel specs."""
 
 import os
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Set, Union
 
 from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.utils import ensure_async
@@ -33,7 +33,7 @@ class KernelSpecCache(SingletonConfigurable):
 
     cache_enabled_env = "EG_KERNELSPEC_CACHE_ENABLED"
     cache_enabled = CBool(
-        False,
+        True,
         config=True,
         help="""Enable Kernel Specification caching. (EG_KERNELSPEC_CACHE_ENABLED env var)""",
     )
@@ -110,7 +110,7 @@ class KernelSpecCache(SingletonConfigurable):
                 )
         return kernelspec
 
-    def get_all_items(self) -> Optional[Dict[str, CacheItemType]]:
+    def get_all_items(self) -> Dict[str, CacheItemType]:
         """Retrieves all kernel specification from the cache.
 
         If cache is disabled or no items are in the cache, an empty dictionary is returned;
@@ -140,6 +140,34 @@ class KernelSpecCache(SingletonConfigurable):
                 kernel_name=kernel_name
             )
         )
+        # Irrespective of cache enablement, add/update the 'metadata.client_envs' entry
+        # with the set of configured values.  If the stanza already exists in the kernelspec
+        # update with the union of it and those values configured via `EnterpriseGatewayApp'.
+        # We apply this logic here so that its only performed once for cached values or on
+        # every retrieval when caching is not enabled.
+        # Note: We only need to do this if we have a KernelSpec instance, since CacheItemType
+        # instances will have already been modified.
+
+        # Create a set from the configured value, update it with the (potential) value
+        # in the kernelspec, and apply the changes back to the kernelspec.
+
+        client_envs: Set[str] = set(self.parent.client_envs)
+        kspec_client_envs: Set[str]
+        if type(cache_item) is KernelSpec:
+            kspec: KernelSpec = cache_item
+            kspec_client_envs = set(kspec.metadata.get("client_envs", []))
+        else:
+            kspec_client_envs = set(cache_item["spec"].get("metadata", {}).get("client_envs", []))
+
+        client_envs.update(kspec_client_envs)
+        if type(cache_item) is KernelSpec:
+            kspec: KernelSpec = cache_item
+            kspec.metadata["client_envs"] = list(client_envs)
+        else:
+            if "metadata" not in cache_item["spec"]:
+                cache_item["spec"]["metadata"] = {}
+            cache_item["spec"]["metadata"]["client_envs"] = list(client_envs)
+
         if self.cache_enabled:
             if type(cache_item) is KernelSpec:
                 cache_item = KernelSpecCache.kernel_spec_to_cache_item(cache_item)
@@ -159,9 +187,8 @@ class KernelSpecCache(SingletonConfigurable):
 
     def put_all_items(self, kernelspecs: Dict[str, CacheItemType]) -> None:
         """Adds or updates a dictionary of kernel specification in the cache."""
-        if self.cache_enabled and kernelspecs:
-            for kernel_name, cache_item in kernelspecs.items():
-                self.put_item(kernel_name, cache_item)
+        for kernel_name, cache_item in kernelspecs.items():
+            self.put_item(kernel_name, cache_item)
 
     def remove_item(self, kernel_name: str) -> Optional[CacheItemType]:
         """Removes the cache item corresponding to kernel_name from the cache."""
@@ -212,7 +239,7 @@ class KernelSpecCache(SingletonConfigurable):
 
     @staticmethod
     def kernel_spec_to_cache_item(kernelspec: KernelSpec) -> CacheItemType:
-        """Convets a KernelSpec instance to a CacheItemType for storage into the cache."""
+        """Converts a KernelSpec instance to a CacheItemType for storage into the cache."""
         cache_item = dict()
         cache_item["spec"] = kernelspec.to_dict()
         cache_item["resource_dir"] = kernelspec.resource_dir
@@ -221,7 +248,8 @@ class KernelSpecCache(SingletonConfigurable):
     @staticmethod
     def cache_item_to_kernel_spec(cache_item: CacheItemType) -> KernelSpec:
         """Converts a CacheItemType to a KernelSpec instance for user consumption."""
-        return KernelSpec.from_resource_dir(cache_item["resource_dir"])
+        kernel_spec = KernelSpec(resource_dir=cache_item["resource_dir"], **cache_item["spec"])
+        return kernel_spec
 
 
 class KernelSpecChangeHandler(FileSystemEventHandler):

@@ -372,30 +372,53 @@ class EnterpriseGatewayConfigMixin(Configurable):
             == "true"
         )
 
-    env_whitelist_env = "EG_ENV_WHITELIST"
     env_whitelist = ListTrait(
         config=True,
-        help="""Environment variables allowed to be set when a client requests a
-                         new kernel. Use '*' to allow all environment variables sent in the request.
-                         (EG_ENV_WHITELIST env var)""",
+        help="""DEPRECATED, use allowed_envs.""",
     )
 
     @default("env_whitelist")
     def env_whitelist_default(self) -> List[str]:
         return os.getenv(self.env_whitelist_env, os.getenv("KG_ENV_WHITELIST", "")).split(",")
 
-    env_process_whitelist_env = "EG_ENV_PROCESS_WHITELIST"
-    env_process_whitelist = ListTrait(
+    @observe("env_whitelist")
+    def _update_env_whitelist(self, change):
+        self.log.warning("env_whitelist is deprecated, use client_envs")
+        self.client_envs = change["new"]
+
+    client_envs_env = "EG_CLIENT_ENVS"
+    client_envs = ListTrait(
         config=True,
-        help="""Environment variables allowed to be inherited
-                                 from the spawning process by the kernel. (EG_ENV_PROCESS_WHITELIST env var)""",
+        help="""Environment variables allowed to be set when a client requests a
+                               new kernel. (EG_CLIENT_ENVS env var)""",
     )
 
-    @default("env_process_whitelist")
-    def env_process_whitelist_default(self) -> List[str]:
-        return os.getenv(
-            self.env_process_whitelist_env, os.getenv("KG_ENV_PROCESS_WHITELIST", "")
-        ).split(",")
+    @default("client_envs")
+    def client_envs_default(self):
+        return os.getenv(self.client_envs_env, os.getenv("EG_ENV_WHITELIST", "")).split(",")
+
+    env_process_whitelist = ListTrait(
+        config=True,
+        help="""DEPRECATED, use inherited_envs""",
+    )
+
+    @observe("env_process_whitelist")
+    def _update_env_process_whitelist(self, change):
+        self.log.warning("env_process_whitelist is deprecated, use inherited_envs")
+        self.inherited_envs = change["new"]
+
+    inherited_envs_env = "EG_INHERITED_ENVS"
+    inherited_envs = ListTrait(
+        config=True,
+        help="""Environment variables allowed to be inherited
+                                from the spawning process by the kernel. (EG_INHERITED_ENVS env var)""",
+    )
+
+    @default("inherited_envs")
+    def inherited_envs_default(self) -> List[str]:
+        return os.getenv(self.inherited_envs_env, os.getenv("EG_ENV_PROCESS_WHITELIST", "")).split(
+            ","
+        )
 
     kernel_headers_env = "EG_KERNEL_HEADERS"
     kernel_headers = ListTrait(
