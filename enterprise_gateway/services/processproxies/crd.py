@@ -1,9 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running based on k8s custom resource."""
+from __future__ import annotations
+
+from typing import Any
 
 from kubernetes import client
 
+from ..kernels.remotemanager import RemoteKernelManager
 from .k8s import KubernetesProcessProxy
 
 
@@ -12,10 +16,12 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
     custom_resource_template_name = None
     kernel_resource_name = None
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
+    ) -> "CustomResourceProcessProxy":
         kwargs["env"][
             "KERNEL_RESOURCE_NAME"
         ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
@@ -26,7 +32,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def kill(self):
+    def kill(self) -> bool | None:
         result = None
 
         if self.kernel_resource_name:
@@ -50,7 +56,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
         return result
 
-    def terminate_custom_resource(self):
+    def terminate_custom_resource(self) -> bool:
         try:
             delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
                 self.group, self.version, self.plurals, self.kernel_resource_name
