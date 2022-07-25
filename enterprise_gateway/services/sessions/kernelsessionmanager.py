@@ -142,10 +142,11 @@ class KernelSessionManager(LoggingConfigurable):
         finally:
             kernels_lock.release()
 
-    def start_session(self, kernel_id: str) -> bool:
+    def start_session(self, kernel_id: str) -> Optional[bool]:
         kernel_session = self._sessions.get(kernel_id, None)
         if kernel_session is not None:
             return self._start_session(kernel_session)
+        return None
 
     def start_sessions(self) -> None:
         """
