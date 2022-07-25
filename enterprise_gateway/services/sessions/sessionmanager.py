@@ -3,7 +3,9 @@
 """Session manager that keeps all its metadata in memory."""
 
 import uuid
+from typing import Any, Hashable, List, Optional
 
+from jupyter_server.services.kernels.kernelmanager import MappingKernelManager
 from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
 
@@ -27,13 +29,13 @@ class SessionManager(LoggingConfigurable):
         Session metadata key names
     """
 
-    def __init__(self, kernel_manager, *args, **kwargs):
+    def __init__(self, kernel_manager: MappingKernelManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = []
         self._columns = ["session_id", "path", "kernel_id"]
 
-    def session_exists(self, path, *args, **kwargs):
+    def session_exists(self, path: str, *args, **kwargs) -> bool:
         """Checks to see if the session with the given path value exists.
 
         Parameters
@@ -47,11 +49,18 @@ class SessionManager(LoggingConfigurable):
         """
         return bool([item for item in self._sessions if item["path"] == path])
 
-    def new_session_id(self):
+    def new_session_id(self) -> str:
         """Creates a uuid for a new session."""
         return str(uuid.uuid4())
 
-    async def create_session(self, path=None, kernel_name=None, kernel_id=None, *args, **kwargs):
+    async def create_session(
+        self,
+        path: Optional[str] = None,
+        kernel_name: Optional[str] = None,
+        kernel_id: Optional[str] = None,
+        *args,
+        **kwargs
+    ) -> dict:
         """Creates a session and returns its model.
 
         Launches a kernel and stores the session metadata for later lookup.
@@ -75,7 +84,14 @@ class SessionManager(LoggingConfigurable):
         kernel_id = await self.kernel_manager.start_kernel(path=path, kernel_name=kernel_name)
         return self.save_session(session_id, path=path, kernel_id=kernel_id)
 
-    def save_session(self, session_id, path=None, kernel_id=None, *args, **kwargs):
+    def save_session(
+        self,
+        session_id: str,
+        path: Optional[str] = None,
+        kernel_id: Optional[str] = None,
+        *args,
+        **kwargs
+    ) -> dict:
         """Saves the metadata for the session with the given `session_id`.
 
         Given a `session_id` (and any other of the arguments), this method
@@ -99,7 +115,7 @@ class SessionManager(LoggingConfigurable):
 
         return self.get_session(session_id=session_id)
 
-    def get_session_by_key(self, key, val, *args, **kwargs):
+    def get_session_by_key(self, key: Hashable, val: Any, *args, **kwargs) -> Optional[dict]:
         """Gets the first session with the given key/value pair.
 
         Parameters
@@ -117,7 +133,7 @@ class SessionManager(LoggingConfigurable):
         s = [item for item in self._sessions if item[key] == val]
         return None if not s else s[0]
 
-    def get_session(self, **kwargs):
+    def get_session(self, **kwargs) -> dict:
         """Returns the model for a particular session.
 
         Takes a keyword argument and searches for the value in the in-memory
@@ -158,7 +174,7 @@ class SessionManager(LoggingConfigurable):
 
         return self.row_to_model(row)
 
-    def update_session(self, session_id, *args, **kwargs):
+    def update_session(self, session_id: str, *args, **kwargs) -> None:
         """Updates the values in the session store.
 
         Update the values of the session model with the given `session_id`
@@ -195,7 +211,7 @@ class SessionManager(LoggingConfigurable):
 
         self._sessions.append(row)
 
-    def row_to_model(self, row, *args, **kwargs):
+    def row_to_model(self, row: dict, *args, **kwargs) -> dict:
         """Turns a "row" in the in-memory session store into a model dictionary.
 
         Parameters
@@ -219,7 +235,7 @@ class SessionManager(LoggingConfigurable):
         }
         return model
 
-    def list_sessions(self, *args, **kwargs):
+    def list_sessions(self, *args, **kwargs) -> List[dict]:
         """Returns a list of dictionaries containing all the information from
         the session store.
 
@@ -230,7 +246,7 @@ class SessionManager(LoggingConfigurable):
         """
         return [self.row_to_model(r) for r in self._sessions]
 
-    async def delete_session(self, session_id, *args, **kwargs):
+    async def delete_session(self, session_id: str, *args, **kwargs) -> None:
         """Deletes the session in the session store with given `session_id`.
 
         Raises
