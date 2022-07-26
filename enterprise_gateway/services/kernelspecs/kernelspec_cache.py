@@ -135,11 +135,7 @@ class KernelSpecCache(SingletonConfigurable):
         If it determines the cache entry corresponds to a currently unwatched directory,
         that directory will be added to list of observed directories and scheduled accordingly.
         """
-        self.log.info(
-            "KernelSpecCache: adding/updating kernelspec: {kernel_name}".format(
-                kernel_name=kernel_name
-            )
-        )
+        self.log.info(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
         # Irrespective of cache enablement, add/update the 'metadata.client_envs' entry
         # with the set of configured values.  If the stanza already exists in the kernelspec
         # update with the union of it and those values configured via `EnterpriseGatewayApp'.

@@ -41,7 +41,7 @@ as well as any variables
 listed in the `EnterpriseGatewayApp.client_envs` configurable trait (or via
 the `EG_CLIENT_ENVS` variable). Likewise, environment variables of the Enterprise Gateway
 server process listed in the `EnterpriseGatewayApp.inherited_envs` configurable trait
-(or via the  `EG_INHERITED_ENVS` variable)
+(or via the `EG_INHERITED_ENVS` variable)
 are also available for replacement in the kernel process' environment.
 
 See [Kernel Environment Variables](../users/kernel-envs.md) in the Users documentation section for a complete set of recognized `KERNEL_` variables.

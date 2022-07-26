@@ -51,9 +51,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
         # transfer its env to each launched kernel.
-        kwargs["env"] = dict(
-            os.environ, **kwargs["env"]
-        )
+        kwargs["env"] = dict(os.environ, **kwargs["env"])
         self.kernel_pod_name = self._determine_kernel_pod_name(**kwargs)
         self.kernel_namespace = self._determine_kernel_namespace(
             **kwargs

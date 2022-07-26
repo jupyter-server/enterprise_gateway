@@ -56,11 +56,7 @@ class MainKernelHandler(
             env = {"PATH": os.getenv("PATH", "")}
             # Whitelist environment variables from current process environment
             env.update(
-                {
-                    key: value
-                    for key, value in os.environ.items()
-                    if key in self.inherited_envs
-                }
+                {key: value for key, value in os.environ.items() if key in self.inherited_envs}
             )
             # Allow KERNEL_* args and those allowed by configuration.
             env.update(

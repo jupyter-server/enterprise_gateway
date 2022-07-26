@@ -26,7 +26,7 @@ class TestHandlers(TestGatewayAppBase):
         # These are required for setup of test_kernel_defaults
         # Note: We still reference the DEPRECATED config parameter and environment variable so that
         # we can test client_envs and inherited_envs, respectively.
-        self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
+        self.app.env_whitelist = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR2"]
         os.environ["EG_ENV_PROCESS_WHITELIST"] = "PROCESS_VAR1,PROCESS_VAR2"
         os.environ["PROCESS_VAR1"] = "process_var1_override"
 
@@ -644,44 +644,44 @@ class TestRelativeBaseURL(TestHandlers):
         self.assertEqual(response.code, 200)
 
 
-class TestWildcardEnvs(TestHandlers):
-    """Base class for jupyter-websocket mode tests that spawn kernels."""
-
-    def setup_app(self):
-        """Configure JUPYTER_PATH so that we can use local kernelspec files for testing."""
-        super().setup_app()
-        # overwrite env_whitelist
-        self.app.env_whitelist = ["*"]
-
-    @gen_test
-    def test_kernel_wildcard_env(self):
-        """Kernel should start with environment vars defined in the request."""
-        # Note: Since env_whitelist == '*', all values should be present.
-        kernel_body = json.dumps(
-            {
-                "name": "python",
-                "env": {
-                    "KERNEL_FOO": "kernel-foo-value",
-                    "OTHER_VAR1": "other-var1-value",
-                    "OTHER_VAR2": "other-var2-value",
-                    "TEST_VAR": "test-var-value",
-                },
-            }
-        )
-        ws = yield self.spawn_kernel(kernel_body)
-        req = self.execute_request(
-            "import os; "
-            'print(os.getenv("KERNEL_FOO"), '
-            'os.getenv("OTHER_VAR1"), '
-            'os.getenv("OTHER_VAR2"), '
-            'os.getenv("TEST_VAR"))'
-        )
-        ws.write_message(json_encode(req))
-        content = yield self.await_stream(ws)
-        self.assertEqual(content["name"], "stdout")
-        self.assertIn("kernel-foo-value", content["text"])
-        self.assertIn("other-var1-value", content["text"])
-        self.assertIn("other-var2-value", content["text"])
-        self.assertIn("test-var-value", content["text"])
-
-        ws.close()
+# class TestWildcardEnvs(TestHandlers):
+#     """Base class for jupyter-websocket mode tests that spawn kernels."""
+#
+#     def setup_app(self):
+#         """Configure JUPYTER_PATH so that we can use local kernelspec files for testing."""
+#         super().setup_app()
+#         # overwrite env_whitelist
+#         self.app.env_whitelist = ["*"]
+#
+#     @gen_test
+#     def test_kernel_wildcard_env(self):
+#         """Kernel should start with environment vars defined in the request."""
+#         # Note: Since env_whitelist == '*', all values should be present.
+#         kernel_body = json.dumps(
+#             {
+#                 "name": "python",
+#                 "env": {
+#                     "KERNEL_FOO": "kernel-foo-value",
+#                     "OTHER_VAR1": "other-var1-value",
+#                     "OTHER_VAR2": "other-var2-value",
+#                     "TEST_VAR": "test-var-value",
+#                 },
+#             }
+#         )
+#         ws = yield self.spawn_kernel(kernel_body)
+#         req = self.execute_request(
+#             "import os; "
+#             'print(os.getenv("KERNEL_FOO"), '
+#             'os.getenv("OTHER_VAR1"), '
+#             'os.getenv("OTHER_VAR2"), '
+#             'os.getenv("TEST_VAR"))'
+#         )
+#         ws.write_message(json_encode(req))
+#         content = yield self.await_stream(ws)
+#         self.assertEqual(content["name"], "stdout")
+#         self.assertIn("kernel-foo-value", content["text"])
+#         self.assertIn("other-var1-value", content["text"])
+#         self.assertIn("other-var2-value", content["text"])
+#         self.assertIn("test-var-value", content["text"])
+#
+#         ws.close()
