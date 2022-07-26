@@ -8,7 +8,6 @@ import getpass
 import json
 import os
 import threading
-from typing import List, Optional
 
 import requests
 from jupyter_core.paths import jupyter_data_dir
@@ -145,7 +144,7 @@ class KernelSessionManager(LoggingConfigurable):
         finally:
             kernels_lock.release()
 
-    def start_session(self, kernel_id: str) -> Optional[bool]:
+    def start_session(self, kernel_id: str) -> bool | None:
         kernel_session = self._sessions.get(kernel_id, None)
         if kernel_session is not None:
             return self._start_session(kernel_session)
@@ -204,7 +203,7 @@ class KernelSessionManager(LoggingConfigurable):
         if self.enable_persistence:
             self.log.info("Deleted persisted kernel session for id: %s" % kernel_id)
 
-    def _delete_sessions(self, kernel_ids: List[str]) -> None:
+    def _delete_sessions(self, kernel_ids: list[str]) -> None:
         # Remove unstarted sessions and rewrite
         kernels_lock.acquire()
         try:
@@ -266,7 +265,7 @@ class KernelSessionManager(LoggingConfigurable):
         raise NotImplementedError("KernelSessionManager.load_session() requires an implementation!")
 
     # abstractmethod
-    def delete_sessions(self, kernel_ids: List[str]) -> None:
+    def delete_sessions(self, kernel_ids: list[str]) -> None:
         """
         Delete the sessions in persistent storage.  Caller is responsible for synchronizing call.
         """
@@ -343,7 +342,7 @@ class FileKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             self.log.info(f"Kernel session persistence location: {self._get_sessions_loc()}")
 
-    def delete_sessions(self, kernel_ids: List[str]) -> None:
+    def delete_sessions(self, kernel_ids: list[str]) -> None:
         if self.enable_persistence:
             for kernel_id in kernel_ids:
                 kernel_file_name = "".join([kernel_id, ".json"])
@@ -410,7 +409,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_url")
-    def webhook_url_default(self) -> Optional[str]:
+    def webhook_url_default(self) -> str | None:
         return os.getenv(self.webhook_url_env, None)
 
     # Webhook Username
@@ -422,7 +421,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_username")
-    def webhook_username_default(self) -> Optional[str]:
+    def webhook_username_default(self) -> str | None:
         return os.getenv(self.webhook_username_env, None)
 
     # Webhook Password
@@ -434,7 +433,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_password")
-    def webhook_password_default(self) -> Optional[str]:
+    def webhook_password_default(self) -> str | None:
         return os.getenv(self.webhook_password_env, None)
 
     # Auth Type
@@ -447,7 +446,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("auth_type")
-    def auth_type_default(self) -> Optional[str]:
+    def auth_type_default(self) -> str | None:
         return os.getenv(self.auth_type_env, None)
 
     def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):
@@ -468,7 +467,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
                 else:
                     self.log.error("Username and/or password aren't set")
 
-    def delete_sessions(self, kernel_ids: List[str]) -> None:
+    def delete_sessions(self, kernel_ids: list[str]) -> None:
         """
         Deletes kernel sessions from database
 
