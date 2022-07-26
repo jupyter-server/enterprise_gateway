@@ -26,18 +26,18 @@ export EG_LOG_LEVEL=${EG_LOG_LEVEL:-DEBUG}
 export EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-43200}  # default to 12 hours
 export EG_CULL_INTERVAL=${EG_CULL_INTERVAL:-60}
 export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-False}
-EG_KERNEL_WHITELIST=${EG_KERNEL_WHITELIST:-"null"}
-export EG_KERNEL_WHITELIST=`echo ${EG_KERNEL_WHITELIST} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
+EG_ALLOWED_KERNELS=${EG_ALLOWED_KERNELS:-${EG_KERNEL_WHITELIST:-"null"}}
+export EG_ALLOWED_KERNELS=`echo ${EG_ALLOWED_KERNELS} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
 export EG_DEFAULT_KERNEL_NAME=${EG_DEFAULT_KERNEL_NAME:-python_docker}
 
 # Determine whether the kernels-allowed list should be added to the start command.
 # This is conveyed via a 'null' value for the env - which indicates no kernel names
 # were used in the helm chart or docker-compose yaml.
 allowed_kernels_option=""
-if [ "${EG_KERNEL_WHITELIST}" != "null" ]; then
-	allowed_kernels_option="--KernelSpecManager.whitelist=[${EG_KERNEL_WHITELIST}]"
+if [ "${EG_ALLOWED_KERNELS}" != "null" ]; then
+  # Update to --KernelSpecManager.allowed_kernelspecs once jupyter_client >= 7 can be supported
+	allowed_kernels_option="--KernelSpecManager.whitelist=[${EG_ALLOWED_KERNELS}]"
 fi
-
 
 echo "Starting Jupyter Enterprise Gateway..."
 

@@ -164,6 +164,6 @@ cp -r python_kubernetes python_myCustomKernel
 }
 ```
 
-- If using a whitelist (`EG_KERNEL_WHITELIST`), be sure to update it with the new kernel specification directory name (e.g., `python_myCustomKernel`) and restart/redeploy Enterprise Gateway.
+- If using kernel filtering (`EG_ALLOWED_KERNELS`), be sure to update it with the new kernel specification directory name (e.g., `python_myCustomKernel`) and restart/redeploy Enterprise Gateway.
 - Launch or refresh your Notebook session and confirm `My Custom Kernel` appears in the _new kernel_ drop-down.
 - Create a new notebook using `My Custom Kernel`.

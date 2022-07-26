@@ -69,8 +69,8 @@ spec:
           value: {{ .Values.logLevel }}
         - name: EG_KERNEL_LAUNCH_TIMEOUT
           value: !!str {{ .Values.kernel.launchTimeout }}
-        - name: EG_KERNEL_WHITELIST
-          value: {{ toJson .Values.kernel.whitelist | squote }}
+        - name: EG_ALLOWED_KERNELS
+          value: {{ toJson .Values.kernel.allowedKernels | squote }}
         - name: EG_DEFAULT_KERNEL_NAME
           value: {{ .Values.kernel.defaultKernelName }}
         # Optional authorization token passed in all requests

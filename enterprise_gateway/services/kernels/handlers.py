@@ -22,12 +22,12 @@ class MainKernelHandler(
     """
 
     @property
-    def env_whitelist(self):
-        return self.settings["eg_env_whitelist"]
+    def client_envs(self):
+        return self.settings["eg_client_envs"]
 
     @property
-    def env_process_whitelist(self):
-        return self.settings["eg_env_process_whitelist"]
+    def inherited_envs(self):
+        return self.settings["eg_inherited_envs"]
 
     async def post(self):
         """Overrides the super class method to manage env in the request body.
@@ -59,19 +59,15 @@ class MainKernelHandler(
                 {
                     key: value
                     for key, value in os.environ.items()
-                    if key in self.env_process_whitelist
+                    if key in self.inherited_envs
                 }
             )
-            # Whitelist KERNEL_* args and those allowed by configuration from client.  If all
-            # envs are requested, just use the keys from the payload.
-            env_whitelist = self.env_whitelist
-            if env_whitelist == ["*"]:
-                env_whitelist = model["env"].keys()
+            # Allow KERNEL_* args and those allowed by configuration.
             env.update(
                 {
                     key: value
                     for key, value in model["env"].items()
-                    if key.startswith("KERNEL_") or key in env_whitelist
+                    if key.startswith("KERNEL_") or key in self.client_envs
                 }
             )
 

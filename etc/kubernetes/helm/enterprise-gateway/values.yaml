@@ -78,8 +78,8 @@ kernel:
   cullIdleTimeout: 3600
   # List of kernel names that are available for use. To allow additional kernelspecs without
   # requiring redeployment (and assuming kernelspecs are mounted or otherwise accessible
-  # outside the pod), comment out (or remove) the entries, leaving only `whitelist:`.
-  whitelist:
+  # outside the pod), comment out (or remove) the entries, leaving only `allowedKernels:`.
+  allowedKernels:
     - r_kubernetes
     - python_kubernetes
     - python_tf_kubernetes

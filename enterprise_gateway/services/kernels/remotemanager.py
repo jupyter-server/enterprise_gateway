@@ -427,8 +427,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "port_range",
             "impersonation_enabled",
             "max_kernels_per_user",
-            "env_whitelist",
-            "env_process_whitelist",
+            "client_envs",
+            "inherited_envs",
             "yarn_endpoint",
             "alt_yarn_endpoint",
             "yarn_endpoint_security_enabled",
@@ -470,8 +470,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 key: value
                 for key, value in env.items()
                 if key.startswith("KERNEL_")
-                or key in self.env_process_whitelist
-                or key in self.env_whitelist
+                or key in self.inherited_envs
+                or key in self.client_envs
             }
         )
 

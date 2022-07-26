@@ -24,10 +24,11 @@ class TestHandlers(TestGatewayAppBase):
         os.environ["JUPYTER_PATH"] = RESOURCES
 
         # These are required for setup of test_kernel_defaults
+        # Note: We still reference the DEPRECATED config parameter and environment variable so that
+        # we can test client_envs and inherited_envs, respectively.
+        self.app.env_whitelist = ['TEST_VAR', 'OTHER_VAR1', 'OTHER_VAR2']
         os.environ["EG_ENV_PROCESS_WHITELIST"] = "PROCESS_VAR1,PROCESS_VAR2"
         os.environ["PROCESS_VAR1"] = "process_var1_override"
-
-        self.app.env_whitelist = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR2"]
 
     def tearDown(self):
         """Shuts down the app after test run."""

@@ -374,12 +374,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
 
     env_whitelist = ListTrait(
         config=True,
-        help="""DEPRECATED, use allowed_envs.""",
+        help="""DEPRECATED, use client_envs.""",
     )
-
-    @default("env_whitelist")
-    def env_whitelist_default(self) -> List[str]:
-        return os.getenv(self.env_whitelist_env, os.getenv("KG_ENV_WHITELIST", "")).split(",")
 
     @observe("env_whitelist")
     def _update_env_whitelist(self, change):
