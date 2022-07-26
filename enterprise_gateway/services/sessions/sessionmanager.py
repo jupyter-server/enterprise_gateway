@@ -5,9 +5,10 @@
 import uuid
 from typing import Any, Hashable, List, Optional
 
-from jupyter_server.services.kernels.kernelmanager import MappingKernelManager
 from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
+
+from enterprise_gateway.services.kernels.remotemanager import RemoteMappingKernelManager
 
 
 class SessionManager(LoggingConfigurable):
@@ -16,12 +17,12 @@ class SessionManager(LoggingConfigurable):
 
     Parameters
     ----------
-    kernel_manager : SeedingMappingKernelManager
+    kernel_manager : RemoteMappingKernelManager
         Used to start a kernel when creating a session
 
     Attributes
     ----------
-    kernel_manager : SeedingMappingKernelManager
+    kernel_manager : RemoteMappingKernelManager
         Used to start a kernel when creating a session
     _sessions : list
         Sessions
@@ -29,7 +30,7 @@ class SessionManager(LoggingConfigurable):
         Session metadata key names
     """
 
-    def __init__(self, kernel_manager: MappingKernelManager, *args, **kwargs):
+    def __init__(self, kernel_manager: RemoteMappingKernelManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = []
