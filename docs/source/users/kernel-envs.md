@@ -94,6 +94,15 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     (https://googlecloudplatform.github.io/spark-on-k8s-operator/docs/api-docs.html#sparkoperator.k8s.io/v1beta2.SparkApplicationSpec)
     sparkConfigMap for more information.
 
+  KERNEL_TENANT_ID=<system provided>
+    Indicates the tenant ID (UUID string) corresponding to the kernel.  This value
+    is derived from the optional `tenant_id` provided by the client application and
+    is meant to represent the entity or organization in which the client application
+    is associated.  If `tenant_id` is not provided on the kernel start request, then
+    `KERNEL_TENANT_ID` will hold a value of ``"27182818-2845-9045-2353-602874713527"`
+    (the `UNIVERSAL_TENANT_ID`), which provides for backwards compatible support for
+    older applications.
+
   KERNEL_UID=<from user> or 1000
     Containers only. This value represents the user id in which the container will run.
     The default value is 1000 representing the jovyan user - which is how all kernel images
