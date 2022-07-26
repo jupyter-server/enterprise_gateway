@@ -15,8 +15,6 @@ from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from traitlets import Bool, CaselessStrEnum, Unicode, default
 from traitlets.config.configurable import LoggingConfigurable
 
-from enterprise_gateway.services.kernels.remotemanager import RemoteMappingKernelManager
-
 kernels_lock = threading.Lock()
 
 # These will be located under the `persistence_root` and exist
@@ -73,7 +71,7 @@ class KernelSessionManager(LoggingConfigurable):
     def persistence_root_default(self) -> str:
         return os.getenv(self.persistence_root_env, "/")
 
-    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):
+    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
         super().__init__(**kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = dict()
@@ -337,7 +335,7 @@ class FileKernelSessionManager(KernelSessionManager):
     def persistence_root_default(self) -> str:
         return os.getenv(self.persistence_root_env, jupyter_data_dir())
 
-    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):
+    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
         super().__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
             self.log.info(f"Kernel session persistence location: {self._get_sessions_loc()}")
@@ -449,7 +447,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     def auth_type_default(self) -> str | None:
         return os.getenv(self.auth_type_env, None)
 
-    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):
+    def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
         super().__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
             self.log.info("Webhook kernel session persistence activated")
