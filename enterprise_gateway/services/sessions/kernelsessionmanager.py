@@ -2,6 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 """Session manager that keeps all its metadata in memory."""
 
+from __future__ import annotations
+
 import getpass
 import json
 import os
