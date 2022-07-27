@@ -33,7 +33,7 @@ HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway
 HELM_CHART:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
 HELM_CHART_DIR:=etc/kubernetes/helm/enterprise-gateway
 HELM_CHART_FILES:=$(shell find $(HELM_CHART_DIR) -type f ! -name .DS_Store)
-HELM_INSTALL_DIR:=/usr/local/bin
+HELM_INSTALL_DIR?=$(HELM_INSTALL_DIR) || "/usr/local/bin"
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
