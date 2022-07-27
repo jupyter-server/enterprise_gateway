@@ -17,7 +17,7 @@ class SessionRootHandler(
     JSON errors.
     """
 
-    async def get(self):
+    async def get(self) -> None:
         """Overrides the super class method to honor the kernel listing
         configuration setting.
 
