@@ -456,7 +456,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
     def _capture_user_overrides(self, **kwargs):
         """
-        Make a copy of any whitelist or KERNEL_ env values provided by user.  These will be injected
+        Make a copy of any allowed or KERNEL_ env values provided by user.  These will be injected
         back into the env after the kernelspec env has been applied.  This enables defaulting behavior
         of the kernelspec env stanza that would have otherwise overridden the user-provided values.
         """

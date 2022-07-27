@@ -12,7 +12,6 @@ import jupyter_core.paths
 import pytest
 from jupyter_client.kernelspec import KernelSpecManager, NoSuchKernel
 
-from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp
 from enterprise_gateway.services.kernelspecs import KernelSpecCache
 
 
@@ -61,16 +60,10 @@ def environ(
 
 # END - Remove once transition to jupyter_server occurs
 
-GLOBAL_CLIENT_ENVS = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR2"]
-KSPEC_CLIENT_ENVS = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR3", "OTHER_VAR4"]
-UNION_CLIENT_ENVS = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR2", "OTHER_VAR3", "OTHER_VAR4"]
 
 kernelspec_json = {
     "argv": ["cat", "{connection_file}"],
     "display_name": "Test kernel: {kernel_name}",
-    "metadata": {
-        "client_envs": KSPEC_CLIENT_ENVS,
-    }
 }
 
 
@@ -110,22 +103,17 @@ def setup_kernelspecs(environ, kernelspec_location):
 
 @pytest.fixture
 def kernel_spec_manager(environ, setup_kernelspecs):
-    app = EnterpriseGatewayApp()
-    app.client_envs = ["TEST_VAR", "OTHER_VAR1", "OTHER_VAR2"]
-
-    yield KernelSpecManager(ensure_native_kernel=False, parent=app)
+    yield KernelSpecManager(ensure_native_kernel=False)
 
 
 @pytest.fixture
 def kernel_spec_cache(is_enabled, kernel_spec_manager):
-
     kspec_cache = KernelSpecCache.instance(
-        kernel_spec_manager=kernel_spec_manager,
-        cache_enabled=is_enabled,
-        parent=kernel_spec_manager.parent,
+        kernel_spec_manager=kernel_spec_manager, cache_enabled=is_enabled
     )
     yield kspec_cache
-    kspec_cache.clear_instance()
+    kspec_cache = None
+    KernelSpecCache.clear_instance()
 
 
 @pytest.fixture(params=[False, True])  # Add types as needed
@@ -146,14 +134,12 @@ async def tests_get_named_spec(kernel_spec_cache):
 async def tests_get_modified_spec(kernel_spec_cache):
     kspec = await kernel_spec_cache.get_kernel_spec("test2")
     assert kspec.display_name == "Test kernel: test2"
-    assert set(kspec.metadata['client_envs']) == set(UNION_CLIENT_ENVS)
 
     # Modify entry
     _modify_kernelspec(kspec.resource_dir, "test2")
     await asyncio.sleep(0.5)  # sleep for a half-second to allow cache to update item
     kspec = await kernel_spec_cache.get_kernel_spec("test2")
     assert kspec.display_name == "test2 modified!"
-    assert set(kspec.metadata['client_envs']) == set(UNION_CLIENT_ENVS)
 
 
 async def tests_add_spec(kernel_spec_cache, kernelspec_location, other_kernelspec_location):
