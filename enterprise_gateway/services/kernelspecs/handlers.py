@@ -69,7 +69,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin,
 
     @web.authenticated
     async def get(self) -> None:
-        ksm = self.kernel_spec_cache
+        ksc = self.kernel_spec_cache
         km = self.kernel_manager
         model = {}
         model["default"] = km.default_kernel_name
@@ -82,7 +82,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin,
             if kernel_user:
                 self.log.debug("Searching kernels for user '%s' " % kernel_user)
 
-        kspecs = await ensure_async(ksm.get_all_specs())
+        kspecs = await ensure_async(ksc.get_all_specs())
 
         list_kernels_found = []
         for kernel_name, kernel_info in kspecs.items():
@@ -122,14 +122,14 @@ class KernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
 
     @web.authenticated
     async def get(self, kernel_name: str) -> None:
-        ksm = self.kernel_spec_cache
+        ksc = self.kernel_spec_cache
         kernel_name = url_unescape(kernel_name)
         kernel_user_filter = self.request.query_arguments.get("user")
         kernel_user = None
         if kernel_user_filter:
             kernel_user = kernel_user_filter[0].decode("utf-8")
         try:
-            spec = await ensure_async(ksm.get_kernel_spec(kernel_name))
+            spec = await ensure_async(ksc.get_kernel_spec(kernel_name))
         except KeyError:
             raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name)
         if is_kernelspec_model(spec):
@@ -166,9 +166,9 @@ class KernelSpecResourceHandler(
 
     @web.authenticated
     async def get(self, kernel_name: str, path: str, include_body: bool = True) -> None:
-        ksm = self.kernel_spec_cache
+        ksc = self.kernel_spec_cache
         try:
-            kernelspec = await ensure_async(ksm.get_kernel_spec(kernel_name))
+            kernelspec = await ensure_async(ksc.get_kernel_spec(kernel_name))
             self.root = kernelspec.resource_dir
         except KeyError as e:
             raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name) from e

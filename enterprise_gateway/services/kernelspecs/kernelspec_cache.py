@@ -33,7 +33,7 @@ class KernelSpecCache(SingletonConfigurable):
 
     cache_enabled_env = "EG_KERNELSPEC_CACHE_ENABLED"
     cache_enabled = CBool(
-        False,
+        True,
         config=True,
         help="""Enable Kernel Specification caching. (EG_KERNELSPEC_CACHE_ENABLED env var)""",
     )
@@ -110,7 +110,7 @@ class KernelSpecCache(SingletonConfigurable):
                 )
         return kernelspec
 
-    def get_all_items(self) -> Optional[Dict[str, CacheItemType]]:
+    def get_all_items(self) -> Dict[str, CacheItemType]:
         """Retrieves all kernel specification from the cache.
 
         If cache is disabled or no items are in the cache, an empty dictionary is returned;
@@ -135,12 +135,8 @@ class KernelSpecCache(SingletonConfigurable):
         If it determines the cache entry corresponds to a currently unwatched directory,
         that directory will be added to list of observed directories and scheduled accordingly.
         """
-        self.log.info(
-            "KernelSpecCache: adding/updating kernelspec: {kernel_name}".format(
-                kernel_name=kernel_name
-            )
-        )
         if self.cache_enabled:
+            self.log.info(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
             if type(cache_item) is KernelSpec:
                 cache_item = KernelSpecCache.kernel_spec_to_cache_item(cache_item)
 
@@ -159,9 +155,8 @@ class KernelSpecCache(SingletonConfigurable):
 
     def put_all_items(self, kernelspecs: Dict[str, CacheItemType]) -> None:
         """Adds or updates a dictionary of kernel specification in the cache."""
-        if self.cache_enabled and kernelspecs:
-            for kernel_name, cache_item in kernelspecs.items():
-                self.put_item(kernel_name, cache_item)
+        for kernel_name, cache_item in kernelspecs.items():
+            self.put_item(kernel_name, cache_item)
 
     def remove_item(self, kernel_name: str) -> Optional[CacheItemType]:
         """Removes the cache item corresponding to kernel_name from the cache."""
@@ -212,7 +207,7 @@ class KernelSpecCache(SingletonConfigurable):
 
     @staticmethod
     def kernel_spec_to_cache_item(kernelspec: KernelSpec) -> CacheItemType:
-        """Convets a KernelSpec instance to a CacheItemType for storage into the cache."""
+        """Converts a KernelSpec instance to a CacheItemType for storage into the cache."""
         cache_item = dict()
         cache_item["spec"] = kernelspec.to_dict()
         cache_item["resource_dir"] = kernelspec.resource_dir
@@ -221,7 +216,8 @@ class KernelSpecCache(SingletonConfigurable):
     @staticmethod
     def cache_item_to_kernel_spec(cache_item: CacheItemType) -> KernelSpec:
         """Converts a CacheItemType to a KernelSpec instance for user consumption."""
-        return KernelSpec.from_resource_dir(cache_item["resource_dir"])
+        kernel_spec = KernelSpec(resource_dir=cache_item["resource_dir"], **cache_item["spec"])
+        return kernel_spec
 
 
 class KernelSpecChangeHandler(FileSystemEventHandler):

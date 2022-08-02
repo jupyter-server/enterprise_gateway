@@ -42,7 +42,7 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
     param_env["RESPONSE_ADDRESS"] = response_addr
     param_env["KERNEL_SPARK_CONTEXT_INIT_MODE"] = spark_context_init_mode
 
-    # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and ENV_WHITELIST)
+    # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and EG_CLIENT_ENVS)
     # just add the env here.
     param_env.update(os.environ)
     param_env.pop(
