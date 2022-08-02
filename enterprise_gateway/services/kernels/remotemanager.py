@@ -10,7 +10,7 @@ import re
 import signal
 import time
 import uuid
-from typing import Any, Awaitable
+from typing import Any
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import KernelSpec
@@ -180,9 +180,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         # else we should throw 404 when not using an availability mode of 'replication'
         return False
 
-    async def start_kernel(
-        self, *args: list[Any] | None, **kwargs: dict[str, Any] | None
-    ) -> Awaitable[str]:
+    async def start_kernel(self, *args: list[Any] | None, **kwargs: dict[str, Any] | None) -> str:
         """
         Starts a kernel for a session and return its kernel_id.
         Returns
@@ -706,8 +704,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             self.stdin_port = ports[2]
             self.hb_port = ports[3]
             self.control_port = ports[4]
-
-            return super().write_connection_file()
+            super().write_connection_file()
+        return None
 
     def _get_process_proxy(self) -> None:
         """
