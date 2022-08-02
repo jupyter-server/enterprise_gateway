@@ -121,6 +121,10 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     The full path to a certificate authority certificate for SSL/TLS client
     authentication. (EG_CLIENT_CA env var)
     Default: None
+--EnterpriseGatewayApp.client_envs=<list-item-1>...
+    Environment variables allowed to be set when a client requests a
+    new kernel. (EG_CLIENT_ENVS env var)
+    Default: []
 --EnterpriseGatewayApp.conductor_endpoint=<Unicode>
     The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT
     env var)
@@ -140,13 +144,10 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     (EG_DYNAMIC_CONFIG_INTERVAL env var)
     Default: 0
 --EnterpriseGatewayApp.env_process_whitelist=<list-item-1>...
-    Environment variables allowed to be inherited from the spawning process by
-    the kernel. (EG_ENV_PROCESS_WHITELIST env var)
+    DEPRECATED, use inherited_envs
     Default: []
 --EnterpriseGatewayApp.env_whitelist=<list-item-1>...
-    Environment variables allowed to be set when a client requests a new kernel.
-    Use '*' to allow all environment variables sent in the request.
-    (EG_ENV_WHITELIST env var)
+    DEPRECATED, use client_envs.
     Default: []
 --EnterpriseGatewayApp.expose_headers=<Unicode>
     Sets the Access-Control-Expose-Headers header. (EG_EXPOSE_HEADERS env var)
@@ -158,6 +159,10 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     Indicates whether impersonation will be performed during kernel launch.
     (EG_IMPERSONATION_ENABLED env var)
     Default: False
+--EnterpriseGatewayApp.inherited_envs=<list-item-1>...
+    Environment variables allowed to be inherited
+    from the spawning process by the kernel. (EG_INHERITED_ENVS env var)
+    Default: []
 --EnterpriseGatewayApp.ip=<Unicode>
     IP address on which to listen (EG_IP env var)
     Default: '127.0.0.1'

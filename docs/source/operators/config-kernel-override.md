@@ -38,8 +38,10 @@ those same-named variables in the kernel.json `env` stanza.
 
 Environment variables for which this can occur are any variables prefixed with `KERNEL_`
 as well as any variables
-listed in the `EnterpriseGatewayApp.env_whitelist` configurable trait (or via
-the `EG_ENV_WHITELIST` variable). Locally defined variables listed in `EG_PROCESS_ENV_WHITELIST`
+listed in the `EnterpriseGatewayApp.client_envs` configurable trait (or via
+the `EG_CLIENT_ENVS` variable). Likewise, environment variables of the Enterprise Gateway
+server process listed in the `EnterpriseGatewayApp.inherited_envs` configurable trait
+(or via the `EG_INHERITED_ENVS` variable)
 are also available for replacement in the kernel process' environment.
 
 See [Kernel Environment Variables](../users/kernel-envs.md) in the Users documentation section for a complete set of recognized `KERNEL_` variables.

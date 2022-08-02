@@ -137,6 +137,7 @@ async def tests_get_modified_spec(kernel_spec_cache):
 
     # Modify entry
     _modify_kernelspec(kspec.resource_dir, "test2")
+    await asyncio.sleep(0.5)  # sleep for a half-second to allow cache to update item
     kspec = await kernel_spec_cache.get_kernel_spec("test2")
     assert kspec.display_name == "test2 modified!"
 
@@ -180,6 +181,7 @@ async def tests_remove_spec(kernel_spec_cache):
 
     assert kernel_spec_cache.cache_misses == 0
     shutil.rmtree(kspec.resource_dir)
+    await asyncio.sleep(0.5)  # sleep for a half-second to allow cache to remove item
     with pytest.raises(NoSuchKernel):
         await kernel_spec_cache.get_kernel_spec("test2")
 
