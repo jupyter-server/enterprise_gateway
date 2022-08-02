@@ -1,14 +1,19 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Kernel managers that operate against a remote process."""
+
+from __future__ import annotations
+
 import asyncio
 import os
 import re
 import signal
 import time
 import uuid
+from typing import Any
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
+from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from tornado import web
 from traitlets import directional_link
@@ -16,14 +21,18 @@ from traitlets import log as traitlets_log
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
-from ..processproxies.processproxy import LocalProcessProxy, RemoteProcessProxy
+from ..processproxies.processproxy import (
+    BaseProcessProxyABC,
+    LocalProcessProxy,
+    RemoteProcessProxy,
+)
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
 kernel_restart_status_poll_interval = float(os.getenv("EG_RESTART_STATUS_POLL_INTERVAL", 1.0))
 
 
-def import_item(name):
+def import_item(name: str):
     """Import and return ``bar`` given the string ``foo.bar``.
     Calling ``bar = import_item("foo.bar")`` is the functional equivalent of
     executing the code ``from foo import bar``.
@@ -52,7 +61,7 @@ def import_item(name):
         return __import__(parts[0])
 
 
-def get_process_proxy_config(kernelspec):
+def get_process_proxy_config(kernelspec: KernelSpec) -> dict[str, Any]:
     """
     Return the process-proxy stanza from the kernelspec.
     Checks the kernelspec's metadata dictionary for a process proxy entry.
@@ -79,7 +88,7 @@ def get_process_proxy_config(kernelspec):
     }
 
 
-def new_kernel_id(**kwargs):
+def new_kernel_id(**kwargs: dict[str, Any] | None) -> str:
     """
     This method provides a mechanism by which clients can specify a kernel's id.  In this case
     that mechanism is via the per-kernel environment variable: KERNEL_ID.  If specified, its value
@@ -141,7 +150,7 @@ class TrackPendingRequests:
         cur_val = int(self._pending_requests_user.get(username))
         self._pending_requests_user[username] = cur_val - 1
 
-    def get_counts(self, username):
+    def get_counts(self, username: str) -> tuple[int, int]:
         return self._pending_requests_all, int(self._pending_requests_user.get(username, 0))
 
 
@@ -150,26 +159,28 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy.
     """
 
-    pending_requests = TrackPendingRequests()  # Used to enforce max-kernel limits
+    pending_requests: TrackPendingRequests = (
+        TrackPendingRequests()
+    )  # Used to enforce max-kernel limits
 
-    def _kernel_manager_class_default(self):
+    def _kernel_manager_class_default(self) -> str:
         return "enterprise_gateway.services.kernels.remotemanager.RemoteKernelManager"
 
-    def check_kernel_id(self, kernel_id):
+    def check_kernel_id(self, kernel_id: str) -> None:
         """Check that a kernel_id exists and raise 404 if not."""
         if kernel_id not in self:
             if not self._refresh_kernel(kernel_id):
                 self.parent.kernel_session_manager.delete_session(kernel_id)
                 raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
 
-    def _refresh_kernel(self, kernel_id) -> bool:
+    def _refresh_kernel(self, kernel_id: str) -> bool:
         if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
             self.parent.kernel_session_manager.load_session(kernel_id)
             return self.parent.kernel_session_manager.start_session(kernel_id)
         # else we should throw 404 when not using an availability mode of 'replication'
         return False
 
-    async def start_kernel(self, *args, **kwargs):
+    async def start_kernel(self, *args: list[Any] | None, **kwargs: dict[str, Any] | None) -> str:
         """
         Starts a kernel for a session and return its kernel_id.
         Returns
@@ -196,7 +207,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         return kernel_id
 
-    async def restart_kernel(self, kernel_id):
+    async def restart_kernel(self, kernel_id: str, now: bool = False) -> None:
         kernel = self.get_kernel(kernel_id)
         if kernel.restarting:  # assuming duplicate request.
             await self.wait_for_restart_finish(kernel_id, "restart")
@@ -208,7 +219,9 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         finally:
             kernel.restarting = False
 
-    async def shutdown_kernel(self, kernel_id, now=False, restart=False):
+    async def shutdown_kernel(
+        self, kernel_id: str, now: bool = False, restart: bool = False
+    ) -> None:
         kernel = self.get_kernel(kernel_id)
         if kernel.restarting:
             await self.wait_for_restart_finish(kernel_id, "shutdown")
@@ -218,7 +231,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
             raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
 
-    async def wait_for_restart_finish(self, kernel_id, action="shutdown"):
+    async def wait_for_restart_finish(self, kernel_id: str, action: str = "shutdown") -> None:
         kernel = self.get_kernel(kernel_id)
         start_time = float(time.time())  # epoc time
         timeout = kernel.kernel_launch_timeout
@@ -282,7 +295,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
                         raise web.HTTPError(403, error_message)
         return
 
-    def remove_kernel(self, kernel_id):
+    def remove_kernel(self, kernel_id: str) -> None:
         """
         Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session.
         """
@@ -290,8 +303,13 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
-        self, kernel_id, kernel_name, connection_info, process_info, launch_args
-    ):
+        self,
+        kernel_id: str,
+        kernel_name: str,
+        connection_info: dict[str, Any],
+        process_info: dict[str, Any],
+        launch_args: dict[str, Any],
+    ) -> bool:
         """
         Starts a kernel from a persisted kernel session.
         This method is used in HA situations when a previously running Enterprise Gateway instance has
@@ -365,7 +383,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             func()
         return True
 
-    def new_kernel_id(self, **kwargs):
+    def new_kernel_id(self, **kwargs: dict[str, Any] | None) -> str:
         """
         Determines the kernel_id to use for a new kernel.
         """
@@ -381,7 +399,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     returned - upon which methods of poll(), wait(), send_signal(), and kill() can be called.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: dict[str, Any] | None):
         super().__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None
@@ -391,6 +409,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.user_overrides = {}
         self.kernel_launch_timeout = default_kernel_launch_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
+        self._activity_stream = None
 
         # If this instance supports port caching, then disable cache_ports since we don't need this
         # for remote kernels and it breaks the ability to support port ranges for local kernels (which
@@ -410,7 +429,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 parent=self,
             )
 
-    def _link_dependent_props(self):
+    def _link_dependent_props(self) -> None:
         """
         Ensure that RemoteKernelManager, when used as part of an EnterpriseGatewayApp,
         has certain necessary configuration stay in sync with the app's configuration.
@@ -440,7 +459,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             directional_link((eg_instance, prop), (self, prop)) for prop in dependent_props
         ]
 
-    async def start_kernel(self, **kwargs):
+    async def start_kernel(self, **kwargs: dict[str, Any] | None):
         """
         Starts a kernel in a separate process.
         Where the started kernel resides depends on the configured process proxy.
@@ -454,7 +473,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self._capture_user_overrides(**kwargs)
         await super().start_kernel(**kwargs)
 
-    def _capture_user_overrides(self, **kwargs):
+    def _capture_user_overrides(self, **kwargs: dict[str, Any] | None) -> None:
         """
         Make a copy of any allowed or KERNEL_ env values provided by user.  These will be injected
         back into the env after the kernelspec env has been applied.  This enables defaulting behavior
@@ -475,7 +494,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             }
         )
 
-    def format_kernel_cmd(self, extra_arguments=None):
+    def format_kernel_cmd(self, extra_arguments: list[str] | None = None) -> list[str]:
         """
         Replace templated args (e.g. {response_address}, {port_range}, or {kernel_id}).
         """
@@ -501,7 +520,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             return [pat.sub(from_ns, arg) for arg in cmd]
         return cmd
 
-    async def _launch_kernel(self, kernel_cmd, **kwargs):
+    async def _launch_kernel(
+        self, kernel_cmd: list[str], **kwargs: dict[str, Any] | None
+    ) -> BaseProcessProxyABC:
         # Note: despite the under-bar prefix to this method, the jupyter_client comment says that
         # this method should be "[overridden] in a subclass to launch kernel subprocesses differently".
         # So that's what we've done.
@@ -528,7 +549,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         proxy = await self.process_proxy.launch_process(kernel_cmd, **kwargs)
         return proxy
 
-    def request_shutdown(self, restart=False):
+    def request_shutdown(self, restart: bool = False) -> None:
         """
         Send a shutdown request via control channel and process proxy (if remote).
         """
@@ -539,7 +560,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         if isinstance(self.process_proxy, RemoteProcessProxy):
             self.process_proxy.shutdown_listener()
 
-    async def restart_kernel(self, now=False, **kwargs):
+    async def restart_kernel(self, now: bool = False, **kwargs: dict[str, Any] | None) -> None:
         """
         Restarts a kernel with the arguments that were used to launch it.
         This is an automatic restart request (now=True) AND this is associated with a
@@ -576,7 +597,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                     "clients connected at this time.".format(kernel_id)
                 )
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
-                self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
+                await self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
                 return
         await super().restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
@@ -592,7 +613,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         if now:
             self.restarting = False
 
-    async def signal_kernel(self, signum):
+    async def signal_kernel(self, signum: int) -> None:
         """
         Sends signal `signum` to the kernel process.
         """
@@ -629,7 +650,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         else:
             raise RuntimeError("Cannot signal kernel. No kernel is running!")
 
-    def cleanup(self, connection_file=True):
+    def cleanup(self, connection_file: bool = True) -> None:
         """
         Clean up resources when the kernel is shut down
         """
@@ -646,7 +667,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             self.process_proxy = None
         return super().cleanup(connection_file)
 
-    def cleanup_resources(self, restart=False):
+    def cleanup_resources(self, restart: bool = False) -> None:
         """
         Clean up resources when the kernel is shut down
         """
@@ -664,7 +685,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
         return super().cleanup_resources(restart)
 
-    def write_connection_file(self):
+    def write_connection_file(self) -> None:
         """
         Write connection info to JSON dict in self.connection_file if the kernel is local.
         If this is a remote kernel that's using a response address or we're restarting, we should skip the
@@ -683,12 +704,12 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             self.stdin_port = ports[2]
             self.hb_port = ports[3]
             self.control_port = ports[4]
+            super().write_connection_file()
+        return None
 
-            return super().write_connection_file()
-
-    def _get_process_proxy(self):
+    def _get_process_proxy(self) -> None:
         """
-         Reads the associated kernelspec and to see if has a process proxy stanza.
+        Reads the associated kernelspec and to see if has a process proxy stanza.
         If one exists, it instantiates an instance.  If a process proxy is not
         specified in the kernelspec, a LocalProcessProxy stanza is fabricated and
         instantiated.
@@ -709,21 +730,21 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     # access the app's configuration using the traitlet parent chain.
     # When it's used independently, it should fall back to safe defaults.
     @property
-    def kernel_session_manager(self):
+    def kernel_session_manager(self) -> KernelSessionManager | None:
         try:
             return self.parent.parent.kernel_session_manager
         except AttributeError:
             return None
 
     @property
-    def cull_idle_timeout(self):
+    def cull_idle_timeout(self) -> int:
         try:
             return self.parent.cull_idle_timeout
         except AttributeError:
             return 0
 
     @property
-    def mapping_kernel_manager(self):
+    def mapping_kernel_manager(self) -> RemoteMappingKernelManager | None:
         try:
             return self.parent
         except AttributeError:

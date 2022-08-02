@@ -1,10 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for kernel CRUD and communication."""
+
+from __future__ import annotations
+
 import json
 import os
 from functools import partial
-from typing import List
+from typing import Any
 
 import jupyter_server.services.kernels.handlers as jupyter_server_handlers
 import tornado
@@ -61,7 +64,7 @@ class MainKernelHandler(
             # Allow all KERNEL_* envs and those specified in client_envs and set from client.  If this EG
             # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead
             # and add those keys to the "working" allowed_envs list, otherwise, just transfer the configured envs.
-            allowed_envs: List[str]
+            allowed_envs: list[str]
             if self.client_envs == ["*"]:
                 allowed_envs = model["env"].keys()
             else:
@@ -123,7 +126,7 @@ class MainKernelHandler(
         else:
             await super().get()
 
-    def options(self, **kwargs):
+    def options(self, **kwargs: dict[str, Any] | None):
         """Method for properly handling CORS pre-flight"""
         self.finish()
 
@@ -135,19 +138,19 @@ class KernelHandler(
     JSON errors.
     """
 
-    def options(self, **kwargs):
+    def options(self, **kwargs: dict[str, Any] | None):
         """Method for properly handling CORS pre-flight"""
         self.finish()
 
     @web.authenticated
-    def get(self, kernel_id):
+    def get(self, kernel_id: str):
         km = self.kernel_manager
         km.check_kernel_id(kernel_id)
         model = km.kernel_model(kernel_id)
         self.finish(json.dumps(model, default=date_default))
 
 
-default_handlers: List[tuple] = []
+default_handlers: list[tuple] = []
 for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists
