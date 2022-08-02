@@ -64,7 +64,7 @@ class MainKernelHandler(
             # Allow all KERNEL_* envs and those specified in client_envs and set from client.  If this EG
             # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead
             # and add those keys to the "working" allowed_envs list, otherwise, just transfer the configured envs.
-            allowed_envs: List[str]
+            allowed_envs: list[str]
             if self.client_envs == ["*"]:
                 allowed_envs = model["env"].keys()
             else:
