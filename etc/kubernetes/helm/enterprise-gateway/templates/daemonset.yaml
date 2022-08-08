@@ -49,8 +49,10 @@ spec:
           value: {{ .Values.kip.pullPolicy }}
         - name: KIP_CRI_ENDPOINT
           value: "unix://{{ .Values.kip.criSocket }}"
+        {{- if .Values.kip.defaultContainerRegistry }}
         - name: KIP_DEFAULT_CONTAINER_REGISTRY
           value: {{ .Values.kip.defaultContainerRegistry }}
+        {{- end }}
         # Optional authorization token passed in all requests (should match EG_AUTH_TOKEN)
         {{- if .Values.authToken }}
         - name: KIP_AUTH_TOKEN
