@@ -150,7 +150,6 @@ class ContainerProcessProxy(RemoteProcessProxy):
         # See https://github.com/jupyter-server/enterprise_gateway/issues/827
         if container_status in self.get_initial_states():
             result = None
-
         return result
 
     def send_signal(self, signum: int) -> bool | None:
@@ -184,12 +183,10 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
         return result
 
-    def cleanup(self) -> None:
-        # Since container objects don't necessarily go away on their own, we need to perform the same
-        # cleanup we'd normally perform on forced kill situations.
-
-        self.kill()
-        super().cleanup()
+    def shutdown_listener(self):
+        super().shutdown_listener()
+        if self.container_name:  # We only have something to terminate if we have a name
+            self.terminate_container_resources()
 
     async def confirm_remote_startup(self) -> None:
         """Confirms the container has started and returned necessary connection information."""
