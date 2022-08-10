@@ -102,8 +102,11 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
-        # or pod associated with the kernel.  If we created the namespace and we're not in the
-        # the process of restarting the kernel, then that's our target, else just delete the pod.
+        # and/or pod associated with the kernel.  We'll always target the pod first so that shutdown
+        # is perceived as happening more rapidly.  Then, if we created the namespace, and we're not
+        # in the process of restarting the kernel, we'll delete the namespace.
+        # After deleting the pod we check the container status, rather than the status returned
+        # from the pod deletion API, since it's not necessarily reflective of the actual status.
 
         result = False
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy="Background")
@@ -154,14 +157,10 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                         result = True
 
                 if not result:
-                    cur_status = self.get_container_status(None)
-                    if cur_status is None:
-                        result = True
-                    else:
-                        self.log.warning(
-                            f"Namespace {self.kernel_namespace} is not yet deleted.  "
-                            f"Current status is '{cur_status}'."
-                        )
+                    self.log.warning(
+                        f"Namespace {self.kernel_namespace} is not yet deleted.  "
+                        f"Current status is '{status}'."
+                    )
 
         except Exception as err:
             if isinstance(err, client.rest.ApiException) and err.status == 404:
