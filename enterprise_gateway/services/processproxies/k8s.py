@@ -102,23 +102,48 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
-        # or pod associated with the kernel.  If we created the namespace and we're not in the
-        # the process of restarting the kernel, then that's our target, else just delete the pod.
+        # and/or pod associated with the kernel.  We'll always target the pod first so that shutdown
+        # is perceived as happening more rapidly.  Then, if we created the namespace, and we're not
+        # in the process of restarting the kernel, we'll delete the namespace.
+        # After deleting the pod we check the container status, rather than the status returned
+        # from the pod deletion API, since it's not necessarily reflective of the actual status.
 
         result = False
         body = client.V1DeleteOptions(grace_period_seconds=0, propagation_policy="Background")
 
-        if self.delete_kernel_namespace and not self.kernel_manager.restarting:
-            object_name = "namespace"
-        else:
-            object_name = "pod"
-
-        # Delete the namespace or pod...
+        # Delete the pod then, if applicable, the namespace
         try:
+            object_name = "pod"
             status = None
             termination_stati = ["Succeeded", "Failed", "Terminating"]
 
+            # Deleting a Pod will return a v1.Pod if found and its status will be a PodStatus containing
+            # a phase string property
+            # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#podstatus-v1-core
+            v1_pod = client.CoreV1Api().delete_namespaced_pod(
+                namespace=self.kernel_namespace, body=body, name=self.container_name
+            )
+            if v1_pod and v1_pod.status:
+                status = v1_pod.status.phase
+
+            if status in termination_stati:
+                result = True
+
+            if not result:
+                # If the status indicates the pod is not terminated, capture its current status.
+                # If None, update the result to True, else issue warning that it is not YET deleted
+                # since we still have the hard termination sequence to occur.
+                cur_status = self.get_container_status(None)
+                if cur_status is None:
+                    result = True
+                else:
+                    self.log.warning(
+                        f"Pod {self.kernel_namespace}.{self.container_name} is not yet deleted.  "
+                        f"Current status is '{cur_status}'."
+                    )
+
             if self.delete_kernel_namespace and not self.kernel_manager.restarting:
+                object_name = "namespace"
                 # Status is a return value for calls that don't return other objects.
                 # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#status-v1-meta
                 v1_status = client.CoreV1Api().delete_namespace(
@@ -126,22 +151,17 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 )
                 if v1_status:
                     status = v1_status.status
-            else:
-                # Deleting a Pod will return a v1.Pod if found and its status will be a PodStatus containing
-                # a phase string property
-                # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#podstatus-v1-core
-                v1_pod = client.CoreV1Api().delete_namespaced_pod(
-                    namespace=self.kernel_namespace, body=body, name=self.container_name
-                )
-                if v1_pod and v1_pod.status:
-                    status = v1_pod.status.phase
 
-            if status:
-                if any(s in status for s in termination_stati):
-                    result = True
+                if status:
+                    if any(s in status for s in termination_stati):
+                        result = True
 
-            if not result:
-                self.log.warning(f"Unable to delete {object_name}: {status}")
+                if not result:
+                    self.log.warning(
+                        f"Namespace {self.kernel_namespace} is not yet deleted.  "
+                        f"Current status is '{status}'."
+                    )
+
         except Exception as err:
             if isinstance(err, client.rest.ApiException) and err.status == 404:
                 result = True  # okay if its not found
