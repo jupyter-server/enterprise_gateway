@@ -530,7 +530,5 @@ class WebhookKernelSessionManager(KernelSessionManager):
         """
         self.log.debug("Loading saved session(s)")
         self._sessions.update(
-            KernelSessionManager.post_load_transformation(
-                kernel_session["kernel_session"]
-            )
+            KernelSessionManager.post_load_transformation(kernel_session["kernel_session"])
         )
