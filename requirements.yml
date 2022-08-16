@@ -13,7 +13,7 @@ dependencies:
   - pip
   - pre-commit
   - pycryptodomex>=3.9.7
-  - python-kubernetes>=4.0.0
+  - python-kubernetes>=18.20.0
   - pyzmq>=17.0.0
   - requests>=2.7,<3.0
   - tornado>=6.1
