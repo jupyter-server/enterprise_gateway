@@ -502,7 +502,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
         if self.enable_persistence:
             response = requests.get(self.webhook_url, auth=self.auth)
             if response.status_code == 200:
-                kernel_sessions = response.content
+                kernel_sessions = response.json()
                 for kernel_session in kernel_sessions:
                     self._load_session_from_response(kernel_session)
             else:
@@ -518,7 +518,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
             if kernel_id is not None:
                 response = requests.get(f"{self.webhook_url}/{kernel_id}", auth=self.auth)
                 if response.status_code == 200:
-                    kernel_session = response.content
+                    kernel_session = response.json()
                     self._load_session_from_response(kernel_session)
                 else:
                     self.log.error(response.raise_for_status())
@@ -531,7 +531,5 @@ class WebhookKernelSessionManager(KernelSessionManager):
         """
         self.log.debug("Loading saved session(s)")
         self._sessions.update(
-            KernelSessionManager.post_load_transformation(
-                json.loads(kernel_session)["kernel_session"]
-            )
+            KernelSessionManager.post_load_transformation(kernel_session["kernel_session"])
         )
