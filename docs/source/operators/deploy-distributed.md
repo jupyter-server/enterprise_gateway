@@ -40,7 +40,7 @@ All the kernel *specifications* configured to use the `DistributedProcessProxy` 
 The following installs the sample `python_distributed` kernel specification relative to the 2.6.0 release on the given node. This step must be repeated for each node and each kernel specification.
 
 ```Bash
-wget https://github.com/jupyter-server/enterprise_gateway/releases/download/v2.5.0/jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz
+wget https://github.com/jupyter-server/enterprise_gateway/releases/download/v2.6.0/jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
 tar -zxvf jupyter_enterprise_gateway_kernelspecs-2.6.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
 ```
