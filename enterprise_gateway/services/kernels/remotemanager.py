@@ -18,6 +18,7 @@ from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelMana
 from tornado import web
 from traitlets import directional_link
 from traitlets import log as traitlets_log
+from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
@@ -159,6 +160,28 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy.
     """
 
+    def _context_default(self) -> Context:
+        """
+        We override the _context_default method in
+        """
+        zmq_context = super()._context_default()
+        if self.shared_context:  # this should be True by default
+
+            # pyzmq currently does not expose defaults for these values, so we replicate them here
+            # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023; zmq.Context.MAX_SOCKETS
+            # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1; zmq.Context.IO_THREADS
+            zmq_max_sock_desired = int(os.getenv("EG_ZMQ_MAX_SOCKETS", zmq_context.MAX_SOCKETS))
+            if zmq_max_sock_desired != zmq_context.MAX_SOCKETS:
+                zmq_context.set(MAX_SOCKETS, zmq_max_sock_desired)
+                self.log.info(f"Set ZMQ_MAX_SOCKETS to {zmq_context.MAX_SOCKETS}")
+
+            zmq_io_threads_desired = int(os.getenv("EG_ZMQ_IO_THREADS", zmq_context.IO_THREADS))
+            if zmq_io_threads_desired != zmq_context.IO_THREADS:
+                zmq_context.set(IO_THREADS, zmq_io_threads_desired)
+                self.log.info(f"Set ZMQ_IO_THREADS to {zmq_context.IO_THREADS}")
+
+        return zmq_context
+
     pending_requests: TrackPendingRequests = (
         TrackPendingRequests()
     )  # Used to enforce max-kernel limits
@@ -256,9 +279,10 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
 
         if self.parent.max_kernels is not None or self.parent.max_kernels_per_user >= 0:
-            pending_all, pending_user = RemoteMappingKernelManager.pending_requests.get_counts(
-                username
-            )
+            (
+                pending_all,
+                pending_user,
+            ) = RemoteMappingKernelManager.pending_requests.get_counts(username)
 
             # Enforce overall limit...
             if self.parent.max_kernels is not None:

@@ -28,8 +28,9 @@ The following environment variables may be useful for troubleshooting:
     The interval (in seconds) to wait before checking poll results again.
 
   EG_RESTART_STATUS_POLL_INTERVAL=1.0
-    The interval (in seconds) to wait before polling for the restart status again when duplicate restart request
-    for the same kernel is received or when a shutdown request is received while kernel is still restarting.
+    The interval (in seconds) to wait before polling for the restart status again when
+    duplicate restart request for the same kernel is received or when a shutdown request
+    is received while kernel is still restarting.
 
   EG_REMOVE_CONTAINER=True
     Used by launch_docker.py, indicates whether the kernel's docker container should be
