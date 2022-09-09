@@ -17,6 +17,7 @@ from traitlets import List as ListTrait
 from traitlets import Set as SetTrait
 from traitlets import TraitError, Type, Unicode, default, observe, validate
 from traitlets.config import Configurable
+from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 
 class CORSMixin:
@@ -471,6 +472,26 @@ class EnterpriseGatewayConfigMixin(Configurable):
                 f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
             )
         return value
+
+    @validate("context")
+    def _context_validate(self, proposal: Dict[str, Context]) -> Context:
+        zmq_context = proposal["value"]
+        try:
+            assert isinstance(zmq_context, Context)
+        except ValueError:
+            raise TraitError(f"Invalid ZMQ Context instance! '{type(zmq_context)}'")
+        if self.shared_context:
+            # pyzmq currently does not expose defaults for these values, so we replicate them here
+
+            # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023
+            zmq_context.set(MAX_SOCKETS, int(os.getenv("EG_ZMQ_MAX_SOCKETS", 1023)))
+            self.log.debug(f"Set ZMQ sockets to {zmq_context.MAX_SOCKETS}")
+
+            # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1
+            zmq_context.set(IO_THREADS, int(os.getenv("EG_ZMQ_IO_THREADS", 1)))
+            self.log.debug(f"Set ZMQ IO threads to {zmq_context.IO_THREADS}")
+
+        return zmq_context
 
     # Yarn endpoint
     yarn_endpoint_env = "EG_YARN_ENDPOINT"
