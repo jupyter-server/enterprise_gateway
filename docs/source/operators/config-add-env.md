@@ -68,9 +68,9 @@ Besides those environment variables associated with configurable options, the fo
     Kubernetes only.  Used during Kubernetes deployment, this indicates the name of
     the namespace in which the Enterprise Gateway service is deployed.  The
     namespace is created prior to deployment, and is set into the EG_NAMESPACE env via
-    deployment.yaml script. This value is then used within Enterprise Gateway to coordinate kernel
-    configurations. Should this value not be set during deployment, Enterprise Gateway
-    will default its value to namespace 'default'.
+    deployment.yaml script. This value is then used within Enterprise Gateway to coordinate
+    kernel configurations. Should this value not be set during deployment, Enterprise
+    Gateway will default its value to namespace 'default'.
 
   EG_PROHIBITED_GIDS=0
     Containers only.  A comma-separated list of group ids (GID) whose values are not
@@ -131,5 +131,16 @@ Besides those environment variables associated with configurable options, the fo
     Any other value will error.
 
   EG_YARN_CERT_BUNDLE=<custom_truststore_path>
-    The path to a .pem or any other custom truststore used as a CA bundle in yarn-api-client.
+    The path to a .pem or any other custom truststore used as a CA bundle in
+    yarn-api-client.
+
+  EG_ZMQ_IO_THREADS=1
+    The size of the ZMQ thread pool used to handle I/O operations.  Applies only to shared
+    contexts which are enabled by default but can be specified via
+    `RemoteMappingKernelManager.shared_context = True`.
+
+  EG_ZMQ_MAX_SOCKETS=1023
+    Specifies the maximum number of sockets to allow on the ZMQ context.  Applies only to
+    shared contexts which are enabled by default but can be specified via
+    `RemoteMappingKernelManager.shared_context = True`.
 ```
