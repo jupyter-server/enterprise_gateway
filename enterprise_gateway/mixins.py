@@ -17,7 +17,6 @@ from traitlets import List as ListTrait
 from traitlets import Set as SetTrait
 from traitlets import TraitError, Type, Unicode, default, observe, validate
 from traitlets.config import Configurable
-from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 
 class CORSMixin:
@@ -472,32 +471,6 @@ class EnterpriseGatewayConfigMixin(Configurable):
                 f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
             )
         return value
-
-    @validate("context")
-    def _context_validate(self, proposal: Dict[str, Context]) -> Context:
-        zmq_context = proposal["value"]
-        try:
-            assert isinstance(zmq_context, Context)
-        except ValueError:
-            raise TraitError(f"Invalid ZMQ Context instance! '{type(zmq_context)}'")
-
-        # parent is RemoteMappingKernelManager
-        if self.parent.shared_context:  # this should be True by default
-
-            # pyzmq currently does not expose defaults for these values, so we replicate them here
-            # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023; zmq.Context.MAX_SOCKETS
-            # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1; zmq.Context.IO_THREADS
-            zmq_max_sock_desired = int(os.getenv("EG_ZMQ_MAX_SOCKETS", zmq_context.MAX_SOCKETS))
-            if zmq_max_sock_desired != zmq_context.MAX_SOCKETS:
-                zmq_context.set(MAX_SOCKETS, zmq_max_sock_desired)
-                self.log.debug(f"ZMQ_MAX_SOCKETS: {zmq_context.MAX_SOCKETS}")
-
-            zmq_io_threads_desired = int(os.getenv("EG_ZMQ_IO_THREADS", zmq_context.IO_THREADS))
-            if zmq_io_threads_desired != zmq_context.IO_THREADS:
-                zmq_context.set(IO_THREADS, zmq_io_threads_desired)
-                self.log.debug(f"ZMQ_IO_THREADS: {zmq_context.IO_THREADS}")
-
-        return zmq_context
 
     # Yarn endpoint
     yarn_endpoint_env = "EG_YARN_ENDPOINT"
