@@ -480,16 +480,22 @@ class EnterpriseGatewayConfigMixin(Configurable):
             assert isinstance(zmq_context, Context)
         except ValueError:
             raise TraitError(f"Invalid ZMQ Context instance! '{type(zmq_context)}'")
-        if self.shared_context:
+
+        # parent is RemoteMappingKernelManager
+        if self.parent.shared_context:  # this should be True by default
+
             # pyzmq currently does not expose defaults for these values, so we replicate them here
+            # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023; zmq.Context.MAX_SOCKETS
+            # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1; zmq.Context.IO_THREADS
+            zmq_max_sock_desired = int(os.getenv("EG_ZMQ_MAX_SOCKETS", zmq_context.MAX_SOCKETS))
+            if zmq_max_sock_desired != zmq_context.MAX_SOCKETS:
+                zmq_context.set(MAX_SOCKETS, zmq_max_sock_desired)
+                self.log.debug(f"ZMQ_MAX_SOCKETS: {zmq_context.MAX_SOCKETS}")
 
-            # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023
-            zmq_context.set(MAX_SOCKETS, int(os.getenv("EG_ZMQ_MAX_SOCKETS", 1023)))
-            self.log.debug(f"Set ZMQ sockets to {zmq_context.MAX_SOCKETS}")
-
-            # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1
-            zmq_context.set(IO_THREADS, int(os.getenv("EG_ZMQ_IO_THREADS", 1)))
-            self.log.debug(f"Set ZMQ IO threads to {zmq_context.IO_THREADS}")
+            zmq_io_threads_desired = int(os.getenv("EG_ZMQ_IO_THREADS", zmq_context.IO_THREADS))
+            if zmq_io_threads_desired != zmq_context.IO_THREADS:
+                zmq_context.set(IO_THREADS, zmq_io_threads_desired)
+                self.log.debug(f"ZMQ_IO_THREADS: {zmq_context.IO_THREADS}")
 
         return zmq_context
 
