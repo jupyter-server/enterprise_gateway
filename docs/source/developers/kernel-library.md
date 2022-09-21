@@ -14,8 +14,8 @@ from enterprise_gateway.services.kernels.remotemanager import RemoteKernelManage
 with open("my_notebook.ipynb") as fp:
     test_notebook = nbformat.read(fp, as_version=4)
 
-client = NotebookClient(nb=test_notebook, kernel_manager_class=RemoteKernelManager, kernel_name='my_remote_kernel')
-client.execute()
+client = NotebookClient(nb=test_notebook, kernel_manager_class=RemoteKernelManager)
+client.execute(kernel_name='my_remote_kernel')
 ```
 
 The above code will execute the notebook on a kernel named `my_remote_kernel` using its configured `ProcessProxy`.
