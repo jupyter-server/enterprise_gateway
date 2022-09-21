@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import random
+import signal
 import socket
 import tempfile
 import uuid
@@ -35,6 +36,7 @@ logger = logging.getLogger("launch_ipykernel")
 logger.setLevel(log_level)
 
 DEFAULT_KERNEL_CLASS_NAME = "ipykernel.ipkernel.IPythonKernel"
+__spark_context = None
 
 
 class ExceptionThread(Thread):
@@ -76,6 +78,9 @@ def initialize_namespace(namespace, cluster_type="spark"):
             """Initialize Spark session and replace global variable
             placeholders with real Spark session object references."""
             spark = SparkSession.builder.getOrCreate()
+
+            global __spark_context
+            __spark_context = spark.sparkContext
 
             # Stop the spark session on exit
             atexit.register(lambda: spark.stop())
@@ -360,7 +365,26 @@ def get_server_request(sock):
     return request_info
 
 
-def server_listener(sock, parent_pid):
+def cancel_spark_jobs(sig, frame):
+    if __spark_context is None:
+        return
+    try:
+        __spark_context.cancelAllJobs()
+    except Exception as e:
+        if e.__class__.__name__ == "Py4JError":
+            try:
+                __spark_context.cancelAllJobs()
+            except Exception as ex:
+                print(
+                    f"Error occurred while re-attempting Spark job cancellation when interrupting the kernel: {ex}"
+                )
+        else:
+            print(
+                f"Error occurred while attempting Spark job cancellation when interrupting the kernel: {e}"
+            )
+
+
+def server_listener(sock, parent_pid, cluster_type):
     """Waits for requests from the server and processes each when received.  Currently,
     these will be one of a sending a signal to the corresponding kernel process (signum) or
     stopping the listener and exiting the kernel (shutdown).
@@ -375,6 +399,8 @@ def server_listener(sock, parent_pid):
             if request.get("signum") is not None:
                 signum = int(request.get("signum"))
                 os.kill(parent_pid, signum)
+                if signum == 2 and cluster_type == "spark":
+                    os.kill(parent_pid, signal.SIGUSR2)
             if request.get("shutdown") is not None:
                 shutdown = bool(request.get("shutdown"))
             if signum != 0:
@@ -564,6 +590,10 @@ if __name__ == "__main__":
     if public_key is None:
         raise RuntimeError("Parameter '--public-key' must be provided!")
 
+    # Initialize the kernel namespace for the given cluster type
+    if cluster_type == "spark" and spark_init_mode == "none":
+        cluster_type = "none"
+
     # If the connection file doesn't exist, then create it.
     if (connection_file and not os.path.isfile(connection_file)) or kernel_id is not None:
         key = str(uuid.uuid4()).encode()  # convert to bytes
@@ -591,13 +621,13 @@ if __name__ == "__main__":
                     args=(
                         comm_socket,
                         os.getpid(),
+                        cluster_type,
                     ),
                 )
                 server_listener_process.start()
 
-    # Initialize the kernel namespace for the given cluster type
-    if cluster_type == "spark" and spark_init_mode == "none":
-        cluster_type = "none"
+    if cluster_type == "spark":
+        signal.signal(signal.SIGUSR2, cancel_spark_jobs)
 
     # launch the IPython kernel instance
     start_ipython(

@@ -354,7 +354,7 @@ Upgrading the connection to a websocket and issuing code against that websocket 
 
 Kernel interrupt
 ~~~~~~~~~~~~~~~~
-A kernel is interrupted by issuing a ``POST`` request against the ``/api/kernels<kernel_id>/interrupt`` endpoint.
+A kernel is interrupted by issuing a ``POST`` request against the ``/api/kernels/<kernel_id>/interrupt`` endpoint.
 
 In this example, we will interrupt the ``spark_python_yarn_cluster`` kernel with ID ``f88bdc84-04c6-4021-963d-6811a61eca18`` that was started previously.
 

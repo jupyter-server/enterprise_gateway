@@ -1,6 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for session CRUD."""
+from typing import List
 
 import jupyter_server.services.sessions.handlers as jupyter_server_handlers
 import tornado
@@ -16,7 +17,7 @@ class SessionRootHandler(
     JSON errors.
     """
 
-    async def get(self):
+    async def get(self) -> None:
         """Overrides the super class method to honor the kernel listing
         configuration setting.
 
@@ -31,7 +32,7 @@ class SessionRootHandler(
             await ensure_async(super().get())
 
 
-default_handlers = []
+default_handlers: List[tuple] = []
 for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists

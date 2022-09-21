@@ -12,7 +12,7 @@ SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
-VERSION?=3.0.0.dev0
+VERSION?=3.1.0.dev0
 SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
@@ -22,8 +22,7 @@ else
 endif
 
 
-#WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" )
-WHEEL_FILES:=$(shell find enterprise_gateway -type f )
+WHEEL_FILES:=$(shell find . -type f ! -path "./build/*" ! -path "./etc/*" ! -path "./docs/*" ! -path "./.git/*" ! -path "./.idea/*" ! -path "./dist/*" ! -path "./.image-*" ! -path "*/__pycache__/*" )
 WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py3-none-any.whl
 SDIST_FILE:=dist/jupyter_enterprise_gateway-$(VERSION).tar.gz
 DIST_FILES=$(WHEEL_FILE) $(SDIST_FILE)
@@ -33,7 +32,7 @@ HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway
 HELM_CHART:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
 HELM_CHART_DIR:=etc/kubernetes/helm/enterprise-gateway
 HELM_CHART_FILES:=$(shell find $(HELM_CHART_DIR) -type f ! -name .DS_Store)
-HELM_INSTALL_DIR:=/usr/local/bin
+HELM_INSTALL_DIR?=/usr/local/bin
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html

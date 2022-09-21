@@ -46,7 +46,7 @@ class KernelImagePuller:
         self.num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
         self.num_retries = int(os.getenv("KIP_NUM_RETRIES", "3"))
         self.policy = os.getenv("KIP_PULL_POLICY", KernelImagePuller.POLICY_IF_NOT_PRESENT)
-        self.default_container_registry = os.getenv("KIP_DEFAULT_CONTAINER_REGISTRY", "docker.io")
+        self.default_container_registry = os.getenv("KIP_DEFAULT_CONTAINER_REGISTRY", "")
         self.runtime_endpoint = os.getenv(
             "KIP_CRI_ENDPOINT", "unix:///run/containerd/containerd.sock"
         )
@@ -72,7 +72,7 @@ class KernelImagePuller:
         logger.info(f"KIP_PULL_POLICY: {self.policy}")
         logger.info(f"KIP_LOG_LEVEL: {log_level}")
         # logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # Do not print
-        logger.info(f"KIP_DEFAULT_CONTAINER_REGISTRY: {self.default_container_registry}")
+        logger.info(f"KIP_DEFAULT_CONTAINER_REGISTRY: '{self.default_container_registry}'")
         logger.info(f"KIP_CRI_ENDPOINT: {self.runtime_endpoint}")
         logger.info(f"KIP_VALIDATE_CERT: {self.validate_cert}")
 
@@ -233,6 +233,12 @@ class KernelImagePuller:
                 logger.warning(
                     f"Previously pulled image '{image_name}' was not found - attempting pull..."
                 )
+            elif self.image_exists(image_name):  # Yet to be pulled, consider pulled if exists
+                logger.info(
+                    f"Image '{image_name}' has not been pulled but exists, and policy is '{self.policy}'. Skipping pull."
+                )
+                self.pulled_images.add(image_name)
+                return
 
         logger.info(f"Pulling image '{image_name}'...")
         if self.download_image(image_name):
@@ -246,8 +252,9 @@ class KernelImagePuller:
         # is missing (based on the absence of two slashes), then we'll prefix the image
         # name with the KIP_DEFAULT_CONTAINER_REGISTRY env value.
         image_pieces = image_name.split("/")
-        if len(image_pieces) < 3:  # we're missing a registry specifier, use env
-            return f"{self.default_container_registry}/{image_name}"
+        if len(image_pieces) < 3:  # we're missing a registry specifier, use default if present
+            if self.default_container_registry:
+                return f"{self.default_container_registry}/{image_name}"
         return image_name  # take our chances
 
     def image_exists(self, image_name: str) -> bool:

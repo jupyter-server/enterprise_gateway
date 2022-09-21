@@ -12,7 +12,7 @@ import ssl
 import sys
 import time
 import weakref
-from typing import Optional
+from typing import List, Optional
 
 from jupyter_client.kernelspec import KernelSpecManager
 from jupyter_core.application import JupyterApp, base_aliases
@@ -90,7 +90,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     # Enable some command line shortcuts
     aliases = aliases
 
-    def initialize(self, argv=None):
+    def initialize(self, argv: Optional[List[str]] = None) -> None:
         """Initializes the base class, configurable manager instances, the
         Tornado web app, and the tornado HTTP server.
 
@@ -104,7 +104,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         self.init_webapp()
         self.init_http_server()
 
-    def init_configurables(self):
+    def init_configurables(self) -> None:
         """Initializes all configurable objects including a kernel manager, kernel
         spec manager, session manager, and personality.
         """
@@ -168,7 +168,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.init_dynamic_configs()
 
-    def _create_request_handlers(self):
+    def _create_request_handlers(self) -> List[tuple]:
         """Create default Jupyter handlers and redefine them off of the
         base_url path. Assumes init_configurables() has already been called.
         """
@@ -193,7 +193,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             handlers.append(new_handler)
         return handlers
 
-    def __add_authorized_hostname_match(self, handler: web.RequestHandler) -> None:
+    def __add_authorized_hostname_match(self, handler: tuple) -> None:
         base_prepare = handler[1].prepare
         authorized_hostname = self.authorized_origin
 
@@ -207,7 +207,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         handler[1].prepare = wrapped_prepare
 
-    def init_webapp(self):
+    def init_webapp(self) -> None:
         """Initializes Tornado web application with uri handlers.
 
         Adds the various managers and web-front configuration values to the
@@ -236,8 +236,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             eg_expose_headers=self.expose_headers,
             eg_max_age=self.max_age,
             eg_max_kernels=self.max_kernels,
-            eg_env_process_whitelist=self.env_process_whitelist,
-            eg_env_whitelist=self.env_whitelist,
+            eg_inherited_envs=self.inherited_envs,
+            eg_client_envs=self.client_envs,
             eg_kernel_headers=self.kernel_headers,
             eg_list_kernels=self.list_kernels,
             eg_authorized_users=self.authorized_users,
@@ -271,7 +271,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         return ssl_context
 
-    def init_http_server(self):
+    def init_http_server(self) -> None:
         """Initializes an HTTP server for the Tornado web application on the
         configured interface and port.
 
@@ -305,7 +305,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             )
             self.exit(1)
 
-    def start(self):
+    def start(self) -> None:
         """Starts an IO loop for the application."""
 
         super().start()
@@ -342,7 +342,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         finally:
             self.shutdown()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shuts down all running kernels."""
         self.log.info("Jupyter Enterprise Gateway is shutting down all running kernels")
         kids = self.kernel_manager.list_kernel_ids()
@@ -355,7 +355,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                 self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
         self.log.info("Shut down complete")
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Stops the HTTP server and IO loop associated with the application.
         """
@@ -366,14 +366,14 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.io_loop.add_callback(_stop)
 
-    def _signal_stop(self, sig, frame):
+    def _signal_stop(self, sig, frame) -> None:
         self.log.info("Received signal to terminate Enterprise Gateway.")
         self.io_loop.add_callback_from_signal(self.io_loop.stop)
 
     _last_config_update = int(time.time())
     _dynamic_configurables = {}
 
-    def update_dynamic_configurables(self):
+    def update_dynamic_configurables(self) -> bool:
         """
         Called periodically, this checks the set of loaded configuration files for updates.
         If updates have been detected, reload the configuration files and update the list of
@@ -409,7 +409,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             )
         return updated
 
-    def add_dynamic_configurable(self, config_name, configurable):
+    def add_dynamic_configurable(self, config_name: str, configurable: Configurable) -> None:
         """
         Adds the configurable instance associated with the given name to the list of Configurables
         that can have their configurations updated when configuration file updates are detected.
@@ -421,7 +421,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self._dynamic_configurables[config_name] = weakref.proxy(configurable)
 
-    def init_dynamic_configs(self):
+    def init_dynamic_configs(self) -> None:
         """
         Initialize the set of configurables that should participate in dynamic updates.  We should
         also log that we're performing dynamic configuration updates, along with the list of CLI

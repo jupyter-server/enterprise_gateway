@@ -141,7 +141,7 @@ paths:
                 type: object
                 description: |
                   A dictionary of environment variables and values to include in the
-                  kernel process - subject to whitelisting.
+                  kernel process - subject to filtering.
                 additionalProperties:
                   type: string
       responses:

@@ -1,6 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Kernel managers that operate against a remote process."""
+from __future__ import annotations
 
 import abc
 import asyncio
@@ -31,6 +32,7 @@ from socket import (
     socket,
     timeout,
 )
+from typing import Any
 
 import paramiko
 import pexpect
@@ -40,6 +42,7 @@ from Cryptodome.Util.Padding import unpad
 from jupyter_client import launch_kernel, localinterfaces
 from jupyter_server import _tz
 from jupyter_server.serverapp import random_ports
+from paramiko.client import SSHClient
 from tornado import web
 from tornado.ioloop import PeriodicCallback
 from traitlets.config import SingletonConfigurable
@@ -82,7 +85,7 @@ max_keep_alive_interval = 100 * 365 * 24 * 60 * 60
 prohibited_local_ips = os.getenv("EG_PROHIBITED_LOCAL_IPS", "").split(",")
 
 
-def _get_local_ip():
+def _get_local_ip() -> str:
     """
     Honor the prohibited IPs, locating the first not in the list.
     """
@@ -154,7 +157,7 @@ class ResponseManager(SingletonConfigurable):
     KEY_SIZE = 1024  # Can be small since it's only used to {en,de}crypt the AES key.
     _instance = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: dict[str, Any] | None):
         super().__init__(**kwargs)
         self._response_ip = None
         self._response_port = None
@@ -195,7 +198,7 @@ class ResponseManager(SingletonConfigurable):
         await asyncio.wait_for(self._response_registry[kernel_id].wait(), connection_interval)
         return self._response_registry.pop(kernel_id).response
 
-    def _prepare_response_socket(self):
+    def _prepare_response_socket(self) -> None:
         """Prepares the response socket on which connection info arrives from remote kernel launcher."""
         s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -284,7 +287,7 @@ class ResponseManager(SingletonConfigurable):
         except Exception as ex:
             self.log.error(f"Failure occurred processing connection: {ex}")
 
-    def _decode_payload(self, data) -> dict:
+    def _decode_payload(self, data: json) -> dict:
         """
         Decodes the payload.
 
@@ -394,7 +397,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
     by these methods - common to all subclasses.
     """
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):  # noqa: F821
         """
         Initialize the process proxy instance.
 
@@ -473,7 +476,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             self.remote_user = _remote_user if _remote_user else getpass.getuser()
 
     @abc.abstractmethod
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(self, kernel_cmd: str, **kwargs: dict[str, Any] | None) -> None:
         """
         Provides basic implementation for launching the process corresponding to the process proxy.
 
@@ -516,7 +519,9 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get("env")))
 
-    def launch_kernel(self, cmd, **kwargs):
+    def launch_kernel(
+        self, cmd: list[str], **kwargs: dict[str, Any] | None
+    ) -> subprocess.Popen[str | bytes]:
         """
         Returns the result of launching the kernel via Popen.
 
@@ -528,11 +533,11 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         kwargs.pop("kernel_headers", None)
         return launch_kernel(cmd, **kwargs)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Performs optional cleanup after kernel is shutdown.  Child classes are responsible for implementations."""
         pass
 
-    def poll(self):
+    def poll(self) -> Any | None:
         """
         Determines if process proxy is still alive.
 
@@ -544,7 +549,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         return self.send_signal(0)
 
-    def wait(self):
+    def wait(self) -> int | None:
         """
         Wait for the process to become inactive.
         """
@@ -565,8 +570,9 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     max_poll_attempts * poll_interval
                 )
             )
+        return None
 
-    def send_signal(self, signum):
+    def send_signal(self, signum: int) -> bool | None:
         """
         Send signal `signum` to process proxy.
 
@@ -594,7 +600,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     result = self.remote_signal(signum)
         return result
 
-    def kill(self):
+    def kill(self) -> bool | None:
         """
         Terminate the process proxy process.
 
@@ -621,7 +627,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     self.log.debug(f"SIGKILL signal sent to pid: {self.pid}")
         return result
 
-    def terminate(self):
+    def terminate(self) -> bool | None:
         """
         Gracefully terminate the process proxy process.
 
@@ -643,13 +649,13 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         return result
 
     @staticmethod
-    def ip_is_local(ip):
+    def ip_is_local(ip: str) -> bool:
         """
         Returns True if `ip` is considered local to this server, False otherwise.
         """
         return localinterfaces.is_public_ip(ip) or localinterfaces.is_local_ip(ip)
 
-    def _get_ssh_client(self, host):
+    def _get_ssh_client(self, host: str) -> SSHClient | None:
         """
         Create a SSH Client based on host, username and password if provided.
         If there is any AuthenticationException/SSHException, raise HTTP Error 403 as permission denied.
@@ -702,7 +708,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         return ssh
 
-    def rsh(self, host, command):
+    def rsh(self, host: str, command: str) -> list[str]:
         """
         Executes a command on a remote host using ssh.
 
@@ -734,7 +740,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         return lines
 
-    def remote_signal(self, signum):
+    def remote_signal(self, signum: int) -> bool | None:
         """
         Sends signal `signum` to process proxy on remote host.
         """
@@ -762,7 +768,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         return False
 
-    def local_signal(self, signum):
+    def local_signal(self, signum: int) -> bool | None:
         """
         Sends signal `signum` to local process.
         """
@@ -780,7 +786,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             return None
         return False
 
-    def _enforce_authorization(self, **kwargs):
+    def _enforce_authorization(self, **kwargs: dict[str, Any] | None) -> None:
         """
         Applies any authorization configuration using the kernel user.
 
@@ -818,7 +824,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     kernel_username, "not in the set of users authorized"
                 )
 
-    def _raise_authorization_error(self, kernel_username, differentiator_clause):
+    def _raise_authorization_error(self, kernel_username: str, differentiator_clause: str) -> None:
         """
         Raises a 403 status code after building the appropriate message.
         """
@@ -832,7 +838,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         )
         self.log_and_raise(http_status_code=403, reason=error_message)
 
-    def get_process_info(self):
+    def get_process_info(self) -> dict[str, Any]:
         """
         Captures the base information necessary for kernel persistence relative to process proxies.
 
@@ -842,7 +848,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         process_info = {"pid": self.pid, "pgid": self.pgid, "ip": self.ip}
         return process_info
 
-    def load_process_info(self, process_info):
+    def load_process_info(self, process_info: dict[str, Any]) -> None:
         """
         Loads the base information necessary for kernel persistence relative to process proxies.
 
@@ -854,7 +860,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         self.ip = process_info["ip"]
         self.kernel_manager.ip = process_info["ip"]
 
-    def _validate_port_range(self):
+    def _validate_port_range(self) -> None:
         """
         Validates the port range configuration option to ensure appropriate values.
         """
@@ -928,7 +934,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self.kernel_manager.port_range = port_range
 
-    def select_ports(self, count):
+    def select_ports(self, count: int) -> list[int]:
         """
         Selects and returns n random ports that adhere to the configured port range, if applicable.
 
@@ -951,7 +957,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             sock.close()
         return ports
 
-    def select_socket(self, ip=""):
+    def select_socket(self, ip: str | None = "") -> socket:
         """
         Creates and returns a socket whose port adheres to the configured port range, if applicable.
 
@@ -981,7 +987,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     )
         return sock
 
-    def _get_candidate_port(self):
+    def _get_candidate_port(self) -> int:
         """Randomly selects a port number within the configured range.
 
         If no range is configured, the 0 port is used - allowing the server to choose from the full range.
@@ -991,7 +997,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             return 0
         return random.randint(self.lower_port, self.upper_port)
 
-    def log_and_raise(self, http_status_code=None, reason=None):
+    def log_and_raise(self, http_status_code: int | None = None, reason: str | None = None) -> None:
         """
         Helper method that combines the logging and raising of exceptions.
 
@@ -1023,11 +1029,13 @@ class LocalProcessProxy(BaseProcessProxyABC):
     This process proxy is used when no other process proxy is configured.
     """
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):  # noqa: F821
         super().__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
+    ) -> type["LocalProcessProxy"]:
         await super().launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh
@@ -1087,7 +1095,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         """Confirms the remote process has started and returned necessary connection information."""
         pass
 
-    def detect_launch_failure(self):
+    def detect_launch_failure(self) -> None:
         """
         Helper method called from implementations of `confirm_remote_startup()` that checks if
         self.local_proc (a popen instance) has terminated prior to the confirmation of startup.
@@ -1114,7 +1122,9 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self.local_proc = None
                 self.log_and_raise(http_status_code=500, reason=error_message)
 
-    def _tunnel_to_kernel(self, connection_info, server, port=ssh_port, key=None):
+    def _tunnel_to_kernel(
+        self, connection_info: dict, server: str, port: int = ssh_port, key: str = None
+    ) -> tuple:
         """
         Tunnel connections to a kernel over SSH
 
@@ -1157,8 +1167,14 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         return tuple(lports)
 
     def _tunnel_to_port(
-        self, kernel_channel, remote_ip, remote_port, server, port=ssh_port, key=None
-    ):
+        self,
+        kernel_channel: KernelChannel,
+        remote_ip: str,
+        remote_port: int,
+        server: str,
+        port: int = ssh_port,
+        key: str = None,
+    ) -> int:
         """
         Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically be called for
         any one-off ports that require tunnelling. Note - this method assumes that passwordless ssh is
@@ -1171,8 +1187,15 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         return local_port
 
     def _create_ssh_tunnel(
-        self, kernel_channel, local_port, remote_port, remote_ip, server, port, key
-    ):
+        self,
+        kernel_channel: KernelChannel,
+        local_port: int,
+        remote_port: int,
+        remote_ip: str,
+        server: str,
+        port: int,
+        key: str,
+    ) -> None:
         """
         Creates an SSH tunnel between the local and remote port/server for the given kernel channel.
         """
@@ -1196,7 +1219,14 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             )
 
     def _spawn_ssh_tunnel(
-        self, kernel_channel, local_port, remote_port, remote_ip, server, port=ssh_port, key=None
+        self,
+        kernel_channel: KernelChannel,
+        local_port: int,
+        remote_port: int,
+        remote_ip: str,
+        server: str,
+        port: int = ssh_port,
+        key: str | None = None,
     ):
         """
         This method spawns a child process to create an SSH tunnel and returns the spawned process.
@@ -1231,7 +1261,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             )
             return pexpect.spawn(cmd, env=os.environ.copy().pop("SSH_ASKPASS", None))
 
-    def _get_keep_alive_interval(self, kernel_channel):
+    def _get_keep_alive_interval(self, kernel_channel: KernelChannel) -> int:
         cull_idle_timeout = self.kernel_manager.cull_idle_timeout
 
         if (
@@ -1252,7 +1282,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         # interval for the rest of the kernel channels.
         return cull_idle_timeout + 60
 
-    async def receive_connection_info(self):
+    async def receive_connection_info(self) -> bool:
         """
         Monitors the response address for connection info sent by the remote kernel launcher.
         """
@@ -1280,7 +1310,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
         return ready_to_connect
 
-    def _setup_connection_info(self, connect_info):
+    def _setup_connection_info(self, connect_info: dict) -> None:
         """
         Take connection info (returned from launcher or loaded from session persistence) and properly
         configure port variables for the 5 kernel and (possibly) the launcher communication port.  If
@@ -1350,7 +1380,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
         self._update_connection(connect_info)
 
-    def _update_connection(self, connect_info):
+    def _update_connection(self, connect_info: dict) -> None:
         """
         Updates the connection info member variables of the kernel manager.  Also pulls the PID and PGID
         info, if present, in case we need to use it for lifecycle management.
@@ -1385,7 +1415,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             True  # allows for cleanup of local files (as necessary)
         )
 
-    def _close_response_socket(self):
+    def _close_response_socket(self) -> None:
         # If there's a response-socket, close it since its no longer needed.
         if self.response_socket:
             try:
@@ -1396,7 +1426,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 pass  # tolerate exceptions here since we don't need this socket and would like ot continue
             self.response_socket = None
 
-    def _extract_pid_info(self, connect_info):
+    def _extract_pid_info(self, connect_info: dict) -> None:
         """
         Extracts any PID, PGID info from the payload received on the response socket.
         """
@@ -1464,7 +1494,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         self.tunnel_processes.clear()
         super().cleanup()
 
-    def _send_listener_request(self, request, shutdown_socket=False):
+    def _send_listener_request(self, request: dict, shutdown_socket: bool = False) -> None:
         """
         Sends the request dictionary to the kernel listener via the comm port.  Caller is responsible for
         handling any exceptions.
@@ -1601,7 +1631,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             # communication socket (comm_ip, comm_port) members as well.
             self._setup_connection_info(process_info["tunneled_connect_info"])
 
-    def log_and_raise(self, http_status_code=None, reason=None):
+    def log_and_raise(self, http_status_code: int = None, reason: str = None):
         """
         Override log_and_raise method in order to verify that the response socket is properly closed
         before raise exception

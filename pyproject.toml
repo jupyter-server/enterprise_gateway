@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jupyter_enterprise_gateway"
-version = "3.0.0.dev0"
+version = "3.1.0.dev0"
 description = "A web server for spawning and communicating with remote Jupyter kernels"
 license = { file = "LICENSE.md" }
 keywords = ["Interactive","Interpreter","Kernel", "Web", "Cloud"]
@@ -27,7 +27,7 @@ dependencies = [
   "jinja2>=3.1",
   "jupyter_client~=6.1",  # Remove cap once EG supports kernel provisioners
   "jupyter_core>=4.6.0",
-  "kubernetes>=4.0.0",
+  "kubernetes>=18.20.0",
   "jupyter_server>=1.2",
   "paramiko>=2.11",
   "pexpect>=4.2.0",
@@ -68,7 +68,7 @@ jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_inst
 include = ["enterprise_gateway"]
 
 [tool.tbump.version]
-current = "3.0.0.dev0"
+current = "3.1.0.dev0"
 regex = '''
   (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
   ((?P<channel>a|b|rc|.dev)(?P<release>\d+))?

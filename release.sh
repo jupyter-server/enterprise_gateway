@@ -197,10 +197,6 @@ function update_version_to_release {
     pip install tbump
     tbump --non-interactive --no-tag --no-push $RELEASE_VERSION
 
-    # Update Kubernetes deployment descriptor
-    sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
-    sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/enterprise-gateway.yaml
-
     # Update Kubernetes Helm chart and values files (tbump will handle appVersion in Chart.yaml)
     # We need to inject "-" prior to pre-release suffices for 'version:' since it follows strict semantic version rules.
     # For example 3.0.0rc1 -> 3.0.0-rc1
@@ -224,10 +220,6 @@ function update_version_to_development {
     # Update tbump-managed versions
     pip install tbump
     tbump --non-interactive --no-tag --no-push $DEVELOPMENT_VERSION
-
-    # Update Kubernetes deployment descriptor
-    sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/enterprise-gateway.yaml
-    sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/enterprise-gateway.yaml
 
     # Update Kubernetes Helm chart and values files (tbump will handle appVersion in Chart.yaml)
     # We need to replace ".devN" suffix with "-devN for 'version:' since it follows strict semantic version rules.

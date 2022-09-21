@@ -37,7 +37,7 @@ const edit_actions = [
       cell.last_msg_id = cell.notebook.kernel.execute(
         `help(\`${word}\`)`,
         callbacks,
-        options
+        options,
       );
     },
   },
@@ -81,12 +81,12 @@ define(["base/js/namespace"], ({
 }) => ({
   onload() {
     edit_actions.forEach((a) =>
-      add_edit_shortcut(notebook, actions, keyboard_manager, a)
+      add_edit_shortcut(notebook, actions, keyboard_manager, a),
     );
 
     pager.events.on(
       "open_with_text.Pager",
-      (event, { data: { "text/html": html } }) => render_math(pager, html)
+      (event, { data: { "text/html": html } }) => render_math(pager, html),
     );
   },
 }));

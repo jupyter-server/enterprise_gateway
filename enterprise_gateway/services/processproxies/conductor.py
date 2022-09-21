@@ -1,6 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Code related to managing kernels running in Conductor clusters."""
+from __future__ import annotations
 
 import asyncio
 import json
@@ -11,10 +12,12 @@ import socket
 import subprocess
 import time
 from random import randint
+from typing import Any
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape
 
+from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import RemoteProcessProxy
 
 pjoin = os.path.join
@@ -31,7 +34,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
     initial_states = {"SUBMITTED", "WAITING", "RUNNING"}
     final_states = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
 
-    def __init__(self, kernel_manager, proxy_config):
+    def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         super().__init__(kernel_manager, proxy_config)
         self.application_id = None
         self.driver_id = None
@@ -43,7 +46,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         self.ascd_endpoint = self.conductor_endpoint
 
-    async def launch_process(self, kernel_cmd, **kwargs):
+    async def launch_process(
+        self, kernel_cmd: str, **kwargs: dict[str, Any] | None
+    ) -> "ConductorClusterProcessProxy":
         """
         Launches the specified process within a Conductor cluster environment.
         """
@@ -88,7 +93,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         await self.confirm_remote_startup()
         return self
 
-    def _update_launch_info(self, kernel_cmd, env_dict):
+    def _update_launch_info(self, kernel_cmd: list[str], env_dict: dict) -> None:
         """
         Dynamically assemble the spark-submit configuration passed from NB2KG.
         """
@@ -126,7 +131,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 )
             )
 
-    def _update_notebook_master_rest_url(self, env_dict):
+    def _update_notebook_master_rest_url(self, env_dict: dict) -> None:
         """
         Updates the notebook master rest url to update KERNEL_NOTEBOOK_MASTER_REST,
         conductor_endpoint, and SPARK_OPTS.
@@ -228,7 +233,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             env_dict["KERNEL_NOTEBOOK_MASTER_REST"] = updated_one_notebook_master_rest_url
             self.conductor_endpoint = updated_one_notebook_master_web_submission_url
 
-    def poll(self):
+    def poll(self) -> bool | None:
         """
         Submitting a new kernel/app will take a while to be SUBMITTED.
         Thus application ID will probably not be available immediately for poll.
@@ -243,11 +248,11 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 result = None
         return result
 
-    def send_signal(self, signum):
+    def send_signal(self, signum: int) -> bool | None:
         """
         Currently only support 0 as poll and other as kill.
         :param signum
-        :return:
+        :return: None if signal was successfully sent to kernel, False if an exception was thrown
         """
         self.log.debug(f"ConductorClusterProcessProxy.send_signal {signum}")
         if signum == 0:
@@ -257,7 +262,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         else:
             return super().send_signal(signum)
 
-    def kill(self):
+    def kill(self) -> bool | None:
         """
         Kill a kernel.
         :return: None if the application existed and is not in RUNNING state, False otherwise.
@@ -289,7 +294,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         return result
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
         if self.local_proc:
@@ -309,7 +314,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # for cleanup, we should call the superclass last
         super().cleanup()
 
-    def _parse_driver_submission_id(self, submission_response):
+    def _parse_driver_submission_id(self, submission_response: str) -> None:
         """
         Parse driver id from stderr gotten back from launch_kernel
         :param submission_response
@@ -339,7 +344,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     reason=err_lines[0][err_lines[0].find("Application submission failed") :],
                 )
 
-    async def confirm_remote_startup(self):
+    async def confirm_remote_startup(self) -> None:
         """
         Confirms the application is in a started state before returning.  Should post-RUNNING states be
         unexpectedly encountered ('FINISHED', 'KILLED', 'RECLAIMED') then we must throw, otherwise the rest
@@ -380,7 +385,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             else:
                 self.detect_launch_failure()
 
-    def _get_application_state(self):
+    def _get_application_state(self) -> str:
         """
         Gets the current application state using the application_id already obtained.  Once the assigned host
         has been identified, it is no longer accessed.
@@ -398,7 +403,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     self.assigned_ip = socket.gethostbyname(self.assigned_host)
         return app_state
 
-    async def handle_timeout(self):
+    async def handle_timeout(self) -> None:
         """
         Checks to see if the kernel launch timeout has been exceeded while awaiting connection info.
         """
@@ -431,7 +436,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
-    def _get_application_id(self, ignore_final_states=False):
+    def _get_application_id(self, ignore_final_states: bool = False) -> str:
         """
         Return the kernel's application ID if available, otherwise None.  If we're obtaining application_id
         from scratch, do not consider kernels in final states.
@@ -470,7 +475,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 )
         return self.application_id
 
-    def get_process_info(self):
+    def get_process_info(self) -> dict[str, Any]:
         """
         Captures the base information necessary for kernel persistence relative to Conductor clusters.
         """
@@ -479,7 +484,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         process_info.update({"rest_credential": self.rest_credential})
         return process_info
 
-    def load_process_info(self, process_info):
+    def load_process_info(self, process_info: dict[str, Any]) -> None:
         """
         Captures the base information necessary for kernel persistence relative to Conductor clusters.
         """
@@ -487,7 +492,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.application_id = process_info["application_id"]
         self.rest_credential = process_info["rest_credential"]
 
-    def _query_app_by_driver_id(self, driver_id):
+    def _query_app_by_driver_id(self, driver_id: str) -> dict | None:
         """
         Retrieve application by using driver ID.
         :param driver_id: as the unique driver id for query
@@ -525,7 +530,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
         return response
 
-    def _query_app_by_id(self, app_id):
+    def _query_app_by_id(self, app_id: str) -> dict | None:
         """
         Retrieve an application by application ID.
         :param app_id
@@ -560,7 +565,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
         return response
 
-    def _query_app_state_by_driver_id(self, driver_id):
+    def _query_app_state_by_driver_id(self, driver_id: str) -> dict | None:
         """
         Return the state of an application.
         :param driver_id:
@@ -574,7 +579,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     response = app["state"]
         return response
 
-    def _get_driver_by_app_id(self, app_id):
+    def _get_driver_by_app_id(self, app_id: str) -> dict | None:
         """
         Get driver info from application ID.
         :param app_id
@@ -591,7 +596,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.log.warning("Application id does not exist")
         return response
 
-    def _kill_app_by_driver_id(self, driver_id):
+    def _kill_app_by_driver_id(self, driver_id: str):
         """
         Kill an application. If the app's state is FINISHED or FAILED, it won't be changed to KILLED.
         :param driver_id
@@ -639,7 +644,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.log.debug(f"Kill response: {response}")
         return response
 
-    def _performRestCall(self, cmd, url, HA_LIST):
+    def _performRestCall(self, cmd: list[str], url: str, HA_LIST: list[str]) -> tuple:
         for HA in HA_LIST:
             portcolon = url.rfind(":")
             slash = url.find("://")
@@ -665,7 +670,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         return "Error", "Error"
 
-    def _performConductorJWTLogonAndRetrieval(self, jwt_token, env_dict):
+    # confirm return type
+    def _performConductorJWTLogonAndRetrieval(self, jwt_token: str, env_dict: dict[str, Any]):
         """
         Authenticate to Conductor with a JWT Token and setup the kernel environment variables.
         :param jwt_token: JWT Token to authenticate with to Conductor

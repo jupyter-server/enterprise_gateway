@@ -3,6 +3,7 @@
 """Tornado handlers for the base of the API."""
 
 import json
+from typing import List
 
 import jupyter_server._version
 from jupyter_server.base.handlers import APIHandler
@@ -43,4 +44,4 @@ class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
         raise web.HTTPError(404)
 
 
-default_handlers = [(r"/api", APIVersionHandler), (r"/(.*)", NotFoundHandler)]
+default_handlers: List[tuple] = [(r"/api", APIVersionHandler), (r"/(.*)", NotFoundHandler)]

@@ -21,5 +21,6 @@ These pages target people who are interested in contributing directly to the Jup
    system-architecture
    docker
    devinstall
+   sequence-diagrams
    debug
    roadmap
