@@ -21,8 +21,7 @@ with open("my_notebook.ipynb") as fp:
 gw_client = GatewayClient.instance()
 gw_client.url = "http://my-gateway-server.com:8888"
 
-client = NotebookClient(nb=test_notebook,
-                        kernel_manager_class=GatewayKernelManager)
+client = NotebookClient(nb=test_notebook, kernel_manager_class=GatewayKernelManager)
 client.execute(kernel_name='my_remote_kernel')
 ```
 
