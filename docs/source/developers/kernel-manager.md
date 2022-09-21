@@ -21,10 +21,8 @@ with open("my_notebook.ipynb") as fp:
 gw_client = GatewayClient.instance()
 gw_client.url = "http://my-gateway-server.com:8888"
 
-client = NotebookClient(nb=test_notebook,
-                        kernel_manager_class=GatewayKernelManager,
-                        kernel_name='my_remote_kernel')
-client.execute()
+client = NotebookClient(nb=test_notebook, kernel_manager_class=GatewayKernelManager)
+client.execute(kernel_name='my_remote_kernel')
 ```
 
 In this case, `my_remote_kernel`'s kernel specification file actually resides on the Gateway server. `NotebookClient` will _think_ its talking to local `KernelManager` and `KernelClient` instances, when, in actuality, they are forwarding requests to (and getting response from) the Gateway server at 'http://my-gateway-server.com:8888'.
