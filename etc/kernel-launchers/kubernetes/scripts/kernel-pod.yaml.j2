@@ -38,27 +38,12 @@ spec:
     fsGroup: 100
   {% endif %}
   containers:
-  - env:
-    - name: PORT_RANGE
-      value: "{{ port_range }}"
-    - name: RESPONSE_ADDRESS
-      value: "{{ response_address }}"
-    - name: PUBLIC_KEY
-      value: "{{ public_key }}"
-    - name: KERNEL_ID
-      value: "{{ kernel_id }}"
-    - name: KERNEL_LANGUAGE
-      value: "{{ kernel_language }}"
-    - name: KERNEL_NAME
-      value: "{{ kernel_name }}"
-    - name: KERNEL_NAMESPACE
-      value: "{{ kernel_namespace }}"
-    - name: KERNEL_SPARK_CONTEXT_INIT_MODE
-      value: "{{ kernel_spark_context_init_mode }}"
-    - name: KERNEL_USERNAME
-      value: "{{ kernel_username }}"
-    image: "{{ kernel_image }}"
+  - image: "{{ kernel_image }}"
     name: "{{ kernel_pod_name }}"
+    env:
+# Add any custom envs here that aren't already configured for the kernel's environment
+#    - name: MY_CUSTOM_ENV
+#      value: "my_custom_value"
     {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
     resources:
       {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}

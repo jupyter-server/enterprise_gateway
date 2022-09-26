@@ -47,15 +47,18 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "KubernetesProcessProxy":
         """Launches the specified process within a Kubernetes environment."""
-        # Set env before superclass call so we see these in the debug output
+        # Set env before superclass call, so we can see these in the debug output
 
-        # Kubernetes relies on many internal env variables.  Since EG is running in a k8s pod, we will
-        # transfer its env to each launched kernel.
-        kwargs["env"] = dict(os.environ, **kwargs["env"])
+        # Kubernetes relies on internal env variables to determine its configuration.  When
+        # running within a K8s cluster, these start with KUBERNETES_SERVICE, otherwise look
+        # for envs prefixed with KUBECONFIG.
+        for key in os.environ:
+            if key.startswith("KUBECONFIG") or key.startswith("KUBERNETES_SERVICE"):
+                kwargs["env"][key] = os.environ[key]
+
+        # Determine pod name and namespace - creating the latter if necessary
         self.kernel_pod_name = self._determine_kernel_pod_name(**kwargs)
-        self.kernel_namespace = self._determine_kernel_namespace(
-            **kwargs
-        )  # will create namespace if not provided
+        self.kernel_namespace = self._determine_kernel_namespace(**kwargs)
 
         await super().launch_process(kernel_cmd, **kwargs)
         return self
