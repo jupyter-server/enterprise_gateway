@@ -53,6 +53,7 @@ jobs:
         run: |
           make itest-yarn
       - name: Collect logs
+        if: success() || failure()
         run: |
           python --version
           pip --version
