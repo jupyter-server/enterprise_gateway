@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=0.25"]
+requires = ["hatchling>=1.5"]
 build-backend = "hatchling.build"
 
 [project]
@@ -98,9 +98,6 @@ default = ""
 [[tool.tbump.field]]
 name = "release"
 default = ""
-
-[tool.jupyter-releaser.options]
-ignore-links = ["http://my-gateway-server.com:8888"]
 
 [tool.pytest.ini_options]
 addopts = "-raXs --durations 10 --color=yes --doctest-modules"
