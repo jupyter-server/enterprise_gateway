@@ -25,7 +25,7 @@ dependencies = [
   "docker>=3.5.0",
   "future",
   "jinja2>=3.1",
-  "jupyter_client~=6.1",  # Remove cap once EG supports kernel provisioners
+  "jupyter_client>=6.1,<7",  # Remove cap once EG supports kernel provisioners
   "jupyter_core>=4.6.0",
   "kubernetes>=18.20.0",
   "jupyter_server>=1.2",
@@ -108,4 +108,5 @@ filterwarnings = [
   "error",
   "ignore:There is no current event loop:DeprecationWarning",
   "ignore:Passing unrecognized arguments to super:DeprecationWarning:jupyter_client",
+  "module:Jupyter is migrating its paths to use standard platformdirs:DeprecationWarning"
 ]
