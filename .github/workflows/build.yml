@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11.0-beta - 3.11.0"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -98,29 +98,6 @@ jobs:
       - name: Run the unit tests
         run: |
           pytest -vv -W default || pytest -vv -W default --lf
-
-  test_prereleases:
-    name: Test Prereleases
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-        with:
-          python_version: "3.11.0-beta - 3.11.0"
-      - name: Install the Python dependencies
-        run: |
-          pip install --no-deps .
-          pip install --pre --upgrade "jupyter_enterprise_gateway[test]"
-      - name: List installed packages
-        run: |
-          pip freeze
-          pip check
-      - name: Run the tests
-        run: |
-          pytest -vv -W default || pytest -vv  -W default --lf
 
   make_sdist:
     name: Make SDist
