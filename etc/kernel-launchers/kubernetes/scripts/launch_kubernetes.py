@@ -2,7 +2,7 @@
 import argparse
 import os
 import sys
-from typing import Dict
+from typing import Dict, List
 
 import urllib3
 import yaml
@@ -41,6 +41,28 @@ def generate_kernel_pod_yaml(keywords):
     return k8s_yaml
 
 
+def extend_pod_env(pod_def: dict) -> dict:
+    """Extends the pod_def.spec.containers[0].env stanza with current environment."""
+    env_stanza = pod_def["spec"]["containers"][0].get("env") or []
+
+    # Walk current set of template env entries and replace those found in the current
+    # env with their values (and record those items).   Then add all others from the env
+    # that were not already.
+    processed_entries: List[str] = []
+    for item in env_stanza:
+        item_name = item.get("name")
+        if item_name in os.environ:
+            item["value"] = os.environ[item_name]
+            processed_entries.append(item_name)
+
+    for name, value in os.environ.items():
+        if name not in processed_entries:
+            env_stanza.append({"name": name, "value": value})
+
+    pod_def["spec"]["containers"][0]["env"] = env_stanza
+    return pod_def
+
+
 def launch_kubernetes_kernel(
     kernel_id,
     port_range,
@@ -63,14 +85,21 @@ def launch_kubernetes_kernel(
     # Factory values...
     # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
     # value since this is used to locate the kernel launch script within the image.
-    keywords["port_range"] = port_range
-    keywords["public_key"] = public_key
-    keywords["response_address"] = response_addr
-    keywords["kernel_id"] = kernel_id
-    keywords["kernel_name"] = os.path.basename(
+    # Ensure these key/value pairs are reflected in the environment.  We'll add these to the container's env
+    # stanza after the pod template is generated.
+    if port_range:
+        os.environ["PORT_RANGE"] = port_range
+    if public_key:
+        os.environ["PUBLIC_KEY"] = public_key
+    if response_addr:
+        os.environ["RESPONSE_ADDRESS"] = response_addr
+    if kernel_id:
+        os.environ["KERNEL_ID"] = kernel_id
+    if spark_context_init_mode:
+        os.environ["KERNEL_SPARK_CONTEXT_INIT_MODE"] = spark_context_init_mode
+    os.environ["KERNEL_NAME"] = os.path.basename(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
-    keywords["kernel_spark_context_init_mode"] = spark_context_init_mode
 
     # Walk env variables looking for names prefixed with KERNEL_.  When found, set corresponding keyword value
     # with name in lower case.
@@ -95,7 +124,7 @@ def launch_kubernetes_kernel(
         if k8s_obj.get("kind"):
             if k8s_obj["kind"] == "Pod":
                 #  print("{}".format(k8s_obj))  # useful for debug
-                pod_template = k8s_obj
+                pod_template = extend_pod_env(k8s_obj)
                 if pod_template_file is None:
                     client.CoreV1Api(client.ApiClient()).create_namespaced_pod(
                         body=k8s_obj, namespace=kernel_namespace
