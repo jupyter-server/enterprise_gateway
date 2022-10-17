@@ -10,6 +10,6 @@ To generate better logs, please run the gateway with `--debug` command line para
 
 ## Environment
 
-- Enterprise Gateway Version [e.g. 1.x, 2.x, ...]
-- Platform: [e.g. YARN, Kubernetes ...]
-- Others [e.g. Jupyter Server 5.7, JupyterHub 1.0, etc]
+- Enterprise Gateway Version \[e.g. 1.x, 2.x, ...\]
+- Platform: \[e.g. YARN, Kubernetes ...\]
+- Others \[e.g. Jupyter Server 5.7, JupyterHub 1.0, etc\]

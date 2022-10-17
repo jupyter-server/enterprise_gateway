@@ -297,11 +297,11 @@ WebhookKernelSessionManager(KernelSessionManager) options
 ---------------------------------------------------------
 --WebhookKernelSessionManager.enable_persistence=<Bool>
     Enable kernel session persistence (True or False). Default = False
-                                  (EG_KERNEL_SESSION_PERSISTENCE env var)
+    (EG_KERNEL_SESSION_PERSISTENCE env var)
     Default: False
 --WebhookKernelSessionManager.persistence_root=<Unicode>
     Identifies the root 'directory' under which the 'kernel_sessions' node will
-                                   reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)
+    reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)
     Default: None
 --WebhookKernelSessionManager.webhook_url=<Unicode>
     URL endpoint for webhook kernel session manager

@@ -33,8 +33,8 @@ an enterprise. Inspired by Jupyter Kernel Gateway, Jupyter Enterprise Gateway pr
 
 - Adds support for remote kernels hosted throughout the enterprise where kernels can be launched in
   the following ways:
-  _ Local to the Enterprise Gateway server (today's Kernel Gateway behavior)
-  _ On specific nodes of the cluster utilizing a round-robin algorithm \* On nodes identified by an associated resource manager
+  \_ Local to the Enterprise Gateway server (today's Kernel Gateway behavior)
+  \_ On specific nodes of the cluster utilizing a round-robin algorithm * On nodes identified by an associated resource manager
 - Provides support for Apache Spark managed by YARN, IBM Spectrum Conductor, Kubernetes or Docker Swarm out of the box. Others can be configured via Enterprise Gateway's extensible framework.
 - Secure communication from the client, through the Enterprise Gateway server, to the kernels
 - Multi-tenant capabilities
