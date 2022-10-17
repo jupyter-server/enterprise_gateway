@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11.0-beta - 3.11.0"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11-dev"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -61,8 +61,14 @@ jobs:
           docker logs itest-yarn
       - name: Bump versions
         run: |
-          pip install tbump
-          tbump --dry-run --no-tag --no-push 100.100.100rc0
+          pipx run tbump --dry-run --no-tag --no-push 100.100.100rc0
+
+  pre_commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/pre-commit@v1
 
   link_check:
     runs-on: ubuntu-latest
