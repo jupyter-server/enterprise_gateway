@@ -111,8 +111,8 @@ script and requires the following:
 1. The gateway user (i.e., the user in which Enterprise Gateway is running) must be enabled to perform sudo operations
    on each potential host. This enablement must also be done to prevent password prompts since Enterprise Gateway runs
    in the background. Refer to your operating system documentation for details.
-2. Each user identified by `KERNEL_USERNAME` must be associated with an actual operating system user on each host.
-3. Once the gateway user is configured for `sudo` privileges it is **strongly recommended** that that user be included
+1. Each user identified by `KERNEL_USERNAME` must be associated with an actual operating system user on each host.
+1. Once the gateway user is configured for `sudo` privileges it is **strongly recommended** that that user be included
    in the set of `unauthorized_users`. Otherwise, kernels not configured for impersonation, or those requests that do not
    include `KERNEL_USERNAME`, will run as the, now, highly privileged gateway user!
 
@@ -152,43 +152,43 @@ The list of [additional supported environment variables](config-add-env.md#addit
 Enterprise Gateway supports Secure Sockets Layer (SSL) communication with its clients. With SSL enabled, all the
 communication between the server and client are encrypted and highly secure.
 
-1.  You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile`
-    options with the command:
+1. You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile`
+   options with the command:
 
-        ```
-        jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
-        ```
+   ```
+   jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
+   ```
 
-        As server starts up, the log should reflect the following,
+   As server starts up, the log should reflect the following,
 
-        ```
-        [EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
-        ```
+   ```
+   [EnterpriseGatewayApp] Jupyter Enterprise Gateway at https://localhost:8888
+   ```
 
-        Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
+   Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
 
-        TIP:
-        A self-signed certificate can be generated with openssl. For example, the following command will create a
-        certificate valid for 365 days with both the key and certificate data written to the same file:
+   ````{tip}
+   A self-signed certificate can be generated with openssl. For example, the following command will create a
+   certificate valid for 365 days with both the key and certificate data written to the same file:
 
-        ```bash
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
-        ```
+   ```bash
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
+   ````
 
-2.  With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
+1. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
 
-    During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
-    during runtime:
+   During Jupyter Notebook server startup, export the following environment variables where the gateway-enabled server has access
+   during runtime:
 
-    ```bash
-    export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
-    export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
-    export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
-    ```
+   ```bash
+   export JUPYTER_GATEWAY_CLIENT_CERT=${PATH_TO_PEM_FILE}
+   export JUPYTER_GATEWAY_CLIENT_KEY=${PATH_TO_KEY_FILE}
+   export JUPYTER_GATEWAY_CA_CERTS=${PATH_TO_SELFSIGNED_CA}
+   ```
 
-    ```{note}
-    If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
-    ```
+   ```{note}
+   If using a self-signed certificate, you can set `JUPYTER_GATEWAY_CA_CERTS` same as `JUPYTER_GATEWAY_CLIENT_CERT`.
+   ```
 
 ### Using Enterprise Gateway configuration file
 
@@ -196,10 +196,10 @@ You can also utilize the [Enterprise Gateway configuration file](config-file.md#
 
 To enable SSL from the configuration file, modify the corresponding parameter to the appropriate value.
 
-    ```
-    c.EnterpriseGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
-    c.EnterpriseGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
-    ```
+```
+c.EnterpriseGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
+c.EnterpriseGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
+```
 
 Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
 provides better readability and maintainability.

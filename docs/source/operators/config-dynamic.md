@@ -12,11 +12,11 @@ values, but does have the following caveats:
 1. Any configuration variables set on the command line (CLI) or via environment variables are
    NOT eligible for dynamic updates. This is because Jupyter gives those values priority over
    file-based configuration variables.
-2. Any configuration variables tied to background processing may not reflect their update if
+1. Any configuration variables tied to background processing may not reflect their update if
    the variable is not _observed_ for changes. For example, the code behind
    `RemoteKernelManager.cull_idle_timeout` may not reflect changes to the timeout period if
    that variable is not monitored (i.e., observed) for changes.
-3. Only `Configurables` registered by Enterprise Gateway are eligible for dynamic updates.
+1. Only `Configurables` registered by Enterprise Gateway are eligible for dynamic updates.
    Currently, that list consists of the following (and their subclasses): EnterpriseGatewayApp,
    RemoteKernelManager, KernelSpecManager, and KernelSessionManager.
 

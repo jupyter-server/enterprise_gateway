@@ -26,7 +26,7 @@ We are using helm templates to manage Kubernetes resource configurations, which 
 There are two main deployment scenarios if RBAC is enabled in your Kubernetes cluster:
 
 1. Deployment user has **_Cluster Administrator Access_**. In this scenario, you have full access to the cluster and can deploy all components as needed.
-2. Deployment user has **_Namespace Administrator Access_**. This is typical for shared multi-tenant environments where each Team has control over their namespace, but not the cluster. In this scenario, your cluster Administrator can deploy the RBAC resources and Kernel Image Puller and you can deploy Enterprise Gateway.
+1. Deployment user has **_Namespace Administrator Access_**. This is typical for shared multi-tenant environments where each Team has control over their namespace, but not the cluster. In this scenario, your cluster Administrator can deploy the RBAC resources and Kernel Image Puller and you can deploy Enterprise Gateway.
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ helm  upgrade --install  enterprise-gateway \
 
 ```
 
-Alternatively, the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter-server/enterprise_gateway/releases) page, replace [VERSION] with specific release version you want to use:
+Alternatively, the helm chart tarball is also accessible as an asset on our [release](https://github.com/jupyter-server/enterprise_gateway/releases) page, replace \[VERSION\] with specific release version you want to use:
 
 ```bash
 helm  upgrade --install  enterprise-gateway \
@@ -78,7 +78,7 @@ If you do not have a Kubernetes Ingress configured on your cluster the easiest w
 
 - Ingress controller deployed on your Kubernetes cluster. Review the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/) for available options.
 - Wildcard DNS record is configured to point to the IP of the LoadBalancer, which frontends your ingress controller
-- Review specific Ingress controller configuration to enable wildcard path support if you are using Kubernetes version < v1.18
+- Review specific Ingress controller configuration to enable wildcard path support if you are using Kubernetes version \< v1.18
 - With Kubernetes v1.18 Ingress uses `PathType` parameter which is set to `Prefix` in the helm chart by default, so no additional configuration is required
 - Refer to your ingress controller documentation on how to set up TLS with your ingress
 
@@ -94,7 +94,7 @@ ingress:
 
 ```
 
-Add this file to your helm command and apply to the cluster replacing [PLACEHOLDER] with appropriate values for your environment:
+Add this file to your helm command and apply to the cluster replacing \[PLACEHOLDER\] with appropriate values for your environment:
 
 ```bash
 helm  upgrade --install enterprise-gateway \
@@ -251,7 +251,7 @@ ingress:
 
 ### Deploy with helm
 
-Add values file to your helm command and apply to the cluster replacing [PLACEHOLDER] with appropriate values for your environment:
+Add values file to your helm command and apply to the cluster replacing \[PLACEHOLDER\] with appropriate values for your environment:
 
 ```bash
 helm  upgrade --install enterprise-gateway
@@ -268,7 +268,7 @@ if you are using private registry add setting base64 encoded secret value to you
 
 Choose this deployment option if you want to deploy directly from Kubernetes template files with kubectl, rather than using a package manager like helm.
 
-Add values file to your helm command and generate `yaml` files replacing [PLACEHOLDER] with appropriate values for your environment:
+Add values file to your helm command and generate `yaml` files replacing \[PLACEHOLDER\] with appropriate values for your environment:
 
 ```bash
 helm template \
@@ -444,10 +444,10 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | `global.rbac`                              | Create Kubernetes RBAC resources                                                                                                                                                                                                                 | `true`                                                                         |
 | `global.commonLabels`                      | Common labels to apply to daemonset and deployment resources                                                                                                                                                                                     | `{}`                                                                           |
-| `global.imagePullSecrets`                  | Optional array of image pull secrets for Service Account for pulling images from private service registries                                                                                                                                      | []                                                                             |
+| `global.imagePullSecrets`                  | Optional array of image pull secrets for Service Account for pulling images from private service registries                                                                                                                                      | \[\]                                                                             |
 | `imagePullSecretsCreate.enabled`           | Optional enable creation of the Kubernetes secrets to access private registries.                                                                                                                                                                 | 'false'                                                                        |
 | `imagePullSecretsCreate.annotations`       | Annotations for Kubernetes secrets                                                                                                                                                                                                               | '{}'                                                                           |
-| `imagePullSecretsCreate.secrets`           | Array of Kubernetes secrets to create with the following structure: `name` - secret name and `data` - base64 encoded Secret value. Example: `{ name: "myregistrykey", data: "SGVsbG8gc2VjcmV0Cg==" }`                                            | '[]'                                                                           |
+| `imagePullSecretsCreate.secrets`           | Array of Kubernetes secrets to create with the following structure: `name` - secret name and `data` - base64 encoded Secret value. Example: `{ name: "myregistrykey", data: "SGVsbG8gc2VjcmV0Cg==" }`                                            | '\[\]'                                                                           |
 | `image`                                    | Enterprise Gateway image name and tag to use. Ensure the tag is updated to the version of Enterprise Gateway you wish to run.                                                                                                                    | `elyra/enterprise-gateway:VERSION`, where `VERSION` is the release being used  |
 | `imagePullPolicy`                          | Enterprise Gateway image pull policy. Use `IfNotPresent` policy so that dev-based systems don't automatically update. This provides more control. Since formal tags will be release-specific this policy should be sufficient for them as well.  | `IfNotPresent`                                                                 |
 | `service.type`                             | Kubernetes Service Type - Nodeport,ClusterIP,LoadBalancer                                                                                                                                                                                        | `ClusterIP`                                                                    |
@@ -736,9 +736,13 @@ There are a number of items worth noting:
    Note that since kernels run in isolated namespaces by default, it's often helpful to include the clause `--all-namespaces` on commands that will span namespaces. To isolate commands to a given namespace, you'll need to add the namespace clause `--namespace <namespace-name>`.
 
 1. Each kernel pod is named by the invoking user (via the `KERNEL_USERNAME` env) and its kernel_id (env `KERNEL_ID`). This identifier also applies to those kernels launched within `spark-on-kubernetes`.
+
 1. Kernel pods use the specified `securityContext`. If env `KERNEL_UID` is not specified in the kernel creation request a default value of `1000` (the jovyan user) will be used. Similarly, for `KERNEL_GID`, whose default is `100` (the users group). In addition, Enterprise Gateway enforces a list of prohibited UID and GID values. By default, this list is initialized to the 0 (root) UID and GID. Administrators can configure the `EG_PROHIBITED_UIDS` and `EG_PROHIBITED_GIDS` environment variables via the `deployment.yaml` file with comma-separated values to alter the set of user and group ids to be prevented.
+
 1. As noted above, if `KERNEL_NAMESPACE` is not provided in the request, Enterprise Gateway will create a namespace using the same naming algorithm for the pod. In addition, the `kernel-controller` cluster role will be bound to a namespace-scoped role binding of the same name using the namespace's default service account as its subject. Users wishing to use their own kernel namespaces must provide **both** `KERNEL_NAMESPACE` and `KERNEL_SERVICE_ACCOUNT_NAME` as these are both used in the `kernel-pod.yaml.j2` as `{{ kernel_namespace }}` and `{{ kernel_service_account_name }}`, respectively.
+
 1. Kernel pods have restart policies of `Never`. This is because the Jupyter framework already has built-in logic for auto-restarting failed kernels and any other restart policy would likely interfere with the built-in behaviors.
+
 1. The parameters to the launcher that is built into the image are communicated via environment variables as noted in the `env:` section above.
 
 ## Unconditional Volume Mounts
@@ -980,7 +984,7 @@ https://elyra-kube1.foo.bar.com:30000/dashboard/#!/overview?namespace=default
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on
 the far right.
 
-- User \"system:serviceaccount:default:default\" cannot list pods in the namespace \"default\"
+- User "system:serviceaccount:default:default" cannot list pods in the namespace "default"
 
 On a recent deployment, Enterprise Gateway was not able to create or list kernel pods. Found
 the following command was necessary. (Kubernetes security relative to Enterprise Gateway is still under construction.)

@@ -32,9 +32,9 @@ environment variables (also described in the kernel specification), is passed to
 a process class. This class supports four basic methods following its creation:
 
 1. `poll()` to determine if the process is still running
-2. `wait()` to block the caller until the process has terminated
-3. `send_signal(signum)` to send a signal to the process
-4. `kill()` to terminate the process
+1. `wait()` to block the caller until the process has terminated
+1. `send_signal(signum)` to send a signal to the process
+1. `kill()` to terminate the process
 
 As you can see, other forms of process communication can be achieved by abstracting the launch mechanism.
 
@@ -83,7 +83,7 @@ See the [Process Proxy](#process-proxy) section for more details on process prox
 `RemoteMappingKernelManager` is a subclass of Jupyter Server's [`AsyncMappingKernelManager`](https://github.com/jupyter-server/jupyter_server/blob/745f5ba3f00280c1e1900326a7e08463d48a3912/jupyter_server/services/kernels/kernelmanager.py#L633) and provides two functions.
 
 1. It provides the vehicle for making the `RemoteKernelManager` class known and available.
-2. It overrides `start_kernel` to look at the target kernel's kernel spec to see if it contains a remote process proxy class entry. If so, it records the name of the class in its member variable to be made available to the kernel start logic.
+1. It overrides `start_kernel` to look at the target kernel's kernel spec to see if it contains a remote process proxy class entry. If so, it records the name of the class in its member variable to be made available to the kernel start logic.
 
 ## Remote Kernel Manager
 
@@ -404,9 +404,9 @@ Kernel launchers provide a means of normalizing behaviors across kernels while a
 There are four primary tasks of a kernel launcher:
 
 1. Creation of the connection file and ZMQ ports on the remote (target) system along with a _gateway listener_ socket
-2. Conveyance of the connection (and listener socket) information back to the Enterprise Gateway process
-3. Invocation of the target kernel
-4. Listen for interrupt and shutdown requests from Enterprise Gateway and carry out the action when appropriate
+1. Conveyance of the connection (and listener socket) information back to the Enterprise Gateway process
+1. Invocation of the target kernel
+1. Listen for interrupt and shutdown requests from Enterprise Gateway and carry out the action when appropriate
 
 Kernel launchers are minimally invoked with three parameters (all of which are conveyed by the `argv` stanza of the corresponding `kernel.json` file) - the kernel's ID as created by the server and conveyed via the placeholder `{kernel_id}`, a response address consisting of the Enterprise Gateway server IP and port on which to return the connection information similarly represented by the placeholder `{response_address}`, and a public-key used by the launcher to encrypt an AES key that encrypts the kernel's connection information back to the server and represented by the placeholder `{public_key}`.
 
@@ -447,6 +447,7 @@ Here's a [kernel.json](https://github.com/jupyter-server/enterprise_gateway/blob
 Other options supported by launchers include:
 
 - `--RemoteProcessProxy.port-range {port_range}` - passes configured port-range to launcher where launcher applies that range to kernel ports. The port-range may be configured globally or on a per-kernel specification basis, as previously described.
+
 - `--RemoteProcessProxy.spark-context-initialization-mode [lazy|eager|none]` - indicates the _timeframe_ in which the spark context will be created.
 
   - `lazy` (default) attempts to defer initialization as late as possible - although this can vary depending on the
@@ -479,11 +480,11 @@ eval exec \
 Theoretically speaking, enabling a kernel for use in other frameworks amounts to the following:
 
 1. Build a kernel specification file that identifies the process proxy class to be used.
-2. Implement the process proxy class such that it supports the four primitive functions of
+1. Implement the process proxy class such that it supports the four primitive functions of
    `poll()`, `wait()`, `send_signal(signum)` and `kill()` along with `launch_process()`.
-3. If the process proxy corresponds to a remote process, derive the process proxy class from
+1. If the process proxy corresponds to a remote process, derive the process proxy class from
    `RemoteProcessProxy` and implement `confirm_remote_startup()` and `handle_timeout()`.
-4. Insert invocation of a launcher (if necessary) which builds the connection file and
+1. Insert invocation of a launcher (if necessary) which builds the connection file and
    returns its contents on the `{response_address}` socket and following the encryption protocol set forth in the other launchers.
 
 ```{seealso}

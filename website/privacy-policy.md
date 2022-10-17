@@ -1,18 +1,17 @@
----
-layout: page
-title: Jupyter Enterprise Gateway Privacy Policy
----
+______________________________________________________________________
+
+## layout: page title: Jupyter Enterprise Gateway Privacy Policy
 
 ## Jupyter Enterprise Gateway Privacy Policy
 
 Information about your use of this website is collected using server access logs and a tracking cookie.
 The collected information consists of the following:
 
-* The IP address from which you access the website;
-* The type of browser and operating system you use to access our site;
-* The date and time you access our site;
-* The pages you visit; and
-* The addresses of pages from where you followed a link to our site.
+- The IP address from which you access the website;
+- The type of browser and operating system you use to access our site;
+- The date and time you access our site;
+- The pages you visit; and
+- The addresses of pages from where you followed a link to our site.
 
 Part of this information is gathered using a tracking cookie set by the [Google Analytics](https://www.google.com/analytics/)
 service and handled by Google as described in their [privacy policy](https://www.google.com/privacy.html).

@@ -11,9 +11,9 @@ The following sample kernelspecs are currently available on YARN cluster:
 Steps required to complete deployment on a Hadoop YARN cluster are:
 
 1. [Install Enterprise Gateway](installing-eg.md) on the primary node of the Hadoop YARN cluster. Note, this location is not a hard-requirement, but recommended. If installed remotely, some extra configuration will be necessary relative to the Hadoop configuration.
-2. [Install the desired kernels](installing-kernels.md)
-3. Install and configure the server and desired kernel specifications (see below)
-4. [Launch Enterprise Gateway](launching-eg.md)
+1. [Install the desired kernels](installing-kernels.md)
+1. Install and configure the server and desired kernel specifications (see below)
+1. [Launch Enterprise Gateway](launching-eg.md)
 
 The distributed capabilities are currently based on an Apache Spark cluster utilizing Hadoop YARN as the resource manager and thus require the following environment variables to be set to facilitate the integration between Apache Spark and Hadoop YARN components:
 

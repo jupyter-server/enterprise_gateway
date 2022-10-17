@@ -47,7 +47,7 @@ class KernelSessionManager(LoggingConfigurable):
         session_persistence_default_value,
         config=True,
         help="""Enable kernel session persistence (True or False). Default = False
-                              (EG_KERNEL_SESSION_PERSISTENCE env var)""",
+(EG_KERNEL_SESSION_PERSISTENCE env var)""",
     )
 
     @default("enable_persistence")
@@ -64,7 +64,7 @@ class KernelSessionManager(LoggingConfigurable):
     persistence_root = Unicode(
         config=True,
         help="""Identifies the root 'directory' under which the 'kernel_sessions' node will
-                               reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
+reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
     )
 
     @default("persistence_root")

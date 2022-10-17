@@ -63,8 +63,8 @@ When the process proxy class is `DockerProcessProxy` the `launch_docker.py` scri
 Items worth noting:
 
 1. The Swarm service or Docker container name will be composed of the launching username (`KERNEL_USERNAME`) and kernel-id.
-2. The service/container will have 3 labels applied: "kernel_id=<kernel-id>", "component=kernel", and "app=enterprise-gateway" - similar to Kubernetes.
-3. The service/container will be launched within the same docker network as Enterprise Gateway.
+1. The service/container will have 3 labels applied: "kernel_id=<kernel-id>", "component=kernel", and "app=enterprise-gateway" - similar to Kubernetes.
+1. The service/container will be launched within the same docker network as Enterprise Gateway.
 
 ## DockerSwarmProcessProxy
 

@@ -5,9 +5,9 @@ Single-server deployment can be useful for development and is not meant to be ru
 Steps to deploy a single server are:
 
 1. [Install Enterprise Gateway](installing-eg.md)
-2. [Install the desired kernels](installing-kernels.md)
-3. Install and configure the server and desired kernel specifications (see below)
-4. [Launch Enterprise Gateway](launching-eg.md)
+1. [Install the desired kernels](installing-kernels.md)
+1. Install and configure the server and desired kernel specifications (see below)
+1. [Launch Enterprise Gateway](launching-eg.md)
 
 If you just want to try Enterprise Gateway in a single-server setup, you can use the following kernels specification (no need for a kernel launcher since the kernel runs locally):
 

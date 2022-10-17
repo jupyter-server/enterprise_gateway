@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11.0-beta - 3.11.0"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11-dev"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -61,8 +61,14 @@ jobs:
           docker logs itest-yarn
       - name: Bump versions
         run: |
-          pip install tbump
-          tbump --dry-run --no-tag --no-push 100.100.100rc0
+          pipx run tbump --dry-run --no-tag --no-push 100.100.100rc0
+
+  pre_commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/pre-commit@v1
 
   link_check:
     runs-on: ubuntu-latest
@@ -116,3 +122,20 @@ jobs:
     steps:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@v1
+
+
+  python_tests_check: # This job does nothing and is only used for the branch protection
+    if: always()
+    needs:
+      - build
+      - link_check
+      - test_minimum_versions
+      - build_docs
+      - pre_commit
+      - test_sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
