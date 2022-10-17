@@ -243,11 +243,9 @@ Scenario: **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environme
 As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html)
 there is a need to issue the following command to enable running with `USER` in Dockerfile.
 
-````
 ```bash
 oc adm policy add-scc-to-group anyuid system:authenticated
 ```
-````
 
 ## Opening an issue
 

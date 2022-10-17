@@ -155,7 +155,6 @@ communication between the server and client are encrypted and highly secure.
 1. You can start Enterprise Gateway to communicate via a secure protocol mode by setting the `certfile` and `keyfile`
    options with the command:
 
-   ````
    ```
    jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --certfile=mycert.pem --keyfile=mykey.key
    ```
@@ -168,13 +167,12 @@ communication between the server and client are encrypted and highly secure.
 
    Note: Enterprise Gateway server is started with `HTTPS` instead of `HTTP`, meaning server side SSL is enabled.
 
-   TIP:
+   ````{tip}
    A self-signed certificate can be generated with openssl. For example, the following command will create a
    certificate valid for 365 days with both the key and certificate data written to the same file:
 
    ```bash
    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mykey.key -out mycert.pem
-   ```
    ````
 
 1. With Enterprise Gateway server SSL enabled, now you need to configure the client side SSL, which is accomplished via the Gateway configuration options embedded in Notebook server.
@@ -198,12 +196,10 @@ You can also utilize the [Enterprise Gateway configuration file](config-file.md#
 
 To enable SSL from the configuration file, modify the corresponding parameter to the appropriate value.
 
-````
 ```
 c.EnterpriseGatewayApp.certfile = '/absolute/path/to/your/certificate/fullchain.pem'
 c.EnterpriseGatewayApp.keyfile = '/absolute/path/to/your/certificate/privatekey.key'
 ```
-````
 
 Using configuration file achieves the same result as starting the server with `--certfile` and `--keyfile`, this way
 provides better readability and maintainability.
