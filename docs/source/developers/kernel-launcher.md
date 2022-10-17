@@ -7,9 +7,9 @@ Its generally recommended that the launcher be written in the language of the ke
 To reiterate, the four tasks of a kernel launcher are:
 
 1. Create the necessary connection information based on the 5 zero-mq ports, a signature key and algorithm specifier, along with a _gateway listener_ socket.
-2. Conveyance of the connection (and listener socket) information back to the Enterprise Gateway process after encrypting the information using AES, then encrypting the AES key using the provided public key.
-3. Invocation of the target kernel.
-4. Listen for interrupt and shutdown requests from Enterprise Gateway on the communication socket and carry out the action when appropriate.
+1. Conveyance of the connection (and listener socket) information back to the Enterprise Gateway process after encrypting the information using AES, then encrypting the AES key using the provided public key.
+1. Invocation of the target kernel.
+1. Listen for interrupt and shutdown requests from Enterprise Gateway on the communication socket and carry out the action when appropriate.
 
 ## Creating the connection information
 

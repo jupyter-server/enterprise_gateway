@@ -1,7 +1,6 @@
----
-layout: page
-title: Jupyter Enterprise Gateway and Kubernetes
----
+______________________________________________________________________
+
+## layout: page title: Jupyter Enterprise Gateway and Kubernetes
 
 Recently, we have experienced various advances in AI, in particular around Deep Learning. This have
 increased the popularity of Deep Learning use cases and also the proliferation of several development
@@ -38,7 +37,6 @@ Jupyter Enterprise Gateway can easily be deployed into your Kubernetes cluster:
 <pre><code>kubectl apply -f https://raw.githubusercontent.com/jupyter/enterprise_gateway/main/etc/kubernetes/enterprise-gateway.yaml</code></pre>
 </div>
 
-
 #### Deployment Scripts
 
 <br/>
@@ -47,4 +45,4 @@ The Jupyter Enterprise Gateway development team uses some Ansible scripts for pr
 test environments, these scripts might be useful for users trying to get started with the gateway
 on a Kubernetes environment.
 
-* Ansible Deployment scripts : <a href="https://github.com/lresende/ansible-spark-cluster">ansible-kubernetes-cluster</a>
+- Ansible Deployment scripts : <a href="https://github.com/lresende/ansible-spark-cluster">ansible-kubernetes-cluster</a>

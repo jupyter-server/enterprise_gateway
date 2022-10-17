@@ -5,9 +5,9 @@ This section describes how to deploy Enterprise Gateway to manage kernels across
 Steps required to complete deployment on a distributed cluster are:
 
 1. [Install Enterprise Gateway](installing-eg.md) on the "primary node" of the cluster.
-2. [Install the desired kernels](installing-kernels.md)
-3. Install and configure the server and desired kernel specifications (see below)
-4. [Launch Enterprise Gateway](launching-eg.md)
+1. [Install the desired kernels](installing-kernels.md)
+1. Install and configure the server and desired kernel specifications (see below)
+1. [Launch Enterprise Gateway](launching-eg.md)
 
 The `DistributedProcessProxy` simply uses a fixed set of host names and selects the _next_ host using a simple round-robin algorithm (see the [Roadmap](../contributors/roadmap.md) for making this pluggable). In this case, you can still experience bottlenecks on a given node that receives requests to start "large" kernels, but otherwise, you will be better off compared to when all kernels are started on a single node or as local processes, which is the default for Jupyter Notebook and JupyterLab when not configured to use Enterprise Gateway.
 

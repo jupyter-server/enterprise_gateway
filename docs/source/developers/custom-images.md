@@ -21,7 +21,7 @@ USER $NB_UID  # switch back to the jovyan user
 Users that do not wish to extend an existing kernel image must be cognizant of a couple of things.
 
 1. Requirements of a kernel-based image to be used by Enterprise Gateway.
-2. Is the base image one from [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks)?
+1. Is the base image one from [Jupyter Docker-stacks](https://github.com/jupyter/docker-stacks)?
 
 ### Requirements for Custom Kernel Images
 

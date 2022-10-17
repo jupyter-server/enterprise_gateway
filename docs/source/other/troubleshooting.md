@@ -13,14 +13,14 @@ be validated independently. The following items can be used as a checklist to co
 1. Confirm that Enterprise Gateway is servicing general requests. This can be accomplished using the following
    `curl` command, which should produce the json corresponding to the configured kernelspecs:
    `bash curl http://<gateway_server>:<gateway_port>/api/kernelspecs `
-2. Independently validate any resource manager you're running against. Various resource managers usually provide
+1. Independently validate any resource manager you're running against. Various resource managers usually provide
    examples for how to go about validating their configuration.
-3. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place. These
+1. Confirm that the Enterprise Gateway arguments for contacting the configured resource manager are in place. These
    should be covered in the deployment section of our Operators Guide.
-4. If using a Notebook server as your front-end, ensure that the Gateway configuration options or NB2KG extension settings are properly configured.
+1. If using a Notebook server as your front-end, ensure that the Gateway configuration options or NB2KG extension settings are properly configured.
    Once the notebook has started, a refresh on the tree view should issue the same `kernelspecs` request in step 1 and
    the drop-down menu items for available kernels should reflect an entry for each kernelspec returned.
-5. **Always** consult your Enterprise Gateway log file. If you have not redirected `stdout` and `stderr` to a
+1. **Always** consult your Enterprise Gateway log file. If you have not redirected `stdout` and `stderr` to a
    file you are highly encouraged to do so. In addition, you should enable `DEBUG` logging at least until your
    configuration is stable. Please note, however, that you may be asked to produce an Enterprise Gateway log with
    `DEBUG` enabled when reporting issues. An example of output redirection and `DEBUG` logging is also provided in our
@@ -35,8 +35,8 @@ a "Kernel error" and State: 'FAILED'.**
    generated, make a note of it. For example, you can locate the applicationId
    `application_1506552273380_0011` from the following snippet of message:
    `[D 2017-09-28 17:13:22.675 EnterpriseGatewayApp] 13: State: 'ACCEPTED', Host: 'burna2.yourcompany.com', KernelID: '28a5e827-4676-4415-bbfc-ac30a0dcc4c3', ApplicationID: 'application_1506552273380_0011' 17/09/28 17:13:22 INFO YarnClientImpl: Submitted application application_1506552273380_0011 17/09/28 17:13:22 INFO Client: Application report for application_1506552273380_0011 (state: ACCEPTED) 17/09/28 17:13:22 INFO Client: client token: N/A diagnostics: AM container is launched, waiting for AM container to Register with RM ApplicationMaster host: N/A ApplicationMaster RPC port: -1 queue: default start time: 1506644002471 final status: UNDEFINED tracking URL: http://burna1.yourcompany.com:8088/proxy/application_1506552273380_0011/`
-2. Lookup the YARN log for that applicationId in the YARN ResourceManager UI: ![YARN ResourceManager UI](../images/yarnui.jpg)
-3. Drill down from the applicationId to find logs for the failed attempts and take appropriate
+1. Lookup the YARN log for that applicationId in the YARN ResourceManager UI: ![YARN ResourceManager UI](../images/yarnui.jpg)
+1. Drill down from the applicationId to find logs for the failed attempts and take appropriate
    actions. For example, for the error below,
    ```
    Traceback (most recent call last):
@@ -182,7 +182,7 @@ RuntimeError: Invalid port range '1000..2000' specified. Range for valid port nu
 ```
 
 To address this issue, make sure that the specified port range does not overlap with TCP's well-known
-port range of (0, 1024].
+port range of (0, 1024\].
 
 ## Hadoop YARN Timeout
 
@@ -243,9 +243,11 @@ Scenario: **Running Jupyter Enterprise Gateway on OpenShift Kubernetes Environme
 As described [in the OpenShift Admin Guide](https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html)
 there is a need to issue the following command to enable running with `USER` in Dockerfile.
 
-    ```bash
-    oc adm policy add-scc-to-group anyuid system:authenticated
-    ```
+````
+```bash
+oc adm policy add-scc-to-group anyuid system:authenticated
+```
+````
 
 ## Opening an issue
 
@@ -257,11 +259,11 @@ already reported. If found, please add a comment to the issue so that we can get
 issues are important to us). If not found, please provide the following information if possible in a **new issue**.
 
 1. Describe the issue in as much detail as possible. This should include configuration information about your environment.
-2. Gather and _attach_ the following files to the issue. If possible, please archive the files first.
+1. Gather and _attach_ the following files to the issue. If possible, please archive the files first.
    1. The **complete** Enterprise Gateway log file. If possible, please enable `DEBUG` logging that encompasses
       the issue. You can refer to this section of our [Operators Guide](../operators/launching-eg.md#launching-enterprise-gateway-common)
       for redirection and `DEBUG` enablement.
-   2. The log file(s) produced from the corresponding kernel. This is primarily a function of the underlying resource
+   1. The log file(s) produced from the corresponding kernel. This is primarily a function of the underlying resource
       manager.
       - For containerized installations like Kubernetes or Docker Swarm, kernel log output can be captured by
         running the appropriate `logs` command against the pod or container, respectively. The names of the
@@ -270,9 +272,9 @@ issues are important to us). If not found, please provide the following informat
         you'll need to navigate to the appropriate log directory relative the application ID associated with the kernel.
         The application ID can be located in the Enterprise Gateway log. If you have access to an administrative console,
         you can usually navigate to the application logs more easily.
-   3. Although unlikely, the notebook log may also be helpful. If we find that the issue is more client-side
+   1. Although unlikely, the notebook log may also be helpful. If we find that the issue is more client-side
       related, we may ask for `DEBUG` logging there as well.
-3. If you have altered or created new kernel specifications, the files corresponding to the failing kernels would be
+1. If you have altered or created new kernel specifications, the files corresponding to the failing kernels would be
    helpful. These files could also be added to the attached archive or attached separately.
 
 Please know that we understand that some information cannot be provided due to its sensitivity. In such cases, just
