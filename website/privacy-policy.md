@@ -1,6 +1,7 @@
-______________________________________________________________________
-
-## layout: page title: Jupyter Enterprise Gateway Privacy Policy
+---
+layout: page
+title: Jupyter Enterprise Gateway Privacy Policy
+---
 
 ## Jupyter Enterprise Gateway Privacy Policy
 
