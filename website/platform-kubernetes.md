@@ -1,6 +1,7 @@
-______________________________________________________________________
-
-## layout: page title: Jupyter Enterprise Gateway and Kubernetes
+---
+layout: page
+title: Jupyter Enterprise Gateway and Kubernetes
+---
 
 Recently, we have experienced various advances in AI, in particular around Deep Learning. This have
 increased the popularity of Deep Learning use cases and also the proliferation of several development

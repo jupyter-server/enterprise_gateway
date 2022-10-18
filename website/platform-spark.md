@@ -1,6 +1,7 @@
-______________________________________________________________________
-
-## layout: page title: Jupyter Enterprise Gateway and Apache Spark
+---
+layout: page
+title: Jupyter Enterprise Gateway and Apache Spark
+---
 
 The Big Data Analytics use cases require processing large data sets which are not containable by
 the resources available on a single machine.
