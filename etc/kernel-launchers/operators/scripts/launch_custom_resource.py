@@ -1,6 +1,7 @@
 #!/opt/conda/bin/python
 import argparse
 import os
+import sys
 
 import urllib3
 import yaml
@@ -58,9 +59,18 @@ def launch_custom_resource_kernel(
     plural = keywords["kernel_crd_plural"]
     custom_resource_object = yaml.safe_load(custom_resource_yaml)
 
-    client.CustomObjectsApi().create_namespaced_custom_object(
-        group, version, kernel_namespace, plural, custom_resource_object
-    )
+    try:
+        client.CustomObjectsApi().create_namespaced_custom_object(
+            group, version, kernel_namespace, plural, custom_resource_object
+        )
+    except client.exceptions.ApiException as ex:
+        if ex.status == 404:
+            sys.exit(
+                "\nERROR: The Kubernetes Operator for Apache Spark does not appear to be installed.  "
+                "See 'https://github.com/GoogleCloudPlatform/spark-on-k8s-operator#installation' for "
+                "instructions, then retry the operation.\n"
+            )
+        raise ex
 
 
 if __name__ == "__main__":

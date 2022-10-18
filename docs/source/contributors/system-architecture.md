@@ -132,7 +132,7 @@ built-in subclasses of `RemoteProcessProxy` ...
   makes all kinds of spark on k8s components better organized and easy to configure.
 
 ```{note}
-Before you run a kernel associated with `SparkOperatorProcessProxy`, please ensure that spark operator is installed in an existing namespace of your Kubernetes cluster.
+Before you run a kernel associated with `SparkOperatorProcessProxy`, ensure that the [Kubernetes Operator for Apache Spark is installed](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator#installation) in your Kubernetes cluster.
 ```
 
 You might notice that the last six process proxies do not necessarily control the _launch_ of the kernel. This is
