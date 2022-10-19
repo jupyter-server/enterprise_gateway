@@ -63,4 +63,3 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             self.kernel_resource_name = None
 
         return result
-
