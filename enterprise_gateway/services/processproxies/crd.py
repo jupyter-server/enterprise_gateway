@@ -32,7 +32,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def kill(self) -> bool | None:
+    def terminate_container_resources(self) -> bool | None:
         result = None
 
         if self.kernel_resource_name:
@@ -49,22 +49,18 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
                     if any(status in v1_status.status for status in termination_status):
                         result = True
             else:
-                result = self.terminate_custom_resource()
+                try:
+                    delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
+                        self.group, self.version, self.plurals, self.kernel_resource_name
+                    )
+
+                    result = delete_status and delete_status.get("status", None) == "Success"
+
+                except Exception as err:
+                    result = isinstance(err, client.rest.ApiException) and err.status == 404
 
         if result:
             self.kernel_resource_name = None
 
         return result
 
-    def terminate_custom_resource(self) -> bool:
-        try:
-            delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
-                self.group, self.version, self.plurals, self.kernel_resource_name
-            )
-
-            result = delete_status and delete_status.get("status", None) == "Success"
-
-        except Exception as err:
-            result = isinstance(err, client.rest.ApiException) and err.status == 404
-
-        return result
