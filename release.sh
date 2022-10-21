@@ -201,7 +201,7 @@ function update_version_to_release {
     # We need to inject "-" prior to pre-release suffices for 'version:' since it follows strict semantic version rules.
     # For example 3.0.0rc1 -> 3.0.0-rc1
     k8s_version=`echo $RELEASE_VERSION | sed 's/\([0-9]\)\([a-z]\)/\1-\2/'`
-    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+    sed -i .bak "s@version: [0-9,\.,a-z,-]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
 
     sed -i .bak "s@elyra/enterprise-gateway:dev@elyra/enterprise-gateway:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
@@ -225,7 +225,7 @@ function update_version_to_development {
     # We need to replace ".devN" suffix with "-devN for 'version:' since it follows strict semantic version rules.
     # For example 3.0.0.dev1 -> 3.0.0-dev1
     k8s_version=`echo $DEVELOPMENT_VERSION | sed 's/\.\(dev\)/-\1/'`
-    sed -i .bak "s@version: [0-9,\.,a-z]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
+    sed -i .bak "s@version: [0-9,\.,a-z,-]*@version: $k8s_version@g" etc/kubernetes/helm/enterprise-gateway/Chart.yaml
 
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/kubernetes/helm/enterprise-gateway/values.yaml
