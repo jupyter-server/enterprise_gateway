@@ -12,7 +12,7 @@ SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 
-VERSION?=3.0.0rc1
+VERSION?=3.1.0.dev1
 SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
