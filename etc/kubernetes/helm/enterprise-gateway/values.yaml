@@ -23,7 +23,7 @@ imagePullSecretsCreate:
     #   --set imagePullSecretsCreate.secrets[1].data="UHJvZCBTZWNyZXQgSW5mb3JtYXRpb24K"
 
 # Enterprise Gateway image name and tag to use.
-image: elyra/enterprise-gateway:dev
+image: elyra/enterprise-gateway:3.0.0rc1
 # Enterprise Gateway image pull policy.
 imagePullPolicy: IfNotPresent
 # K8s Enterprise Gateway Service
@@ -138,7 +138,7 @@ kip:
     create: false
     annotations: {}
   # Kernel Image Puller image name and tag to use.
-  image: elyra/kernel-image-puller:dev
+  image: elyra/kernel-image-puller:3.0.0rc1
   # Kernel Image Puller image pull policy.
   imagePullPolicy: IfNotPresent
   # Determines whether the Kernel Image Puller will pull kernel images it has previously pulled
