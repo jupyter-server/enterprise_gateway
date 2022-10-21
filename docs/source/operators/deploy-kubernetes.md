@@ -65,7 +65,7 @@ Alternatively, the helm chart tarball is also accessible as an asset on our [rel
 
 ```bash
 helm  upgrade --install  enterprise-gateway \
-  https://github.com/jupyter-server/enterprise_gateway/releases/download/[VERSION]/jupyter_enterprise_gateway_helm-[VERSION].tgz \
+  https://github.com/jupyter-server/enterprise_gateway/releases/download/[VERSION]/jupyter_enterprise_gateway_helm-[VERSION].tar.gz \
    --kube-context [mycluster-context-name] \
    --namespace [namespace-name]
 ```
