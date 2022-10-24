@@ -57,7 +57,7 @@ repos:
         args: [--max-line-length=200]
 
   - repo: https://github.com/john-hen/Flake8-pyproject
-    rev: 1.0.1
+    rev: 1.1.0.post0
     hooks:
       - id: Flake8-pyproject
         alias: flake8
@@ -66,7 +66,7 @@ repos:
         stages: [manual]
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.18.3
+    rev: 0.18.4
     hooks:
       - id: check-jsonschema
         name: "Check GitHub Workflows"
