@@ -148,7 +148,14 @@ def launch_kubernetes_kernel(
                 if pod_template_file is None:
                     if pod_created is not None:
                         # Create link dependance between pod and service, usefull to delete service when kernel stop
-                        k8s_obj['metadata']['ownerReferences'] = [{'apiVersion':'v1','kind':'pod','name':str(pod_created.metadata.name),'uid':str(pod_created.metadata.uid)}]
+                        k8s_obj["metadata"]["ownerReferences"] = [
+                            {
+                                "apiVersion": "v1",
+                                "kind": "pod",
+                                "name": str(pod_created.metadata.name),
+                                "uid": str(pod_created.metadata.uid),
+                            }
+                        ]
                         client.CoreV1Api(client.ApiClient()).create_namespaced_service(
                             body=k8s_obj, namespace=kernel_namespace
                         )
@@ -156,7 +163,14 @@ def launch_kubernetes_kernel(
                 if pod_template_file is None:
                     if pod_created is not None:
                         # Create link dependance between pod and configmap, usefull to delete service when kernel stop
-                        k8s_obj['metadata']['ownerReferences'] = [{'apiVersion':'v1','kind':'pod','name':str(pod_created.metadata.name),'uid':str(pod_created.metadata.uid)}]
+                        k8s_obj["metadata"]["ownerReferences"] = [
+                            {
+                                "apiVersion": "v1",
+                                "kind": "pod",
+                                "name": str(pod_created.metadata.name),
+                                "uid": str(pod_created.metadata.uid),
+                            }
+                        ]
                         client.CoreV1Api(client.ApiClient()).create_namespaced_config_map(
                             body=k8s_obj, namespace=kernel_namespace
                         )
