@@ -147,7 +147,7 @@ def launch_kubernetes_kernel(
             elif k8s_obj["kind"] == "Service":
                 if pod_template_file is None:
                     if pod_created is not None:
-                        # Create link dependance between pod and service, usefull to delete service when kernel stop
+                        # Create dependency between pod and service, useful to delete service when kernel stops
                         k8s_obj["metadata"]["ownerReferences"] = [
                             {
                                 "apiVersion": "v1",
