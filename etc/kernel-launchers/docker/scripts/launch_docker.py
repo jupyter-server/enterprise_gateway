@@ -15,7 +15,9 @@ remove_container = bool(
 swarm_mode = bool(os.getenv("DOCKER_MODE", os.getenv("EG_DOCKER_MODE", "swarm")).lower() == "swarm")
 
 
-def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode):
+def launch_docker_kernel(
+    kernel_id, port_range, response_addr, public_key, spark_context_init_mode, kernel_class_name
+):
     # Launches a containerized kernel.
 
     # Can't proceed if no image was specified.
@@ -41,6 +43,8 @@ def launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark
     param_env["PUBLIC_KEY"] = public_key
     param_env["RESPONSE_ADDRESS"] = response_addr
     param_env["KERNEL_SPARK_CONTEXT_INIT_MODE"] = spark_context_init_mode
+    if kernel_class_name:
+        param_env["KERNEL_CLASS_NAME"] = kernel_class_name
 
     # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and EG_CLIENT_ENVS)
     # just add the env here.
@@ -135,6 +139,12 @@ if __name__ == "__main__":
         nargs="?",
         help="Indicates whether or how a spark context should be created",
     )
+    parser.add_argument(
+        "--kernel-class-name",
+        dest="kernel_class_name",
+        nargs="?",
+        help="Indicates the name of the kernel class to use.  Must be a subclass of 'ipykernel.kernelbase.Kernel'.",
+    )
 
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default value for --spark-context-initialization-mode (none) will need to come from
@@ -181,5 +191,8 @@ if __name__ == "__main__":
     spark_context_init_mode = (
         arguments["spark_context_init_mode"] or arguments["rpp_spark_context_init_mode"]
     )
+    kernel_class_name = arguments["kernel_class_name"]
 
-    launch_docker_kernel(kernel_id, port_range, response_addr, public_key, spark_context_init_mode)
+    launch_docker_kernel(
+        kernel_id, port_range, response_addr, public_key, spark_context_init_mode, kernel_class_name
+    )

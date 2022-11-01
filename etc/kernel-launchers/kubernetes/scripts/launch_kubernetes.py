@@ -71,6 +71,7 @@ def launch_kubernetes_kernel(
     spark_context_init_mode,
     pod_template_file,
     spark_opts_out,
+    kernel_class_name,
 ):
     # Launches a containerized kernel as a kubernetes pod.
 
@@ -97,6 +98,9 @@ def launch_kubernetes_kernel(
         os.environ["KERNEL_ID"] = kernel_id
     if spark_context_init_mode:
         os.environ["KERNEL_SPARK_CONTEXT_INIT_MODE"] = spark_context_init_mode
+    if kernel_class_name:
+        os.environ["KERNEL_CLASS_NAME"] = kernel_class_name
+
     os.environ["KERNEL_NAME"] = os.path.basename(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
@@ -300,6 +304,12 @@ if __name__ == "__main__":
         help="When present, additional spark options are written to file, "
         "no launch performed, requires --pod-template.",
     )
+    parser.add_argument(
+        "--kernel-class-name",
+        dest="kernel_class_name",
+        nargs="?",
+        help="Indicates the name of the kernel class to use.  Must be a subclass of 'ipykernel.kernelbase.Kernel'.",
+    )
 
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default value for --spark-context-initialization-mode (none) will need to come from
@@ -348,6 +358,7 @@ if __name__ == "__main__":
     )
     pod_template_file = arguments["pod_template_file"]
     spark_opts_out = arguments["spark_opts_out"]
+    kernel_class_name = arguments["kernel_class_name"]
 
     launch_kubernetes_kernel(
         kernel_id,
@@ -357,4 +368,5 @@ if __name__ == "__main__":
         spark_context_init_mode,
         pod_template_file,
         spark_opts_out,
+        kernel_class_name,
     )
