@@ -25,10 +25,10 @@ dependencies = [
   "docker>=3.5.0",
   "future",
   "jinja2>=3.1",
-  "jupyter_client>=6.1.5,<7",  # Remove cap once EG supports kernel provisioners
+  "jupyter_client>=6.1.12,<7",  # Remove cap once EG supports kernel provisioners
   "jupyter_core>=4.7.0",
   "kubernetes>=18.20.0",
-  "jupyter_server>=1.3",
+  "jupyter_server>=1.3,<2.0",  # Remove cap (increase floor) once EG suport kernel provisioners
   "paramiko>=2.11",
   "pexpect>=4.8.0",
   "pycryptodomex>=3.9.7",
