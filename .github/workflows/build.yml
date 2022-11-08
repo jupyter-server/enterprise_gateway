@@ -33,7 +33,7 @@ jobs:
         run: |
           pip install ".[test]"
       - name: Build and install Jupyter Enterprise Gateway
-        uses: nick-invision/retry@v1.0.0
+        uses: nick-invision/retry@v2.8.2
         with:
           timeout_minutes: 10
           max_attempts: 2
@@ -43,7 +43,7 @@ jobs:
         run: |
           pip freeze
       - name: Run unit tests
-        uses: nick-invision/retry@v1.0.0
+        uses: nick-invision/retry@v2.8.2
         with:
           timeout_minutes: 3
           max_attempts: 1
