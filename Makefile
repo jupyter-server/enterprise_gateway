@@ -11,6 +11,7 @@
 SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
+MULTIARCH_BUILD?=
 
 VERSION?=3.1.0.dev0
 SPARK_VERSION?=3.2.1
@@ -116,6 +117,10 @@ helm-lint: helm-clean
 helm-clean: # Remove any .DS_Store files that might wind up in the package
 	$(shell find etc/kubernetes/helm -type f -name '.DS_Store' -exec rm -f {} \;)
 
+buildx-builder: # start a buildx builder for multi-arc build
+	@echo "starting buildx builder"
+	docker buildx create --use
+
 $(HELM_CHART): $(HELM_CHART_FILES)
 	make helm-lint
 	helm package $(HELM_CHART_DIR) -d dist
@@ -151,10 +156,10 @@ kernel-images: ## Build kernel-based docker images
 docker-images: demo-base enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller
 
 enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) MULTIARCH_BUILD=$(MULTIARCH_BUILD) -C etc $@
 
 demo-base:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) MULTIARCH_BUILD=$(MULTIARCH_BUILD) -C etc $@
 
 # Here for doc purposes
 clean-images: clean-demo-base ## Remove docker images (includes kernel-based images)

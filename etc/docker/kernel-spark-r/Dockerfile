@@ -18,7 +18,9 @@ RUN apt-get update && apt-get install -y \
     openjdk-8-jdk \
     libssl-dev
 
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+RUN mkdir -p /usr/lib/jvm/java
+ENV JAVA_HOME /usr/lib/jvm/java
+RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 # Download and install Spark
 RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \

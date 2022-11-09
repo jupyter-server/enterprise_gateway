@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=ubuntu:bionic
+ARG BASE_CONTAINER=continuumio/miniconda3
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
@@ -19,13 +19,13 @@ ENV SHELL=/bin/bash \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
-    JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 \
+    JAVA_HOME=/usr/lib/jvm/java \
     SPARK_HOME=/usr/hdp/current/spark2-client \
     PYSPARK_PYTHON=$ANACONDA_HOME/bin/python \
     HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 ENV HOME=/home/$NB_USER \
-    PATH=$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin:$SPARK_HOME/bin:$PATH
+    PATH=$JAVA_HOME/bin:$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$SPARK_HOME/bin:$PATH
 
 ENV SPARK_VER $SPARK_VERSION
 ENV HADOOP_VER 3.3.1
@@ -49,10 +49,15 @@ RUN apt-get update && apt-get -yq dist-upgrade \
     libsm6 \
     libxext-dev \
     libxrender1 \
-    openjdk-8-jdk \
+    software-properties-common \
     openssh-server \
     openssh-client \
+ && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
+ && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jdk \
  && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /usr/lib/java
+RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen
@@ -63,7 +68,6 @@ ADD fix-permissions /usr/local/bin/fix-permissions
 RUN groupadd wheel -g 11 && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
     useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
-    mkdir -p $ANACONDA_HOME && \
     mkdir -p /usr/hdp/current && \
     mkdir -p /usr/local/share/jupyter && \
     chown $NB_USER:$NB_GID $ANACONDA_HOME && \
@@ -91,21 +95,14 @@ RUN curl -sL https://archive.apache.org/dist/spark/spark-$SPARK_VER/spark-$SPARK
 # SETUP SPARK AND HADOOP SYMLINKS
 RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$SPARK_VER-bin-hadoop3.2 spark2-client
 
-# INSTALL MINI-CONDA AND PYTHON PACKAGES
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.2-Linux-x86_64.sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -f -b -p $ANACONDA_HOME && \
-    rm ~/miniconda.sh && \
-    rm -rf /home/$NB_USER/.cache/yarn
-
 USER root
 
-RUN conda install --yes --quiet \
-    'pip' \
+RUN conda install --yes --quiet -c conda-forge \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \
     'r-argparse' && \
-    conda clean --all && \
+    conda clean --all &&\
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
@@ -121,7 +118,7 @@ RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.e
             -e 'unlink("SparkR_$SPARKR_VERSION.tar.gz")'
 
 # SETUP HADOOP CONFIGS
-RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64\nexport HADOOP_HOME=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
+RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java\nexport HADOOP_HOME=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 RUN sed -i '/^export HADOOP_CONF_DIR/ s:.*:export HADOOP_CONF_DIR=/usr/hdp/current/hadoop/etc/hadoop/:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 # SETUP PSEUDO - DISTRIBUTED CONFIGS FOR HADOOP
 COPY ["core-site.xml.template", "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml.template", \
