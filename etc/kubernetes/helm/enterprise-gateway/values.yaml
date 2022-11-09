@@ -153,6 +153,11 @@ kip:
   defaultContainerRegistry: docker.io
   resources: {}
   annotations: {}
+
+  tolerations: []
+  affinity: {}
+  nodeSelector: {}
+  # resources:
   #   limits:
   #     cpu: 1
   #     memory: 1Gi

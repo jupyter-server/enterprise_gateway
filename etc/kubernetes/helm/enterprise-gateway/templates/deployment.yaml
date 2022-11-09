@@ -96,7 +96,7 @@ spec:
   {{- end }}
   {{- if .Values.deployment.nodeSelector }}
       nodeSelector:
-        {{- toYaml .Values.deployment/nodeSelector | nindent 8 }}
+        {{- toYaml .Values.deployment.nodeSelector | nindent 8 }}
   {{- end }}
   {{- if .Values.deployment.affinity }}
       affinity:

@@ -67,6 +67,19 @@ spec:
         - name: cri-socket
           mountPath: !!str {{ .Values.kip.criSocket }}  # see env KIP_CRI_ENDPOINT
           readOnly: true
+
+  {{- if .Values.kip.tolerations }}
+      tolerations:
+        {{- toYaml .Values.kip.tolerations | nindent 8 }}
+  {{- end }}
+  {{- if .Values.kip.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.kip.nodeSelector | nindent 8 }}
+  {{- end }}
+  {{- if .Values.kip.affinity }}
+      affinity:
+        {{- toYaml .Values.kip.affinity | nindent 8 }}
+  {{- end }}
       volumes:
       - name: cri-socket
         hostPath:
