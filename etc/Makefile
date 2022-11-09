@@ -152,7 +152,7 @@ $1: ../.image-$1
 ifdef MULTIARCH_BUILD
 	@echo "starting buildx builder"
 	(docker buildx create --use)
-	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
+	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
 else
 	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 endif
