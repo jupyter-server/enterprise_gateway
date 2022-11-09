@@ -58,7 +58,9 @@ deployment:
   #     memory: 2Gi
   # Update to deploy multiple replicas of EG.
   replicas: 1
-
+  tolerations: []
+  affinity: {}
+  nodeSelector: {}
 
 # Log output level.
 logLevel: DEBUG
