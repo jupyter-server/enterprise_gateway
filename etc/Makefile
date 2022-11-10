@@ -104,7 +104,6 @@ kernel_image_files: ../build/kernel_image_files
 #
 
 KERNEL_IMAGES := kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py
-# DOCKER_IMAGES := demo-base enterprise-gateway-demo enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
 DOCKER_IMAGES := demo-base enterprise-gateway-demo enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
 PUSHED_IMAGES := demo-base enterprise-gateway-demo enterprise-gateway kernel-image-puller $(KERNEL_IMAGES)
 
