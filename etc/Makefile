@@ -154,7 +154,6 @@ ifdef MULTIARCH_BUILD
 	@echo "cleanup buildx builder $1"
 	-@(docker buildx rm $1)
 	(docker buildx create --use --name $1)
-	@echo "running build on builder instance $(BUILDER_NAME)"
 	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
 	@echo "remove builder instance $1"
 	-(docker buildx rm $1)
