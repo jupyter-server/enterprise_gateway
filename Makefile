@@ -117,10 +117,6 @@ helm-lint: helm-clean
 helm-clean: # Remove any .DS_Store files that might wind up in the package
 	$(shell find etc/kubernetes/helm -type f -name '.DS_Store' -exec rm -f {} \;)
 
-buildx-builder: # start a buildx builder for multi-arc build
-	@echo "starting buildx builder"
-	docker buildx create --use
-
 $(HELM_CHART): $(HELM_CHART_FILES)
 	make helm-lint
 	helm package $(HELM_CHART_DIR) -d dist
