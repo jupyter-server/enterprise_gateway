@@ -150,8 +150,7 @@ $1: ../.image-$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
 ifdef MULTIARCH_BUILD
-	@echo "starting buildx builder"
-	@echo "cleanup buildx builder $1"
+	@echo "starting buildx builder for $1"
 	-@(docker buildx rm $1)
 	(docker buildx create --use --name $1)
 	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)

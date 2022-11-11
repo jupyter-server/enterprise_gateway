@@ -56,7 +56,6 @@ RUN apt-get update && apt-get -yq dist-upgrade \
  && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jdk \
  && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/lib/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \

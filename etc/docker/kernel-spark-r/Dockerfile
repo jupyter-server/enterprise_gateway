@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y \
     openjdk-8-jdk \
     libssl-dev
 
-RUN mkdir -p /usr/lib/jvm/java
 ENV JAVA_HOME /usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 

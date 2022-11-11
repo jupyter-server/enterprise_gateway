@@ -23,7 +23,6 @@ RUN apt-get update && \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/lib/jvm/java
 ENV JAVA_HOME /usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
