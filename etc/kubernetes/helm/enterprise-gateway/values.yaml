@@ -91,7 +91,7 @@ kernel:
     - spark_python_kubernetes
     - spark_scala_kubernetes
     - spark_python_operator
-  # Default kernel name should be something from the whitelist
+  # Default kernel name should be something from the allowedKernels
   defaultKernelName: python_kubernetes
 
 kernelspecs:
