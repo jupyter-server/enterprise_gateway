@@ -116,18 +116,18 @@ spec:
         emptyDir:
           medium: Memory
 
-{{- if .Values.deployment.tolerations }}
-    tolerations:
+  {{- if .Values.deployment.tolerations }}
+      tolerations:
       {{- toYaml .Values.deployment.tolerations | nindent 8 }}
-{{- end }}
-{{- if .Values.deployment.nodeSelector }}
-    nodeSelector:
+  {{- end }}
+  {{- if .Values.deployment.nodeSelector }}
+      nodeSelector:
       {{- toYaml .Values.deployment.nodeSelector | nindent 8 }}
-{{- end }}
-{{- if .Values.deployment.affinity }}
-    affinity:
+  {{- end }}
+  {{- if .Values.deployment.affinity }}
+      affinity:
       {{- toYaml .Values.deployment.affinity | nindent 8 }}
-{{- end }}
+  {{- end }}
 
   {{- end }}
 {{- end }}
