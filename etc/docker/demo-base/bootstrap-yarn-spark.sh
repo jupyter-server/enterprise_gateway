@@ -28,7 +28,7 @@ fi
 : ${YARN_HOST:=$HOSTNAME}
 : ${SPARK_HOME:=/usr/hdp/current/spark2-client}
 : ${SPARK_VER:=3.2.1}
-: ${JAVA_HOME:=/usr/lib/jvm/java-8-openjdk-amd64}
+: ${JAVA_HOME:=/usr/lib/jvm/java}
 
 echo "export JAVA_HOME=${JAVA_HOME}" >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh
 

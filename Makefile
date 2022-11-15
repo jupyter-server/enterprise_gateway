@@ -11,6 +11,7 @@
 SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
+MULTIARCH_BUILD?=
 
 VERSION?=3.1.0.dev0
 SPARK_VERSION?=3.2.1
@@ -151,10 +152,10 @@ kernel-images: ## Build kernel-based docker images
 docker-images: demo-base enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller
 
 enterprise-gateway-demo kernel-images enterprise-gateway kernel-py kernel-spark-py kernel-r kernel-spark-r kernel-scala kernel-tf-py kernel-tf-gpu-py kernel-image-puller:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) MULTIARCH_BUILD=$(MULTIARCH_BUILD) -C etc $@
 
 demo-base:
-	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) -C etc $@
+	make WHEEL_FILE=$(WHEEL_FILE) VERSION=$(VERSION) NO_CACHE=$(NO_CACHE) TAG=$(SPARK_VERSION) SPARK_VERSION=$(SPARK_VERSION) MULTIARCH_BUILD=$(MULTIARCH_BUILD) -C etc $@
 
 # Here for doc purposes
 clean-images: clean-demo-base ## Remove docker images (includes kernel-based images)

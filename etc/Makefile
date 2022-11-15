@@ -149,9 +149,18 @@ $1: ../.image-$1
 	@make clean-$1 TARGETS_$1
 	@mkdir -p ../build/docker/$1
 	@cp -r docker/$1/* $$(FILES_$1) ../build/docker/$1
+ifdef MULTIARCH_BUILD
+	@echo "starting buildx builder for $1"
+	-@(docker buildx rm $1)
+	(docker buildx create --use --name $1)
+	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
+	@echo "remove builder instance $1"
+	-(docker buildx rm $1)
+else
 	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
-	@touch ../.image-$1
 	@-docker images $(HUB_ORG)/$1:$(TAG)
+endif
+	@touch ../.image-$1
 endef
 $(foreach image,$(DOCKER_IMAGES),$(eval $(call BUILD_IMAGE,$(image))))
 
