@@ -163,9 +163,11 @@ class KernelImagePuller:
         for key in k_specs.keys():
             metadata = k_specs.get(key).get("spec").get("metadata")
             if metadata is not None:
-                process_proxy = metadata.get("process_proxy")
-                if process_proxy is not None:
-                    config = process_proxy.get("config")
+                config_parent = metadata.get("process_proxy")
+                if config_parent is None:  # See if this is a provisioner
+                    config_parent = metadata.get("kernel_provisioner")
+                if config_parent is not None:
+                    config = config_parent.get("config")
                     if config is not None:
                         image_name = config.get("image_name")
                         if image_name is not None:
