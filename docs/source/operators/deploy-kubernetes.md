@@ -36,6 +36,7 @@ There are two main deployment scenarios if RBAC is enabled in your Kubernetes cl
 ## Prerequisites
 
 - Install and configure [kubectl](https://kubernetes.io/docs/tasks/tools/) and [helm3](https://helm.sh/docs/intro/install/) on your workstation.
+
 - Create the kubernetes namespace where you want to deploy Enterprise Gateway, for example:
 
   ```sh
@@ -43,6 +44,7 @@ There are two main deployment scenarios if RBAC is enabled in your Kubernetes cl
   ```
 
 - If you use RBAC, you will need cluster Admin access to configure RBAC resources
+
 - If you plan to use Private docker registry, you will need to have credentials (see configuration steps below)
 
 Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working, it is time to deploy Enterprise Gateway. There are a couple of different deployment options - using helm or kubectl.
