@@ -158,10 +158,15 @@ def launch_kubernetes_kernel(
                         )
                     except ApiException as exc:
                         if _parse_k8s_exception(exc) == K8S_ALREADY_EXIST_REASON:
-                            pod_created = client.CoreV1Api(client.ApiClient()).list_namespaced_pod(
-                                namespace=kernel_namespace,
-                                label_selector="kernel_id={}".format(kernel_id), watch=False
-                            ).items[0]
+                            pod_created = (
+                                client.CoreV1Api(client.ApiClient())
+                                .list_namespaced_pod(
+                                    namespace=kernel_namespace,
+                                    label_selector=f"kernel_id={kernel_id}",
+                                    watch=False,
+                                )
+                                .items[0]
+                            )
                         else:
                             raise exc
             elif k8s_obj["kind"] == "Secret":
@@ -184,8 +189,7 @@ def launch_kubernetes_kernel(
                             raise exc
             elif k8s_obj["kind"] == "PersistentVolume":
                 if pod_template_file is None:
-                    client.CoreV1Api(client.ApiClient()
-                                     ).create_persistent_volume(body=k8s_obj)
+                    client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
             elif k8s_obj["kind"] == "Service":
                 if pod_template_file is None:
                     if pod_created is not None:
