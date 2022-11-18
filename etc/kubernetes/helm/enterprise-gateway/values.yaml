@@ -111,6 +111,7 @@ kernelspecsPvc:
   name:
 
 ingress:
+  ingressClassName: # available since k8s 1.18. Depending on the ingress controller, you can use annotation as alternative
   enabled: false
   hostName: "" # Ingress resource host
   pathType: "Prefix"
