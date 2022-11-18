@@ -48,8 +48,9 @@ deployment:
   enabled: true
   serviceAccountName: 'enterprise-gateway-sa'
   terminationGracePeriodSeconds: 30
-  resources: {}
   annotations: {}
+  resources: {}
+  # resources:
   #   limits:
   #     cpu: 2
   #     memory: 10Gi
@@ -152,12 +153,11 @@ kip:
   criSocket: /var/run/docker.sock
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
-  resources: {}
   annotations: {}
-
   tolerations: []
   affinity: {}
   nodeSelector: {}
+  resources: {}
   # resources:
   #   limits:
   #     cpu: 1
