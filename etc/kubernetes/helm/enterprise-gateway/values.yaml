@@ -48,8 +48,9 @@ deployment:
   enabled: true
   serviceAccountName: 'enterprise-gateway-sa'
   terminationGracePeriodSeconds: 30
-  resources: {}
   annotations: {}
+  resources: {}
+  # resources:
   #   limits:
   #     cpu: 2
   #     memory: 10Gi
@@ -58,7 +59,9 @@ deployment:
   #     memory: 2Gi
   # Update to deploy multiple replicas of EG.
   replicas: 1
-
+  tolerations: []
+  affinity: {}
+  nodeSelector: {}
 
 # Log output level.
 logLevel: DEBUG
@@ -89,7 +92,7 @@ kernel:
     - spark_python_kubernetes
     - spark_scala_kubernetes
     - spark_python_operator
-  # Default kernel name should be something from the whitelist
+  # Default kernel name should be something from the allowedKernels
   defaultKernelName: python_kubernetes
 
 kernelspecs:
@@ -109,6 +112,7 @@ kernelspecsPvc:
   name:
 
 ingress:
+  ingressClassName: # available since k8s 1.18. Depending on the ingress controller, you can use annotation as alternative
   enabled: false
   hostName: "" # Ingress resource host
   pathType: "Prefix"
@@ -149,8 +153,12 @@ kip:
   criSocket: /var/run/docker.sock
   # Prefix to use if a registry is not already specified on image name (e.g., quay.io/elyra/kernel-py:2.5.0)
   defaultContainerRegistry: docker.io
-  resources: {}
   annotations: {}
+  tolerations: []
+  affinity: {}
+  nodeSelector: {}
+  resources: {}
+  # resources:
   #   limits:
   #     cpu: 1
   #     memory: 1Gi

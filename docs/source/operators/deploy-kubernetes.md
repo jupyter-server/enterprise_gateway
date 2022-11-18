@@ -36,11 +36,15 @@ There are two main deployment scenarios if RBAC is enabled in your Kubernetes cl
 ## Prerequisites
 
 - Install and configure [kubectl](https://kubernetes.io/docs/tasks/tools/) and [helm3](https://helm.sh/docs/intro/install/) on your workstation.
+
 - Create the kubernetes namespace where you want to deploy Enterprise Gateway, for example:
+
   ```sh
   kubectl create namespace enterprise-gateway
   ```
+
 - If you use RBAC, you will need cluster Admin access to configure RBAC resources
+
 - If you plan to use Private docker registry, you will need to have credentials (see configuration steps below)
 
 Once the Kubernetes cluster is configured and `kubectl` is demonstrated to be working, it is time to deploy Enterprise Gateway. There are a couple of different deployment options - using helm or kubectl.
@@ -111,7 +115,7 @@ helm  upgrade --install enterprise-gateway \
 
 ## Basic Full Configuration Example of Enterprise Gateway Deployment
 
-### Option 1. Use Kubernetes Ingress:
+### Option 1. Use Kubernetes Ingress
 
 Create file `values-full.yaml` with the following content:
 
@@ -151,7 +155,7 @@ ingress:
 
 ```
 
-### Option 2. Use NodePort Service:
+### Option 2. Use NodePort Service
 
 Create file `values-full.yaml` with the following content, you can set the node port value or have Kubernetes allocate a random port:
 
@@ -191,7 +195,7 @@ ingress:
   enabled: false
 ```
 
-### Option 3. Use NodePort Service with Private Docker Registry:
+### Option 3. Use NodePort Service with Private Docker Registry
 
 Create file `values-full.yaml` with the following content, you can set the node port value or have Kubernetes allocate a random port:
 
@@ -305,7 +309,7 @@ You can start jupyter notebook to connect to the configured endpoint `http://jup
 
 If you need to deploy Enterprise Gateway to a restricted Kubernetes cluster with _RBAC_ and _PodSecurityPolicies_ enabled, you may want to consider deploying Enterprise Gateway components as separate helm releases:
 
-### 1. Helm release which will configure required RBAC, PSP, and service accounts.
+### 1. Helm release which will configure required RBAC, PSP, and service accounts
 
 - Typically, this will be done by the Cluster Administrator.
 
@@ -340,7 +344,7 @@ helm  upgrade --install enterprise-gateway \
    -f values-rbac.yaml
 ```
 
-### 2. Helm release to deploy Kernel Image Puller.
+### 2. Helm release to deploy Kernel Image Puller
 
 - Typically, this will be done by the Cluster Administrator.
 
@@ -382,7 +386,7 @@ helm  upgrade --install enterprise-gateway \
    -f values-kip.yaml
 ```
 
-### 3. Helm release to deploy Enterprise Gateway.
+### 3. Helm release to deploy Enterprise Gateway
 
 - This can be done by namespace Administrator.
 
@@ -464,6 +468,9 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `service.ports[1].port`                    | The port on which Enterprise Gateway will receive kernel connection info responses.                                                                                                                                                              | `8877`                                                                         |
 | `deployment.enabled`                       | flag to enable run Enterprise Gateway deployment                                                                                                                                                                                                 | `true`                                                                         |
 | `deployment.serviceAccountName`            | Kubernetes Service Account to run Enterprise Gateway                                                                                                                                                                                             | `enterprise-gateway-sa`                                                        |
+| `deployment.tolerations`                   | Kubernetes tolerations for Enterprise Gateway pods to ensure that pods are not scheduled onto inappropriate nodes                                                                                                                                | `[]`                                                                           |
+| `deployment.affinity`                      | Kubernetes affinity for Enterprise Gateway pods to keep pods scheduled onto appropriate nodes                                                                                                                                                    | `{}`                                                                           |
+| `deployment.nodeSelector`                  | Kubernetes nodeselector for Enterprise Gateway pods to keep pods scheduled onto appropriate nodes - simpler alternative to tolerations and affinity                                                                                              | `{}`                                                                           |
 | `deployment.terminationGracePeriodSeconds` | Time to wait for Enterprise Gateway to gracefully shutdown.                                                                                                                                                                                      | `30`                                                                           |
 | `deployment.resources`                     | set Enterprise Gateway container resources.                                                                                                                                                                                                      | valid Yaml resources, see values file for example                              |
 | `deployment.replicas`                      | Update to deploy multiple replicas of EG.                                                                                                                                                                                                        | `1`                                                                            |
@@ -474,8 +481,8 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kernel.shareGatewayNamespace`             | Will start kernels in the same namespace as EG if True.                                                                                                                                                                                          | `false`                                                                        |
 | `kernel.launchTimeout`                     | Timeout for kernel launching in seconds.                                                                                                                                                                                                         | `60`                                                                           |
 | `kernel.cullIdleTimeout`                   | Idle timeout in seconds. Default is 1 hour.                                                                                                                                                                                                      | `3600`                                                                         |
-| `kernel.whitelist`                         | List of kernel names that are available for use.                                                                                                                                                                                                 | `{r_kubernetes,...}` (see `values.yaml`)                                       |
-| `kernel.defaultKernelName`                 | Default kernel name should be something from the whitelist                                                                                                                                                                                       | `python-kubernetes`                                                            |
+| `kernel.allowedKernels`                    | List of kernel names that are available for use.                                                                                                                                                                                                 | `{r_kubernetes,...}` (see `values.yaml`)                                       |
+| `kernel.defaultKernelName`                 | Default kernel name should be something from the allowedKernels                                                                                                                                                                                  | `python-kubernetes`                                                            |
 | `kernelspecs.image`                        | Optional custom data image containing kernelspecs to use. Cannot be used with NFS enabled.                                                                                                                                                       | `nil`                                                                          |
 | `kernelspecs.imagePullPolicy`              | Kernelspecs image pull policy.                                                                                                                                                                                                                   | `Always`                                                                       |
 | `nfs.enabled`                              | Whether NFS-mounted kernelspecs are enabled. Cannot be used with `kernelspecs.image` set.                                                                                                                                                        | `false`                                                                        |
@@ -484,6 +491,7 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kernelspecsPvc.enabled`                   | Use a persistent volume claim to store kernelspecs in a persistent volume                                                                                                                                                                        | `false`                                                                        |
 | `kernelspecsPvc.name`                      | PVC name. Required if want mount kernelspecs without nfs. PVC should create in the same namespace before EG deployed.                                                                                                                            | `nil`                                                                          |
 | `ingress.enabled`                          | Whether to include an EG ingress resource during deployment.                                                                                                                                                                                     | `false`                                                                        |
+| `ingress.ingressClassName`                 | Specify a Kubernetes ingress class name for enterprise gateway deployment ingress deployment.                                                                                                                                                    | `""`                                                                           |
 | `ingress.hostName`                         | Kubernetes Ingress hostname, required. .                                                                                                                                                                                                         | nil                                                                            |
 | `ingress.pathType`                         | Kubernetes Ingress PathType (`ImplementationSpecific`,`Prefix`).                                                                                                                                                                                 | `Prefix`                                                                       |
 | `ingress.path`                             | Kubernetes Ingress Path.                                                                                                                                                                                                                         | `/`                                                                            |
@@ -491,6 +499,9 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kip.enabled`                              | Whether the Kernel Image Puller should be used                                                                                                                                                                                                   | `true`                                                                         |
 | `kip.podSecurityPolicy.create`             | enable creation of PSP for Image Puller, requires `global.rbac: true` and non-empy KIP service account                                                                                                                                           | `false`                                                                        |
 | `kip.podSecurityPolicy.annotatons`         | annotations for Image Puller PSP account                                                                                                                                                                                                         | `{}`                                                                           |
+| `kip.tolerations`                          | Kubernetes tolerations for Kernel Image Puller pods to ensure that pods are not scheduled onto inappropriate nodes                                                                                                                               | `[]`                                                                           |
+| `kip.affinity`                             | Kubernetes affinity for Kernel Image Puller pods to keep pods scheduled onto appropriate nodes                                                                                                                                                   | `{}`                                                                           |
+| `kip.nodeSelector`                         | Kubernetes nodeselector for Kernel Image Puller pods to keep pods scheduled onto appropriate nodes - simpler alternative to tolerations and affinity                                                                                             | `{}`                                                                           |
 | `kip.serviceAccountName`                   | Kubernetes Service Account to run Kernel Image Puller Gateway                                                                                                                                                                                    | `kernel-image-puller-sa`                                                       |
 | `kip.resources`                            | set Kernel Image Puller container resources.                                                                                                                                                                                                     | valid Yaml resources, see values file for example                              |
 | `kip.image`                                | Kernel Image Puller image name and tag to use. Ensure the tag is updated to the version of the Enterprise Gateway release you wish to run.                                                                                                       | `elyra/kernel-image-puller:VERSION`, where `VERSION` is the release being used |
@@ -641,12 +652,12 @@ spec:
     # Uncomment to enable NFS-mounted kernelspecs
     volumeMounts:
       - name: kernelspecs
-        mountPath: "/usr/local/share/jupyter/kernels"
+        mountPath: '/usr/local/share/jupyter/kernels'
   volumes:
     - name: kernelspecs
       nfs:
         server: <internal-ip-of-nfs-server>
-        path: "/usr/local/share/jupyter/kernels"
+        path: '/usr/local/share/jupyter/kernels'
 ```
 
 ```{tip}
@@ -675,7 +686,7 @@ helm upgrade --install --atomic --namespace enterprise-gateway enterprise-gatewa
 
 ...where `your-custom-image:latest` is the image name and tag of your kernelspecs image. Once deployed, the helm chart copies the data from the `/kernels` directory of your container into the `/usr/local/share/jupyter/kernels` directory of the Enterprise Gateway pod. Note that when this happens, the built-in kernelspecs are no longer available. So include all kernelspecs that you want to be available in your container image.
 
-Also, you should update the helm chart `kernel.whitelist` value with the name(s) of your custom kernelspecs.
+Also, you should update the helm chart `kernel.allowedKernels` (or usually comprehended as kernel whitelist) value with the name(s) of your custom kernelspecs.
 
 ## Kubernetes Kernel Instances
 

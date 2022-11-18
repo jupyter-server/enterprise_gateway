@@ -71,4 +71,17 @@ spec:
       - name: cri-socket
         hostPath:
           path: {{ .Values.kip.criSocket }}
+
+  {{- if .Values.kip.tolerations }}
+      tolerations:
+        {{- toYaml .Values.kip.tolerations | nindent 8 }}
+  {{- end }}
+  {{- if .Values.kip.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.kip.nodeSelector | nindent 8 }}
+  {{- end }}
+  {{- if .Values.kip.affinity }}
+      affinity:
+        {{- toYaml .Values.kip.affinity | nindent 8 }}
+  {{- end }}
 {{- end }}
