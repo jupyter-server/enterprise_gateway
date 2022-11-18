@@ -8,6 +8,7 @@ import urllib3
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 urllib3.disable_warnings()
 
@@ -61,6 +62,26 @@ def extend_pod_env(pod_def: dict) -> dict:
 
     pod_def["spec"]["containers"][0]["env"] = env_stanza
     return pod_def
+
+
+# a popular reason that lasts many APIs but is not constantized in the client lib
+K8S_ALREADY_EXIST_REASON = "AlreadyExists"
+
+
+def _parse_k8s_exception(exc: ApiException) -> str:
+    """Parse the exception and return the error message from kubernetes api
+
+    Args:
+        exc (Exception): Exception object
+
+    Returns:
+        str: Error message from kubernetes api
+    """
+    # more exception can be parsed, but at the time of implementation we only need this one
+    if exc.status == 409:
+        if exc.reason == "Conflict" and f'"reason":{K8S_ALREADY_EXIST_REASON}' in exc.body:
+            return K8S_ALREADY_EXIST_REASON
+    return ""
 
 
 def launch_kubernetes_kernel(
@@ -131,9 +152,23 @@ def launch_kubernetes_kernel(
                 #  print("{}".format(k8s_obj))  # useful for debug
                 pod_template = extend_pod_env(k8s_obj)
                 if pod_template_file is None:
-                    pod_created = client.CoreV1Api(client.ApiClient()).create_namespaced_pod(
-                        body=k8s_obj, namespace=kernel_namespace
-                    )
+                    try:
+                        pod_created = client.CoreV1Api(client.ApiClient()).create_namespaced_pod(
+                            body=k8s_obj, namespace=kernel_namespace
+                        )
+                    except ApiException as exc:
+                        if _parse_k8s_exception(exc) == K8S_ALREADY_EXIST_REASON:
+                            pod_created = (
+                                client.CoreV1Api(client.ApiClient())
+                                .list_namespaced_pod(
+                                    namespace=kernel_namespace,
+                                    label_selector=f"kernel_id={kernel_id}",
+                                    watch=False,
+                                )
+                                .items[0]
+                            )
+                        else:
+                            raise exc
             elif k8s_obj["kind"] == "Secret":
                 if pod_template_file is None:
                     client.CoreV1Api(client.ApiClient()).create_namespaced_secret(
@@ -141,13 +176,20 @@ def launch_kubernetes_kernel(
                     )
             elif k8s_obj["kind"] == "PersistentVolumeClaim":
                 if pod_template_file is None:
-                    client.CoreV1Api(client.ApiClient()).create_namespaced_persistent_volume_claim(
-                        body=k8s_obj, namespace=kernel_namespace
-                    )
+                    try:
+                        client.CoreV1Api(
+                            client.ApiClient()
+                        ).create_namespaced_persistent_volume_claim(
+                            body=k8s_obj, namespace=kernel_namespace
+                        )
+                    except ApiException as exc:
+                        if _parse_k8s_exception(exc) == K8S_ALREADY_EXIST_REASON:
+                            pass
+                        else:
+                            raise exc
             elif k8s_obj["kind"] == "PersistentVolume":
                 if pod_template_file is None:
                     client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
-
             elif k8s_obj["kind"] == "Service":
                 if pod_template_file is None:
                     if pod_created is not None:
@@ -178,7 +220,6 @@ def launch_kubernetes_kernel(
                         client.CoreV1Api(client.ApiClient()).create_namespaced_config_map(
                             body=k8s_obj, namespace=kernel_namespace
                         )
-
             else:
                 sys.exit(
                     f"ERROR - Unhandled Kubernetes object kind '{k8s_obj['kind']}' found in yaml file - "
