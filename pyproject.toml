@@ -112,6 +112,20 @@ filterwarnings = [
   "ignore:Jupyter is migrating its paths to use standard platformdirs:DeprecationWarning",
 ]
 
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\bProtocol\\):",
+"@(abc\\.)?abstractmethod",
+]
+
 [tool.flake8]
 ignore = "E501, W503, E402"
 builtins = "c, get_config"
