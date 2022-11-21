@@ -71,7 +71,7 @@ run-dev: test-install-wheel ## Make a server in jupyter_websocket mode
 	python enterprise_gateway
 
 docs: ## Make HTML documentation
-	make -C docs requirements html
+	make -C docs requirements html SPHINXOPTS="-W"
 
 kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files ## Create archives with sample kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
