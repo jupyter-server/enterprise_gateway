@@ -246,7 +246,7 @@ if [[ "$RELEASE_PREPARE" == "true" ]]; then
     if [ -z "$DRY_RUN" ]; then
         make MULTIARCH_BUILD=y clean dist release docs docker-images
     else
-        make MULTIARCH_BUILD=y clean dist docs docker-images
+        make clean dist docs docker-images
     fi
     mkdir -p $WORK_DIR/$RELEASE_TAG
     cp $SOURCE_DIR/dist/jupyter_enterprise_gateway* $WORK_DIR/$RELEASE_TAG
