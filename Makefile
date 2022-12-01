@@ -13,7 +13,7 @@ ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 MULTIARCH_BUILD?=
 
-VERSION?=3.1.0.dev0
+VERSION?=3.1.0
 SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
