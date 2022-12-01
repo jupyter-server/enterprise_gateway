@@ -991,10 +991,10 @@ kubectl logs -f pod/alice-5e755458-a114-4215-96b7-bcb016fc7b62
 
 Note that if using multiple replicas, commands against each pod are required.
 
-- The Kubernetes dashboard is useful as well. It's located at port `30000` of the master node
+- The Kubernetes dashboard is useful as well. It's located at port `3.1.0` of the master node
 
 ```bash
-https://elyra-kube1.foo.bar.com:30000/dashboard/#!/overview?namespace=default
+https://elyra-kube1.foo.bar.com:3.1.0/dashboard/#!/overview?namespace=default
 ```
 
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on
