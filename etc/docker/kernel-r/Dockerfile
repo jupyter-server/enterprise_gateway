@@ -1,5 +1,5 @@
 # Ubuntu 18.04.1 LTS Bionic
-ARG BASE_CONTAINER=jupyter/r-notebook:04f7f60d34a6
+ARG BASE_CONTAINER=jupyter/r-notebook:2022-01-24
 FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
