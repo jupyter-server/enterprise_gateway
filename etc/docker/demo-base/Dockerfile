@@ -90,7 +90,7 @@ RUN mkdir /home/$NB_USER/work && \
 
 # DOWNLOAD HADOOP AND SPARK
 RUN curl -sL https://archive.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
-RUN curl -sL https://archive.apache.org/dist/spark/spark-$SPARK_VER/spark-$SPARK_VER-bin-hadoop3.2.tgz | tar -xz -C /usr/hdp/current
+RUN curl -sL https://dlcdn.apache.org/spark/spark-$SPARK_VER/spark-$SPARK_VER-bin-hadoop3.2.tgz | tar -xz -C /usr/hdp/current
 # SETUP SPARK AND HADOOP SYMLINKS
 RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$SPARK_VER-bin-hadoop3.2 spark2-client
 
