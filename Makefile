@@ -241,6 +241,7 @@ endif
 
 PREP_TIMEOUT?=180
 itest-docker-prep:
+	@-echo elyra/kernel-py:$(TAG) elyra/kernel-r:$(TAG) elyra/kernel-scala:$(TAG) | xargs -P3 -n1 docker pull
 	@-docker service rm enterprise-gateway_enterprise-gateway enterprise-gateway_enterprise-gateway-proxy
 	@-docker swarm leave --force
 	# Check if swarm mode is active, if not attempt to create the swarm
