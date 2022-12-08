@@ -1,5 +1,5 @@
 # https://github.com/miyakogi/m2r/issues/66
-mistune<1
+mistune<3
 myst-parser
 pydata_sphinx_theme
 sphinx
