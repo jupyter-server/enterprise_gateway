@@ -376,7 +376,6 @@ class TestDefaults(TestHandlers):
         for _ in range(8):
             msg = yield ws.read_message()
             msg = json_decode(msg)
-            print(f"test_kernel_comm, msg_type: {msg['msg_type']}")
             if msg["msg_type"] == "kernel_info_reply":
                 break
         else:

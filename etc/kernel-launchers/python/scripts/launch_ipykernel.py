@@ -173,15 +173,15 @@ def _validate_port_range(port_range):
                 raise RuntimeError(
                     f"Port range validation failed for range: '{port_range}'.  Range size must be at least "
                     f"{min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE"
-                )
+                ) from None
     except ValueError as ve:
         raise RuntimeError(
             f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
-        )
+        ) from None
     except IndexError as ie:
         raise RuntimeError(
             f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
-        )
+        ) from None
 
     return lower_port, upper_port
 
@@ -316,7 +316,7 @@ def _select_socket(lower_port, upper_port):
     retries = 0
     while not found_port:
         try:
-            sock.bind(("0.0.0.0", _get_candidate_port(lower_port, upper_port)))
+            sock.bind(("0.0.0.0", _get_candidate_port(lower_port, upper_port)))  # noqa
             found_port = True
         except Exception:
             retries = retries + 1
@@ -324,7 +324,7 @@ def _select_socket(lower_port, upper_port):
                 raise RuntimeError(
                     f"Failed to locate port within range {lower_port}..{upper_port} "
                     f"after {max_port_range_retries} retries!"
-                )
+                ) from None
     return sock
 
 
@@ -429,7 +429,7 @@ def import_item(name):
         try:
             pak = getattr(module, obj)
         except AttributeError:
-            raise ImportError("No module named %s" % obj)
+            raise ImportError("No module named %s" % obj) from None
         return pak
     else:
         # called with un-dotted string
@@ -577,7 +577,7 @@ if __name__ == "__main__":
     spark_init_mode = arguments["init_mode"] or arguments["rpp_init_mode"]
     cluster_type = arguments["cluster_type"] or arguments["rpp_cluster_type"]
     kernel_class_name = arguments["kernel_class_name"]
-    ip = "0.0.0.0"
+    ip = "0.0.0.0"  # noqa
 
     if connection_file is None and kernel_id is None:
         raise RuntimeError(

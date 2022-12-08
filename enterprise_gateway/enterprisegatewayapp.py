@@ -30,9 +30,7 @@ from .services.api.handlers import default_handlers as default_api_handlers
 from .services.kernels.handlers import default_handlers as default_kernel_handlers
 from .services.kernels.remotemanager import RemoteMappingKernelManager
 from .services.kernelspecs import KernelSpecCache
-from .services.kernelspecs.handlers import (
-    default_handlers as default_kernelspec_handlers,
-)
+from .services.kernelspecs.handlers import default_handlers as default_kernelspec_handlers
 from .services.sessions.handlers import default_handlers as default_session_handlers
 from .services.sessions.kernelsessionmanager import (
     FileKernelSessionManager,
@@ -202,7 +200,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             try:
                 ssl.match_hostname(ssl_cert, authorized_hostname)
             except ssl.SSLCertVerificationError:
-                raise web.HTTPError(403, "Forbidden")
+                raise web.HTTPError(403, "Forbidden") from None
             base_prepare(self)
 
         handler[1].prepare = wrapped_prepare

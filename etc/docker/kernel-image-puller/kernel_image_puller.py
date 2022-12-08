@@ -236,8 +236,9 @@ class KernelImagePuller:
                     f"Previously pulled image '{image_name}' was not found - attempting pull..."
                 )
             elif self.image_exists(image_name):  # Yet to be pulled, consider pulled if exists
+                policy = self.policy
                 logger.info(
-                    f"Image '{image_name}' has not been pulled but exists, and policy is '{self.policy}'. Skipping pull."
+                    f"Image '{image_name}' has not been pulled but exists, and policy is '{policy}'. Skipping pull."
                 )
                 self.pulled_images.add(image_name)
                 return

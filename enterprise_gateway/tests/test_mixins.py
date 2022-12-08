@@ -31,7 +31,7 @@ class TestableTokenAuthHandler(TokenAuthorizationMixin, SuperTokenAuthHandler):
 
     __test__ = False
 
-    def __init__(self, token=""):
+    def __init__(self, token=""):  # noqa
         self.settings = {"eg_auth_token": token}
         self.arguments = {}
         self.response = None
