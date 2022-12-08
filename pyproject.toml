@@ -156,8 +156,8 @@ ignore = [
 "C408",
 # N806 Variable `reasonErr` in function should be lowercase
 "N806", "N802", "N803",
-# I252 Relative imports from parent modules are banned
-"I252",
+# TID252 Relative imports from parent modules are banned
+"TID252",
 # E501 Line too long (110 > 100 characters)
 "E501",
 ]
