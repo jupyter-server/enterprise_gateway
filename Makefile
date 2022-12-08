@@ -67,7 +67,7 @@ lint: ## Check code style
 	@pip install -q -e ".[lint]"
 	@pip install -q pipx
 	ruff .
-	black --check --diff .
+	black --check --diff --color .
 	mdformat --check *.md
 	pipx run 'validate-pyproject[all]' pyproject.toml
 
