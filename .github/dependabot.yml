@@ -6,3 +6,9 @@ updates:
     schedule:
       # Check for updates to GitHub Actions once a week (Mondays by default)
       interval: "weekly"
+  # Set update schedule for pip
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      # Check for updates to Python deps once a week (Mondays by default)
+      interval: "weekly"

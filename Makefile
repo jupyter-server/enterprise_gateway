@@ -64,8 +64,12 @@ clean-env: ## Remove conda env
 	-conda env remove -n $(ENV) -y
 
 lint: ## Check code style
-	@pip install -q pre-commit
-	pre-commit run --all-files
+	@pip install -q -e ".[lint]"
+	@pip install -q pipx
+	ruff .
+	black --check --diff .
+	mdformat --check *.md
+	pipx run 'validate-pyproject[all]' pyproject.toml
 
 run-dev: test-install-wheel ## Make a server in jupyter_websocket mode
 	python enterprise_gateway

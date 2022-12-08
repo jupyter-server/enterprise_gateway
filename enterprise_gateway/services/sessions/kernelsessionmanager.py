@@ -393,8 +393,10 @@ class FileKernelSessionManager(KernelSessionManager):
 class WebhookKernelSessionManager(KernelSessionManager):
     """
     Performs kernel session persistence operations against URL provided (EG_WEBHOOK_URL). The URL must have 4 endpoints
-    associated with it. 1 delete endpoint that takes a list of kernel ids in the body, 1 post endpoint that takes kernels id as a
-    url param and the kernel session as the body, 1 get endpoint that returns all kernel sessions, and 1 get endpoint that returns
+    associated with it. 1 delete endpoint that takes a list of kernel ids in
+    the body, 1 post endpoint that takes kernels id as a
+    url param and the kernel session as the body, 1 get endpoint that returns
+    all kernel sessions, and 1 get endpoint that returns
     a specific kernel session based on kernel id as url param.
     """
 
@@ -423,7 +425,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
         return os.getenv(self.webhook_username_env, None)
 
     # Webhook Password
-    webhook_password_env = "EG_WEBHOOK_PASSWORD"
+    webhook_password_env = "EG_WEBHOOK_PASSWORD"  # noqa
     webhook_password = Unicode(
         config=True,
         allow_none=True,

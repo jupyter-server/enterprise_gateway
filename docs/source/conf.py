@@ -57,7 +57,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Jupyter Enterprise Gateway"
-copyright = "2022, Project Jupyter"
+copyright = "2022, Project Jupyter"  # noqa
 author = "Jupyter Server Team"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -68,7 +68,7 @@ _version_py = os.path.join("..", "..", "enterprise_gateway", "_version.py")
 version_ns = {}
 
 with open(_version_py) as version_file:
-    exec(version_file.read(), version_ns)
+    exec(version_file.read(), version_ns)  # noqa
 
 # The short X.Y version.
 version = version_ns["__version__"][:3]

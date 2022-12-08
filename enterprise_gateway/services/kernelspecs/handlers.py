@@ -5,10 +5,7 @@ import json
 from typing import Dict, List, Optional
 
 from jupyter_server.base.handlers import JupyterHandler
-from jupyter_server.services.kernelspecs.handlers import (
-    is_kernelspec_model,
-    kernelspec_model,
-)
+from jupyter_server.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
 from jupyter_server.utils import ensure_async, url_unescape
 from tornado import web
 from traitlets import Set
@@ -131,7 +128,7 @@ class KernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
         try:
             spec = await ensure_async(ksc.get_kernel_spec(kernel_name))
         except KeyError:
-            raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name)
+            raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name) from None
         if is_kernelspec_model(spec):
             model = spec
         else:

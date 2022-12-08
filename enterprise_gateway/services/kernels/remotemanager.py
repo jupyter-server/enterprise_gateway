@@ -22,11 +22,7 @@ from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
-from ..processproxies.processproxy import (
-    BaseProcessProxyABC,
-    LocalProcessProxy,
-    RemoteProcessProxy,
-)
+from ..processproxies.processproxy import BaseProcessProxyABC, LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
@@ -55,7 +51,7 @@ def import_item(name: str):
         try:
             pak = getattr(module, obj)
         except AttributeError:
-            raise ImportError("No module named %s" % obj)
+            raise ImportError("No module named %s" % obj) from None
         return pak
     else:
         # called with un-dotted string
@@ -252,7 +248,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             await super().shutdown_kernel(kernel_id, now, restart)
         except KeyError as ke:  # this is hit for multiple shutdown request.
             self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
-            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
+            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id) from None
 
     async def wait_for_restart_finish(self, kernel_id: str, action: str = "shutdown") -> None:
         kernel = self.get_kernel(kernel_id)

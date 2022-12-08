@@ -1,5 +1,6 @@
 import logging
 import os
+import queue as queue
 import time
 from threading import Thread
 from uuid import uuid4
@@ -7,11 +8,6 @@ from uuid import uuid4
 import requests
 import websocket
 from tornado.escape import json_decode, json_encode, utf8
-
-try:  # prefer python 3, fallback to 2
-    import queue as queue
-except ImportError:
-    import Queue as queue
 
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 120))
 log_level = os.getenv("LOG_LEVEL", "INFO")

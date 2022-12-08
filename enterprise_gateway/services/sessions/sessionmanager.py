@@ -60,7 +60,7 @@ class SessionManager(LoggingConfigurable):
         kernel_name: Optional[str] = None,
         kernel_id: Optional[str] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> dict:
         """Creates a session and returns its model.
 
@@ -91,7 +91,7 @@ class SessionManager(LoggingConfigurable):
         path: Optional[str] = None,
         kernel_id: Optional[str] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> dict:
         """Saves the metadata for the session with the given `session_id`.
 

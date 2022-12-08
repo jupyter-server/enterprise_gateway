@@ -59,16 +59,12 @@ jobs:
           pip --version
           pip list
           docker logs itest-yarn
+      - name: Run linters
+        run: |
+          make lint
       - name: Bump versions
         run: |
           pipx run tbump --dry-run --no-tag --no-push 100.100.100rc0
-
-  pre_commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/pre-commit@v1
 
   link_check:
     runs-on: ubuntu-latest
@@ -128,7 +124,6 @@ jobs:
       - link_check
       - test_minimum_versions
       - build_docs
-      - pre_commit
       - test_sdist
     runs-on: ubuntu-latest
     steps:

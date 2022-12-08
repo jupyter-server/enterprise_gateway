@@ -12,10 +12,21 @@ from typing import Any, Awaitable, Dict, List, Optional, Set
 
 from tornado import web
 from tornado.log import LogFormatter
-from traitlets import Bool, CaselessStrEnum, CBool, Instance, Integer
+from traitlets import (
+    Bool,
+    CaselessStrEnum,
+    CBool,
+    Instance,
+    Integer,
+    TraitError,
+    Type,
+    Unicode,
+    default,
+    observe,
+    validate,
+)
 from traitlets import List as ListTrait
 from traitlets import Set as SetTrait
-from traitlets import TraitError, Type, Unicode, default, observe, validate
 from traitlets.config import Configurable
 
 
@@ -198,7 +209,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         return os.getenv(self.base_url_env, os.getenv("KG_BASE_URL", self.base_url_default_value))
 
     # Token authorization
-    auth_token_env = "EG_AUTH_TOKEN"
+    auth_token_env = "EG_AUTH_TOKEN"  # noqa
     auth_token = Unicode(
         config=True, help="Authorization token required for all requests (EG_AUTH_TOKEN env var)"
     )
@@ -465,11 +476,12 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def _validate_load_balancing_algorithm(self, proposal: Dict[str, str]) -> str:
         value = proposal["value"]
         try:
-            assert value in ["round-robin", "least-connection"]
+            if value not in ["round-robin", "least-connection"]:
+                raise AssertionError(f"Unrecognized proposal value {value}")
         except ValueError:
             raise TraitError(
                 f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
-            )
+            ) from None
         return value
 
     # Yarn endpoint

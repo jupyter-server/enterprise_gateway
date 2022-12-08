@@ -413,7 +413,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         self.proxy_config = proxy_config
         # Initialize to 0 IP primarily so restarts of remote kernels don't encounter local-only enforcement during
         # relaunch (see jupyter_client.manager.start_kernel().
-        self.kernel_manager.ip = "0.0.0.0"
+        self.kernel_manager.ip = "0.0.0.0"  # noqa
         self.log = kernel_manager.log
 
         # extract the kernel_id string from the connection file and set the KERNEL_ID environment variable
@@ -533,7 +533,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         kwargs.pop("kernel_headers", None)
         return launch_kernel(cmd, **kwargs)
 
-    def cleanup(self) -> None:
+    def cleanup(self) -> None:  # noqa
         """Performs optional cleanup after kernel is shutdown.  Child classes are responsible for implementations."""
         pass
 

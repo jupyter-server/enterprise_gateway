@@ -419,7 +419,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             error_http_code = 500
             if self._get_application_id(True):
                 if self._query_app_state_by_driver_id(self.driver_id) != "WAITING":
-                    reason = "Kernel unavailable after {} seconds for driver_id {}, app_id {}, launch timeout: {}!".format(
+                    reason = "Kernel unavailable after {} seconds for driver_id {}, app_id {}, launch timeout: {}!"
+                    reason = reason.format(
                         time_interval,
                         self.driver_id,
                         self.application_id,

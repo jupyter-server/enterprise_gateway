@@ -147,7 +147,7 @@ def _select_socket(lower_port, upper_port):
     retries = 0
     while not found_port:
         try:
-            sock.bind(("0.0.0.0", _get_candidate_port(lower_port, upper_port)))
+            sock.bind(("0.0.0.0", _get_candidate_port(lower_port, upper_port)))  # noqa
             found_port = True
         except Exception:
             retries = retries + 1
@@ -156,7 +156,7 @@ def _select_socket(lower_port, upper_port):
                     "Failed to locate port within range {}..{} after {} retries!".format(
                         lower_port, upper_port, max_port_range_retries
                     )
-                )
+                ) from None
     return sock
 
 
@@ -221,7 +221,7 @@ def server_listener(sock, parent_pid):
 def setup_server_listener(
     conn_filename, parent_pid, lower_port, upper_port, response_addr, kernel_id, public_key
 ):
-    ip = "0.0.0.0"
+    ip = "0.0.0.0"  # noqa
     key = str(uuid.uuid4()).encode()  # convert to bytes
 
     ports = _select_ports(5, lower_port, upper_port)
