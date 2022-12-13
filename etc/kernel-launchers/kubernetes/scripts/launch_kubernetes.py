@@ -1,12 +1,12 @@
 #!/opt/conda/bin/python
 import argparse
 import os
+import re
 import sys
 from typing import Dict, List
 
 import urllib3
 import yaml
-import re
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -102,7 +102,7 @@ def launch_kubernetes_kernel(
     pod_template_file,
     spark_opts_out,
     kernel_class_name,
-    kernel_envs_whitelist
+    kernel_envs_whitelist,
 ):
     # Launches a containerized kernel as a kubernetes pod.
 
@@ -427,5 +427,5 @@ if __name__ == "__main__":
         pod_template_file,
         spark_opts_out,
         kernel_class_name,
-        kernel_envs_whitelist
+        kernel_envs_whitelist,
     )
