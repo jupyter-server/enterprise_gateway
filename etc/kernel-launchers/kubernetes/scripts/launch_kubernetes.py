@@ -6,6 +6,7 @@ from typing import Dict, List
 
 import urllib3
 import yaml
+import re
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -13,6 +14,7 @@ from kubernetes.client.rest import ApiException
 urllib3.disable_warnings()
 
 KERNEL_POD_TEMPLATE_PATH = "/kernel-pod.yaml.j2"
+KERNEL_ENV_MOUNT_MANDATORY = "^KERNEL_(ID|LANGUAGE|NAME|NAMESPACE|SPARK_CONTEXT_INIT_MODE)$|^PORT_RANGE$|^RESPONSE_ADDRESS$|^PUBLIC_KEY$"
 
 
 def generate_kernel_pod_yaml(keywords):
@@ -42,9 +44,15 @@ def generate_kernel_pod_yaml(keywords):
     return k8s_yaml
 
 
-def extend_pod_env(pod_def: dict) -> dict:
+def extend_pod_env(pod_def: dict, kernel_envs_whitelist) -> dict:
     """Extends the pod_def.spec.containers[0].env stanza with current environment."""
     env_stanza = pod_def["spec"]["containers"][0].get("env") or []
+
+    if kernel_envs_whitelist:
+        kernel_envs_whitelist = f"{KERNEL_ENV_MOUNT_MANDATORY}|{kernel_envs_whitelist}"
+    else:
+        kernel_envs_whitelist = KERNEL_ENV_MOUNT_MANDATORY
+    regex_envs_whitelist = re.compile(kernel_envs_whitelist)
 
     # Walk current set of template env entries and replace those found in the current
     # env with their values (and record those items).   Then add all others from the env
@@ -58,7 +66,8 @@ def extend_pod_env(pod_def: dict) -> dict:
 
     for name, value in os.environ.items():
         if name not in processed_entries:
-            env_stanza.append({"name": name, "value": value})
+            if regex_envs_whitelist.search(name):
+                env_stanza.append({"name": name, "value": value})
 
     pod_def["spec"]["containers"][0]["env"] = env_stanza
     return pod_def
@@ -93,6 +102,7 @@ def launch_kubernetes_kernel(
     pod_template_file,
     spark_opts_out,
     kernel_class_name,
+    kernel_envs_whitelist
 ):
     # Launches a containerized kernel as a kubernetes pod.
 
@@ -150,7 +160,7 @@ def launch_kubernetes_kernel(
         if k8s_obj.get("kind"):
             if k8s_obj["kind"] == "Pod":
                 #  print("{}".format(k8s_obj))  # useful for debug
-                pod_template = extend_pod_env(k8s_obj)
+                pod_template = extend_pod_env(k8s_obj, kernel_envs_whitelist)
                 if pod_template_file is None:
                     try:
                         pod_created = client.CoreV1Api(client.ApiClient()).create_namespaced_pod(
@@ -351,6 +361,12 @@ if __name__ == "__main__":
         nargs="?",
         help="Indicates the name of the kernel class to use.  Must be a subclass of 'ipykernel.kernelbase.Kernel'.",
     )
+    parser.add_argument(
+        "--kernel-envs-whitelist",
+        dest="kernel_envs_whitelist",
+        nargs="?",
+        help="Indicates env can be set to kernel from gateway pod, it's can be regex",
+    )
 
     # The following arguments are deprecated and will be used only if their mirroring arguments have no value.
     # This means that the default value for --spark-context-initialization-mode (none) will need to come from
@@ -400,6 +416,7 @@ if __name__ == "__main__":
     pod_template_file = arguments["pod_template_file"]
     spark_opts_out = arguments["spark_opts_out"]
     kernel_class_name = arguments["kernel_class_name"]
+    kernel_envs_whitelist = arguments["kernel_envs_whitelist"]
 
     launch_kubernetes_kernel(
         kernel_id,
@@ -410,4 +427,5 @@ if __name__ == "__main__":
         pod_template_file,
         spark_opts_out,
         kernel_class_name,
+        kernel_envs_whitelist
     )
