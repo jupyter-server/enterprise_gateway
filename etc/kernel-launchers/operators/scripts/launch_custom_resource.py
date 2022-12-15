@@ -48,7 +48,12 @@ def launch_custom_resource_kernel(
 
     for name, value in os.environ.items():
         if name.startswith("KERNEL_"):
-            keywords[name.lower()] = yaml.safe_load(value)
+            if value:
+                keywords[name.lower()] = yaml.safe_load(value)
+            else:
+                # When there is no value, send a None string
+                # to avoid Spark Operator to reject the application submission
+                keywords[name.lower()] = yaml.safe_load("None")
 
     kernel_crd_template = keywords["kernel_crd_group"] + "-" + keywords["kernel_crd_version"]
     custom_resource_yaml = generate_kernel_custom_resource_yaml(kernel_crd_template, keywords)
