@@ -32,10 +32,12 @@ RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPA
     ln -s ${SPARK_HOME}-${SPARK_VER}-bin-hadoop2.7 $SPARK_HOME
 
 # Download entrypoint.sh from matching tag
+# Use tini from Anaconda installation
 RUN cd /opt/ && \
     wget https://raw.githubusercontent.com/apache/spark/v${SPARK_VER}/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh && \
     chmod a+x /opt/entrypoint.sh && \
-    sed -i 's/tini -s/tini -g/g' /opt/entrypoint.sh
+    sed -i 's/tini -s/tini -g/g' /opt/entrypoint.sh && \
+    ln -sfn /opt/conda/bin/tini /usr/bin/tini
 
 WORKDIR $SPARK_HOME/work-dir
 # Ensure that work-dir is writable by everyone
