@@ -20,9 +20,6 @@ local_ip = localinterfaces.public_ips()[0]
 
 default_kernel_uid = "1000"  # jovyan user is the default
 default_kernel_gid = "100"  # users group is the default
-default_kernel_env_delete = [
-    'PATH'
-]  # delete env that may conflict with the default env in container
 
 # These could be enforced via a PodSecurityPolicy, but those affect
 # all pods so the cluster admin would need to configure those for
@@ -91,13 +88,6 @@ class ContainerProcessProxy(RemoteProcessProxy):
                 del kwargs["env"]["KERNEL_WORKING_DIR"]
 
         self._enforce_prohibited_ids(**kwargs)
-
-        """Removal of environment variables that can disrupt the operation of a container."""
-        self.log.debug(
-            "container.launch_process() delete kernel env: {}".format(default_kernel_env_delete)
-        )
-        for del_env in default_kernel_env_delete:
-            kwargs["env"].pop(del_env)
 
         await super().launch_process(kernel_cmd, **kwargs)
 

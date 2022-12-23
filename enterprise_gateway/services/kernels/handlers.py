@@ -55,11 +55,6 @@ class MainKernelHandler(
             if not isinstance(model["env"], dict):
                 raise tornado.web.HTTPError(400)
 
-            # Delete by default PATH from client envs
-            # Keeping this variable may break the remote kernel with a different system than the client.
-            # But if user want to keep this var, it's can be set in inherited_envs
-            model['env'].pop("PATH")
-
             # Transfer inherited environment variables from current process
             env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
 
