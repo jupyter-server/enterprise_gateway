@@ -1,6 +1,7 @@
+"""Code related to managing kernels running based on k8s custom resource."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running based on k8s custom resource."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -12,16 +13,20 @@ from .k8s import KubernetesProcessProxy
 
 
 class CustomResourceProcessProxy(KubernetesProcessProxy):
+    """A custom resource process proxy."""
+
     group = version = plural = None
     custom_resource_template_name = None
     kernel_resource_name = None
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "CustomResourceProcessProxy":
+        """Launch the process for a kernel."""
         kwargs["env"][
             "KERNEL_RESOURCE_NAME"
         ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
@@ -33,6 +38,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         return self
 
     def terminate_container_resources(self) -> bool | None:
+        """Terminate the resources for the container."""
         result = None
 
         if self.kernel_resource_name:

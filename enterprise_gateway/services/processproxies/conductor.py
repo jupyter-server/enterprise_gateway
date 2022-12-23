@@ -1,6 +1,7 @@
+"""Code related to managing kernels running in Conductor clusters."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running in Conductor clusters."""
+
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +36,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
     final_states = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.application_id = None
         self.driver_id = None
@@ -295,6 +297,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def cleanup(self) -> None:
+        """Clean up the kernel."""
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
         if self.local_proc:

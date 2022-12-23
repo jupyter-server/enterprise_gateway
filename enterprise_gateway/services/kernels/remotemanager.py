@@ -1,6 +1,6 @@
+"""Kernel managers that operate against a remote process."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel managers that operate against a remote process."""
 
 from __future__ import annotations
 
@@ -138,16 +138,19 @@ class TrackPendingRequests:
     _pending_requests_user = {}
 
     def increment(self, username: str) -> None:
+        """Increment the requests for a username."""
         self._pending_requests_all += 1
         cur_val = int(self._pending_requests_user.get(username, 0))
         self._pending_requests_user[username] = cur_val + 1
 
     def decrement(self, username: str) -> None:
+        """Decrement the requests for a username."""
         self._pending_requests_all -= 1
         cur_val = int(self._pending_requests_user.get(username))
         self._pending_requests_user[username] = cur_val - 1
 
     def get_counts(self, username: str) -> tuple[int, int]:
+        """Get the counts for a username."""
         return self._pending_requests_all, int(self._pending_requests_user.get(username, 0))
 
 
@@ -227,6 +230,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         return kernel_id
 
     async def restart_kernel(self, kernel_id: str, now: bool = False) -> None:
+        """Restart a kernel."""
         kernel = self.get_kernel(kernel_id)
         if kernel.restarting:  # assuming duplicate request.
             await self.wait_for_restart_finish(kernel_id, "restart")
@@ -241,6 +245,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     async def shutdown_kernel(
         self, kernel_id: str, now: bool = False, restart: bool = False
     ) -> None:
+        """Shut down a kernel."""
         kernel = self.get_kernel(kernel_id)
         if kernel.restarting:
             await self.wait_for_restart_finish(kernel_id, "shutdown")
@@ -251,6 +256,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id) from None
 
     async def wait_for_restart_finish(self, kernel_id: str, action: str = "shutdown") -> None:
+        """Wait for a kernel restart to finish."""
         kernel = self.get_kernel(kernel_id)
         start_time = float(time.time())  # epoc time
         timeout = kernel.kernel_launch_timeout
@@ -420,6 +426,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
     """
 
     def __init__(self, **kwargs: dict[str, Any] | None):
+        """Initialize the remote kernel manager."""
         super().__init__(**kwargs)
         self.process_proxy = None
         self.response_address = None

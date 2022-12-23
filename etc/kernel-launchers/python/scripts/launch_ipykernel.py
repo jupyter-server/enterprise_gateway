@@ -1,3 +1,4 @@
+"""Launch an ipython kernel."""
 import argparse
 import base64
 import json
@@ -40,13 +41,16 @@ __spark_context = None
 
 
 class ExceptionThread(Thread):
-    # Wrap thread to handle the exception
+    """Wrap thread to handle the exception."""
+
     def __init__(self, target):
+        """Initialize the thread."""
         self.target = target
         self.exc = None
         Thread.__init__(self)
 
     def run(self):
+        """Run the thread."""
         try:
             self.target()
         except Exception as exc:
@@ -133,6 +137,7 @@ class WaitingForSparkSessionToBeInitialized:
 
     # the same wrapper class is used for all Spark session variables, so we need to record the name of the variable
     def __init__(self, global_variable_name, init_thread, namespace):
+        """Initialize the waiter."""
         self._spark_session_variable = global_variable_name
         self._init_thread = init_thread
         self._namespace = namespace
@@ -141,6 +146,7 @@ class WaitingForSparkSessionToBeInitialized:
     # wait for the thread to complete initializing the Spark sessions and then we forward the
     # call to the real Spark objects
     def __getattr__(self, name):
+        """Handle attribute getter."""
         # ignore tab-completion request for __members__ or __methods__ and ignore meta property requests
         if name.startswith("__") or name.startswith("_ipython_") or name.startswith("_repr_"):
             return
@@ -187,7 +193,7 @@ def _validate_port_range(port_range):
 
 
 def determine_connection_file(conn_file, kid):
-    # If the directory exists, use the original file, else create a temporary file.
+    """If the directory exists, use the original file, else create a temporary file."""
     if conn_file is None or not os.path.exists(os.path.dirname(conn_file)):
         if kid is not None:
             basename = "kernel-" + kid
@@ -366,6 +372,7 @@ def get_server_request(sock):
 
 
 def cancel_spark_jobs(sig, frame):
+    """Cancel spark jobs."""
     if __spark_context is None:
         return
     try:
@@ -439,6 +446,7 @@ def import_item(name):
 def start_ipython(
     namespace, cluster_type="spark", kernel_class_name=DEFAULT_KERNEL_CLASS_NAME, **kwargs
 ):
+    """Start the ipython kernel."""
     from ipykernel.kernelapp import IPKernelApp
 
     # Capture the kernel class before removing 'import_item' from the namespace

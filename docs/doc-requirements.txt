@@ -8,5 +8,6 @@ sphinx_book_theme
 sphinxcontrib-mermaid
 sphinxcontrib-openapi
 sphinxcontrib_github_alt
+sphinxcontrib_spelling
 sphinxemoji
 tornado

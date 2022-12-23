@@ -62,10 +62,10 @@ test = [
   "websocket-client"
 ]
 lint = [
-  "black[jupyter]>=22.10.0",
+  "black[jupyter]==22.10.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
-  "ruff>=0.0.169"
+  "ruff==0.0.189"
 ]
 
 [project.scripts]
@@ -171,3 +171,13 @@ ignore = [
 "enterprise_gateway/itests/*" = ["S101", "F841", "S105", "T201"]
 # T201 `print` found
 "etc/*" = ["T201"]
+
+[tool.interrogate]
+ignore-init-module=true
+ignore-private=true
+ignore-semiprivate=true
+ignore-property-decorators=true
+ignore-nested-functions=true
+ignore-nested-classes=true
+fail-under=100
+exclude = ["docs", "*/tests", "*/itests","conftest"]

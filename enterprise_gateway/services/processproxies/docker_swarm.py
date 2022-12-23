@@ -1,6 +1,7 @@
+"""Code related to managing kernels running in docker-based containers."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running in docker-based containers."""
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +32,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
     """
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
 
     def launch_process(
@@ -163,6 +165,7 @@ class DockerProcessProxy(ContainerProcessProxy):
     """Kernel lifecycle management for Docker kernels (non-Swarm)."""
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
 
     def launch_process(

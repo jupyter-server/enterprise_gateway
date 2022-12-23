@@ -1,6 +1,7 @@
+"""Cache handling for kernel specs."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Cache handling for kernel specs."""
+
 
 import os
 from typing import Dict, Optional, Union
@@ -39,10 +40,11 @@ class KernelSpecCache(SingletonConfigurable):
     )
 
     @default("cache_enabled")
-    def cache_enabled_default(self):
+    def _cache_enabled_default(self):
         return os.getenv(self.cache_enabled_env, "false").lower() in ("true", "1")
 
     def __init__(self, kernel_spec_manager, **kwargs) -> None:
+        """Initialize the cache."""
         super().__init__(**kwargs)
         self.kernel_spec_manager = kernel_spec_manager
         self._initialize()
@@ -229,6 +231,7 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
     watched_files = ["kernel.json"]
 
     def __init__(self, kernel_spec_cache: KernelSpecCache, **kwargs):
+        """Initialize the handler."""
         super().__init__(**kwargs)
         self.kernel_spec_cache = kernel_spec_cache
         self.log = kernel_spec_cache.log

@@ -1,6 +1,7 @@
+"""Code related to managing kernels running in YARN clusters."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running in YARN clusters."""
+
 from __future__ import annotations
 
 import asyncio
@@ -45,6 +46,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     final_states = {"FINISHED", "KILLED", "FAILED"}
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.application_id = None
         self.last_known_state = None
@@ -246,7 +248,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         )
 
     def handle_yarn_queue_timeout(self) -> None:
-
+        """Handle a yarn queue timeout."""
         time.sleep(poll_interval)
         time_interval = RemoteProcessProxy.get_time_diff(
             self.start_time, RemoteProcessProxy.get_current_time()
@@ -324,7 +326,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         return result
 
     def cleanup(self) -> None:
-        """"""
+        """Clean up the proxy"""
         # we might have a defunct process (if using waitAppCompletion = false) - so poll, kill, wait when we have
         # a local_proc.
         if self.local_proc:
