@@ -156,6 +156,9 @@ ifdef MULTIARCH_BUILD
 	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
 	@echo "remove builder instance $1"
 	-(docker buildx rm $1)
+else ifeq ($(TARGET_ARCH), $(filter $(TARGET_ARCH), linux/arm64 linux/amd64))
+	(cd ../build/docker/$1; docker build ${NO_CACHE} --platform ${TARGET_ARCH} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
+	@-docker images $(HUB_ORG)/$1:$(TAG)
 else
 	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@-docker images $(HUB_ORG)/$1:$(TAG)
