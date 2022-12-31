@@ -2,8 +2,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 .PHONY: help clean clean-images clean-enterprise-gateway clean-enterprise-gateway-demo clean-demo-base \
-		clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
-		kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker clean-kernel-image-puller
+    clean-kernel-images clean-py clean-tf-py clean-tf-gpu-py clean-r clean-spark-r clean-scala toree-launcher \
+    kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker clean-kernel-image-puller
 
 SA?=source activate
 ENV:=enterprise-gateway-dev
@@ -47,8 +47,8 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@mkdir -p ../build/kernelspecs
 		# Seed the build tree with initial files
 	cp -r kernelspecs ../build
-		# Distribute language and config-sensitive files.
-		# On-prem kernelspecs get launcher files in the kernelspec hierarchy
+    # Distribute language and config-sensitive files.
+    # On-prem kernelspecs get launcher files in the kernelspec hierarchy
 	@echo ../build/kernelspecs/python_distributed | xargs -t -n 1 cp -r kernel-launchers/python/scripts
 	@echo ../build/kernelspecs/dask_python_* | xargs -t -n 1 cp -r kernel-launchers/python/scripts
 	@echo ../build/kernelspecs/spark_python_{conductor*,yarn*} | xargs -t -n 1 cp -r kernel-launchers/python/scripts
@@ -59,12 +59,12 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 	@echo ../build/kernelspecs/spark_{python,R,scala}_kubernetes | xargs -t -n 1 cp -r kernel-launchers/kubernetes/*
 	@echo ../build/kernelspecs/{python,R,scala,python_tf,python_tf_gpu}_docker | xargs -t -n 1 cp -r kernel-launchers/docker/*
 	@echo ../build/kernelspecs/spark_python_operator | xargs -t -n 1 cp -r kernel-launchers/operators/*
-				# Populate kernel resources.  Because tensorflow is also python, it should be last.
+        # Populate kernel resources.  Because tensorflow is also python, it should be last.
 	@echo ../build/kernelspecs/*R* | xargs -t -n 1 cp -r kernel-resources/ir/*
 	@echo ../build/kernelspecs/*scala* | xargs -t -n 1 cp -r kernel-resources/apache_toree/*
 	@echo ../build/kernelspecs/*python* | xargs -t -n 1 cp -r kernel-resources/python/*
 	@echo ../build/kernelspecs/*tf* | xargs -t -n 1 cp -r kernel-resources/tensorflow/*
-		# Perform the copy again to enable local, per-kernel, overrides
+    # Perform the copy again to enable local, per-kernel, overrides
 	cp -r kernelspecs ../build
 	@(cd ../build/kernelspecs; find . -name 'kernel.json' -print0 | xargs -0 sed -i.bak "s/VERSION/$(TAG)/g"; find . -name *.bak -print0 | xargs -0 rm -f)
 	@mkdir -p ../dist

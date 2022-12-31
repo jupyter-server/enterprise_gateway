@@ -12,7 +12,7 @@ SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
 MULTIARCH_BUILD?=
-TARGET_ARCH?=
+TARGET_ARCH?=undefined
 
 VERSION?=3.2.0.dev0
 SPARK_VERSION?=3.2.1
