@@ -8,6 +8,8 @@
 SA?=source activate
 ENV:=enterprise-gateway-dev
 SHELL:=/bin/bash
+SUPPORTED_ARCHS=linux/arm64 linux/amd64
+PLATFORM_ARCHS=`echo ${SUPPORTED_ARCHS} | sed "s/ /,/g"`
 
 # Docker attributes - hub organization and tag.  Modify accordingly
 HUB_ORG:=elyra
@@ -43,7 +45,7 @@ TOREE_LAUNCHER_FILES:=$(shell find kernel-launchers/scala/toree-launcher/src -ty
 ../build/kernelspecs: kernel-launchers/scala/lib  $(FILES_kernelspecs_all)
 	@rm -rf ../build/kernelspecs
 	@mkdir -p ../build/kernelspecs
-    # Seed the build tree with initial files
+		# Seed the build tree with initial files
 	cp -r kernelspecs ../build
     # Distribute language and config-sensitive files.
     # On-prem kernelspecs get launcher files in the kernelspec hierarchy
@@ -153,10 +155,15 @@ ifdef MULTIARCH_BUILD
 	@echo "starting buildx builder for $1"
 	-@(docker buildx rm $1)
 	(docker buildx create --use --name $1)
-	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform linux/arm64,linux/amd64 --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
+	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform $(PLATFORM_ARCHS) --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
 	@echo "remove builder instance $1"
 	-(docker buildx rm $1)
+else ifeq ($(TARGET_ARCH), $(filter $(TARGET_ARCH), $(SUPPORTED_ARCHS)))
+	@echo "Building docker image for $(TARGET_ARCH)"
+	(cd ../build/docker/$1; docker build ${NO_CACHE} --platform ${TARGET_ARCH} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
+	@-docker images $(HUB_ORG)/$1:$(TAG)
 else
+	@echo "TARGET_ARCH not defined or not in supported platforms: $(PLATFORM_ARCHS). Building docker image for default platform"
 	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endif
