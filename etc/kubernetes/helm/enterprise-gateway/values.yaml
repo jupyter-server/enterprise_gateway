@@ -63,10 +63,13 @@ deployment:
   affinity: {}
   nodeSelector: {}
   extraEnv: {}
-    # EG_DEFAULT_KERNEL_MANAGER_CLASS: enterprise_gateway.services.kernels.remotemanager.YourOwnKernelManager
-    # SOME_ENV_VAR_WITH_LONG_VALUE: |-
-    #   Split it like this
-    #   For better readability
+    # EG_LIST_KERNELS: False
+    # EG_ALLOWED_KERNELS: >
+    #   'r_docker',
+    #   'python_docker',
+    #   'python_tf_docker',
+    #   'python_tf_gpu_docker',
+    #   'scala_docker'
 
 # Log output level.
 logLevel: DEBUG
