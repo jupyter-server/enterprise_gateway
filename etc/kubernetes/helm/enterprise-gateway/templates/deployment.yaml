@@ -85,6 +85,8 @@ spec:
         - name: {{ $key }}
           value: |-
 {{ $val | indent 12 }}
+        {{- end }}
+        {{- end }}
         ports:
         {{ with index .Values.service.ports 0 }}
         - containerPort: {{ .port }}
