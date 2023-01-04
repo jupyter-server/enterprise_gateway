@@ -63,13 +63,15 @@ deployment:
   affinity: {}
   nodeSelector: {}
   extraEnv: {}
-    # EG_LIST_KERNELS: False
-    # EG_ALLOWED_KERNELS: >
-    #   'r_docker',
-    #   'python_docker',
-    #   'python_tf_docker',
-    #   'python_tf_gpu_docker',
-    #   'scala_docker'
+    # SOME_ENV_VAR_WITH_SIMPLE_VALUE: "example"
+    # SOME_ENV_VAR_WITH_LONG_VALUE: >
+    #   'this example',
+    #   'will not preserve',
+    #   'line breaks',
+    # SOME_ENV_VAR_WITH_MULTILINE_VALUE: |
+    #   this example
+    #   will preserve
+    #   line breaks
 
 # Log output level.
 logLevel: DEBUG
