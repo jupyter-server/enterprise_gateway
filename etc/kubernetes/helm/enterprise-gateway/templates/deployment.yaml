@@ -80,6 +80,11 @@ spec:
         - name: EG_AUTH_TOKEN
           value: {{ .Values.authToken }}
         {{- end }}
+        {{- if .Values.deployment.extraEnv }}
+        {{- range $key, $val := .Values.deployment.extraEnv }}
+        - name: {{ $key }}
+          value: |-
+{{ $val | indent 12 }}
         ports:
         {{ with index .Values.service.ports 0 }}
         - containerPort: {{ .port }}

@@ -62,6 +62,11 @@ deployment:
   tolerations: []
   affinity: {}
   nodeSelector: {}
+  extraEnv: {}
+    # EG_DEFAULT_KERNEL_MANAGER_CLASS: enterprise_gateway.services.kernels.remotemanager.YourOwnKernelManager
+    # SOME_ENV_VAR_WITH_LONG_VALUE: |-
+    #   Split it like this
+    #   For better readability
 
 # Log output level.
 logLevel: DEBUG
