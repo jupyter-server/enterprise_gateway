@@ -65,6 +65,8 @@ spec:
           value: {{ if .Values.mirrorWorkingDirs }}"True"{{ else }}"False"{{ end }}
         - name: EG_CULL_IDLE_TIMEOUT
           value: !!str {{ .Values.kernel.cullIdleTimeout }}
+        - name: EG_CULL_CONNECTED
+          value: {{ if .Values.kernel.cullConnected }}"True"{{ else }}"False"{{ end }}
         - name: EG_LOG_LEVEL
           value: {{ .Values.logLevel }}
         - name: EG_KERNEL_LAUNCH_TIMEOUT
