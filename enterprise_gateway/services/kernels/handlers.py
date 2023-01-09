@@ -55,13 +55,10 @@ class MainKernelHandler(
         if model is not None and "env" in model:
             if not isinstance(model["env"], dict):
                 raise tornado.web.HTTPError(400)
-            # Start with the PATH from the current env. Do not provide the entire environment
-            # which might contain server secrets that should not be passed to kernels.
-            env = {"PATH": os.getenv("PATH", "")}
+
             # Transfer inherited environment variables from current process
-            env.update(
-                {key: value for key, value in os.environ.items() if key in self.inherited_envs}
-            )
+            env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
+
             # Allow all KERNEL_* envs and those specified in client_envs and set from client.  If this EG
             # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead
             # and add those keys to the "working" allowed_envs list, otherwise, just transfer the configured envs.

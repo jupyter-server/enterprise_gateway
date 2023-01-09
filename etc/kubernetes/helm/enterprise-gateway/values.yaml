@@ -62,6 +62,16 @@ deployment:
   tolerations: []
   affinity: {}
   nodeSelector: {}
+  extraEnv: {}
+    # SOME_ENV_VAR_WITH_SIMPLE_VALUE: "example"
+    # SOME_ENV_VAR_WITH_LONG_VALUE: >
+    #   'this example',
+    #   'will not preserve',
+    #   'line breaks',
+    # SOME_ENV_VAR_WITH_MULTILINE_VALUE: |
+    #   this example
+    #   will preserve
+    #   line breaks
 
 # Log output level.
 logLevel: DEBUG
@@ -79,6 +89,8 @@ kernel:
   launchTimeout: 60
   # Timeout for an idle kernel before its culled in seconds. Default is 1 hour.
   cullIdleTimeout: 3600
+  # Whether to cull idle kernels with connecting clients
+  cullConnected: false
   # List of kernel names that are available for use. To allow additional kernelspecs without
   # requiring redeployment (and assuming kernelspecs are mounted or otherwise accessible
   # outside the pod), comment out (or remove) the entries, leaving only `allowedKernels:`.
