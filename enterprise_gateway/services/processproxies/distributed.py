@@ -1,6 +1,7 @@
+"""Code used for the generic distribution of kernels across a set of hosts."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code used for the generic distribution of kernels across a set of hosts."""
+
 from __future__ import annotations
 
 import asyncio
@@ -21,33 +22,41 @@ kernel_log_dir = os.getenv(
 
 
 class TrackKernelOnHost:
+    """A class for tracking a kernel on a host."""
+
     _host_kernels = {}
     _kernel_host_mapping = {}
 
     def add_kernel_id(self, host: str, kernel_id: str) -> None:
+        """Add a kernel to a host."""
         self._kernel_host_mapping[kernel_id] = host
         self.increment(host)
 
     def delete_kernel_id(self, kernel_id: str) -> None:
+        """Delete a kernel id from tracking."""
         host = self._kernel_host_mapping.get(kernel_id)
         if host:
             self.decrement(host)
             del self._kernel_host_mapping[kernel_id]
 
     def min_or_remote_host(self, remote_host: str | None = None) -> str:
+        """Return the remote host if given, or the kernel with the min value."""
         if remote_host:
             return remote_host
         return min(self._host_kernels, key=lambda k: self._host_kernels[k])
 
     def increment(self, host: str) -> None:
+        """Increment the value for a host."""
         val = int(self._host_kernels.get(host, 0))
         self._host_kernels[host] = val + 1
 
     def decrement(self, host: str) -> None:
+        """Decrement the value for a host."""
         val = int(self._host_kernels.get(host, 0))
         self._host_kernels[host] = val - 1
 
     def init_host_kernels(self, hosts) -> None:
+        """Inititialize the kernels for a set of hosts."""
         if len(self._host_kernels) == 0:
             self._host_kernels.update({key: 0 for key in hosts})
 
@@ -61,6 +70,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
     kernel_on_host = TrackKernelOnHost()
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.kernel_log = None
         self.local_stdout = None
@@ -226,6 +236,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.log_and_raise(http_status_code=500, reason=timeout_message)
 
     def cleanup(self) -> None:
+        """Clean up the proxy."""
         # DistributedProcessProxy can have a tendency to leave zombies, particularly when EG is
         # abruptly terminated.  This extra call to shutdown_lister does the trick.
         self.shutdown_listener()

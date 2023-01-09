@@ -1,6 +1,7 @@
+"""Code related to managing kernels running in containers."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Code related to managing kernels running in containers."""
+
 from __future__ import annotations
 
 import abc
@@ -40,6 +41,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
     """
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
@@ -184,6 +186,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         return result
 
     def shutdown_listener(self):
+        """Shut down the listener."""
         super().shutdown_listener()
         if self.container_name:  # We only have something to terminate if we have a name
             self.terminate_container_resources()

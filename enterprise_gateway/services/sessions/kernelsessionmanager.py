@@ -1,6 +1,6 @@
+"""Session manager that keeps all its metadata in memory."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Session manager that keeps all its metadata in memory."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ class KernelSessionManager(LoggingConfigurable):
     )
 
     @default("enable_persistence")
-    def session_persistence_default(self) -> bool:
+    def _session_persistence_default(self) -> bool:
         return bool(
             os.getenv(
                 self.session_persistence_env, str(self.session_persistence_default_value)
@@ -68,10 +68,11 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
     )
 
     @default("persistence_root")
-    def persistence_root_default(self) -> str:
+    def _persistence_root_default(self) -> str:
         return os.getenv(self.persistence_root_env, "/")
 
     def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
+        """Initialize the manager."""
         super().__init__(**kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = dict()
@@ -143,6 +144,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
             kernels_lock.release()
 
     def start_session(self, kernel_id: str) -> bool | None:
+        """Start a session for a given kernel."""
         kernel_session = self._sessions.get(kernel_id, None)
         if kernel_session is not None:
             return self._start_session(kernel_session)
@@ -223,6 +225,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
 
     @staticmethod
     def pre_save_transformation(session: dict) -> dict:
+        """Handle a pre_save for a session."""
         kernel_id = list(session.keys())[0]
         session_info = session[kernel_id]
         if session_info.get("connection_info"):
@@ -235,6 +238,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
 
     @staticmethod
     def post_load_transformation(session: dict) -> dict:
+        """Handle a post_load for a session."""
         kernel_id = list(session.keys())[0]
         session_info = session[kernel_id]
         if session_info.get("connection_info"):
@@ -332,15 +336,17 @@ class FileKernelSessionManager(KernelSessionManager):
 
     # Change the default to Jupyter Data Dir.
     @default("persistence_root")
-    def persistence_root_default(self) -> str:
+    def _persistence_root_default(self) -> str:
         return os.getenv(self.persistence_root_env, jupyter_data_dir())
 
     def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
+        """Initialize the manager."""
         super().__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
             self.log.info(f"Kernel session persistence location: {self._get_sessions_loc()}")
 
     def delete_sessions(self, kernel_ids: list[str]) -> None:
+        """Delete the sessions for a list of kernels."""
         if self.enable_persistence:
             for kernel_id in kernel_ids:
                 kernel_file_name = "".join([kernel_id, ".json"])
@@ -349,6 +355,7 @@ class FileKernelSessionManager(KernelSessionManager):
                     os.remove(kernel_session_file_path)
 
     def save_session(self, kernel_id: str) -> None:
+        """Save the session for a kernel."""
         if self.enable_persistence:
             if kernel_id is not None:
                 kernel_file_name = "".join([kernel_id, ".json"])
@@ -360,6 +367,7 @@ class FileKernelSessionManager(KernelSessionManager):
                     fp.close()
 
     def load_sessions(self) -> None:
+        """Load the sessions."""
         if self.enable_persistence:
             kernel_session_files = [
                 json_files
@@ -370,6 +378,7 @@ class FileKernelSessionManager(KernelSessionManager):
                 self._load_session_from_file(kernel_session_file)
 
     def load_session(self, kernel_id: str) -> None:
+        """Load the session for a kernel."""
         if self.enable_persistence:
             if kernel_id is not None:
                 kernel_session_file = "".join([kernel_id, ".json"])
@@ -409,7 +418,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_url")
-    def webhook_url_default(self) -> str | None:
+    def _webhook_url_default(self) -> str | None:
         return os.getenv(self.webhook_url_env, None)
 
     # Webhook Username
@@ -421,7 +430,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_username")
-    def webhook_username_default(self) -> str | None:
+    def _webhook_username_default(self) -> str | None:
         return os.getenv(self.webhook_username_env, None)
 
     # Webhook Password
@@ -433,7 +442,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("webhook_password")
-    def webhook_password_default(self) -> str | None:
+    def _webhook_password_default(self) -> str | None:
         return os.getenv(self.webhook_password_env, None)
 
     # Auth Type
@@ -446,10 +455,11 @@ class WebhookKernelSessionManager(KernelSessionManager):
     )
 
     @default("auth_type")
-    def auth_type_default(self) -> str | None:
+    def _auth_type_default(self) -> str | None:
         return os.getenv(self.auth_type_env, None)
 
     def __init__(self, kernel_manager: RemoteMappingKernelManager, **kwargs):  # noqa: F821
+        """Initialize the manager."""
         super().__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
             self.log.info("Webhook kernel session persistence activated")

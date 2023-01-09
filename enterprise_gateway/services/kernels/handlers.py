@@ -1,6 +1,7 @@
+"""Tornado handlers for kernel CRUD and communication."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Tornado handlers for kernel CRUD and communication."""
+
 
 from __future__ import annotations
 
@@ -141,6 +142,7 @@ class KernelHandler(
 
     @web.authenticated
     def get(self, kernel_id: str):
+        """Get the model for a kernel."""
         km = self.kernel_manager
         km.check_kernel_id(kernel_id)
         model = km.kernel_model(kernel_id)

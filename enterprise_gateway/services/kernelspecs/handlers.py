@@ -1,6 +1,7 @@
+"""Tornado handlers for kernel specs."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Tornado handlers for kernel specs."""
+
 import json
 from typing import Dict, List, Optional
 
@@ -60,12 +61,15 @@ def apply_user_filter(
 
 
 class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, APIHandler):
+    """The root kernel spec handler."""
+
     @property
     def kernel_spec_cache(self) -> KernelSpecCache:
         return self.settings["kernel_spec_cache"]
 
     @web.authenticated
     async def get(self) -> None:
+        """Get the kernel spec models."""
         ksc = self.kernel_spec_cache
         km = self.kernel_manager
         model = {}
@@ -113,12 +117,15 @@ class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin,
 
 
 class KernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, APIHandler):
+    """A handler for a specific kernel spec."""
+
     @property
     def kernel_spec_cache(self) -> KernelSpecCache:
         return self.settings["kernel_spec_cache"]
 
     @web.authenticated
     async def get(self, kernel_name: str) -> None:
+        """Get a kernel spec by name."""
         ksc = self.kernel_spec_cache
         kernel_name = url_unescape(kernel_name)
         kernel_user_filter = self.request.query_arguments.get("user")
@@ -152,6 +159,8 @@ class KernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
 class KernelSpecResourceHandler(
     TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, web.StaticFileHandler, JupyterHandler
 ):
+    """A handler for kernel spec resources."""
+
     SUPPORTED_METHODS = ("GET", "HEAD")
 
     @property
@@ -159,10 +168,12 @@ class KernelSpecResourceHandler(
         return self.settings["kernel_spec_cache"]
 
     def initialize(self) -> None:
+        """Initialize the handler."""
         web.StaticFileHandler.initialize(self, path="")
 
     @web.authenticated
     async def get(self, kernel_name: str, path: str, include_body: bool = True) -> None:
+        """Get a resource for a kernel."""
         ksc = self.kernel_spec_cache
         try:
             kernelspec = await ensure_async(ksc.get_kernel_spec(kernel_name))
@@ -174,6 +185,7 @@ class KernelSpecResourceHandler(
 
     @web.authenticated
     def head(self, kernel_name: str, path: str) -> None:
+        """Get the head for a kernel resource."""
         return self.get(kernel_name, path, include_body=False)
 
 

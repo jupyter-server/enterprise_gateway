@@ -1,3 +1,4 @@
+"""Launches a containerized kernel."""
 import argparse
 import os
 import sys
@@ -18,7 +19,7 @@ swarm_mode = bool(os.getenv("DOCKER_MODE", os.getenv("EG_DOCKER_MODE", "swarm"))
 def launch_docker_kernel(
     kernel_id, port_range, response_addr, public_key, spark_context_init_mode, kernel_class_name
 ):
-    # Launches a containerized kernel.
+    """Launches a containerized kernel."""
 
     # Can't proceed if no image was specified.
     image_name = os.environ.get("KERNEL_IMAGE", None)

@@ -1,6 +1,6 @@
+"""Session manager that keeps all its metadata in memory."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Session manager that keeps all its metadata in memory."""
 
 import uuid
 from typing import Any, Hashable, List, Optional
@@ -31,6 +31,7 @@ class SessionManager(LoggingConfigurable):
     """
 
     def __init__(self, kernel_manager: RemoteMappingKernelManager, *args, **kwargs):
+        """Initialize the session manager."""
         super().__init__(*args, **kwargs)
         self.kernel_manager = kernel_manager
         self._sessions = []

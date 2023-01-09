@@ -1,3 +1,4 @@
+"""A kernel image puller."""
 import logging
 import os
 import queue
@@ -16,6 +17,7 @@ log_level = os.getenv("KIP_LOG_LEVEL", "INFO")
 
 
 class KernelImagePuller:
+    """A kernel image puller."""
 
     POLICY_IF_NOT_PRESENT = "IfNotPresent"
     POLICY_ALWAYS = "Always"
@@ -26,6 +28,7 @@ class KernelImagePuller:
     supported_container_runtimes = (DOCKER_CLIENT, CONTAINERD_CLIENT)
 
     def __init__(self, kip_logger):
+        """Initialize the puller."""
         self.interval = None
         self.auth_token = None
         self.gateway_host = None
@@ -43,6 +46,7 @@ class KernelImagePuller:
         self.load_static_env_values()
 
     def load_static_env_values(self):
+        """Load the static environment values."""
         self.num_pullers = int(os.getenv("KIP_NUM_PULLERS", "2"))
         self.num_retries = int(os.getenv("KIP_NUM_RETRIES", "3"))
         self.policy = os.getenv("KIP_PULL_POLICY", KernelImagePuller.POLICY_IF_NOT_PRESENT)
@@ -85,6 +89,7 @@ class KernelImagePuller:
             )
 
     def start(self):
+        """Start the puller."""
         self.log.info("Starting Kernel Image Puller process.")
         self.initialize_workers()
         wait_interval = 5  # Start with 5 seconds to ensure EG service gets started...
@@ -105,6 +110,7 @@ class KernelImagePuller:
             time.sleep(wait_interval)
 
     def initialize_workers(self):
+        """Initialize the workers."""
         self.worker_queue = queue.Queue()
         for i in range(self.num_pullers):
             t = Thread(target=self.image_puller, name=f"t{(i + 1)}")
@@ -121,6 +127,7 @@ class KernelImagePuller:
         return KernelImagePuller.CONTAINERD_CLIENT
 
     def is_runtime_endpoint_recognized(self) -> bool:
+        """Check if the runtime endpoint is recognized."""
         return (
             KernelImagePuller.DOCKER_CLIENT in self.runtime_endpoint
             or KernelImagePuller.CONTAINERD_CLIENT in self.runtime_endpoint

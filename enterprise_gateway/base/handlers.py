@@ -1,6 +1,7 @@
+"""Tornado handlers for the base of the API."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Tornado handlers for the base of the API."""
+
 
 import json
 from typing import List
@@ -20,6 +21,7 @@ class APIVersionHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
     """
 
     def get(self):
+        """Get the API version."""
         # not authenticated, so give as few info as possible
         # to be backwards compatibile, use only 'version' for the jupyter_server version
         # and be more specific for gateway_version
@@ -41,6 +43,7 @@ class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
     """
 
     def prepare(self):
+        """Prepare the response."""
         raise web.HTTPError(404)
 
 

@@ -1,6 +1,6 @@
+"""Kernel managers that operate against a remote process."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Kernel managers that operate against a remote process."""
 from __future__ import annotations
 
 import abc
@@ -158,6 +158,7 @@ class ResponseManager(SingletonConfigurable):
     _instance = None
 
     def __init__(self, **kwargs: dict[str, Any] | None):
+        """Initialize the manager."""
         super().__init__(**kwargs)
         self._response_ip = None
         self._response_port = None
@@ -1030,12 +1031,14 @@ class LocalProcessProxy(BaseProcessProxyABC):
     """
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):  # noqa: F821
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> type["LocalProcessProxy"]:
+        """Launch a process for a kernel."""
         await super().launch_process(kernel_cmd, **kwargs)
 
         # launch the local run.sh
@@ -1061,6 +1064,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, kernel_manager, proxy_config):
+        """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.response_socket = None
         self.start_time = None
@@ -1080,6 +1084,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         self.kernel_manager.public_key = self.response_manager.public_key
 
     async def launch_process(self, kernel_cmd, **kwargs):
+        """Launch a process for a kernel."""
         # Pass along port-range info to kernels...
         kwargs["env"]["EG_MIN_PORT_RANGE_SIZE"] = str(min_port_range_size)
         kwargs["env"]["EG_MAX_PORT_RANGE_RETRIES"] = str(max_port_range_retries)
@@ -1641,12 +1646,12 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
     @staticmethod
     def get_current_time():
-        # Return the current time stamp in UTC time epoch format in milliseconds, e.g.
+        """Return the current time stamp in UTC time epoch format in milliseconds."""
         return timegm(_tz.utcnow().utctimetuple()) * 1000
 
     @staticmethod
     def get_time_diff(time1, time2):
-        # Return the difference between two timestamps in seconds, assuming the timestamp is in milliseconds
+        """Return the difference between two timestamps in seconds, assuming the timestamp is in milliseconds."""
         # e.g. the difference between 1504028203000 and 1504028208300 is 5300 milliseconds or 5.3 seconds
         diff = abs(time2 - time1)
         return float("%d.%d" % (diff / 1000, diff % 1000))

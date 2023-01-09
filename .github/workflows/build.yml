@@ -76,7 +76,7 @@ jobs:
           ignore_links: "http://my-gateway-server.com:8888"
 
   build_docs:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3

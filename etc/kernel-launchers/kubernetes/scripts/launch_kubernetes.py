@@ -1,4 +1,5 @@
 #!/opt/conda/bin/python
+"""Launch on kubernetes."""
 import argparse
 import os
 import sys
@@ -94,7 +95,7 @@ def launch_kubernetes_kernel(
     spark_opts_out,
     kernel_class_name,
 ):
-    # Launches a containerized kernel as a kubernetes pod.
+    """Launches a containerized kernel as a kubernetes pod."""
 
     if os.getenv("KUBERNETES_SERVICE_HOST"):
         config.load_incluster_config()

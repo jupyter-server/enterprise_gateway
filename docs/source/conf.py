@@ -36,6 +36,13 @@ extensions = [
     "sphinxemoji.sphinxemoji",
 ]
 
+try:
+    import enchant  # noqa
+
+    extensions += ["sphinxcontrib.spelling"]
+except ImportError:
+    pass
+
 myst_enable_extensions = ["html_image"]
 myst_heading_anchors = 4  # Needs to be 4 or higher
 

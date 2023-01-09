@@ -1,3 +1,4 @@
+"""An Enterprise Gateway client."""
 import logging
 import os
 import queue as queue
@@ -29,12 +30,14 @@ class GatewayClient:
     KERNEL_LAUNCH_TIMEOUT = os.getenv("KERNEL_LAUNCH_TIMEOUT", "40")
 
     def __init__(self, host=DEFAULT_GATEWAY_HOST):
+        """Initialize the client."""
         self.http_api_endpoint = f"http://{host}/api/kernels"
         self.ws_api_endpoint = f"ws://{host}/api/kernels"
         self.log = logging.getLogger("GatewayClient")
         self.log.setLevel(log_level)
 
     def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT):
+        """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
 
         json_data = {
@@ -66,6 +69,7 @@ class GatewayClient:
         )
 
     def shutdown_kernel(self, kernel):
+        """Shut down a kernel."""
         self.log.info(f"Shutting down kernel : {kernel.kernel_id} ....")
 
         if not kernel:
@@ -83,6 +87,7 @@ class GatewayClient:
 
 
 class KernelClient:
+    """A kernel client class."""
 
     DEAD_MSG_ID = "deadbeefdeadbeefdeadbeefdeadbeef"
     POST_IDLE_TIMEOUT = 0.5
@@ -91,6 +96,7 @@ class KernelClient:
     def __init__(
         self, http_api_endpoint, ws_api_endpoint, kernel_id, timeout=REQUEST_TIMEOUT, logger=None
     ):
+        """Initialize the client."""
         self.shutting_down = False
         self.restarting = False
         self.http_api_endpoint = http_api_endpoint
@@ -113,6 +119,7 @@ class KernelClient:
         self.interrupt_thread = None
 
     def shutdown(self):
+        """Shut down the client."""
         # Terminate thread, close socket and clear queues.
         self.shutting_down = True
 
@@ -204,6 +211,7 @@ class KernelClient:
         return "".join(response)
 
     def interrupt(self):
+        """Interrupt the kernel."""
         url = "{}/{}".format(self.kernel_http_api_endpoint, "interrupt")
         response = requests.post(url)
         if response.status_code == 204:
@@ -217,6 +225,7 @@ class KernelClient:
             )
 
     def restart(self, timeout=REQUEST_TIMEOUT):
+        """Restart the kernel."""
         self.restarting = True
         self.kernel_socket.close()
         self.kernel_socket = None
@@ -238,6 +247,7 @@ class KernelClient:
             )
 
     def get_state(self):
+        """Get the state of the client."""
         url = f"{self.kernel_http_api_endpoint}"
         response = requests.get(url)
         if response.status_code == 200:
@@ -252,14 +262,17 @@ class KernelClient:
             )
 
     def start_interrupt_thread(self, wait_time=DEFAULT_INTERRUPT_WAIT):
+        """Start the interrupt thread."""
         self.interrupt_thread = Thread(target=self.perform_interrupt, args=(wait_time,))
         self.interrupt_thread.start()
 
     def perform_interrupt(self, wait_time):
+        """Perform an interrupt on the client."""
         time.sleep(wait_time)  # Allow parent to start executing cell to interrupt
         self.interrupt()
 
     def terminate_interrupt_thread(self):
+        """Terminate the interrupt thread."""
         if self.interrupt_thread:
             self.interrupt_thread.join()
             self.interrupt_thread = None

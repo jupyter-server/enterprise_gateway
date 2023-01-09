@@ -5,17 +5,18 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: end-of-file-fixer
       - id: check-case-conflict
+      - id: check-ast
+      - id: check-docstring-first
       - id: check-executables-have-shebangs
-      - id: requirements-txt-fixer
       - id: check-added-large-files
       - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-json
       - id: check-toml
       - id: check-yaml
         exclude: etc/kubernetes/.*.yaml
-      - id: debug-statements
-      - id: forbid-new-submodules
+      - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/python-jsonschema/check-jsonschema

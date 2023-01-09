@@ -1,6 +1,7 @@
+"""Tornado handlers for kernel specs."""
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Tornado handlers for kernel specs."""
+
 import os
 from typing import List
 
@@ -43,6 +44,7 @@ class SpecJsonHandler(BaseSpecHandler):
 
     @staticmethod
     def get_resource_metadata() -> tuple:
+        """Get the resource metadata."""
         return "swagger.json", "application/json"
 
 
@@ -51,6 +53,7 @@ class APIYamlHandler(BaseSpecHandler):
 
     @staticmethod
     def get_resource_metadata() -> tuple:
+        """Get the resource metadata."""
         return "swagger.yaml", "text/x-yaml"
 
 

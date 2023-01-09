@@ -1,3 +1,4 @@
+"""A server listener for R."""
 import base64
 import json
 import logging
@@ -221,6 +222,7 @@ def server_listener(sock, parent_pid):
 def setup_server_listener(
     conn_filename, parent_pid, lower_port, upper_port, response_addr, kernel_id, public_key
 ):
+    """Set up the server listener."""
     ip = "0.0.0.0"  # noqa
     key = str(uuid.uuid4()).encode()  # convert to bytes
 

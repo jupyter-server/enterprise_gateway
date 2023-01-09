@@ -1,4 +1,5 @@
 #!/opt/conda/bin/python
+"""Launch a custom operator resource."""
 import argparse
 import os
 import sys
@@ -12,6 +13,7 @@ urllib3.disable_warnings()
 
 
 def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
+    """Generate the kernel custom resource yaml given a template."""
     j_env = Environment(
         loader=FileSystemLoader(os.path.dirname(__file__)),
         trim_blocks=True,
@@ -33,6 +35,7 @@ def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
 def launch_custom_resource_kernel(
     kernel_id, port_range, response_addr, public_key, spark_context_init_mode
 ):
+    """Launch a custom resource kernel."""
     config.load_incluster_config()
 
     keywords = dict()
