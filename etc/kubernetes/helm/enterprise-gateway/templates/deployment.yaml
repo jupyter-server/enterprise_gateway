@@ -65,6 +65,8 @@ spec:
           value: {{ if .Values.mirrorWorkingDirs }}"True"{{ else }}"False"{{ end }}
         - name: EG_CULL_IDLE_TIMEOUT
           value: !!str {{ .Values.kernel.cullIdleTimeout }}
+        - name: EG_CULL_CONNECTED
+          value: {{ if .Values.kernel.cullConnected }}"True"{{ else }}"False"{{ end }}
         - name: EG_LOG_LEVEL
           value: {{ .Values.logLevel }}
         - name: EG_KERNEL_LAUNCH_TIMEOUT
@@ -77,6 +79,13 @@ spec:
         {{- if .Values.authToken }}
         - name: EG_AUTH_TOKEN
           value: {{ .Values.authToken }}
+        {{- end }}
+        {{- if .Values.deployment.extraEnv }}
+        {{- range $key, $val := .Values.deployment.extraEnv }}
+        - name: {{ $key }}
+          value: |-
+{{ $val | indent 12 }}
+        {{- end }}
         {{- end }}
         ports:
         {{ with index .Values.service.ports 0 }}
