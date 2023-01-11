@@ -15,13 +15,12 @@ from .k8s import KubernetesProcessProxy
 class CustomResourceProcessProxy(KubernetesProcessProxy):
     """A custom resource process proxy."""
 
-    group = version = plural = None
-    custom_resource_template_name = None
-    kernel_resource_name = None
-
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
+        self.group = self.version = self.plural = None
+        self.custom_resource_template_name = None
+        self.kernel_resource_name = None
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
@@ -42,30 +41,56 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         result = None
 
         if self.kernel_resource_name:
-            if self.delete_kernel_namespace and not self.kernel_manager.restarting:
-                body = client.V1DeleteOptions(
-                    grace_period_seconds=0, propagation_policy="Background"
+            try:
+                delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
+                    self.group, self.version, self.plurals, self.kernel_resource_name
                 )
-                v1_status = client.CoreV1Api().delete_namespace(
-                    name=self.kernel_namespace, body=body
-                )
+                self.log.info(f"CRD delete_status: {delete_status}")
 
-                if v1_status and v1_status.status:
-                    termination_status = ["Succeeded", "Failed", "Terminating"]
-                    if any(status in v1_status.status for status in termination_status):
+                result = delete_status and delete_status.get("status", None) == "Success"
+                if not result:
+                    # If the status indicates the CRD is not terminated, capture its current status.
+                    # If None, update the result to True, else issue warning that it is not YET deleted
+                    # since we still have the hard termination sequence to occur.
+                    cur_status = self.get_container_status(None)
+                    if cur_status is None:
                         result = True
-            else:
-                try:
-                    delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
-                        self.group, self.version, self.plurals, self.kernel_resource_name
+                    else:
+                        self.log.warning(
+                            f"CRD {self.kernel_namespace}.{self.kernel_resource_name} is not yet deleted.  "
+                            f"Current status is '{cur_status}'."
+                        )
+
+                if self.delete_kernel_namespace and not self.kernel_manager.restarting:
+                    body = client.V1DeleteOptions(
+                        grace_period_seconds=0, propagation_policy="Background"
+                    )
+                    v1_status = client.CoreV1Api().delete_namespace(
+                        name=self.kernel_namespace, body=body
                     )
 
-                    result = delete_status and delete_status.get("status", None) == "Success"
+                    if v1_status and v1_status.status:
+                        termination_status = ["Succeeded", "Failed", "Terminating"]
+                        if any(status in v1_status.status for status in termination_status):
+                            result = True
 
-                except Exception as err:
-                    result = isinstance(err, client.rest.ApiException) and err.status == 404
+            except Exception as err:
+                result = isinstance(err, client.rest.ApiException) and err.status == 404
 
         if result:
+            self.log.debug(
+                f"CustomResourceProcessProxy.terminate_container_resources, "
+                f"crd: {self.kernel_namespace}.{self.kernel_resource_name}, "
+                f"kernel ID: {self.kernel_id} has been terminated."
+            )
             self.kernel_resource_name = None
+            self.container_name = None
+            result = None  # maintain jupyter contract
+        else:
+            self.log.warning(
+                "CustomResourceProcessProxy.terminate_container_resources, "
+                f"crd: {self.kernel_namespace}.{self.kernel_resource_name}, "
+                f"kernel ID: {self.kernel_id} has not been terminated."
+            )
 
         return result

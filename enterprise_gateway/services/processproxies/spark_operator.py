@@ -35,8 +35,10 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             )
 
             if custom_resource:
-                pod_name = custom_resource["status"]["driverInfo"]["podName"]
-                pod_info = client.CoreV1Api().read_namespaced_pod(pod_name, self.kernel_namespace)
+                self.container_name = custom_resource["status"]["driverInfo"]["podName"]
+                pod_info = client.CoreV1Api().read_namespaced_pod(
+                    self.container_name, self.kernel_namespace
+                )
         except Exception:
             pass
 
