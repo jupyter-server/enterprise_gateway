@@ -42,8 +42,15 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
         if self.kernel_resource_name:
             try:
-                delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
-                    self.group, self.version, self.plurals, self.kernel_resource_name
+                object_name = "crd"
+                delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
+                    self.group,
+                    self.version,
+                    self.kernel_namespace,
+                    self.plural,
+                    self.kernel_resource_name,
+                    grace_period_seconds=0,
+                    propagation_policy="Background",
                 )
                 self.log.info(f"CRD delete_status: {delete_status}")
 
@@ -62,6 +69,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
                         )
 
                 if self.delete_kernel_namespace and not self.kernel_manager.restarting:
+                    object_name = "namespace"
                     body = client.V1DeleteOptions(
                         grace_period_seconds=0, propagation_policy="Background"
                     )
@@ -75,7 +83,11 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
                             result = True
 
             except Exception as err:
-                result = isinstance(err, client.rest.ApiException) and err.status == 404
+                self.log.debug(f"Error occurred deleting {object_name}: {err}")
+                if isinstance(err, client.rest.ApiException) and err.status == 404:
+                    result = True  # okay if it's not found
+                else:
+                    self.log.warning(f"Error occurred deleting {object_name}: {err}")
 
         if result:
             self.log.debug(

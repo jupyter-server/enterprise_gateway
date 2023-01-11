@@ -35,11 +35,18 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             )
 
             if custom_resource:
+                if iteration:
+                    self.log.debug(f"CRD.get_namespaced_custom_object returns: {custom_resource}")
                 self.container_name = custom_resource["status"]["driverInfo"]["podName"]
                 pod_info = client.CoreV1Api().read_namespaced_pod(
                     self.container_name, self.kernel_namespace
                 )
-        except Exception:
+                if iteration:
+                    self.log.debug(f"CRD.read_namespaced_pod returns: {pod_info}")
+        except Exception as ex:
+            self.log.warning(
+                f"Failure occurred obtaining status of Spark Operator '{self.container_name}', ex: {ex}"
+            )
             pass
 
         if pod_info and pod_info.status:
