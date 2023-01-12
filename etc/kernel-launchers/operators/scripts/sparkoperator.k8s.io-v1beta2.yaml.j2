@@ -29,6 +29,10 @@ spec:
     coreLimit: 1000m
     memory: 1g
   executor:
+    labels:
+      kernel_id: "{{ kernel_id }}"
+      app: enterprise-gateway
+      component: worker
     image: {{ kernel_executor_image }}
     instances: 2
     cores: 1

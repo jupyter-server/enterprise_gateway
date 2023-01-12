@@ -62,7 +62,7 @@ deployment:
   tolerations: []
   affinity: {}
   nodeSelector: {}
-  extraEnv: {}
+  extraEnv: {
     # SOME_ENV_VAR_WITH_SIMPLE_VALUE: "example"
     # SOME_ENV_VAR_WITH_LONG_VALUE: >
     #   'this example',
@@ -72,6 +72,8 @@ deployment:
     #   this example
     #   will preserve
     #   line breaks
+    EG_INHERITED_ENVS: "PATH"
+  }
 
 # Log output level.
 logLevel: DEBUG

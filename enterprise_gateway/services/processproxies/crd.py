@@ -15,21 +15,24 @@ from .k8s import KubernetesProcessProxy
 class CustomResourceProcessProxy(KubernetesProcessProxy):
     """A custom resource process proxy."""
 
-    group = version = plural = None
-    custom_resource_template_name = None
-    kernel_resource_name = None
+    # Identifies the kind of object being managed by this process proxy.
+    # For these values we will prefer the values found in the 'kind' field
+    # of the object's metadata.  This attribute is strictly used to provide
+    # context to log messages.
+    object_kind = "CustomResourceDefinition"
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
+        self.group = self.version = self.plural = None
+        self.kernel_resource_name = None
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "CustomResourceProcessProxy":
         """Launch the process for a kernel."""
-        kwargs["env"][
-            "KERNEL_RESOURCE_NAME"
-        ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
+        self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
+        kwargs["env"]["KERNEL_RESOURCE_NAME"] = self.kernel_resource_name
         kwargs["env"]["KERNEL_CRD_GROUP"] = self.group
         kwargs["env"]["KERNEL_CRD_VERSION"] = self.version
         kwargs["env"]["KERNEL_CRD_PLURAL"] = self.plural
@@ -37,35 +40,24 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def terminate_container_resources(self) -> bool | None:
-        """Terminate the resources for the container."""
-        result = None
+    def delete_managed_object(self, termination_stati: list[str]) -> bool:
+        """Deletes the object managed by this process-proxy
 
-        if self.kernel_resource_name:
-            if self.delete_kernel_namespace and not self.kernel_manager.restarting:
-                body = client.V1DeleteOptions(
-                    grace_period_seconds=0, propagation_policy="Background"
-                )
-                v1_status = client.CoreV1Api().delete_namespace(
-                    name=self.kernel_namespace, body=body
-                )
+        A return value of True indicates the object is considered deleted,
+        otherwise a False or None value is returned.
 
-                if v1_status and v1_status.status:
-                    termination_status = ["Succeeded", "Failed", "Terminating"]
-                    if any(status in v1_status.status for status in termination_status):
-                        result = True
-            else:
-                try:
-                    delete_status = client.CustomObjectsApi().delete_cluster_custom_object(
-                        self.group, self.version, self.plurals, self.kernel_resource_name
-                    )
+        Note: the caller is responsible for handling exceptions.
+        """
+        delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
+            self.group,
+            self.version,
+            self.kernel_namespace,
+            self.plural,
+            self.kernel_resource_name,
+            grace_period_seconds=0,
+            propagation_policy="Background",
+        )
 
-                    result = delete_status and delete_status.get("status", None) == "Success"
-
-                except Exception as err:
-                    result = isinstance(err, client.rest.ApiException) and err.status == 404
-
-        if result:
-            self.kernel_resource_name = None
+        result = delete_status and delete_status.get("status", None) in termination_stati
 
         return result
