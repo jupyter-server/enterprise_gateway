@@ -37,6 +37,12 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     Kernel lifecycle management for Kubernetes kernels.
     """
 
+    # Identifies the kind of object being managed by this process proxy.
+    # For these values we will prefer the values found in the 'kind' field
+    # of the object's metadata.  This attribute is strictly used to provide
+    # context to log messages.
+    object_kind = "Pod"
+
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
@@ -91,25 +97,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug(
-                "{}: Waiting to connect to k8s pod in namespace '{}'. "
-                "Name: '{}', Status: '{}', Pod IP: '{}', KernelID: '{}'".format(
-                    iteration,
-                    self.kernel_namespace,
-                    self.container_name,
-                    pod_status,
-                    self.assigned_ip,
-                    self.kernel_id,
-                )
+                f"{iteration}: Waiting to connect to k8s {self.object_kind.lower()} in "
+                f"namespace '{self.kernel_namespace}'. Name: '{self.container_name}', "
+                f"Status: '{pod_status}', Pod IP: '{self.assigned_ip}', KernelID: '{self.kernel_id}'"
             )
 
         return pod_status
 
-    @staticmethod
-    def get_k8s_object_type() -> str:
-        """Returns the object type managed by this process-proxy"""
-        return "pod"
-
-    def delete_k8s_object(self, termination_stati: list[str]) -> bool:
+    def delete_managed_object(self, termination_stati: list[str]) -> bool:
         """Deletes the object managed by this process-proxy
 
         A return value of True indicates the object is considered deleted,
@@ -146,9 +141,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         termination_stati = ["Succeeded", "Failed", "Terminating", "Success"]
 
         # Delete the managed object then, if applicable, the namespace
-        object_type = self.get_k8s_object_type()
+        object_type = self.object_kind
         try:
-            result = self.delete_k8s_object(termination_stati)
+            result = self.delete_managed_object(termination_stati)
             if not result:
                 # If the status indicates the object is not terminated, capture its current status.
                 # If None, update the result to True, else issue warning that it is not YET deleted
@@ -158,12 +153,12 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                     result = True
                 else:
                     self.log.warning(
-                        f"Object-type {object_type} '{self.kernel_namespace}.{self.container_name}'"
+                        f"{object_type} '{self.kernel_namespace}.{self.container_name}'"
                         f" is not yet deleted.  Current status is '{cur_status}'."
                     )
 
             if self.delete_kernel_namespace and not self.kernel_manager.restarting:
-                object_type = "namespace"
+                object_type = "Namespace"
                 # Status is a return value for calls that don't return other objects.
                 # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#status-v1-meta
                 body = client.V1DeleteOptions(
@@ -188,14 +183,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         except Exception as err:
             if isinstance(err, client.rest.ApiException) and err.status == 404:
-                result = True  # okay if its not found
+                result = True  # okay if it's not found
             else:
-                self.log.warning(f"Error occurred deleting {object_type}: {err}")
+                self.log.warning(f"Error occurred deleting {object_type.lower()}: {err}")
 
         if result:
             self.log.debug(
                 f"KubernetesProcessProxy.terminate_container_resources, "
-                f"{object_type}: {self.kernel_namespace}.{self.container_name}, "
+                f"{self.object_kind}: {self.kernel_namespace}.{self.container_name}, "
                 f"kernel ID: {self.kernel_id} has been terminated."
             )
             self.container_name = None
@@ -203,7 +198,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         else:
             self.log.warning(
                 "KubernetesProcessProxy.terminate_container_resources, "
-                f"{object_type}: {self.kernel_namespace}.{self.container_name}, "
+                f"{self.object_kind}: {self.kernel_namespace}.{self.container_name}, "
                 f"kernel ID: {self.kernel_id} has not been terminated."
             )
 

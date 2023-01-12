@@ -15,6 +15,12 @@ from .k8s import KubernetesProcessProxy
 class CustomResourceProcessProxy(KubernetesProcessProxy):
     """A custom resource process proxy."""
 
+    # Identifies the kind of object being managed by this process proxy.
+    # For these values we will prefer the values found in the 'kind' field
+    # of the object's metadata.  This attribute is strictly used to provide
+    # context to log messages.
+    object_kind = "CustomResourceDefinition"
+
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
@@ -34,12 +40,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    @staticmethod
-    def get_k8s_object_type() -> str:
-        """Returns the object type managed by this process-proxy"""
-        return "pod"
-
-    def delete_k8s_object(self, termination_stati: list[str]) -> bool:
+    def delete_managed_object(self, termination_stati: list[str]) -> bool:
         """Deletes the object managed by this process-proxy
 
         A return value of True indicates the object is considered deleted,
