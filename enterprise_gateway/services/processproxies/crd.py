@@ -19,16 +19,14 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         self.group = self.version = self.plural = None
-        self.custom_resource_template_name = None
         self.kernel_resource_name = None
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
     ) -> "CustomResourceProcessProxy":
         """Launch the process for a kernel."""
-        kwargs["env"][
-            "KERNEL_RESOURCE_NAME"
-        ] = self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
+        self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
+        kwargs["env"]["KERNEL_RESOURCE_NAME"] = self.kernel_resource_name
         kwargs["env"]["KERNEL_CRD_GROUP"] = self.group
         kwargs["env"]["KERNEL_CRD_VERSION"] = self.version
         kwargs["env"]["KERNEL_CRD_PLURAL"] = self.plural
@@ -36,73 +34,29 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
-    def terminate_container_resources(self) -> bool | None:
-        """Terminate the resources for the container."""
-        result = None
+    @staticmethod
+    def get_k8s_object_type() -> str:
+        """Returns the object type managed by this process-proxy"""
+        return "pod"
 
-        if self.kernel_resource_name:
-            try:
-                object_name = "crd"
-                delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
-                    self.group,
-                    self.version,
-                    self.kernel_namespace,
-                    self.plural,
-                    self.kernel_resource_name,
-                    grace_period_seconds=0,
-                    propagation_policy="Background",
-                )
-                self.log.info(f"CRD delete_status: {delete_status}")
+    def delete_k8s_object(self, termination_stati: list[str]) -> bool:
+        """Deletes the object managed by this process-proxy
 
-                result = delete_status and delete_status.get("status", None) == "Success"
-                if not result:
-                    # If the status indicates the CRD is not terminated, capture its current status.
-                    # If None, update the result to True, else issue warning that it is not YET deleted
-                    # since we still have the hard termination sequence to occur.
-                    cur_status = self.get_container_status(None)
-                    if cur_status is None:
-                        result = True
-                    else:
-                        self.log.warning(
-                            f"CRD {self.kernel_namespace}.{self.kernel_resource_name} is not yet deleted.  "
-                            f"Current status is '{cur_status}'."
-                        )
+        A return value of True indicates the object is considered deleted,
+        otherwise a False or None value is returned.
 
-                if self.delete_kernel_namespace and not self.kernel_manager.restarting:
-                    object_name = "namespace"
-                    body = client.V1DeleteOptions(
-                        grace_period_seconds=0, propagation_policy="Background"
-                    )
-                    v1_status = client.CoreV1Api().delete_namespace(
-                        name=self.kernel_namespace, body=body
-                    )
+        Note: the caller is responsible for handling exceptions.
+        """
+        delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
+            self.group,
+            self.version,
+            self.kernel_namespace,
+            self.plural,
+            self.kernel_resource_name,
+            grace_period_seconds=0,
+            propagation_policy="Background",
+        )
 
-                    if v1_status and v1_status.status:
-                        termination_status = ["Succeeded", "Failed", "Terminating"]
-                        if any(status in v1_status.status for status in termination_status):
-                            result = True
-
-            except Exception as err:
-                self.log.debug(f"Error occurred deleting {object_name}: {err}")
-                if isinstance(err, client.rest.ApiException) and err.status == 404:
-                    result = True  # okay if it's not found
-                else:
-                    self.log.warning(f"Error occurred deleting {object_name}: {err}")
-
-        if result:
-            self.log.debug(
-                f"CustomResourceProcessProxy.terminate_container_resources, "
-                f"crd: {self.kernel_namespace}.{self.kernel_resource_name}, "
-                f"kernel ID: {self.kernel_id} has been terminated."
-            )
-            self.kernel_resource_name = None
-            self.container_name = None
-            result = None  # maintain jupyter contract
-        else:
-            self.log.warning(
-                "CustomResourceProcessProxy.terminate_container_resources, "
-                f"crd: {self.kernel_namespace}.{self.kernel_resource_name}, "
-                f"kernel ID: {self.kernel_id} has not been terminated."
-            )
+        result = delete_status and delete_status.get("status", None) in termination_stati
 
         return result
