@@ -28,5 +28,10 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 	chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 USER jovyan
+
 ENV KERNEL_LANGUAGE python
+
+# Disble healthcheck inherited from notebook image
+HEALTHCHECK NONE
+
 CMD /usr/local/bin/bootstrap-kernel.sh
