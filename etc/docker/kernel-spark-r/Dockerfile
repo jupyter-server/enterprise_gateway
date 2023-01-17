@@ -14,7 +14,11 @@ ENV KERNEL_LANGUAGE=R
 ENV R_LIBS_USER $R_LIBS_USER:${R_HOME}/library:${SPARK_HOME}/R/lib
 ENV PATH $PATH:$SPARK_HOME/bin
 
-RUN apt-get update && apt-get install -y \
+RUN dpkg --purge --force-depends ca-certificates-java \
+    && apt-get update \
+    && apt-get install -yq --no-install-recommends \
+    ca-certificates \
+    ca-certificates-java \
     openjdk-8-jdk \
     libssl-dev
 
