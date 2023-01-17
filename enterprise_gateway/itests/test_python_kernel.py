@@ -52,10 +52,10 @@ class PythonKernelBaseTestCase(TestBase):
 
         # Build the code list to interrupt, in this case, its a sleep call.
         interrupted_code = list()
-        interrupted_code.append("i = 2\n")
-        interrupted_code.append("while i > 0:\n")
-        interrupted_code.append("    i *= i\n")
-        interrupted_code.append("    print(i)\n")
+        interrupted_code.append("import time\n")
+        interrupted_code.append("print('begin')\n")
+        interrupted_code.append("time.sleep(60)\n")
+        interrupted_code.append("print('end')\n")
 
         interrupted_result = self.kernel.execute(interrupted_code)
 
