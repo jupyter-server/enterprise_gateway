@@ -31,7 +31,8 @@ ENV SPARK_VER $SPARK_VERSION
 ENV HADOOP_VER 3.3.1
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
-RUN apt-get update && apt-get -yq dist-upgrade \
+RUN sudo dpkg --purge --force-depends ca-certificates-java \
+ && apt-get update && apt-get -yq dist-upgrade \
  && apt-get install -yq --no-install-recommends \
     wget \
     bzip2 \
@@ -40,6 +41,7 @@ RUN apt-get update && apt-get -yq dist-upgrade \
     less \
     nano \
     ca-certificates \
+    ca-certificates-java \
     libkrb5-dev \
     sudo \
     locales \
