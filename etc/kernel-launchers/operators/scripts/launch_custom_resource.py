@@ -28,8 +28,29 @@ def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
         ),
     )
     k8s_yaml = j_env.get_template("/" + kernel_crd_template + ".yaml.j2").render(**keywords)
-
     return k8s_yaml
+
+
+def extend_operator_env(op_def: dict, sub_spec: str) -> dict:
+    """Extends the op_def.spec.sub_spec.env stanza with current environment."""
+    env_stanza = op_def["spec"][sub_spec].get("env") or []
+
+    # Walk current set of template env entries and replace those found in the current
+    # env with their values (and record those items).   Then add all others from the env
+    # that were not already.
+    processed_entries: list[str] = []
+    for item in env_stanza:
+        item_name = item.get("name")
+        if item_name in os.environ:
+            item["value"] = os.environ[item_name]
+            processed_entries.append(item_name)
+
+    for name, value in os.environ.items():
+        if name not in processed_entries:
+            env_stanza.append({"name": name, "value": value})
+
+    op_def["spec"][sub_spec]["env"] = env_stanza
+    return op_def
 
 
 def launch_custom_resource_kernel(
@@ -61,6 +82,9 @@ def launch_custom_resource_kernel(
     version = keywords["kernel_crd_version"]
     plural = keywords["kernel_crd_plural"]
     custom_resource_object = yaml.safe_load(custom_resource_yaml)
+    if group == "sparkoperator.k8s.io":
+        extend_operator_env(custom_resource_object, "driver")
+        extend_operator_env(custom_resource_object, "executor")
 
     try:
         client.CustomObjectsApi().create_namespaced_custom_object(
