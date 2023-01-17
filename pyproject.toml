@@ -65,7 +65,7 @@ lint = [
   "black[jupyter]==22.12.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
-  "ruff==0.0.189"
+  "ruff==0.0.223"
 ]
 
 [project.scripts]
@@ -160,6 +160,9 @@ ignore = [
 "TID252",
 # E501 Line too long (110 > 100 characters)
 "E501",
+# S108 Probable insecure usage of temporary file or directory: "/tmp"
+# S113 Probable use of requests call without timeout
+"S108", "S113",
 ]
 
 [tool.ruff.per-file-ignores]
