@@ -16,7 +16,7 @@ ENV PATH $PATH:$SPARK_HOME/bin
 
 RUN dpkg --purge --force-depends ca-certificates-java \
     && apt-get update \
-    && apt-get install -yq --no-install-recommends \
+    && apt-get install -y \
     ca-certificates \
     ca-certificates-java \
     openjdk-8-jdk \
