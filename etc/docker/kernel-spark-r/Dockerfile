@@ -20,7 +20,8 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     ca-certificates \
     ca-certificates-java \
     openjdk-8-jdk \
-    libssl-dev
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
