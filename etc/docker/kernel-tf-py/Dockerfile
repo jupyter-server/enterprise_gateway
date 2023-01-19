@@ -22,4 +22,7 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 
 USER jovyan
 
+# Disble healthcheck inherited from notebook image
+HEALTHCHECK NONE
+
 CMD [ "/usr/local/bin/bootstrap-kernel.sh" ]
