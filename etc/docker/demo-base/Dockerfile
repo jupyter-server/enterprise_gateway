@@ -41,7 +41,6 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     less \
     nano \
     ca-certificates \
-    ca-certificates-java \
     libkrb5-dev \
     sudo \
     locales \
@@ -54,9 +53,10 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     software-properties-common \
     openssh-server \
     openssh-client \
- && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
- && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jdk \
- && rm -rf /var/lib/apt/lists/*
+    && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
+    && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jre-headless \
+    ca-certificates-java \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
