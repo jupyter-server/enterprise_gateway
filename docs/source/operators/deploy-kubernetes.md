@@ -22,9 +22,17 @@ Enterprise Gateway deployments use the [elyra/enterprise-gateway](https://hub.do
 
 When deployed within a [spark-on-kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html) cluster, Enterprise Gateway can easily support cluster-managed kernels distributed across the cluster. Enterprise Gateway will also provide standalone (i.e., _vanilla_) kernel invocation (where spark contexts are not automatically created) which also benefits from their distribution across the cluster.
 
-```{note}
-If you plan to use kernel specifications derived from the `spark_python_operator` sample, ensure that the [Kubernetes Operator for Apache Spark is installed](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator#installation) in your Kubernetes cluster.
-```
+````{note}
+If you plan to use kernel specifications derived from the `spark_python_operator` sample, ensure that the
+[Kubernetes Operator for Apache Spark is installed](https://github.com/GoogleCloudPlatform/spark-on-k8s-operator#installation)
+in your Kubernetes cluster.
+
+```{tip}
+To ensure the proper flow of environment variables to your spark application, make sure the
+webhook server is enabled when deploying the helm chart:
+
+`helm install my-release spark-operator/spark-operator --namespace spark-operator --set webhook.enable=true`
+````
 
 We are using helm templates to manage Kubernetes resource configurations, which allows an end-user to easily customize their Enterprise Gateway deployment.
 
