@@ -191,6 +191,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     async def confirm_remote_startup(self) -> None:
         """Confirms the container has started and returned necessary connection information."""
+        self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
@@ -200,12 +201,18 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
             container_status = self.get_container_status(str(i))
             if container_status:
-                if self.assigned_host != "":
-                    ready_to_connect = await self.receive_connection_info()
-                    self.pid = (
-                        0  # We won't send process signals for kubernetes lifecycle management
+                self.log.debug(f"Received startup status: {container_status}")
+                if container_status.lower() == "failed":
+                    self.log_and_raise(
+                        http_status_code=500, reason="Error starting kernel container."
                     )
-                    self.pgid = 0
+                else:
+                    if self.assigned_host != "":
+                        ready_to_connect = await self.receive_connection_info()
+                        self.pid = (
+                            0  # We won't send process signals for kubernetes lifecycle management
+                        )
+                        self.pgid = 0
             else:
                 self.detect_launch_failure()
 
@@ -226,6 +233,11 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     @abc.abstractmethod
     def get_initial_states(self):
+        """Return list of states indicating container is starting (includes running)."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_error_states(self):
         """Return list of states indicating container is starting (includes running)."""
         raise NotImplementedError
 

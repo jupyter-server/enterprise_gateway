@@ -75,6 +75,10 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         """Return list of states indicating container is starting (includes running)."""
         return {"Pending", "Running"}
 
+    def get_error_states(self) -> set:
+        """Return list of states indicating container is starting (includes running)."""
+        return {"Failed"}
+
     def get_container_status(self, iteration: int | None) -> str | None:
         """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
@@ -89,7 +93,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             self.container_name = pod_info.metadata.name
             if pod_info.status:
                 pod_status = pod_info.status.phase
-                if pod_status == "Running" and self.assigned_host == "":
+                if pod_status.lower == "running" and self.assigned_host == "":
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
                     self.assigned_host = self.container_name
