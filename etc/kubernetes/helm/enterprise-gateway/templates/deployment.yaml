@@ -21,6 +21,9 @@ spec:
       gateway-selector: enterprise-gateway
   template:
     metadata:
+      annotations:
+        # Force redeploy when configmap updates
+        checksum/config: {{ include (print $.Template.BasePath "/kubeconfig-configmap.yaml") . | sha256sum }}
       labels:
         gateway-selector: enterprise-gateway
         app: enterprise-gateway
@@ -41,6 +44,25 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: kubeconfig
+          readOnly: true
+          mountPath: {{ .Values.remoteKubeconfig.configPath }}
+        {{- end}}
+        volumes:
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: kubeconfig
+          configMap: 
+            name: {{ .Release.Name }}-configmap
+        {{- end}}
+        env:
+        # Set environment variables to point k8s client to kubeconfig
+        {{- if .Values.remoteKubeconfig.enabled }}
+          - name: EG_USE_REMOTE_CLUSTER
+            value: "True"
+          - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
+            value: {{ .Values.remoteKubeconfig.configPath }}config
+        {{- end }}
   {{- end }}
       containers:
       - name: enterprise-gateway
@@ -75,6 +97,15 @@ spec:
           value: {{ toJson .Values.kernel.allowedKernels | squote }}
         - name: EG_DEFAULT_KERNEL_NAME
           value: {{ .Values.kernel.defaultKernelName }}
+        # Set environment variables to point k8s client to kubeconfig
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: EG_USE_REMOTE_CLUSTER
+          value: "True"
+        - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
+          value: {{ .Values.remoteKubeconfig.configPath }}config
+        - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
+          value: kernel-svcaccount
+        {{- end }}
         # Optional authorization token passed in all requests
         {{- if .Values.authToken }}
         - name: EG_AUTH_TOKEN
@@ -120,10 +151,20 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: kubeconfig
+          readOnly: true
+          mountPath: {{ .Values.remoteKubeconfig.configPath }}
+        {{- end}}
       volumes:
       - name: image-kernelspecs
         emptyDir:
           medium: Memory
+      {{- if .Values.remoteKubeconfig.enabled }}
+      - name: kubeconfig
+        configMap: 
+          name: {{ .Release.Name }}-configmap
+      {{- end}}
 
   {{- if .Values.deployment.tolerations }}
       tolerations:

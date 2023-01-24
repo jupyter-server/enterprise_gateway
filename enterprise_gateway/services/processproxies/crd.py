@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 
 from kubernetes import client
 
+from ..external.k8s_client import kubernetes_client
 from ..kernels.remotemanager import RemoteKernelManager
 from .k8s import KubernetesProcessProxy
 
@@ -37,6 +39,11 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         kwargs["env"]["KERNEL_CRD_VERSION"] = self.version
         kwargs["env"]["KERNEL_CRD_PLURAL"] = self.plural
 
+        use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
+        if use_remote_cluster:
+            kwargs["env"]["EG_USE_REMOTE_CLUSTER"] = 'true'
+            kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv("EG_REMOTE_CLUSTER_KUBECONFIG_PATH")
+
         await super().launch_process(kernel_cmd, **kwargs)
         return self
 
@@ -48,7 +55,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
         Note: the caller is responsible for handling exceptions.
         """
-        delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
+        delete_status = client.CustomObjectsApi(api_client=kubernetes_client).delete_namespaced_custom_object(
             self.group,
             self.version,
             self.kernel_namespace,

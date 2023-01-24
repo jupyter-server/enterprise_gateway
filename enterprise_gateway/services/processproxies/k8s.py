@@ -7,11 +7,12 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, List
 
 import urllib3
-from kubernetes import client, config
+from kubernetes import client
 
+from ..external.k8s_client import kubernetes_client, KUBERNETES_CLIENT_FACTORY
 from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from .container import ContainerProcessProxy
@@ -28,8 +29,6 @@ default_kernel_service_account_name = os.environ.get(
 kernel_cluster_role = os.environ.get("EG_KERNEL_CLUSTER_ROLE", "cluster-admin")
 share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lower() == "true")
 kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")
-
-config.load_incluster_config()
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
@@ -81,7 +80,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # is used for the assigned_ip.
         pod_status = None
         kernel_label_selector = "kernel_id=" + self.kernel_id + ",component=kernel"
-        ret = client.CoreV1Api().list_namespaced_pod(
+        ret = client.CoreV1Api(api_client=kubernetes_client).list_namespaced_pod(
             namespace=self.kernel_namespace, label_selector=kernel_label_selector
         )
         if ret and ret.items:
@@ -117,7 +116,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Deleting a Pod will return a v1.Pod if found and its status will be a PodStatus containing
         # a phase string property
         # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.21/#podstatus-v1-core
-        v1_pod = client.CoreV1Api().delete_namespaced_pod(
+        v1_pod = client.CoreV1Api(api_client=kubernetes_client).delete_namespaced_pod(
             namespace=self.kernel_namespace, body=body, name=self.container_name
         )
         status = None
@@ -164,7 +163,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 body = client.V1DeleteOptions(
                     grace_period_seconds=0, propagation_policy="Background"
                 )
-                v1_status = client.CoreV1Api().delete_namespace(
+                v1_status = client.CoreV1Api(api_client=kubernetes_client).delete_namespace(
                     name=self.kernel_namespace, body=body
                 )
                 status = None
@@ -281,9 +280,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # create the namespace
         try:
-            client.CoreV1Api().create_namespace(body=body)
+            client.CoreV1Api(api_client=kubernetes_client).create_namespace(body=body)
             self.delete_kernel_namespace = True
             self.log.info(f"Created kernel namespace: {namespace}")
+
+            if os.getenv('EG_USE_REMOTE_CLUSTER'):
+                # If remote cluster is being used, service account may not be present, create before role binding
+                self._create_service_account_if_not_exists(namespace=namespace,
+                                                           service_account_name=service_account_name)
 
             # Now create a RoleBinding for this namespace for the default ServiceAccount.  We'll reference
             # the ClusterRole, but that will only be applied for this namespace.  This prevents the need for
@@ -308,13 +312,60 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                     body = client.V1DeleteOptions(
                         grace_period_seconds=0, propagation_policy="Background"
                     )
-                    client.CoreV1Api().delete_namespace(name=namespace, body=body)
+                    client.CoreV1Api(api_client=kubernetes_client).delete_namespace(name=namespace, body=body)
                     self.log.warning(f"Deleted kernel namespace: {namespace}")
                 else:
                     reason = f"Error occurred creating namespace '{namespace}': {err}"
                 self.log_and_raise(http_status_code=500, reason=reason)
 
         return namespace
+
+    def _create_service_account_if_not_exists(self, namespace: str, service_account_name: str) -> None:
+        service_account_list_in_namespace: client.V1ServiceAccountList = client\
+            .CoreV1Api(api_client=kubernetes_client)\
+            .list_namespaced_service_account(namespace=namespace)
+
+        service_accounts_in_namespace: List[client.V1ServiceAccount] = service_account_list_in_namespace.items
+        service_account_names_in_namespace: List[str] = list(map(lambda svcaccount: svcaccount.metadata.name, service_accounts_in_namespace))
+
+        if service_account_name not in service_account_names_in_namespace:
+            service_account_metadata = {
+                "name": service_account_name
+            }
+            service_account_to_create: client.V1ServiceAccount = client.V1ServiceAccount(
+                kind="ServiceAccount",
+                metadata=service_account_metadata
+            )
+
+            client\
+                .CoreV1Api(api_client=kubernetes_client)\
+                .create_namespaced_service_account(namespace=namespace, body=service_account_to_create)
+
+            self.log.info(f"Created service account {service_account_name} in namespace {namespace}")
+
+    def _forward_role_to_remote(self) -> None:
+        remote_cluster_roles: client.V1ClusterRoleList = client\
+            .RbacAuthorizationV1Api(api_client=kubernetes_client)\
+            .list_cluster_role()
+        remote_cluster_role_names = list(map(lambda role: role.metadata.name, remote_cluster_roles.items))
+
+        if kernel_cluster_role not in remote_cluster_role_names:
+            incluster_client = KUBERNETES_CLIENT_FACTORY.get_kubernetes_client(get_remote_if_available=False)
+            incluster_role: client.V1Role = client \
+                .RbacAuthorizationV1Api(api_client=incluster_client) \
+                .read_cluster_role(kernel_cluster_role)
+
+            remote_cluster_role: client.V1Role = client.V1Role(
+                api_version=incluster_role.api_version,
+                kind=incluster_role.kind,
+                rules=incluster_role.rules,
+                metadata=incluster_role.metadata
+            )
+
+            remote_cluster_role.metadata.resource_version = None
+
+            client.RbacAuthorizationV1Api(api_client=kubernetes_client).create_cluster_role(body=remote_cluster_role)
+
 
     def _create_role_binding(self, namespace: str, service_account_name: str) -> None:
         # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole named by
@@ -342,7 +393,12 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             subjects=[binding_subjects],
         )
 
-        client.RbacAuthorizationV1Api().create_namespaced_role_binding(
+        # If remote cluster is used, we need to create a cluster role on that cluster
+        # Forward the role defined via helm to the remote cluster
+        if os.environ.get('EG_USE_REMOTE_CLUSTER'):
+            self._forward_role_to_remote()
+
+        client.RbacAuthorizationV1Api(api_client=kubernetes_client).create_namespaced_role_binding(
             namespace=namespace, body=body
         )
         self.log.info(
