@@ -105,6 +105,10 @@ spec:
           value: {{ .Values.remoteKubeconfig.configPath }}config
         - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
           value: kernel-svcaccount
+        {{- if .Values.remoteKubeconfig.context }}
+        - name: EG_REMOTE_CLUSTER_CONTEXT
+          value: {{ .Values.remoteKubeconfig.context }}
+        {{- end}}
         {{- end }}
         # Optional authorization token passed in all requests
         {{- if .Values.authToken }}
