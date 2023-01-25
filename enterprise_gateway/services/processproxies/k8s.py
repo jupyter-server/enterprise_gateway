@@ -321,12 +321,13 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return namespace
 
     def _create_service_account_if_not_exists(self, namespace: str, service_account_name: str) -> None:
-        service_account_list_in_namespace: client.V1ServiceAccountList = client\
-            .CoreV1Api(api_client=kubernetes_client)\
-            .list_namespaced_service_account(namespace=namespace)
+        """If service account doesn't exist in target cluster, create one. Occurs if a remote cluster is being used."""
+        service_account_list_in_namespace: client.V1ServiceAccountList = (client
+                                                                          .CoreV1Api(api_client=kubernetes_client)
+                                                                          .list_namespaced_service_account(namespace=namespace))
 
         service_accounts_in_namespace: List[client.V1ServiceAccount] = service_account_list_in_namespace.items
-        service_account_names_in_namespace: List[str] = list(map(lambda svcaccount: svcaccount.metadata.name, service_accounts_in_namespace))
+        service_account_names_in_namespace: List[str] = [svcaccount.metadata.name for svcaccount in service_accounts_in_namespace]
 
         if service_account_name not in service_account_names_in_namespace:
             service_account_metadata = {
@@ -344,28 +345,34 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             self.log.info(f"Created service account {service_account_name} in namespace {namespace}")
 
     def _forward_role_to_remote(self) -> None:
-        remote_cluster_roles: client.V1ClusterRoleList = client\
-            .RbacAuthorizationV1Api(api_client=kubernetes_client)\
-            .list_cluster_role()
-        remote_cluster_role_names = list(map(lambda role: role.metadata.name, remote_cluster_roles.items))
+        """If cluster role doesn't exist in target (remote) cluster, forward the one from the local cluster"""
 
+        # Get ClusterRoles in remote cluster
+        remote_cluster_roles: client.V1ClusterRoleList = (client
+                                                          .RbacAuthorizationV1Api(api_client=kubernetes_client)
+                                                          .list_cluster_role())
+        remote_cluster_role_names = [role.metadata.name for role in remote_cluster_roles.items]
+
+        # If the kernel ClusterRole does not exist in the remote cluster, grab it from the local cluster and
+        # create it in the remote. Allows us to configure the role via Helm.
         if kernel_cluster_role not in remote_cluster_role_names:
-            incluster_client = KUBERNETES_CLIENT_FACTORY.get_kubernetes_client(get_remote_if_available=False)
-            incluster_role: client.V1Role = client \
-                .RbacAuthorizationV1Api(api_client=incluster_client) \
-                .read_cluster_role(kernel_cluster_role)
+            incluster_client = KUBERNETES_CLIENT_FACTORY.get_kubernetes_client(get_remote_client=False)
+            incluster_role: client.V1Role = (client
+                .RbacAuthorizationV1Api(api_client=incluster_client)
+                .read_cluster_role(kernel_cluster_role))
 
+            # Mirror the local role but get rid of the resource version
             remote_cluster_role: client.V1Role = client.V1Role(
                 api_version=incluster_role.api_version,
                 kind=incluster_role.kind,
                 rules=incluster_role.rules,
                 metadata=incluster_role.metadata
             )
-
             remote_cluster_role.metadata.resource_version = None
 
             client.RbacAuthorizationV1Api(api_client=kubernetes_client).create_cluster_role(body=remote_cluster_role)
 
+            self.log.debug(f"Created kernel CluserRole with name {kernel_cluster_role}")
 
     def _create_role_binding(self, namespace: str, service_account_name: str) -> None:
         # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole named by
@@ -395,7 +402,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # If remote cluster is used, we need to create a cluster role on that cluster
         # Forward the role defined via helm to the remote cluster
-        if os.environ.get('EG_USE_REMOTE_CLUSTER'):
+        if os.getenv('EG_USE_REMOTE_CLUSTER'):
             self._forward_role_to_remote()
 
         client.RbacAuthorizationV1Api(api_client=kubernetes_client).create_namespaced_role_binding(
