@@ -184,7 +184,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             pattern = url_path_join("/", self.base_url, handler[0])
             # Some handlers take args, so retain those in addition to the
             # handler class ref
-            new_handler = tuple([pattern] + list(handler[1:]))
+            new_handler = (pattern, *list(handler[1:]))
             if self.authorized_origin:
                 self.__add_authorized_hostname_match(new_handler)
 
