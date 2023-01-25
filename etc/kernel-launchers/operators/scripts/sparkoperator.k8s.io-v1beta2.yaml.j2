@@ -2,8 +2,6 @@ apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
   name: {{ kernel_resource_name }}
-  labels:
-    app.kubernetes.io/name: kernel
 spec:
   type: Python
   pythonVersion: "3"
