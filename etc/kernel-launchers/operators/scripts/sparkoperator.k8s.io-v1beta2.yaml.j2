@@ -20,6 +20,12 @@ spec:
     - "--public-key"
     - "{{ eg_public_key }}"
   driver:
+    env:
+# Add any custom envs here that aren't already configured for the kernel's environment
+# Note: For envs to flow to the pods, the webhook server must be enabled during deployment
+# e.g., helm install my-release spark-operator/spark-operator --namespace spark-operator --set webhook.enable=true
+#    - name: MY_DRIVER_ENV
+#      value: "my_driver_value"
     serviceAccount: "{{ kernel_service_account_name }}"
     labels:
       kernel_id: "{{ kernel_id }}"
@@ -29,6 +35,12 @@ spec:
     coreLimit: 1000m
     memory: 1g
   executor:
+    env:
+# Add any custom envs here that aren't already configured for the kernel's environment
+# Note: For envs to flow to the pods, the webhook server must be enabled during deployment
+# e.g., helm install my-release spark-operator/spark-operator --namespace spark-operator --set webhook.enable=true
+#    - name: MY_DRIVER_ENV
+#      value: "my_driver_value"
     labels:
       kernel_id: "{{ kernel_id }}"
       app: enterprise-gateway
