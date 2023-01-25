@@ -42,7 +42,9 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
         if use_remote_cluster:
             kwargs["env"]["EG_USE_REMOTE_CLUSTER"] = 'true'
-            kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv("EG_REMOTE_CLUSTER_KUBECONFIG_PATH")
+            kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv(
+                "EG_REMOTE_CLUSTER_KUBECONFIG_PATH"
+            )
 
         await super().launch_process(kernel_cmd, **kwargs)
         return self
@@ -55,7 +57,9 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
         Note: the caller is responsible for handling exceptions.
         """
-        delete_status = client.CustomObjectsApi(api_client=kubernetes_client).delete_namespaced_custom_object(
+        delete_status = client.CustomObjectsApi(
+            api_client=kubernetes_client
+        ).delete_namespaced_custom_object(
             self.group,
             self.version,
             self.kernel_namespace,

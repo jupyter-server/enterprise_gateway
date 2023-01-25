@@ -4,4 +4,3 @@ from enterprise_gateway.services.external.k8s_client_factory import KubernetesCl
 
 KUBERNETES_CLIENT_FACTORY = KubernetesClientFactory()
 kubernetes_client = KUBERNETES_CLIENT_FACTORY.get_kubernetes_client()
-
