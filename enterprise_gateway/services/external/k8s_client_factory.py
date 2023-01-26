@@ -3,6 +3,7 @@ import os
 
 from kubernetes import client, config
 from traitlets.config import SingletonConfigurable
+from ..utils.envutils import is_env_true
 
 
 class KubernetesClientFactory(SingletonConfigurable):
@@ -24,7 +25,7 @@ class KubernetesClientFactory(SingletonConfigurable):
         kubernetes_config: client.Configuration = client.Configuration()
         if os.getenv("KUBERNETES_SERVICE_HOST"):
             # Running inside cluster
-            if os.getenv('EG_USE_REMOTE_CLUSTER') and get_remote_client:
+            if is_env_true('EG_USE_REMOTE_CLUSTER') and get_remote_client:
                 kubeconfig_path = os.getenv(
                     'EG_REMOTE_CLUSTER_KUBECONFIG_PATH', '/etc/kube/config/'
                 )

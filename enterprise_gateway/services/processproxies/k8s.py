@@ -13,7 +13,8 @@ import urllib3
 from kubernetes import client
 from kubernetes.utils.create_from_yaml import create_from_yaml
 
-from ..external.k8s_client import kubernetes_client, KUBERNETES_CLIENT_FACTORY
+from ..external.k8s_client import kubernetes_client
+from ..utils.envutils import is_env_true
 from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from .container import ContainerProcessProxy
@@ -285,7 +286,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             self.delete_kernel_namespace = True
             self.log.info(f"Created kernel namespace: {namespace}")
 
-            if os.getenv('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_REMOTE_SVC_ACCOUNT'):
+            if is_env_true('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_REMOTE_SVC_ACCOUNT'):
                 # If remote cluster is being used, service account may not be present, create before role binding
                 self._create_service_account_if_not_exists(
                     namespace=namespace, service_account_name=service_account_name
@@ -383,14 +384,14 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # We will not use a try/except clause here since _create_kernel_namespace will handle exceptions.
 
         # If remote cluster is used, we need to create a role on that cluster
-        if os.getenv('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_ROLE_ON_REMOTE'):
+        if is_env_true('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_ROLE_ON_REMOTE'):
             self._create_role_if_not_exists(namespace=namespace)
 
         role_binding_name = kernel_cluster_role  # use same name for binding as cluster role
         labels = {"app": "enterprise-gateway", "component": "kernel", "kernel_id": self.kernel_id}
         binding_metadata = client.V1ObjectMeta(name=role_binding_name, labels=labels)
 
-        if os.getenv('EG_USE_REMOTE_CLUSTER'):
+        if is_env_true('EG_USE_REMOTE_CLUSTER'):
             binding_role_ref = client.V1RoleRef(
                 api_group="", kind="Role", name=kernel_cluster_role
             )
