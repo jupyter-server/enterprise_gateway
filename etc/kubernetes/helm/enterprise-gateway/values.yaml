@@ -184,5 +184,7 @@ remoteKubeconfig:
   # Set to enable to point k8s client to remote cluster
   enabled: false
   # Mount config at this path inside pod
-  configPath:
+  configPath: /etc/kube/config/
+  # Automatically create service account and role in remote cluster
+  autoconfigureRemote: false
 

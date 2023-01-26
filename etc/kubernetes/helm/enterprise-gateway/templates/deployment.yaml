@@ -109,6 +109,14 @@ spec:
         - name: EG_REMOTE_CLUSTER_CONTEXT
           value: {{ .Values.remoteKubeconfig.context }}
         {{- end}}
+        {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+        - name: EG_CREATE_REMOTE_SVC_ACCOUNT
+          value: "True"
+        - name: EG_CREATE_REMOTE_ROLE
+          value: "True"
+        - name: EG_REMOTE_CLUSTER_ROLE_PATH
+          value: "/etc/config/role/role.yaml"
+        {{- end }}
         {{- end }}
         # Optional authorization token passed in all requests
         {{- if .Values.authToken }}
@@ -138,19 +146,59 @@ spec:
         volumeMounts:
         - name: nfs-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: kubeconfig
+          readOnly: true
+          mountPath: {{ .Values.remoteKubeconfig.configPath }}
+        {{- end}}
+        {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+        - name: role
+          readOnly: true
+          mountPath: "/etc/config/role"
+        {{- end }}
       volumes:
       - name: nfs-kernelspecs
         nfs:
           server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
+      {{- if .Values.remoteKubeconfig.enabled }}
+      - name: kubeconfig
+        configMap: 
+          name: {{ .Release.Name }}-configmap
+      {{- end}}
+      {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+      - name: role
+        configMap:
+          name: {{ .Release.name }}-configmap-role
+      {{- end }}
   {{- else if .Values.kernelspecsPvc.enabled }}
         volumeMounts:
         - name: pvc-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
+        {{- if .Values.remoteKubeconfig.enabled }}
+        - name: kubeconfig
+          readOnly: true
+          mountPath: {{ .Values.remoteKubeconfig.configPath }}
+        {{- end}}
+        {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+        - name: role
+          readOnly: true
+          mountPath: "/etc/config/role"
+        {{- end }}
       volumes:
       - name: pvc-kernelspecs
         persistentVolumeClaim:
           claimName: {{ .Values.kernelspecsPvc.name }}
+      {{- if .Values.remoteKubeconfig.enabled }}
+      - name: kubeconfig
+        configMap: 
+          name: {{ .Release.Name }}-configmap
+      {{- end}}
+      {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+      - name: role
+        configMap:
+          name: {{ .Release.name}}-configmap-role
+      {{- end }}
   {{- else if .Values.kernelspecs.image }}
         volumeMounts:
         - name: image-kernelspecs
@@ -160,6 +208,11 @@ spec:
           readOnly: true
           mountPath: {{ .Values.remoteKubeconfig.configPath }}
         {{- end}}
+        {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+        - name: role
+          readOnly: true
+          mountPath: "/etc/config/role"
+        {{- end }}
       volumes:
       - name: image-kernelspecs
         emptyDir:
@@ -169,6 +222,11 @@ spec:
         configMap: 
           name: {{ .Release.Name }}-configmap
       {{- end}}
+      {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+      - name: role
+        configMap:
+          name: {{ .Release.Name }}-configmap-role
+      {{- end }}
 
   {{- if .Values.deployment.tolerations }}
       tolerations:

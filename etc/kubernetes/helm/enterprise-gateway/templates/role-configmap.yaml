@@ -1,0 +1,9 @@
+{{- if .Values.remoteKubeconfig.autoconfigureRemote }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap-role
+data:
+  role.yaml: |
+    {{- include "kernel-role" . | indent 4 }}
+{{- end }}
