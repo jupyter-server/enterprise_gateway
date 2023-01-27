@@ -9,8 +9,9 @@ import urllib3
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client
-from enterprise_gateway.services.external.k8s_client import kubernetes_client
 from kubernetes.client.rest import ApiException
+
+from enterprise_gateway.services.external.k8s_client import kubernetes_client
 
 urllib3.disable_warnings()
 
@@ -149,9 +150,9 @@ def launch_kubernetes_kernel(
                 pod_template = extend_pod_env(k8s_obj)
                 if pod_template_file is None:
                     try:
-                        pod_created = client.CoreV1Api(api_client=kubernetes_client).create_namespaced_pod(
-                            body=k8s_obj, namespace=kernel_namespace
-                        )
+                        pod_created = client.CoreV1Api(
+                            api_client=kubernetes_client
+                        ).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
                     except ApiException as exc:
                         if _parse_k8s_exception(exc) == K8S_ALREADY_EXIST_REASON:
                             pod_created = (
@@ -185,7 +186,9 @@ def launch_kubernetes_kernel(
                             raise exc
             elif k8s_obj["kind"] == "PersistentVolume":
                 if pod_template_file is None:
-                    client.CoreV1Api(api_client=kubernetes_client).create_persistent_volume(body=k8s_obj)
+                    client.CoreV1Api(api_client=kubernetes_client).create_persistent_volume(
+                        body=k8s_obj
+                    )
             elif k8s_obj["kind"] == "Service":
                 if pod_template_file is None:
                     if pod_created is not None:
