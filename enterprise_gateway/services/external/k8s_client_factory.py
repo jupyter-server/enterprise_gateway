@@ -27,7 +27,7 @@ class KubernetesClientFactory(SingletonConfigurable):
             # Running inside cluster
             if is_env_true('EG_USE_REMOTE_CLUSTER') and get_remote_client:
                 kubeconfig_path = os.getenv(
-                    'EG_REMOTE_CLUSTER_KUBECONFIG_PATH', '/etc/kube/config/'
+                    'EG_REMOTE_CLUSTER_KUBECONFIG_PATH', '/etc/kube/config/kubeconfig'
                 )
                 context = os.getenv('EG_REMOTE_CLUSTER_CONTEXT', None)
                 config.load_kube_config(

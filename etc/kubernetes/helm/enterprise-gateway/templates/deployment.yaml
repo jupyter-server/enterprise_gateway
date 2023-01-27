@@ -61,7 +61,7 @@ spec:
           - name: EG_USE_REMOTE_CLUSTER
             value: "True"
           - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
-            value: {{ .Values.remoteKubeconfig.configPath }}config
+            value: {{ .Values.remoteKubeconfig.configPath }}{{ .Values.remoteKubeconfig.configFilename }}
         {{- end }}
   {{- end }}
       containers:
@@ -102,7 +102,7 @@ spec:
         - name: EG_USE_REMOTE_CLUSTER
           value: "True"
         - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
-          value: {{ .Values.remoteKubeconfig.configPath }}config
+          value: {{ .Values.remoteKubeconfig.configPath }}{{ .Values.remoteKubeconfig.configFilename }}
         - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
           value: kernel-svcaccount
         {{- if .Values.remoteKubeconfig.context }}
@@ -111,8 +111,6 @@ spec:
         {{- end}}
         {{- if .Values.remoteKubeconfig.autoconfigureRemote }}
         - name: EG_CREATE_REMOTE_SVC_ACCOUNT
-          value: "True"
-        - name: EG_CREATE_REMOTE_ROLE
           value: "True"
         - name: EG_REMOTE_CLUSTER_ROLE_PATH
           value: "/etc/config/role/role.yaml"

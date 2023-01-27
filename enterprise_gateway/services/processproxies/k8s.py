@@ -10,8 +10,9 @@ import re
 from typing import Any, List
 
 import urllib3
+import yaml
 from kubernetes import client
-from kubernetes.utils.create_from_yaml import create_from_yaml
+from kubernetes.utils.create_from_yaml import create_from_yaml_single_item
 
 from ..external.k8s_client import kubernetes_client
 from ..utils.envutils import is_env_true
@@ -358,21 +359,18 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         """If role doesn't exist in target cluster, create one. Occurs if a remote cluster is being used"""
         role_yaml_path = os.getenv('EG_REMOTE_CLUSTER_ROLE_PATH')
 
-        role: client.V1Role
-        [role] = create_from_yaml(yaml_file=role_yaml_path, k8s_client=kubernetes_client)
-
-        role.metadata.namespace = namespace
-
-        # Get ClusterRoles in remote cluster
-        remote_cluster_roles: client.V1ClusterRoleList = client.RbacAuthorizationV1Api(
+        # Get Roles in remote cluster
+        remote_cluster_roles: client.V1RoleList = client.RbacAuthorizationV1Api(
             api_client=kubernetes_client
-        ).list_cluster_role()
+        ).list_namespaced_role(namespace=namespace)
         remote_cluster_role_names = [role.metadata.name for role in remote_cluster_roles.items]
 
-        # If the kernel ClusterRole does not exist in the remote cluster.
+        # If the kernel Role does not exist in the remote cluster.
         if kernel_cluster_role not in remote_cluster_role_names:
-            client.RbacAuthorizationV1Api(api_client=kubernetes_client).create_cluster_role(body=role)
-            self.log.debug(f"Created kernel role with name {kernel_cluster_role}")
+            with open(role_yaml_path, 'r') as f:
+                role_yaml = yaml.safe_load(f)
+                role_yaml["metadata"]["namespace"] = namespace
+                create_from_yaml_single_item(yml_object=role_yaml, k8s_client=kubernetes_client)
 
     def _create_role_binding(self, namespace: str, service_account_name: str) -> None:
         # Creates RoleBinding instance for the given namespace.  The role used will be the ClusterRole named by
@@ -383,15 +381,13 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME, respectively.
         # We will not use a try/except clause here since _create_kernel_namespace will handle exceptions.
 
-        # If remote cluster is used, we need to create a role on that cluster
-        if is_env_true('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_ROLE_ON_REMOTE'):
-            self._create_role_if_not_exists(namespace=namespace)
-
         role_binding_name = kernel_cluster_role  # use same name for binding as cluster role
         labels = {"app": "enterprise-gateway", "component": "kernel", "kernel_id": self.kernel_id}
         binding_metadata = client.V1ObjectMeta(name=role_binding_name, labels=labels)
 
+        # If remote cluster is used, we need to create a role on that cluster
         if is_env_true('EG_USE_REMOTE_CLUSTER'):
+            self._create_role_if_not_exists(namespace=namespace)
             binding_role_ref = client.V1RoleRef(
                 api_group="", kind="Role", name=kernel_cluster_role
             )
