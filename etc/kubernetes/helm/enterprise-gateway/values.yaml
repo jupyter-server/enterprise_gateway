@@ -180,11 +180,12 @@ kip:
   #     cpu: 1
   #     memory: 1Gi
 
-remoteKubeconfig:
+multicluster:
   # Set to enable to point k8s client to remote cluster
   enabled: false
   # Mount config at this path inside pod
   configPath: /etc/kube/config/
+  # Filename of kubeconfig
+  configFilename: kubeconfig
   # Automatically create service account and role in remote cluster
   autoconfigureRemote: false
-
