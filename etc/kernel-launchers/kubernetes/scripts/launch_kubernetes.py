@@ -232,7 +232,7 @@ def launch_kubernetes_kernel(  # noqa
     if pod_template_file:
         # TODO - construct other --conf options for things like mounts, resources, etc.
         # write yaml to file...
-        with open(pod_template_file, "w") as stream
+        with open(pod_template_file, "w") as stream:
             yaml.dump(pod_template, stream)
 
         # Build up additional spark options.  Note the trailing space to accommodate concatenation
