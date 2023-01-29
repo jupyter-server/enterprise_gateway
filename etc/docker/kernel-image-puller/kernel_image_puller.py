@@ -141,12 +141,13 @@ class KernelImagePuller:
         if self.auth_token:
             end_point += f"?token={self.auth_token}"
             headers.update({"Authorization": f"token {self.auth_token}"})
-        resp = requests.get(end_point, headers=headers, verify=self.validate_cert)
+        resp = requests.get(end_point, headers=headers, verify=self.validate_cert, timeout=60)
         if not resp.ok:
-            raise requests.exceptions.HTTPError(f"Gateway server response: {resp.status_code}")
+            msg = f"Gateway server response: {resp.status_code}"
+            raise requests.exceptions.HTTPError(msg)
         return resp.json()
 
-    def fetch_image_names(self):
+    def fetch_image_names(self):  # noqa
         """Fetches the image names by hitting the /api/kernelspecs endpoint of the Gateway.
 
         For process-proxy kernelspecs, the image names are contained in the config stanza - which
@@ -167,7 +168,7 @@ class KernelImagePuller:
 
         # Locate the configured images within the kernel_specs and add to set for duplicate management
         images = set()
-        for key in k_specs.keys():
+        for key in k_specs:
             metadata = k_specs.get(key).get("spec").get("metadata")
             if metadata is not None:
                 config_parent = metadata.get("process_proxy")
@@ -262,9 +263,9 @@ class KernelImagePuller:
         # is missing (based on the absence of two slashes), then we'll prefix the image
         # name with the KIP_DEFAULT_CONTAINER_REGISTRY env value.
         image_pieces = image_name.split("/")
-        if len(image_pieces) < 3:  # we're missing a registry specifier, use default if present
-            if self.default_container_registry:
-                return f"{self.default_container_registry}/{image_name}"
+        # we're missing a registry specifier, use default if present
+        if len(image_pieces) < 3 and self.default_container_registry:
+            return f"{self.default_container_registry}/{image_name}"
         return image_name  # take our chances
 
     def image_exists(self, image_name: str) -> bool:

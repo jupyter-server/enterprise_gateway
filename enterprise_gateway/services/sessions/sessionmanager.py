@@ -160,11 +160,13 @@ class SessionManager(LoggingConfigurable):
             All the information from the session described by the kwarg
         """
         if not kwargs:
-            raise TypeError("Must specify a column to query")
+            msg = "Must specify a column to query"
+            raise TypeError(msg)
 
-        for param in kwargs.keys():
+        for param in kwargs:
             if param not in self._columns:
-                raise TypeError("No such column: %r", param)
+                msg = f"No such column: {param}"
+                raise TypeError(msg)
 
         # multiple columns are never passed into kwargs so just using the
         # first and only one.

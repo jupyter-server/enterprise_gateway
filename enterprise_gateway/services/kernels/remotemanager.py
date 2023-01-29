@@ -109,7 +109,8 @@ def new_kernel_id(**kwargs: dict[str, Any] | None) -> str:
         try:
             str_v4_kernel_id = str(uuid.UUID(str_kernel_id, version=4))
             if str_kernel_id != str_v4_kernel_id:  # Given string is not uuid v4 compliant
-                raise ValueError("value is not uuid v4 compliant")
+                msg = "value is not uuid v4 compliant"
+                raise ValueError(msg)
         except ValueError as ve:
             log.error(
                 "Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{}'!  Error: {}".format(
@@ -190,10 +191,9 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
     def check_kernel_id(self, kernel_id: str) -> None:
         """Check that a kernel_id exists and raise 404 if not."""
-        if kernel_id not in self:
-            if not self._refresh_kernel(kernel_id):
-                self.parent.kernel_session_manager.delete_session(kernel_id)
-                raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
+        if kernel_id not in self and not self._refresh_kernel(kernel_id):
+            self.parent.kernel_session_manager.delete_session(kernel_id)
+            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
 
     def _refresh_kernel(self, kernel_id: str) -> bool:
         if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
@@ -302,23 +302,22 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
                     raise web.HTTPError(403, error_message)
 
             # Enforce per-user limit...
-            if self.parent.max_kernels_per_user >= 0:
-                if self.parent.kernel_session_manager:
-                    active_and_pending = (
-                        self.parent.kernel_session_manager.active_sessions(username) + pending_user
-                    )
-                    if active_and_pending >= self.parent.max_kernels_per_user:
-                        error_message = (
-                            "A max kernels per user limit has been set to {} and user '{}' "
-                            "currently has {} active and pending {}.".format(
-                                self.parent.max_kernels_per_user,
-                                username,
-                                active_and_pending,
-                                "kernel" if active_and_pending == 1 else "kernels",
-                            )
+            if self.parent.max_kernels_per_user >= 0 and self.parent.kernel_session_manager:
+                active_and_pending = (
+                    self.parent.kernel_session_manager.active_sessions(username) + pending_user
+                )
+                if active_and_pending >= self.parent.max_kernels_per_user:
+                    error_message = (
+                        "A max kernels per user limit has been set to {} and user '{}' "
+                        "currently has {} active and pending {}.".format(
+                            self.parent.max_kernels_per_user,
+                            username,
+                            active_and_pending,
+                            "kernel" if active_and_pending == 1 else "kernels",
                         )
-                        self.log.error(error_message)
-                        raise web.HTTPError(403, error_message)
+                    )
+                    self.log.error(error_message)
+                    raise web.HTTPError(403, error_message)
         return
 
     def remove_kernel(self, kernel_id: str) -> None:
@@ -613,7 +612,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # Check if this is a remote process proxy and if now = True. If so, check its connection count. If no
         # connections, shutdown else perform the restart.  Note: auto-restart sets now=True, but handlers use
         # the default value (False).
-        if (
+        if (  # noqa
             isinstance(self.process_proxy, RemoteProcessProxy)
             and now
             and self.mapping_kernel_manager
@@ -675,7 +674,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             else:
                 self.kernel.send_signal(signum)
         else:
-            raise RuntimeError("Cannot signal kernel. No kernel is running!")
+            msg = "Cannot signal kernel. No kernel is running!"
+            raise RuntimeError(msg)
 
     def cleanup(self, connection_file: bool = True) -> None:
         """
