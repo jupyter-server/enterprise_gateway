@@ -232,8 +232,8 @@ def launch_kubernetes_kernel(  # noqa
     if pod_template_file:
         # TODO - construct other --conf options for things like mounts, resources, etc.
         # write yaml to file...
-        stream = open(pod_template_file, "w")  # noqa
-        yaml.dump(pod_template, stream)
+        with open(pod_template_file, "w") as stream
+            yaml.dump(pod_template, stream)
 
         # Build up additional spark options.  Note the trailing space to accommodate concatenation
         additional_spark_opts = (
