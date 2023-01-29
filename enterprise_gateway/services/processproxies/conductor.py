@@ -522,10 +522,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
             output, stderr = process.communicate()
             response = json.loads(output) if output else None
-            if not response or not response["applist"]:
-                response = None
-            else:
-                response = response["applist"]
+            response = None if not response or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
                 "Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".format(
@@ -557,10 +554,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
             output, stderr = process.communicate()
             response = json.loads(output) if output else None
-            if response is None or not response["applist"]:
-                response = None
-            else:
-                response = response["applist"]
+            response = None if response is None or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
                 "Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".format(
@@ -648,7 +642,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.log.debug(f"Kill response: {response}")
         return response
 
-    def _performRestCall(self, cmd: list[str], url: str, HA_LIST: list[str]) -> tuple:
+    def _performRestCall(self, cmd: list[str], url: str, HA_LIST: list[str]) -> tuple:  # noqa
         for HA in HA_LIST:
             portcolon = url.rfind(":")
             slash = url.find("://")
@@ -675,7 +669,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return "Error", "Error"
 
     # confirm return type
-    def _performConductorJWTLogonAndRetrieval(self, jwt_token: str, env_dict: dict[str, Any]):
+    def _performConductorJWTLogonAndRetrieval(  # noqa
+        self, jwt_token: str, env_dict: dict[str, Any]
+    ):
         """
         Authenticate to Conductor with a JWT Token and setup the kernel environment variables.
         :param jwt_token: JWT Token to authenticate with to Conductor

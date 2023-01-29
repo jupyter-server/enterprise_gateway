@@ -51,7 +51,7 @@ class PythonKernelBaseTestCase(TestBase):
         self.kernel.start_interrupt_thread()
 
         # Build the code list to interrupt, in this case, its a sleep call.
-        interrupted_code = list()
+        interrupted_code = []
         interrupted_code.append("import time\n")
         interrupted_code.append("print('begin')\n")
         interrupted_code.append("time.sleep(60)\n")
@@ -74,7 +74,7 @@ class PythonKernelBaseTestCase(TestBase):
         # Ensure global variable is accessible in function.
         # See https://github.com/jupyter-server/enterprise_gateway/issues/687
         # Build the example code...
-        scope_code = list()
+        scope_code = []
         scope_code.append("a = 42\n")
         scope_code.append("def scope():\n")
         scope_code.append("    return a\n")
@@ -107,7 +107,7 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
 
     def test_run_pi_example(self):
         # Build the example code...
-        pi_code = list()
+        pi_code = []
         pi_code.append("from random import random\n")
         pi_code.append("from operator import add\n")
         pi_code.append("partitions = 20\n")

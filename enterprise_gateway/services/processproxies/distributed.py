@@ -17,7 +17,7 @@ from .processproxy import BaseProcessProxyABC, RemoteProcessProxy
 
 poll_interval = float(os.getenv("EG_POLL_INTERVAL", "0.5"))
 kernel_log_dir = os.getenv(
-    "EG_KERNEL_LOG_DIR", "/tmp"
+    "EG_KERNEL_LOG_DIR", "/tmp"  # noqa
 )  # would prefer /var/log, but its only writable by root
 
 
@@ -130,7 +130,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
             # launch the local command with redirection in place
-            self.local_stdout = open(self.kernel_log, mode="a")
+            self.local_stdout = open(self.kernel_log, mode="a")  # noqa
             self.local_proc = self.launch_kernel(
                 cmd, stdout=self.local_stdout, stderr=STDOUT, **kwargs
             )

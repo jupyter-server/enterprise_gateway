@@ -94,7 +94,7 @@ class TokenAuthorizationMixin:
         package.
         """
         server_token = self.settings.get("eg_auth_token")
-        if server_token and not self.request.method == "OPTIONS":
+        if server_token and self.request.method != "OPTIONS":
             client_token = self.get_argument("token", None)
             if client_token is None:
                 client_token = self.request.headers.get("Authorization")
@@ -480,11 +480,11 @@ class EnterpriseGatewayConfigMixin(Configurable):
         value = proposal["value"]
         try:
             if value not in ["round-robin", "least-connection"]:
-                raise AssertionError(f"Unrecognized proposal value {value}")
+                msg = f"Unrecognized proposal value {value}"
+                raise AssertionError(msg)
         except ValueError:
-            raise TraitError(
-                f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
-            ) from None
+            msg = f"Invalid load_balancing_algorithm value {value}, not in [round-robin,least-connection]"
+            raise TraitError(msg) from None
         return value
 
     # Yarn endpoint

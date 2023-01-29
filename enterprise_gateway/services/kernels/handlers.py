@@ -63,10 +63,7 @@ class MainKernelHandler(
             # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead
             # and add those keys to the "working" allowed_envs list, otherwise, just transfer the configured envs.
             allowed_envs: list[str]
-            if self.client_envs == ["*"]:
-                allowed_envs = model["env"].keys()
-            else:
-                allowed_envs = self.client_envs
+            allowed_envs = model["env"].keys() if self.client_envs == ["*"] else self.client_envs
             # Allow KERNEL_* args and those allowed by configuration.
             env.update(
                 {

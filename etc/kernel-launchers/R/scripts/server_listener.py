@@ -153,11 +153,10 @@ def _select_socket(lower_port, upper_port):
         except Exception:
             retries = retries + 1
             if retries > max_port_range_retries:
-                raise RuntimeError(
-                    "Failed to locate port within range {}..{} after {} retries!".format(
-                        lower_port, upper_port, max_port_range_retries
-                    )
-                ) from None
+                msg = "Failed to locate port within range {}..{} after {} retries!".format(
+                    lower_port, upper_port, max_port_range_retries
+                )
+                raise RuntimeError(msg) from None
     return sock
 
 

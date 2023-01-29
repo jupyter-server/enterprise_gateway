@@ -83,11 +83,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kwargs["env"]["KERNEL_IMAGE"] = self.kernel_image
         kwargs["env"]["KERNEL_EXECUTOR_IMAGE"] = self.kernel_executor_image
 
-        if (
-            not mirror_working_dirs
-        ):  # If mirroring is not enabled, remove working directory if present
-            if "KERNEL_WORKING_DIR" in kwargs["env"]:
-                del kwargs["env"]["KERNEL_WORKING_DIR"]
+        # If mirroring is not enabled, remove working directory if present
+        if not mirror_working_dirs and "KERNEL_WORKING_DIR" in kwargs["env"]:
+            del kwargs["env"]["KERNEL_WORKING_DIR"]
 
         self._enforce_prohibited_ids(**kwargs)
 

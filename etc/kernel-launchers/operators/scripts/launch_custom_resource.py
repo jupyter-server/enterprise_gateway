@@ -59,7 +59,7 @@ def launch_custom_resource_kernel(
     """Launch a custom resource kernel."""
     config.load_incluster_config()
 
-    keywords = dict()
+    keywords = {}
 
     keywords["eg_port_range"] = port_range
     keywords["eg_public_key"] = public_key
