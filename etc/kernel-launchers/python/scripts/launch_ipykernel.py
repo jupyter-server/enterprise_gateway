@@ -155,9 +155,8 @@ class WaitingForSparkSessionToBeInitialized:
             self._init_thread.join(timeout=None)
             exc = self._init_thread.exc
             if exc:
-                raise RuntimeError(
-                    f"Variable: {self._spark_session_variable} was not initialized properly."
-                ) from exc
+                msg = f"Variable: {self._spark_session_variable} was not initialized properly."
+                raise RuntimeError(msg) from exc
 
             # now return attribute/function reference from actual Spark object
             return getattr(self._namespace[self._spark_session_variable], name)
@@ -174,20 +173,18 @@ def _validate_port_range(port_range):
         upper_port = int(port_ranges[1])
 
         port_range_size = upper_port - lower_port
-        if port_range_size != 0:
-            if port_range_size < min_port_range_size:
-                raise RuntimeError(
-                    f"Port range validation failed for range: '{port_range}'.  Range size must be at least "
-                    f"{min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE"
-                ) from None
+        if port_range_size != 0 and port_range_size < min_port_range_size:
+            msg = (
+                f"Port range validation failed for range: '{port_range}'.  Range size must be at least "
+                f"{min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE"
+            )
+            raise RuntimeError(msg) from None
     except ValueError as ve:
-        raise RuntimeError(
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
-        ) from None
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ve}"
+        raise RuntimeError(msg) from None
     except IndexError as ie:
-        raise RuntimeError(
-            f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
-        ) from None
+        msg = f"Port range validation failed for range: '{port_range}'.  Error was: {ie}"
+        raise RuntimeError(msg) from None
 
     return lower_port, upper_port
 
@@ -327,10 +324,11 @@ def _select_socket(lower_port, upper_port):
         except Exception:
             retries = retries + 1
             if retries > max_port_range_retries:
-                raise RuntimeError(
+                msg = (
                     f"Failed to locate port within range {lower_port}..{upper_port} "
                     f"after {max_port_range_retries} retries!"
-                ) from None
+                )
+                raise RuntimeError(msg) from None
     return sock
 
 
@@ -588,15 +586,16 @@ if __name__ == "__main__":
     ip = "0.0.0.0"  # noqa
 
     if connection_file is None and kernel_id is None:
-        raise RuntimeError(
-            "At least one of the parameters: 'connection_file' or '--kernel-id' must be provided!"
-        )
+        msg = "At least one of the parameters: 'connection_file' or '--kernel-id' must be provided!"
+        raise RuntimeError(msg)
 
     if kernel_id is None:
-        raise RuntimeError("Parameter '--kernel-id' must be provided!")
+        msg = "Parameter '--kernel-id' must be provided!"
+        raise RuntimeError(msg)
 
     if public_key is None:
-        raise RuntimeError("Parameter '--public-key' must be provided!")
+        msg = "Parameter '--public-key' must be provided!"
+        raise RuntimeError(msg)
 
     # Initialize the kernel namespace for the given cluster type
     if cluster_type == "spark" and spark_init_mode == "none":

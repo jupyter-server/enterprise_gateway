@@ -31,7 +31,7 @@ default_kernel_service_account_name = os.environ.get(
 )
 kernel_cluster_role = os.environ.get("EG_KERNEL_CLUSTER_ROLE", "cluster-admin")
 share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lower() == "true")
-kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")
+kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")  # noqa
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
@@ -130,7 +130,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
-    def terminate_container_resources(self) -> bool | None:
+    def terminate_container_resources(self) -> bool | None:  # noqa
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # and/or pod associated with the kernel.  We'll always target the pod first so that shutdown
@@ -173,9 +173,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 if v1_status:
                     status = v1_status.status
 
-                if status:
-                    if any(s in status for s in termination_stati):
-                        result = True
+                if status and any(s in status for s in termination_stati):
+                    result = True
 
                 if not result:
                     self.log.warning(

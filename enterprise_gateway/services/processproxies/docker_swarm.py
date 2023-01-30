@@ -57,11 +57,10 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         num_services = len(services)
         if num_services != 1:
             if num_services > 1:
-                raise RuntimeError(
-                    "{}: Found more than one service ({}) for kernel_id '{}'!".format(
-                        self.__class__.__name__, num_services, self.kernel_id
-                    )
+                msg = "{}: Found more than one service ({}) for kernel_id '{}'!".format(
+                    self.__class__.__name__, num_services, self.kernel_id
                 )
+                raise RuntimeError(msg)
         else:
             service = services[0]
             self.container_name = service.name
@@ -78,11 +77,10 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
             num_tasks = len(tasks)
             if num_tasks != 1:
                 if num_tasks > 1:
-                    raise RuntimeError(
-                        "{}: Found more than one task ({}) for service '{}', kernel_id '{}'!".format(
-                            self.__class__.__name__, num_tasks, service.name, self.kernel_id
-                        )
+                    msg = "{}: Found more than one task ({}) for service '{}', kernel_id '{}'!".format(
+                        self.__class__.__name__, num_tasks, service.name, self.kernel_id
                     )
+                    raise RuntimeError(msg)
             else:
                 task = tasks[0]
         return task
@@ -190,11 +188,10 @@ class DockerProcessProxy(ContainerProcessProxy):
         num_containers = len(containers)
         if num_containers != 1:
             if num_containers > 1:
-                raise RuntimeError(
-                    "{}: Found more than one container ({}) for kernel_id '{}'!".format(
-                        self.__class__.__name__, num_containers, self.kernel_id
-                    )
+                msg = "{}: Found more than one container ({}) for kernel_id '{}'!".format(
+                    self.__class__.__name__, num_containers, self.kernel_id
                 )
+                raise RuntimeError(msg)
         else:
             container = containers[0]
         return container

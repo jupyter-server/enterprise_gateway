@@ -65,7 +65,7 @@ lint = [
   "black[jupyter]==22.12.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
-  "ruff==0.0.223"
+  "ruff==0.0.237"
 ]
 
 [project.scripts]
@@ -142,27 +142,32 @@ extend-exclude = "enterprise_gateway/.*ipynb"
 target-version = "py37"
 line-length = 100
 select = [
-  "A", "B", "C", "E", "F", "FBT", "I", "N", "Q", "RUF", "S", "T",
-  "UP", "W", "YTT",
+  "A", "B", "C", "DTZ", "E", "EM", "F", "FBT", "I", "ICN", "ISC", "N",
+  "PLC", "PLE", "PLR", "PLW", "Q", "RUF", "S", "SIM", "T", "TID", "UP",
+  "W", "YTT",
 ]
 ignore = [
-# Q000 Single quotes found but double quotes preferred
-"Q000",
-# FBT001 Boolean positional arg in function definition
-"FBT001", "FBT002", "FBT003",
-# C901 `async_setup_kernel` is too complex (12)
-"C901",
-# C408 Unnecessary `dict` call (rewrite as a literal)
-"C408",
-# N806 Variable `reasonErr` in function should be lowercase
-"N806", "N802", "N803",
-# TID252 Relative imports from parent modules are banned
-"TID252",
-# E501 Line too long (110 > 100 characters)
-"E501",
-# S108 Probable insecure usage of temporary file or directory: "/tmp"
-# S113 Probable use of requests call without timeout
-"S108", "S113",
+  # Q000 Single quotes found but double quotes preferred
+  "Q000",
+  # FBT001 Boolean positional arg in function definition
+  "FBT001", "FBT002", "FBT003",
+  # E501 Line too long (158 > 100 characters)
+  "E501",
+  # SIM105 Use `contextlib.suppress(...)`
+  "SIM105",
+  # TID252 Relative imports from parent modules are banned
+  "TID252",
+  # N806 Variable `sqlContext` in function should be lowercase
+  "N806",
+  # PLR2004 Magic value used in comparison
+  "PLR2004",
+
+]
+unfixable = [
+  # Don't touch print statements
+  "T201",
+  # Don't touch noqa lines
+  "RUF100",
 ]
 
 [tool.ruff.per-file-ignores]

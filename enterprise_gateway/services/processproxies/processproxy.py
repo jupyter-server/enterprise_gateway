@@ -226,9 +226,8 @@ class ResponseManager(SingletonConfigurable):
                     )
                     continue
                 else:
-                    raise RuntimeError(
-                        f"Failed to bind to port '{port}' for response address due to: '{e}'"
-                    )
+                    msg = f"Failed to bind to port '{port}' for response address due to: '{e}'"
+                    raise RuntimeError(msg)
             else:
                 response_port = port
                 break
@@ -316,9 +315,8 @@ class ResponseManager(SingletonConfigurable):
             # Get the version
             version = payload.get("version")
             if version is None:
-                raise ValueError(
-                    "Payload received from kernel does not include a version indicator!"
-                )
+                msg = "Payload received from kernel does not include a version indicator!"
+                raise ValueError(msg)
             self.log.debug(f"Version {version} payload received.")
 
             if version == 1:
@@ -333,13 +331,14 @@ class ResponseManager(SingletonConfigurable):
                 encrypted_connection_info = base64.b64decode(payload["conn_info"].encode())
                 connection_info_str = unpad(cipher.decrypt(encrypted_connection_info), 16).decode()
             else:
-                raise ValueError(f"Unexpected version indicator received: {version}!")
+                msg = f"Unexpected version indicator received: {version}!"
+                raise ValueError(msg)
         except Exception as ex:
             # Could be version "0", walk the registrant kernel-ids and attempt to decrypt using each as a key.
             # If none are found, re-raise the triggering exception.
             self.log.debug(f"decode_payload exception - {ex.__class__.__name__}: {ex}")
             connection_info_str = None
-            for kernel_id in self._response_registry.keys():
+            for kernel_id in self._response_registry:
                 aes_key = kernel_id[0:16]
                 try:
                     cipher = AES.new(aes_key.encode("utf-8"), AES.MODE_ECB)
@@ -459,10 +458,11 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         self.remote_pwd = os.getenv("EG_REMOTE_PWD")
         self._use_gss_raw = os.getenv("EG_REMOTE_GSS_SSH", "False")
         if self._use_gss_raw.lower() not in ("", "true", "false"):
-            raise ValueError(
+            msg = (
                 "Invalid Value for EG_REMOTE_GSS_SSH expected one of "
                 '"", "True", "False", got {!r}'.format(self._use_gss_raw)
             )
+            raise ValueError(msg)
         self.use_gss = self._use_gss_raw == "true"
         if self.use_gss:
             if self.remote_pwd or _remote_user:
@@ -819,11 +819,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             self._raise_authorization_error(kernel_username, "not authorized")
 
         # If authorized users are non-empty, ensure user is in that set.
-        if self.authorized_users.__len__() > 0:
-            if kernel_username not in self.authorized_users:
-                self._raise_authorization_error(
-                    kernel_username, "not in the set of users authorized"
-                )
+        if self.authorized_users.__len__() > 0 and kernel_username not in self.authorized_users:
+            self._raise_authorization_error(kernel_username, "not in the set of users authorized")
 
     def _raise_authorization_error(self, kernel_username: str, differentiator_clause: str) -> None:
         """
@@ -1577,7 +1574,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         # active, even after the kernel has terminated, leading to less than graceful terminations.
 
         if self.comm_port > 0:
-            shutdown_request = dict()
+            shutdown_request = {}
             shutdown_request["shutdown"] = 1
 
             try:

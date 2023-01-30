@@ -163,14 +163,9 @@ class KernelSpecCache(SingletonConfigurable):
     def remove_item(self, kernel_name: str) -> Optional[CacheItemType]:
         """Removes the cache item corresponding to kernel_name from the cache."""
         cache_item = None
-        if self.cache_enabled:
-            if kernel_name.lower() in self.cache_items:
-                cache_item = self.cache_items.pop(kernel_name.lower())
-                self.log.info(
-                    "KernelSpecCache: removed kernelspec: {kernel_name}".format(
-                        kernel_name=kernel_name
-                    )
-                )
+        if self.cache_enabled and kernel_name.lower() in self.cache_items:
+            cache_item = self.cache_items.pop(kernel_name.lower())
+            self.log.info(f"KernelSpecCache: removed kernelspec: {kernel_name}")
         return cache_item
 
     def _initialize(self):
@@ -210,7 +205,7 @@ class KernelSpecCache(SingletonConfigurable):
     @staticmethod
     def kernel_spec_to_cache_item(kernelspec: KernelSpec) -> CacheItemType:
         """Converts a KernelSpec instance to a CacheItemType for storage into the cache."""
-        cache_item = dict()
+        cache_item = {}
         cache_item["spec"] = kernelspec.to_dict()
         cache_item["resource_dir"] = kernelspec.resource_dir
         return cache_item

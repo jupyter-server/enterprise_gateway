@@ -75,8 +75,8 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         """Initialize the manager."""
         super().__init__(**kwargs)
         self.kernel_manager = kernel_manager
-        self._sessions = dict()
-        self._sessionsByUser = dict()
+        self._sessions = {}
+        self._sessionsByUser = {}
 
     def create_session(self, kernel_id: str, **kwargs) -> None:
         """
@@ -96,7 +96,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         km = self.kernel_manager.get_kernel(kernel_id)
 
         # Compose the kernel_session entry
-        kernel_session = dict()
+        kernel_session = {}
         kernel_session["kernel_id"] = kernel_id
         kernel_session["username"] = KernelSessionManager.get_kernel_username(**kwargs)
         kernel_session["kernel_name"] = km.kernel_name
@@ -254,9 +254,8 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         """
         Load and initialize _sessions member from persistent storage.  This method is called from start_sessions().
         """
-        raise NotImplementedError(
-            "KernelSessionManager.load_sessions() requires an implementation!"
-        )
+        msg = "KernelSessionManager.load_sessions() requires an implementation!"
+        raise NotImplementedError(msg)
 
     # abstractmethod
     def load_session(self, kernel_id: str) -> None:
@@ -264,24 +263,23 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         Load and initialize _sessions member from persistent storage for a single kernel.  This method is called from
         refresh_sessions().
         """
-        raise NotImplementedError("KernelSessionManager.load_session() requires an implementation!")
+        msg = "KernelSessionManager.load_session() requires an implementation!"
+        raise NotImplementedError(msg)
 
     # abstractmethod
     def delete_sessions(self, kernel_ids: list[str]) -> None:
         """
         Delete the sessions in persistent storage.  Caller is responsible for synchronizing call.
         """
-        raise NotImplementedError(
-            "KernelSessionManager.delete_sessions(kernel_ids) requires an implementation!"
-        )
+        msg = "KernelSessionManager.delete_sessions(kernel_ids) requires an implementation!"
+        raise NotImplementedError(msg)
 
     def save_session(self, kernel_id: str) -> None:
         """
         Saves the sessions dictionary to persistent store.  Caller is responsible for synchronizing call.
         """
-        raise NotImplementedError(
-            "KernelSessionManager.save_session(kernel_id) requires an implementation!"
-        )
+        msg = "KernelSessionManager.save_session(kernel_id) requires an implementation!"
+        raise NotImplementedError(msg)
 
     def active_sessions(self, username: str) -> int:
         """
@@ -356,15 +354,14 @@ class FileKernelSessionManager(KernelSessionManager):
 
     def save_session(self, kernel_id: str) -> None:
         """Save the session for a kernel."""
-        if self.enable_persistence:
-            if kernel_id is not None:
-                kernel_file_name = "".join([kernel_id, ".json"])
-                kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_file_name)
-                temp_session = dict()
-                temp_session[kernel_id] = self._sessions[kernel_id]
-                with open(kernel_session_file_path, "w") as fp:
-                    json.dump(KernelSessionManager.pre_save_transformation(temp_session), fp)
-                    fp.close()
+        if self.enable_persistence and kernel_id is not None:
+            kernel_file_name = "".join([kernel_id, ".json"])
+            kernel_session_file_path = os.path.join(self._get_sessions_loc(), kernel_file_name)
+            temp_session = {}
+            temp_session[kernel_id] = self._sessions[kernel_id]
+            with open(kernel_session_file_path, "w") as fp:
+                json.dump(KernelSessionManager.pre_save_transformation(temp_session), fp)
+                fp.close()
 
     def load_sessions(self) -> None:
         """Load the sessions."""
@@ -379,10 +376,9 @@ class FileKernelSessionManager(KernelSessionManager):
 
     def load_session(self, kernel_id: str) -> None:
         """Load the session for a kernel."""
-        if self.enable_persistence:
-            if kernel_id is not None:
-                kernel_session_file = "".join([kernel_id, ".json"])
-                self._load_session_from_file(kernel_session_file)
+        if self.enable_persistence and kernel_id is not None:
+            kernel_session_file = "".join([kernel_id, ".json"])
+            self._load_session_from_file(kernel_session_file)
 
     def _load_session_from_file(self, file_name: str) -> None:
         kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)
@@ -484,7 +480,9 @@ class WebhookKernelSessionManager(KernelSessionManager):
         :param list of strings kernel_ids: A list of kernel ids
         """
         if self.enable_persistence:
-            response = requests.delete(self.webhook_url, auth=self.auth, json=kernel_ids)
+            response = requests.delete(
+                self.webhook_url, auth=self.auth, json=kernel_ids, timeout=60
+            )
             self.log.debug(f"Webhook kernel session deleting: {kernel_ids}")
             if response.status_code != 204:
                 self.log.error(response.raise_for_status())
@@ -495,24 +493,23 @@ class WebhookKernelSessionManager(KernelSessionManager):
 
         :param string kernel_id: A kernel id
         """
-        if self.enable_persistence:
-            if kernel_id is not None:
-                temp_session = dict()
-                temp_session[kernel_id] = self._sessions[kernel_id]
-                body = KernelSessionManager.pre_save_transformation(temp_session)
-                response = requests.post(
-                    f"{self.webhook_url}/{kernel_id}", auth=self.auth, json=body
-                )
-                self.log.debug(f"Webhook kernel session saving: {kernel_id}")
-                if response.status_code != 204:
-                    self.log.error(response.raise_for_status())
+        if self.enable_persistence and kernel_id is not None:
+            temp_session = {}
+            temp_session[kernel_id] = self._sessions[kernel_id]
+            body = KernelSessionManager.pre_save_transformation(temp_session)
+            response = requests.post(
+                f"{self.webhook_url}/{kernel_id}", auth=self.auth, json=body, timeout=60
+            )
+            self.log.debug(f"Webhook kernel session saving: {kernel_id}")
+            if response.status_code != 204:
+                self.log.error(response.raise_for_status())
 
     def load_sessions(self) -> None:
         """
         Loads kernel sessions from database
         """
         if self.enable_persistence:
-            response = requests.get(self.webhook_url, auth=self.auth)
+            response = requests.get(self.webhook_url, auth=self.auth, timeout=60)
             if response.status_code == 200:
                 kernel_sessions = response.json()
                 for kernel_session in kernel_sessions:
@@ -526,14 +523,13 @@ class WebhookKernelSessionManager(KernelSessionManager):
 
         :param string kernel_id: A kernel id
         """
-        if self.enable_persistence:
-            if kernel_id is not None:
-                response = requests.get(f"{self.webhook_url}/{kernel_id}", auth=self.auth)
-                if response.status_code == 200:
-                    kernel_session = response.json()
-                    self._load_session_from_response(kernel_session)
-                else:
-                    self.log.error(response.raise_for_status())
+        if self.enable_persistence and kernel_id is not None:
+            response = requests.get(f"{self.webhook_url}/{kernel_id}", auth=self.auth, timeout=60)
+            if response.status_code == 200:
+                kernel_session = response.json()
+                self._load_session_from_response(kernel_session)
+            else:
+                self.log.error(response.raise_for_status())
 
     def _load_session_from_response(self, kernel_session: dict) -> None:
         """

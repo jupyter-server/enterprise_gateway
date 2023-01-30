@@ -81,13 +81,13 @@ def _parse_k8s_exception(exc: ApiException) -> str:
         str: Error message from kubernetes api
     """
     # more exception can be parsed, but at the time of implementation we only need this one
-    if exc.status == 409:
-        if exc.reason == "Conflict" and f'"reason":{K8S_ALREADY_EXIST_REASON}' in exc.body:
-            return K8S_ALREADY_EXIST_REASON
+    msg = f'"reason":{K8S_ALREADY_EXIST_REASON}'
+    if exc.status == 409 and exc.reason == "Conflict" and msg in exc.body:
+        return K8S_ALREADY_EXIST_REASON
     return ""
 
 
-def launch_kubernetes_kernel(
+def launch_kubernetes_kernel(  # noqa
     kernel_id,
     port_range,
     response_addr,
@@ -99,7 +99,7 @@ def launch_kubernetes_kernel(
 ):
     """Launches a containerized kernel as a kubernetes pod."""
     # Capture keywords and their values.
-    keywords = dict()
+    keywords = {}
 
     # Factory values...
     # Since jupyter lower cases the kernel directory as the kernel-name, we need to capture its case-sensitive
@@ -190,35 +190,33 @@ def launch_kubernetes_kernel(
                         body=k8s_obj
                     )
             elif k8s_obj["kind"] == "Service":
-                if pod_template_file is None:
-                    if pod_created is not None:
-                        # Create dependency between pod and service, useful to delete service when kernel stops
-                        k8s_obj["metadata"]["ownerReferences"] = [
-                            {
-                                "apiVersion": "v1",
-                                "kind": "pod",
-                                "name": str(pod_created.metadata.name),
-                                "uid": str(pod_created.metadata.uid),
-                            }
-                        ]
-                        client.CoreV1Api(api_client=kubernetes_client).create_namespaced_service(
-                            body=k8s_obj, namespace=kernel_namespace
-                        )
+                if pod_template_file is None and pod_created is not None:
+                    # Create dependency between pod and service, useful to delete service when kernel stops
+                    k8s_obj["metadata"]["ownerReferences"] = [
+                        {
+                            "apiVersion": "v1",
+                            "kind": "pod",
+                            "name": str(pod_created.metadata.name),
+                            "uid": str(pod_created.metadata.uid),
+                        }
+                    ]
+                    client.CoreV1Api(api_client=kubernetes_client).create_namespaced_service(
+                        body=k8s_obj, namespace=kernel_namespace
+                    )
             elif k8s_obj["kind"] == "ConfigMap":
-                if pod_template_file is None:
-                    if pod_created is not None:
-                        # Create dependency between pod and configmap, useful to delete service when kernel stops
-                        k8s_obj["metadata"]["ownerReferences"] = [
-                            {
-                                "apiVersion": "v1",
-                                "kind": "pod",
-                                "name": str(pod_created.metadata.name),
-                                "uid": str(pod_created.metadata.uid),
-                            }
-                        ]
-                        client.CoreV1Api(api_client=kubernetes_client).create_namespaced_config_map(
-                            body=k8s_obj, namespace=kernel_namespace
-                        )
+                if pod_template_file is None and pod_created is not None:
+                    # Create dependency between pod and configmap, useful to delete service when kernel stops
+                    k8s_obj["metadata"]["ownerReferences"] = [
+                        {
+                            "apiVersion": "v1",
+                            "kind": "pod",
+                            "name": str(pod_created.metadata.name),
+                            "uid": str(pod_created.metadata.uid),
+                        }
+                    ]
+                    client.CoreV1Api(api_client=kubernetes_client).create_namespaced_config_map(
+                        body=k8s_obj, namespace=kernel_namespace
+                    )
             else:
                 sys.exit(
                     f"ERROR - Unhandled Kubernetes object kind '{k8s_obj['kind']}' found in yaml file - "
@@ -232,8 +230,8 @@ def launch_kubernetes_kernel(
     if pod_template_file:
         # TODO - construct other --conf options for things like mounts, resources, etc.
         # write yaml to file...
-        stream = open(pod_template_file, "w")
-        yaml.dump(pod_template, stream)
+        with open(pod_template_file, "w") as stream:
+            yaml.dump(pod_template, stream)
 
         # Build up additional spark options.  Note the trailing space to accommodate concatenation
         additional_spark_opts = (
