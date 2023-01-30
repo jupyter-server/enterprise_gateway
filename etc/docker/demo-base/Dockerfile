@@ -41,7 +41,6 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     less \
     nano \
     ca-certificates \
-    ca-certificates-java \
     libkrb5-dev \
     sudo \
     locales \
