@@ -58,6 +58,7 @@ def extend_operator_env(op_def: dict, sub_spec: str) -> dict:
 def launch_custom_resource_kernel(
     kernel_id, port_range, response_addr, public_key, spark_context_init_mode
 ):
+    """Launch a custom resource kernel."""
     keywords = dict()
 
     keywords["eg_port_range"] = port_range
