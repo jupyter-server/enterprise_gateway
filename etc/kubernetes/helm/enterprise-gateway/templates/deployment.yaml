@@ -52,7 +52,7 @@ spec:
         volumes:
         {{- if .Values.multicluster.enabled }}
         - name: kubeconfig
-          configMap: 
+          configMap:
             name: {{ .Release.Name }}-configmap
         {{- end}}
         env:
@@ -161,7 +161,7 @@ spec:
           path: "/usr/local/share/jupyter/kernels"
       {{- if .Values.multicluster.enabled }}
       - name: kubeconfig
-        configMap: 
+        configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
       {{- if .Values.multicluster.autoconfigureRemote }}
@@ -189,7 +189,7 @@ spec:
           claimName: {{ .Values.kernelspecsPvc.name }}
       {{- if .Values.multicluster.enabled }}
       - name: kubeconfig
-        configMap: 
+        configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
       {{- if .Values.multicluster.autoconfigureRemote }}
@@ -217,7 +217,7 @@ spec:
           medium: Memory
       {{- if .Values.multicluster.enabled }}
       - name: kubeconfig
-        configMap: 
+        configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
       {{- if .Values.multicluster.autoconfigureRemote }}

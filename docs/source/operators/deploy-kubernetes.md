@@ -520,10 +520,10 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kip.pullPolicy`                           | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`)                                                                                       | `IfNotPresent`                                                                 |
 | `kip.criSocket`                            | The container runtime interface socket, use `/run/containerd/containerd.sock` for containerd installations                                                                                                                                       | `/var/run/docker.sock`                                                         |
 | `kip.defaultContainerRegistry`             | Prefix to use if a registry is not already specified on image name (e.g., elyra/kernel-py:VERSION)                                                                                                                                               | `docker.io`                                                                    |
- | `multicluster.enable` | Launch kernels in a remote cluster. Used for multi-cluster environments. **Must place a kubeconfig file in the `config/` folder of the helm chart**. | `false`
- | `multicluster.configPath` | Path to mount kubeconfig at | `/etc/kube/config`|
- |`multicluster.configFilename` | Filename to kubeconfig file inside `config/` directory of chart | `kubeconfig`|
- | `multicluster.autoconfigureRemote` | Automatically create service account in remote cluster | `false`
+| `multicluster.enable`                      | Launch kernels in a remote cluster. Used for multi-cluster environments. **Must place a kubeconfig file in the `config/` folder of the helm chart**.                                                                                             | `false`                                                                        |
+| `multicluster.configPath`                  | Path to mount kubeconfig at                                                                                                                                                                                                                      | `/etc/kube/config`                                                             |
+| `multicluster.configFilename`              | Filename to kubeconfig file inside `config/` directory of chart                                                                                                                                                                                  | `kubeconfig`                                                                   |
+| `multicluster.autoconfigureRemote`         | Automatically create service account in remote cluster                                                                                                                                                                                           | `false`                                                                        |
 
 ## Uninstalling Enterprise Gateway
 
@@ -962,23 +962,26 @@ The value of the `JUPYTER_GATEWAY_URL` used by the gateway-enabled Notebook serv
 ## Multi-Cluster Environments
 
 ### Overview
+
 With `multicluster.enabled` set to `true`, Enterprise Gateway can be used on multi-cluster environments where the jupyter enterprise gateway pods and kernel pods are launched on separate clusters. To configure this:
 
 1. Ensure your two clusters have interconnceted networks. Pods in the two clusters must be able to communicate with each other over pod IP alone.
-2. Provide a kubeconfig file for use in the `config/` subdirectory of `etc/kubernetes/helm/enterprise-gateway` chart. 
-3. Set `multicluster.enabled` to `true`. 
+1. Provide a kubeconfig file for use in the `config/` subdirectory of `etc/kubernetes/helm/enterprise-gateway` chart.
+1. Set `multicluster.enabled` to `true`.
 
-Enterprise Gateway will now launch kernel pods in whichever cluster you have set to default in your kubeconfig. 
+Enterprise Gateway will now launch kernel pods in whichever cluster you have set to default in your kubeconfig.
 
 ### Resources in Remote Clusters
- For Enterprise Gateway to work accross clusters, Enterprise Gateway must create the following resources in the cluster your kernels will be launched on. 
- - The kernel resource.
- - A service account for the kernel pods (if `multicluster.autoconfigureRemote` is set to `true`).
- - A namespaced role for the namespace where your kernel pods will be launched.
- - A role binding between your namespaced role and your service account. 
 
- The role resource is defined in the `templates/kernel-role.yaml` template of the helm chart. Permissions can be set there. 
- 
+For Enterprise Gateway to work accross clusters, Enterprise Gateway must create the following resources in the cluster your kernels will be launched on.
+
+- The kernel resource.
+- A service account for the kernel pods (if `multicluster.autoconfigureRemote` is set to `true`).
+- A namespaced role for the namespace where your kernel pods will be launched.
+- A role binding between your namespaced role and your service account.
+
+The role resource is defined in the `templates/kernel-role.yaml` template of the helm chart. Permissions can be set there.
+
 ## Kubernetes Tips
 
 The following items illustrate some useful commands for navigating Enterprise Gateway within a kubernetes environment.
