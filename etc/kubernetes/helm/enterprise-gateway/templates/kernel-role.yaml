@@ -1,5 +1,5 @@
 {{- define "kernel-role" }}
-{{- if .Values.multicluster.autoconfigureRemote }}
+{{- if .Values.externalCluster.autoconfigureRemote }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

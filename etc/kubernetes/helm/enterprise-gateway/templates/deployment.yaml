@@ -44,24 +44,24 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: kubeconfig
           readOnly: true
-          mountPath: {{ .Values.multicluster.configPath }}
+          mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
         volumes:
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: kubeconfig
           configMap:
             name: {{ .Release.Name }}-configmap
         {{- end}}
         env:
         # Set environment variables to point k8s client to kubeconfig
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
           - name: EG_USE_REMOTE_CLUSTER
             value: "True"
           - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
-            value: {{ .Values.multicluster.configPath }}{{ .Values.multicluster.configFilename }}
+            value: {{ .Values.externalCluster.configPath }}{{ .Values.externalCluster.configFilename }}
         {{- end }}
   {{- end }}
       containers:
@@ -98,18 +98,18 @@ spec:
         - name: EG_DEFAULT_KERNEL_NAME
           value: {{ .Values.kernel.defaultKernelName }}
         # Set environment variables to point k8s client to kubeconfig
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: EG_USE_REMOTE_CLUSTER
           value: "True"
         - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
-          value: {{ .Values.multicluster.configPath }}{{ .Values.multicluster.configFilename }}
+          value: {{ .Values.externalCluster.configPath }}{{ .Values.externalCluster.configFilename }}
         - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
           value: kernel-svcaccount
-        {{- if .Values.multicluster.context }}
+        {{- if .Values.externalCluster.context }}
         - name: EG_REMOTE_CLUSTER_CONTEXT
-          value: {{ .Values.multicluster.context }}
+          value: {{ .Values.externalCluster.context }}
         {{- end}}
-        {{- if .Values.multicluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoconfigureRemote }}
         - name: EG_CREATE_REMOTE_SVC_ACCOUNT
           value: "True"
         - name: EG_REMOTE_CLUSTER_ROLE_PATH
@@ -144,12 +144,12 @@ spec:
         volumeMounts:
         - name: nfs-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: kubeconfig
           readOnly: true
-          mountPath: {{ .Values.multicluster.configPath }}
+          mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.multicluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoconfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
@@ -159,12 +159,12 @@ spec:
         nfs:
           server: {{ .Values.nfs.internalServerIPAddress }}
           path: "/usr/local/share/jupyter/kernels"
-      {{- if .Values.multicluster.enabled }}
+      {{- if .Values.externalCluster.enabled }}
       - name: kubeconfig
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.multicluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoconfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.name }}-configmap-role
@@ -173,12 +173,12 @@ spec:
         volumeMounts:
         - name: pvc-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: kubeconfig
           readOnly: true
-          mountPath: {{ .Values.multicluster.configPath }}
+          mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.multicluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoconfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
@@ -187,12 +187,12 @@ spec:
       - name: pvc-kernelspecs
         persistentVolumeClaim:
           claimName: {{ .Values.kernelspecsPvc.name }}
-      {{- if .Values.multicluster.enabled }}
+      {{- if .Values.externalCluster.enabled }}
       - name: kubeconfig
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.multicluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoconfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.name}}-configmap-role
@@ -201,12 +201,12 @@ spec:
         volumeMounts:
         - name: image-kernelspecs
           mountPath: "/usr/local/share/jupyter/kernels"
-        {{- if .Values.multicluster.enabled }}
+        {{- if .Values.externalCluster.enabled }}
         - name: kubeconfig
           readOnly: true
-          mountPath: {{ .Values.multicluster.configPath }}
+          mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.multicluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoconfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
@@ -215,12 +215,12 @@ spec:
       - name: image-kernelspecs
         emptyDir:
           medium: Memory
-      {{- if .Values.multicluster.enabled }}
+      {{- if .Values.externalCluster.enabled }}
       - name: kubeconfig
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.multicluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoconfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.Name }}-configmap-role
