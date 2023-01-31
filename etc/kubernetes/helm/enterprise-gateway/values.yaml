@@ -180,7 +180,7 @@ kip:
   #     cpu: 1
   #     memory: 1Gi
 
-multicluster:
+externalCluster:
   # Set to enable to point k8s client to remote cluster
   enabled: false
   # Mount config at this path inside pod

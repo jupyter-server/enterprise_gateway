@@ -23,7 +23,7 @@ rules:
   - apiGroups: ["sparkoperator.k8s.io"]
     resources: ["sparkapplications", "sparkapplications/status", "scheduledsparkapplications", "scheduledsparkapplications/status"]
     verbs: ["get", "watch", "list", "create", "delete"]
-  # If multicluster used, need to be able to read and forward service account
+  # If externalCluster used, need to be able to read and forward service account
   {{- if .Values.externalCluster.enabled }}
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterroles"]
