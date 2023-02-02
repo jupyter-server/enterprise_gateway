@@ -15,8 +15,11 @@ ENV PATH $PATH:$SPARK_HOME/bin
 
 USER root
 
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends \
+RUN dpkg --purge --force-depends ca-certificates-java \
+    && apt-get update \
+    && apt-get install -yq --no-install-recommends \
+    ca-certificates \
+    ca-certificates-java \
     openjdk-8-jdk \
     less \
     curl \
