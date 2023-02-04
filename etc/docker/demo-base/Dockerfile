@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=continuumio/miniconda3
+ARG BASE_CONTAINER=mambaorg/micromamba:bullseye
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
@@ -66,7 +66,8 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 ADD fix-permissions /usr/local/bin/fix-permissions
 # Create jovyan user with UID=1000 and in the 'users' group
 # and make sure these dirs are writable by the `users` group.
-RUN groupadd wheel -g 11 && \
+RUN userdel -r mambauser && \
+    groupadd wheel -g 11 && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
     useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
     mkdir -p /usr/hdp/current && \
@@ -98,12 +99,13 @@ RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$S
 
 USER root
 
-RUN conda install --yes --quiet -c conda-forge \
+RUN micromamba install mamba -n base -c conda-forge && \
+    mamba install --yes --quiet -c conda-forge \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \
     'r-argparse' && \
-    conda clean --all &&\
+    mamba clean -y --all &&\
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
