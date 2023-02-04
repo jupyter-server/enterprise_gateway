@@ -225,7 +225,7 @@ def launch_kubernetes_kernel(  # noqa
                     f"kernel launch terminating!"
                 )
         else:
-            print(f"ERROR processing Kubernetes yaml file - kernel launch terminating!")
+            print("ERROR processing Kubernetes yaml file - kernel launch terminating!")
             print(k8s_yaml)
             sys.exit(
                 f"ERROR - Unknown Kubernetes object '{k8s_obj}' found in yaml file - kernel launch terminating!"

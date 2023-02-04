@@ -98,7 +98,7 @@ def launch_custom_resource_kernel(
                 "instructions, then retry the operation.\n"
             )
         else:
-            print(f"ERROR processing Kubernetes Operator CRD - kernel launch terminating!")
+            print("ERROR processing Kubernetes Operator CRD - kernel launch terminating!")
             print(custom_resource_yaml)
         raise ex
 
