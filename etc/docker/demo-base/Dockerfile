@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=mambaorg/micromamba:bullseye
+ARG BASE_CONTAINER=continuumio/miniconda3
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
@@ -54,8 +54,10 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     openssh-server \
     openssh-client \
     && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
-    && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jre-headless \
+    && apt-get update && apt-get install -yq --no-install-recommends  \
+    openjdk-8-jre-headless \
     ca-certificates-java \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
@@ -66,8 +68,7 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 ADD fix-permissions /usr/local/bin/fix-permissions
 # Create jovyan user with UID=1000 and in the 'users' group
 # and make sure these dirs are writable by the `users` group.
-RUN userdel -r mambauser && \
-    groupadd wheel -g 11 && \
+RUN groupadd wheel -g 11 && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
     useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
     mkdir -p /usr/hdp/current && \
@@ -99,7 +100,7 @@ RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$S
 
 USER root
 
-RUN micromamba install mamba -n base -c conda-forge && \
+RUN conda install mamba -n base -c conda-forge && \
     mamba install --yes --quiet -c conda-forge \
     'jupyter' \
     'r-devtools' \
