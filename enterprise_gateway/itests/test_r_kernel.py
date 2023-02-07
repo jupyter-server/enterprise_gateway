@@ -20,7 +20,6 @@ class RKernelBaseTestCase(TestBase):
         self.assertRegex(result, "Hello World")
 
     def test_restart(self):
-
         # 1. Set a variable to a known value.
         # 2. Restart the kernel
         # 3. Attempt to increment the variable, verify an error was received (due to undefined variable)
@@ -37,7 +36,6 @@ class RKernelBaseTestCase(TestBase):
         self.assertRegex(error_result, "Error in eval")
 
     def test_interrupt(self):
-
         # 1. Set a variable to a known value.
         # 2. Spawn a thread that will perform an interrupt after some number of seconds,
         # 3. Issue a long-running command - that spans during of interrupt thread wait time,

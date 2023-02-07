@@ -27,7 +27,6 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ.update(self.environ)
 
     def _assert_envs_to_traitlets(self, env_prefix: str):
-
         app = EnterpriseGatewayApp()
         app.init_configurables()
 
