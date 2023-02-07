@@ -227,7 +227,6 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return pod_name
 
     def _determine_kernel_namespace(self, **kwargs: dict[str, Any] | None) -> str:
-
         # Since we need the service account name regardless of whether we're creating the namespace or not,
         # get it now.
         service_account_name = KubernetesProcessProxy._determine_kernel_service_account_name(

@@ -1543,7 +1543,6 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         # using anything other than the socket-based signal (via signal_addr) will not work.
 
         if self.comm_port > 0:
-
             try:
                 self._send_listener_request({"signum": signum})
 
