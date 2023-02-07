@@ -1034,7 +1034,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> type["LocalProcessProxy"]:
+    ) -> type[LocalProcessProxy]:
         """Launch a process for a kernel."""
         await super().launch_process(kernel_cmd, **kwargs)
 
@@ -1543,7 +1543,6 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         # using anything other than the socket-based signal (via signal_addr) will not work.
 
         if self.comm_port > 0:
-
             try:
                 self._send_listener_request({"signum": signum})
 

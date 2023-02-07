@@ -53,7 +53,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "KubernetesProcessProxy":
+    ) -> KubernetesProcessProxy:
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call, so we can see these in the debug output
 
@@ -227,7 +227,6 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return pod_name
 
     def _determine_kernel_namespace(self, **kwargs: dict[str, Any] | None) -> str:
-
         # Since we need the service account name regardless of whether we're creating the namespace or not,
         # get it now.
         service_account_name = KubernetesProcessProxy._determine_kernel_service_account_name(

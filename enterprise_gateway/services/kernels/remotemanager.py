@@ -166,7 +166,6 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
         zmq_context = super()._context_default()
         if self.shared_context:  # this should be True by default
-
             # pyzmq currently does not expose defaults for these values, so we replicate them here
             # libzmq/zmq.h: ZMQ_MAX_SOCKETS_DLFT = 1023; zmq.Context.MAX_SOCKETS
             # libzmq/zmq.h: ZMQ_IO_THREADS_DFLT = 1; zmq.Context.IO_THREADS
