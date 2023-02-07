@@ -52,6 +52,9 @@ content-type = "text/plain"
 [project.urls]
 Homepage = "http://github.com/jupyter/enterprise_gateway"
 
+[project.scripts]
+jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
+
 [project.optional-dependencies]
 test = [
   "coverage",
@@ -68,8 +71,9 @@ lint = [
   "ruff==0.0.241"
 ]
 
-[project.scripts]
-jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
+[tool.ruff.pylint]
+max-args = 10
+max-statements = 100
 
 [tool.hatch.build.targets.wheel]
 include = ["enterprise_gateway"]
