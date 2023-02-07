@@ -73,7 +73,7 @@ lint = [
 
 [tool.ruff.pylint]
 max-args = 10
-max-statements = 100
+max-statements = 60
 
 [tool.hatch.build.targets.wheel]
 include = ["enterprise_gateway"]
