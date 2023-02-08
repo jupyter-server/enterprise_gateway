@@ -29,7 +29,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "CustomResourceProcessProxy":
+    ) -> CustomResourceProcessProxy:
         """Launch the process for a kernel."""
         self.kernel_resource_name = self._determine_kernel_pod_name(**kwargs)
         kwargs["env"]["KERNEL_RESOURCE_NAME"] = self.kernel_resource_name

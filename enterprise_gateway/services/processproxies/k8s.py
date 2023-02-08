@@ -53,7 +53,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "KubernetesProcessProxy":
+    ) -> KubernetesProcessProxy:
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call, so we can see these in the debug output
 

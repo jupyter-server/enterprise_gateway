@@ -1034,7 +1034,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> type["LocalProcessProxy"]:
+    ) -> type[LocalProcessProxy]:
         """Launch a process for a kernel."""
         await super().launch_process(kernel_cmd, **kwargs)
 

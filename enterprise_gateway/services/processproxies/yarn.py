@@ -117,7 +117,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "YarnClusterProcessProxy":
+    ) -> YarnClusterProcessProxy:
         """
         Launches the specified process within a YARN cluster environment.
         """

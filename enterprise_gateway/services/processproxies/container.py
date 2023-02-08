@@ -73,7 +73,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "ContainerProcessProxy":
+    ) -> ContainerProcessProxy:
         """
         Launches the specified process within the container environment.
         """
