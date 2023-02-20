@@ -317,7 +317,7 @@ class KernelClient:
 
         return response
 
-    def _read_responses(self):  # noqa
+    def _read_responses(self):
         """
         Reads responses from the websocket.  For each response read, it is added to the response queue based
         on the messages parent_header.msg_id.  It does this for the duration of the class's lifetime until its
