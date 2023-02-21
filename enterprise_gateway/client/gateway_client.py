@@ -137,7 +137,7 @@ class KernelClient:
                 self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
 
-    def execute(self, code, timeout=REQUEST_TIMEOUT):  # noqa
+    def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
         Executes the code provided and returns the result of that execution.
         """

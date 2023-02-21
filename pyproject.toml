@@ -165,7 +165,6 @@ ignore = [
   "N806",
   # PLR2004 Magic value used in comparison
   "PLR2004",
-
 ]
 unfixable = [
   # Don't touch print statements
@@ -183,6 +182,9 @@ unfixable = [
 "enterprise_gateway/itests/*" = ["S101", "F841", "S105", "T201"]
 # T201 `print` found
 "etc/*" = ["T201"]
+# C901 Function is too complex
+"enterprise_gateway/client/gateway_client.py" = ["C901"]  # `_read_responses` is too complex (12)
+"etc/docker/kernel-image-puller/kernel_image_puller.py" = ["C901"]  # `fetch_image_names` is too complex (13)
 
 [tool.interrogate]
 ignore-init-module=true
