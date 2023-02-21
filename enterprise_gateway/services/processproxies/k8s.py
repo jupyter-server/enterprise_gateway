@@ -128,7 +128,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
-    def terminate_container_resources(self) -> bool | None:  # noqa
+    def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # and/or pod associated with the kernel.  We'll always target the pod first so that shutdown
