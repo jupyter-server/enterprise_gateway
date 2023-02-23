@@ -45,13 +45,13 @@ class GatewayClient:
     ):
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
-        
+
         env = {
             "KERNEL_USERNAME": username,
             "KERNEL_LAUNCH_TIMEOUT": GatewayClient.KERNEL_LAUNCH_TIMEOUT,
         }
         env.update(extra_env)
-        
+
         json_data = {
             "name": kernelspec_name,
             "env": env,
