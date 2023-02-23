@@ -46,9 +46,6 @@ class GatewayClient:
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
 
-        if extra_env is None:
-            extra_env = {}
-
         env = {
             "KERNEL_USERNAME": username,
             "KERNEL_LAUNCH_TIMEOUT": GatewayClient.KERNEL_LAUNCH_TIMEOUT,
