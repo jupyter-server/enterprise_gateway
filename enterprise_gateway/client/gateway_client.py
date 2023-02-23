@@ -119,9 +119,13 @@ class KernelClient:
         self.log = logger
         self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
-        self.kernel_socket = websocket.create_connection(
-            self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True
-        )
+        try:
+            self.kernel_socket = websocket.create_connection(
+                f"{ws_api_endpoint}/{kernel_id}/channels", timeout=timeout, enable_multithread=True
+            )
+        except Exception as e:
+            self.log.error(e)
+            self.shutdown()
 
         self.response_queues = {}
 
