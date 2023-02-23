@@ -29,23 +29,26 @@ class GatewayClient:
     DEFAULT_GATEWAY_HOST = os.getenv("GATEWAY_HOST", "localhost:8888")
     KERNEL_LAUNCH_TIMEOUT = os.getenv("KERNEL_LAUNCH_TIMEOUT", "40")
 
-    def __init__(self, host=DEFAULT_GATEWAY_HOST):
+    def __init__(self, host=DEFAULT_GATEWAY_HOST, use_secure_connection=False):
         """Initialize the client."""
-        self.http_api_endpoint = f"http://{host}/api/kernels"
-        self.ws_api_endpoint = f"ws://{host}/api/kernels"
+        self.http_api_endpoint = f"https://{host}/api/kernels" if use_secure_connection else f"http://{host}/api/kernels"
+        self.ws_api_endpoint = f"wss://{host}/api/kernels" if use_secure_connection else f"wss://{host}/api/kernels"
         self.log = logging.getLogger("GatewayClient")
         self.log.setLevel(log_level)
 
-    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT):
+    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT, extra_env={}):
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
-
-        json_data = {
-            "name": kernelspec_name,
-            "env": {
+        
+        env = {
                 "KERNEL_USERNAME": username,
                 "KERNEL_LAUNCH_TIMEOUT": GatewayClient.KERNEL_LAUNCH_TIMEOUT,
-            },
+        }
+        env.update(extra_env)
+        
+        json_data = {
+            "name": kernelspec_name,
+            "env": env,
         }
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data), timeout=60)
@@ -105,7 +108,7 @@ class KernelClient:
         self.kernel_ws_api_endpoint = f"{ws_api_endpoint}/{kernel_id}/channels"
         self.kernel_id = kernel_id
         self.log = logger
-        self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
+        self.log.info(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
         self.kernel_socket = websocket.create_connection(
             self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True
@@ -142,6 +145,7 @@ class KernelClient:
         Executes the code provided and returns the result of that execution.
         """
         response = []
+        has_error = False
         try:
             msg_id = self._send_request(code)
 
@@ -155,6 +159,7 @@ class KernelClient:
                         response_message_type == "execute_reply"
                         and response_message["content"]["status"] == "error"
                     ):
+                        has_error = True
                         response.append(
                             "{}:{}:{}".format(
                                 response_message["content"]["ename"],
@@ -208,7 +213,7 @@ class KernelClient:
         except Exception as e:
             self.log.debug(e)
 
-        return "".join(response)
+        return "".join(response), has_error
 
     def interrupt(self):
         """Interrupt the kernel."""
