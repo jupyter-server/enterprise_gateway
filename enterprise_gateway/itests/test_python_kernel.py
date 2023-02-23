@@ -29,8 +29,8 @@ class PythonKernelBaseTestCase(TestBase):
         # 3. Attempt to increment the variable, verify an error was received (due to undefined variable)
 
         self.kernel.execute("x = 123")
-        original_value, has_error = int(self.kernel.execute("print(x)"))
-        self.assertEqual(original_value, 123)
+        original_value, has_error = self.kernel.execute("print(x)")
+        self.assertEqual(int(original_value), 123)
         self.assertEqual(has_error, False)
 
         self.assertTrue(self.kernel.restart())
@@ -47,8 +47,8 @@ class PythonKernelBaseTestCase(TestBase):
         # 5. Attempt to increment the variable, verify expected result.
 
         self.kernel.execute("x = 123")
-        original_value, has_error = int(self.kernel.execute("print(x)"))
-        self.assertEqual(original_value, 123)
+        original_value, has_error = self.kernel.execute("print(x)")
+        self.assertEqual(int(original_value), 123)
         self.assertEqual(has_error, True)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
