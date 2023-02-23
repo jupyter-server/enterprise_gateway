@@ -2,7 +2,7 @@
 **[Technical Overview](#technical-overview)** |
 **[Installation](#installation)** |
 **[System Architecture](#system-architecture)** |
-**[Contributing](#contributing)** |
+**[Contributing](#contributing)**
 
 # Jupyter Enterprise Gateway
 
