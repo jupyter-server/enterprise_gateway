@@ -227,7 +227,7 @@ class ResponseManager(SingletonConfigurable):
                     continue
                 else:
                     msg = f"Failed to bind to port '{port}' for response address due to: '{e}'"
-                    raise RuntimeError(msg)
+                    raise RuntimeError(msg) from e
             else:
                 response_port = port
                 break

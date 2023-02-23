@@ -85,7 +85,7 @@ def _parse_k8s_exception(exc: ApiException) -> str:
     return ""
 
 
-def launch_kubernetes_kernel(  # noqa
+def launch_kubernetes_kernel(
     kernel_id,
     port_range,
     response_addr,

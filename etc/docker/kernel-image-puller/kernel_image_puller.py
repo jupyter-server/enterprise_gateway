@@ -147,7 +147,7 @@ class KernelImagePuller:
             raise requests.exceptions.HTTPError(msg)
         return resp.json()
 
-    def fetch_image_names(self):  # noqa
+    def fetch_image_names(self):
         """Fetches the image names by hitting the /api/kernelspecs endpoint of the Gateway.
 
         For process-proxy kernelspecs, the image names are contained in the config stanza - which

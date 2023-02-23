@@ -153,7 +153,7 @@ class KernelClient:
                 self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
 
-    def execute(self, code, timeout=REQUEST_TIMEOUT):  # noqa
+    def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
         Executes the code provided and returns the result of that execution.
         """
@@ -335,7 +335,7 @@ class KernelClient:
 
         return response
 
-    def _read_responses(self):  # noqa
+    def _read_responses(self):
         """
         Reads responses from the websocket.  For each response read, it is added to the response queue based
         on the messages parent_header.msg_id.  It does this for the duration of the class's lifetime until its
