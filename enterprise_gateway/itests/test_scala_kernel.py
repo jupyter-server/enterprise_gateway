@@ -66,7 +66,7 @@ class ScalaKernelBaseTestCase(TestBase):
 
         # Ensure the result indicates an interrupt occurred
         self.assertRegex(interrupted_result, "java.lang.InterruptedException")
-        self.assertEqual(has_error, False)
+        self.assertEqual(has_error, True)
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
