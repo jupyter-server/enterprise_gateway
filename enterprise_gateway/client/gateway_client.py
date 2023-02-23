@@ -31,12 +31,18 @@ class GatewayClient:
 
     def __init__(self, host=DEFAULT_GATEWAY_HOST, use_secure_connection=False):
         """Initialize the client."""
-        self.http_api_endpoint = f"https://{host}/api/kernels" if use_secure_connection else f"http://{host}/api/kernels"
-        self.ws_api_endpoint = f"wss://{host}/api/kernels" if use_secure_connection else f"wss://{host}/api/kernels"
+        self.http_api_endpoint = (
+            f"https://{host}/api/kernels" if use_secure_connection else f"http://{host}/api/kernels"
+        )
+        self.ws_api_endpoint = (
+            f"wss://{host}/api/kernels" if use_secure_connection else f"wss://{host}/api/kernels"
+        )
         self.log = logging.getLogger("GatewayClient")
         self.log.setLevel(log_level)
 
-    def start_kernel(self, kernelspec_name, extra_env, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT):
+    def start_kernel(
+        self, kernelspec_name, extra_env, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT
+    ):
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
         
