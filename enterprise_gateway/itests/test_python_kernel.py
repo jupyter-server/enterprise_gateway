@@ -49,7 +49,7 @@ class PythonKernelBaseTestCase(TestBase):
         self.kernel.execute("x = 123")
         original_value, has_error = self.kernel.execute("print(x)")
         self.assertEqual(int(original_value), 123)
-        self.assertEqual(has_error, True)
+        self.assertEqual(has_error, False)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
         # the next cell execution.
