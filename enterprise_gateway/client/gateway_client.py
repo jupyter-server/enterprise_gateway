@@ -117,7 +117,7 @@ class KernelClient:
         self.kernel_ws_api_endpoint = f"{ws_api_endpoint}/{kernel_id}/channels"
         self.kernel_id = kernel_id
         self.log = logger
-        self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
+        self.log.info(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
         try:
             self.kernel_socket = websocket.create_connection(
