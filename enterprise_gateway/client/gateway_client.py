@@ -41,10 +41,13 @@ class GatewayClient:
         self.log.setLevel(log_level)
 
     def start_kernel(
-        self, kernelspec_name, extra_env, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT
+        self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT, extra_env=None
     ):
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
+
+        if extra_env is None:
+            extra_env = {}
 
         env = {
             "KERNEL_USERNAME": username,
