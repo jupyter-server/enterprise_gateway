@@ -10,7 +10,6 @@ class TestAuthorization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        print(">>>")
 
         # initialize environment
         cls.gateway_client = GatewayClient()
