@@ -173,15 +173,15 @@ class CombinedImagesFetcher(ImageNameFetcher):
     def __init__(self, logger):
         self.logger = logger
         fetcher_names = os.getenv("KIP_INTERNAL_FETCHERS", "KernelSpecsFetcher").split(',')
-        self.fechers = list()
+        self.fetchers = list()
         module = importlib.import_module("image_fetcher")
         args = (logger,)
         for f in fetcher_names:
             fetcher = getattr(module, f)(*args)
-            self.fechers.append(fetcher)
+            self.fetchers.append(fetcher)
 
     def fetch_images(self) -> set[str]:
         images = set()
-        for f in self.fechers:
+        for f in self.fetchers:
             images.update(f.fetch_images())
         return images

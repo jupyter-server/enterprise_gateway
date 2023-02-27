@@ -8,7 +8,6 @@ from subprocess import CalledProcessError, run
 from threading import Thread
 from typing import List, Optional
 
-import requests
 from docker.client import DockerClient
 from docker.errors import NotFound
 
