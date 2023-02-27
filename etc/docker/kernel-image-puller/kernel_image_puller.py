@@ -126,7 +126,7 @@ class KernelImagePuller:
             or KernelImagePuller.CONTAINERD_CLIENT in self.runtime_endpoint
         )
 
-    def fetch_image_names(self):  # noqa
+    def fetch_image_names(self):
 
         # Locate the configured images within the kernel_specs and add to set for duplicate management
         images = self.image_fetcher.fetch_images()
