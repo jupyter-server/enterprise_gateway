@@ -128,14 +128,14 @@ class KernelImagePuller:
 
     def fetch_image_names(self):
 
-        # Locate the configured images within the kernel_specs and add to set for duplicate management
-        images = self.image_fetcher.fetch_images()
+        # Locate the configured image_names within the kernel_specs and add to set for duplicate management
+        image_names = self.image_fetcher.fetch_image_names()
 
-        if not images:
+        if not image_names:
             return False
 
         # Add the image names to the name queue to be pulled
-        for image_name in images:
+        for image_name in image_names:
             self.worker_queue.put_nowait(image_name)
         return True
 

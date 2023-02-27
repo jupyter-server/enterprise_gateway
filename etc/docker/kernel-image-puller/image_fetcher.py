@@ -10,9 +10,9 @@ from kubernetes.client import ApiException
 
 class ImageNameFetcher(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def fetch_images(self) -> set[str]:
+    def fetch_image_names(self) -> set[str]:
         """
-        Abstract method to fetch images.
+        Abstract method to fetch image names.
 
         :return: A set of image names.
         """
@@ -46,8 +46,7 @@ class KernelSpecsFetcher(ImageNameFetcher):
             raise requests.exceptions.HTTPError(msg)
         return resp.json()
 
-    def fetch_images(self) -> set[str]:
-
+    def fetch_image_names(self) -> set[str]:  # noqa
         k_specs = None
         try:
             k_specs_response = self.get_kernel_specs()
@@ -99,7 +98,7 @@ class StaticListFetcher(ImageNameFetcher):
     def __init__(self, logger) -> None:
         self.logger = logger
 
-    def fetch_images(self) -> set[str]:
+    def fetch_image_names(self) -> set[str]:
         images = os.getenv("KIP_IMAGES", "").split(",")
         return set(images)
 
@@ -130,7 +129,7 @@ class ConfigMapImagesFetcher(ImageNameFetcher):
         self.name = os.getenv("KIP_CM_NAME", "kernel-images")
         self.key_name = os.getenv("KIP_CM_KEY_NAME", "image-names")
 
-    def fetch_images(self) -> set[str]:
+    def fetch_image_names(self) -> set[str]:
         config.load_incluster_config()
         v1 = client.CoreV1Api()
         config_map = None
@@ -173,15 +172,15 @@ class CombinedImagesFetcher(ImageNameFetcher):
     def __init__(self, logger):
         self.logger = logger
         fetcher_names = os.getenv("KIP_INTERNAL_FETCHERS", "KernelSpecsFetcher").split(',')
-        self.fetchers = list()
+        self.fetchers = []
         module = importlib.import_module("image_fetcher")
         args = (logger,)
         for f in fetcher_names:
             fetcher = getattr(module, f)(*args)
             self.fetchers.append(fetcher)
 
-    def fetch_images(self) -> set[str]:
+    def fetch_image_names(self) -> set[str]:
         images = set()
         for f in self.fetchers:
-            images.update(f.fetch_images())
+            images.update(f.fetch_image_names())
         return images
