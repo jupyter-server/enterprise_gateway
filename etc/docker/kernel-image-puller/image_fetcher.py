@@ -144,6 +144,7 @@ class ConfigMapImagesFetcher(ImageNameFetcher):
                 self.logger.error(f"Error retrieving ConfigMap: {e}")
         if config_map and self.key_name in config_map.data:
             images = config_map.data[self.key_name]
+            image_list = list()
             try:
                 image_list = yaml.safe_load(images)
             except yaml.YAMLError as e:
