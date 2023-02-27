@@ -325,7 +325,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
         try:
             super().remove_kernel(kernel_id)
-        except web.HTTPError:  # this is hint for multiple shutdown request.
+        except KeyError: # this is hint for multiple shutdown request.
             self.log.debug(f"Exception while removing kernel {kernel_id}: kernel not found.")
 
         self.parent.kernel_session_manager.delete_session(kernel_id)
