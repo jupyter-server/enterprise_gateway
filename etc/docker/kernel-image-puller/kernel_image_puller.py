@@ -1,4 +1,5 @@
 """A kernel image puller."""
+import importlib
 import logging
 import os
 import queue
@@ -27,11 +28,9 @@ class KernelImagePuller:
     CONTAINERD_CLIENT = "containerd"
     supported_container_runtimes = (DOCKER_CLIENT, CONTAINERD_CLIENT)
 
-    def __init__(self, kip_logger):
+    def __init__(self, kip_logger, image_fetcher):
         """Initialize the puller."""
         self.interval = None
-        self.auth_token = None
-        self.gateway_host = None
         self.container_runtime = None
         self.runtime_endpoint = None
         self.default_container_registry = None
@@ -42,7 +41,7 @@ class KernelImagePuller:
         self.num_pullers = None
         self.num_retries = None
         self.policy = None
-        self.validate_cert = None
+        self.image_fetcher = image_fetcher
         self.load_static_env_values()
 
     def load_static_env_values(self):
@@ -55,11 +54,8 @@ class KernelImagePuller:
             "KIP_CRI_ENDPOINT", "unix:///run/containerd/containerd.sock"
         )
         self.container_runtime = self.get_container_runtime()
-        self.gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:18888")
         # Add authentication token support to KIP
-        self.auth_token = os.getenv("KIP_AUTH_TOKEN", None)
         self.interval = int(os.getenv("KIP_INTERVAL", "300"))
-        self.validate_cert = os.getenv("KIP_VALIDATE_CERT", "False").lower() == "true"
 
         if self.policy not in KernelImagePuller.policies:
             logger.warning(
@@ -69,7 +65,6 @@ class KernelImagePuller:
             self.policy = KernelImagePuller.POLICY_IF_NOT_PRESENT
 
         logger.info("Starting Kernel Image Puller with the following parameters:")
-        logger.info(f"KIP_GATEWAY_HOST: {self.gateway_host}")
         logger.info(f"KIP_INTERVAL: {self.interval} secs")
         logger.info(f"KIP_NUM_PULLERS: {self.num_pullers}")
         logger.info(f"KIP_NUM_RETRIES: {self.num_retries}")
@@ -78,7 +73,6 @@ class KernelImagePuller:
         # logger.info(f"KIP_AUTH_TOKEN: {self.auth_token}")  # Do not print
         logger.info(f"KIP_DEFAULT_CONTAINER_REGISTRY: '{self.default_container_registry}'")
         logger.info(f"KIP_CRI_ENDPOINT: {self.runtime_endpoint}")
-        logger.info(f"KIP_VALIDATE_CERT: {self.validate_cert}")
 
         if self.is_runtime_endpoint_recognized():
             logger.info(f"Detected container runtime: {self.container_runtime}")
@@ -133,56 +127,10 @@ class KernelImagePuller:
             or KernelImagePuller.CONTAINERD_CLIENT in self.runtime_endpoint
         )
 
-    def get_kernel_specs(self):
-        """Fetches the set of kernelspecs from the gateway, returning a dict of configured kernel specs"""
-        end_point = f"{self.gateway_host}/api/kernelspecs"
-        logger.info(f"Fetching kernelspecs from '{end_point}' ...")
-        headers = {"Content-Type": "application/json"}
-        if self.auth_token:
-            end_point += f"?token={self.auth_token}"
-            headers.update({"Authorization": f"token {self.auth_token}"})
-        resp = requests.get(end_point, headers=headers, verify=self.validate_cert, timeout=60)
-        if not resp.ok:
-            msg = f"Gateway server response: {resp.status_code}"
-            raise requests.exceptions.HTTPError(msg)
-        return resp.json()
-
-    def fetch_image_names(self):
-        """Fetches the image names by hitting the /api/kernelspecs endpoint of the Gateway.
-
-        For process-proxy kernelspecs, the image names are contained in the config stanza - which
-        resides in the process-proxy stanza located in the metadata.
-        """
-
-        k_specs = None
-        try:
-            k_specs_response = self.get_kernel_specs()
-            k_specs = k_specs_response.get("kernelspecs")
-        except Exception as ex:
-            logger.error(
-                f"Got exception attempting to retrieve kernelspecs - retrying. Exception was: {ex}"
-            )
-
-        if k_specs is None:
-            return False
+    def fetch_image_names(self):  # noqa
 
         # Locate the configured images within the kernel_specs and add to set for duplicate management
-        images = set()
-        for key in k_specs:
-            metadata = k_specs.get(key).get("spec").get("metadata")
-            if metadata is not None:
-                config_parent = metadata.get("process_proxy")
-                if config_parent is None:  # See if this is a provisioner
-                    config_parent = metadata.get("kernel_provisioner")
-                if config_parent is not None:
-                    config = config_parent.get("config")
-                    if config is not None:
-                        image_name = config.get("image_name")
-                        if image_name is not None:
-                            images.add(image_name)
-                        executor_image_name = config.get("executor_image_name")
-                        if executor_image_name is not None:
-                            images.add(executor_image_name)
+        images = self.image_fetcher.fetch_images()
 
         if not images:
             return False
@@ -333,5 +281,9 @@ if __name__ == "__main__":
     logger = logging.getLogger("kernel_image_puller")
     logger.setLevel(log_level)
     logger.info("Loading KernelImagePuller...")
-    kip = KernelImagePuller(logger)
+    fetcher_class_name = os.getenv('KIP_IMAGE_FETCHER', 'KernelSpecsFetcher')
+    args = (logger,)
+    module = importlib.import_module("image_fetcher")
+    fetcher = getattr(module, fetcher_class_name)(*args)
+    kip = KernelImagePuller(logger, fetcher)
     kip.start()
