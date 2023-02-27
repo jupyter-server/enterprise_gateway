@@ -165,6 +165,8 @@ ignore = [
   "N806",
   # PLR2004 Magic value used in comparison
   "PLR2004",
+  # PLW0603 Using the global statement to update is discouraged
+  "PLW0603",
 ]
 unfixable = [
   # Don't touch print statements
