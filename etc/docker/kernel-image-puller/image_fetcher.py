@@ -13,6 +13,7 @@ class ImageNameFetcher(metaclass=abc.ABCMeta):
     """
     abstract class to extend for fetch image names
     """
+
     @abc.abstractmethod
     def fetch_image_names(self) -> set[str]:
         """

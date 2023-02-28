@@ -128,9 +128,9 @@ class KernelImagePuller:
 
     def fetch_image_names(self):
         """
-       Fetches image names and adds them to a worker queue for processing.
-       Returns:
-           bool: True if at least one image name was found and added to the worker queue, False otherwise.
+        Fetches image names and adds them to a worker queue for processing.
+        Returns:
+            bool: True if at least one image name was found and added to the worker queue, False otherwise.
         """
         # Locate the configured image_names within the kernel_specs and add to set for duplicate management
         image_names = self.image_fetcher.fetch_image_names()
