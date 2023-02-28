@@ -46,7 +46,7 @@ class KernelSpecsFetcher(ImageNameFetcher):
             raise requests.exceptions.HTTPError(msg)
         return resp.json()
 
-    def fetch_image_names(self) -> set[str]:  # noqa
+    def fetch_image_names(self) -> set[str]:
         k_specs = None
         try:
             k_specs_response = self.get_kernel_specs()
