@@ -124,12 +124,22 @@ class ConfigMapImagesFetcher(ImageNameFetcher):
     """
 
     def __init__(self, logger) -> None:
+        """
+        Initializes a new instance of the class with the specified logger and environment variables.
+        KIP_CM_NAMESPACE: namespace the configmap is in
+        KIP_CM_NAME: the name of the config map
+        KIP_CM_KEY_NAME: the key name
+        """
         self.logger = logger
         self.namespace = os.getenv("KIP_CM_NAMESPACE", "enterprise-gateway")
         self.name = os.getenv("KIP_CM_NAME", "kernel-images")
         self.key_name = os.getenv("KIP_CM_KEY_NAME", "image-names")
 
     def fetch_image_names(self) -> set[str]:
+        """
+        fetch image names by parsing the configmap
+        this will load the in-cluster context, your service account of the pod should have access to get configmap
+        """
         config.load_incluster_config()
         v1 = client.CoreV1Api()
         config_map = None
