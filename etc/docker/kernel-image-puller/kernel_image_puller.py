@@ -127,7 +127,6 @@ class KernelImagePuller:
         )
 
     def fetch_image_names(self):
-
         # Locate the configured image_names within the kernel_specs and add to set for duplicate management
         image_names = self.image_fetcher.fetch_image_names()
 
