@@ -1,3 +1,4 @@
+"""image name fetcher abstract class and concrete implementation"""
 import abc
 import importlib
 import os
@@ -9,6 +10,9 @@ from kubernetes.client import ApiException
 
 
 class ImageNameFetcher(metaclass=abc.ABCMeta):
+    """
+    abstract class to extend for fetch image names
+    """
     @abc.abstractmethod
     def fetch_image_names(self) -> set[str]:
         """
@@ -27,6 +31,11 @@ class KernelSpecsFetcher(ImageNameFetcher):
     """
 
     def __init__(self, logger):
+        """
+        KIP_AUTH_TOKEN: enterprise-gateway auth token
+        KIP_GATEWAY_HOST: enterprise-gateway host
+        KIP_VALIDATE_CERT: validate cert or not
+        """
         self.logger = logger
         self.auth_token = os.getenv("KIP_AUTH_TOKEN", None)
         self.gateway_host = os.getenv("KIP_GATEWAY_HOST", "http://localhost:18888")
@@ -47,6 +56,9 @@ class KernelSpecsFetcher(ImageNameFetcher):
         return resp.json()
 
     def fetch_image_names(self) -> set[str]:
+        """
+        fetch image names from enterprise gateway kernelspecs
+        """
         k_specs = None
         try:
             k_specs_response = self.get_kernel_specs()
@@ -96,9 +108,15 @@ class StaticListFetcher(ImageNameFetcher):
     """
 
     def __init__(self, logger) -> None:
+        """
+        init method
+        """
         self.logger = logger
 
     def fetch_image_names(self) -> set[str]:
+        """
+        KIP_IMAGES: comma seperated list of image names
+        """
         images = os.getenv("KIP_IMAGES", "").split(",")
         return set(images)
 
@@ -180,6 +198,9 @@ class CombinedImagesFetcher(ImageNameFetcher):
     """
 
     def __init__(self, logger):
+        """
+        KIP_INTERNAL_FETCHERS: fetchers used internally to get image names
+        """
         self.logger = logger
         fetcher_names = os.getenv("KIP_INTERNAL_FETCHERS", "KernelSpecsFetcher").split(',')
         self.fetchers = []
@@ -190,6 +211,9 @@ class CombinedImagesFetcher(ImageNameFetcher):
             self.fetchers.append(fetcher)
 
     def fetch_image_names(self) -> set[str]:
+        """
+        fetch image names from internal fetchers
+        """
         images = set()
         for f in self.fetchers:
             images.update(f.fetch_image_names())
