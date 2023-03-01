@@ -607,8 +607,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             Any options specified here will overwrite those used to launch the
             kernel.
         """
-        if now:  # if auto-restarting (when now is True), indicate we're restarting.
-            self.restarting = True
         kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace(
             "kernel-", ""
         ).replace(".json", "")
@@ -628,6 +626,10 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
                 await self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
                 return
+
+        if now:  # if auto-restarting (when now is True), indicate we're restarting.
+            self.restarting = True
+
         await super().restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
             # Re-establish activity watching...
