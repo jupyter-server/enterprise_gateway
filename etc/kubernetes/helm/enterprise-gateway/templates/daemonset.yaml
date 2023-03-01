@@ -58,6 +58,21 @@ spec:
         - name: KIP_AUTH_TOKEN
           value: {{ .Values.authToken }}
         {{- end }}
+        # fetcher to fetch image names, defaults to KernelSpecsFetcher
+        {{- if .Values.kip.fetcher }}
+        - name: KIP_IMAGE_FETCHER
+          value: "{{ .Values.kip.fetcher }}"
+        {{- end }}
+        # if CombinedImagesFetcher is used KIP_INTERNAL_FETCHERS defines the fetchers that get used internally
+        {{- if .Values.kip.internalFetcher }}
+        - name: KIP_INTERNAL_FETCHERS
+          value: "{{ .Values.kip.internalFetcher }}"
+        {{- end }}
+        # if StaticListFetcher is used KIP_IMAGES defines the list of images pullers will fetch
+        {{- if .Values.kip.images}}
+        - name: KIP_IMAGES
+          value: "{{ .Values.kip.images }}"
+        {{- end }}
         {{- if .Values.kip.resources }}
         resources:
           {{- toYaml .Values.kip.resources | nindent 10 }}

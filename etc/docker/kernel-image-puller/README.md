@@ -19,5 +19,6 @@ There are a few points of configuration listed below - all of which are environm
 - `KIP_NUM_PULLERS` (`2`)
 - `KIP_NUM_RETRIES` (`3`)
 - `KIP_PULL_POLICY` (`IfNotPresent`)
+- `KIP_IMAGE_FETCHER` (`KernelSpecsFetcher`)
 
 For more information, check our [repo](https://github.com/jupyter-server/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

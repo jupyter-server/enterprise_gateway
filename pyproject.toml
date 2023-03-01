@@ -189,6 +189,7 @@ unfixable = [
 "etc/docker/kernel-image-puller/kernel_image_puller.py" = ["C901"]  # `fetch_image_names` is too complex (13)
 "enterprise_gateway/services/processproxies/k8s.py" = ["C901"]  # `terminate_container_resources` is too complex (13)
 "etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py" = ["C901"]  # `launch_kubernetes_kernel` is too complex (32)
+"etc/docker/kernel-image-puller/image_fetcher.py" = ["C901"]  # `fetch_image_names` is too complex (11)
 
 
 [tool.interrogate]
