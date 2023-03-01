@@ -58,7 +58,7 @@ Some of the more useful commands are listed below.
 Build a Python 3 conda environment that can be used to run
 the Enterprise Gateway server within an IDE. May be necessary prior
 to [debugging Enterprise Gateway](./debug.md) based on your local Python environment.
-See [Conda's Managing environments](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#managing-environments)
+See [Conda's Managing environments](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html#managing-environments)
 for background on environments and why you may find them useful as you develop on Enterprise Gateway.
 
 ```bash
