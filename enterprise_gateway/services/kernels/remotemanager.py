@@ -250,7 +250,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             await self.wait_for_restart_finish(kernel_id, "shutdown")
         try:
             await super().shutdown_kernel(kernel_id, now, restart)
-        except KeyError as ke:  # this is hit for multiple shutdown request.
+        except KeyError as ke:  # this is hint for multiple shutdown request.
             self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
             raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id) from None
 
@@ -323,7 +323,11 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
         Removes the kernel associated with `kernel_id` from the internal map and deletes the kernel session.
         """
-        super().remove_kernel(kernel_id)
+        try:
+            super().remove_kernel(kernel_id)
+        except KeyError:  # this is hint for multiple shutdown request.
+            self.log.debug(f"Exception while removing kernel {kernel_id}: kernel not found.")
+
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
     def start_kernel_from_session(
@@ -603,8 +607,6 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             Any options specified here will overwrite those used to launch the
             kernel.
         """
-        if now:  # if auto-restarting (when now is True), indicate we're restarting.
-            self.restarting = True
         kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace(
             "kernel-", ""
         ).replace(".json", "")
@@ -624,6 +626,10 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
                 await self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
                 return
+
+        if now:  # if auto-restarting (when now is True), indicate we're restarting.
+            self.restarting = True
+
         await super().restart_kernel(now, **kwargs)
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
             # Re-establish activity watching...

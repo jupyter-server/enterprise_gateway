@@ -257,9 +257,8 @@ class KernelClient:
             return True
         else:
             self.restarting = False
-            msg = "Unexpected response restarting kernel {}: {}".format(
-                self.kernel_id, response.content
-            )
+            msg = f"Unexpected response restarting kernel {self.kernel_id}: {response.content}"
+            self.log.debug(msg)
             raise RuntimeError(msg)
 
     def get_state(self):
