@@ -27,12 +27,12 @@ spec:
 # should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
 # that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
 # "kernel_uid" and "kernel_gid" values.
-  {% if kernel_uid is defined or kernel_gid is defined %}
+  {% if kernel_uid is defined or kernel_gid %}
   securityContext:
-    {% if kernel_uid is defined %}
+    {% if kernel_uid %}
     runAsUser: {{ kernel_uid | int }}
     {% endif %}
-    {% if kernel_gid is defined %}
+    {% if kernel_gid %}
     runAsGroup: {{ kernel_gid | int }}
     {% endif %}
     fsGroup: 100
@@ -44,46 +44,46 @@ spec:
 # Add any custom envs here that aren't already configured for the kernel's environment
 #    - name: MY_CUSTOM_ENV
 #      value: "my_custom_value"
-    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
     resources:
-      {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+      {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus %}
       requests:
-        {% if kernel_cpus is defined %}
+        {% if kernel_cpus %}
         cpu: "{{ kernel_cpus }}"
         {% endif %}
-        {% if kernel_memory is defined %}
+        {% if kernel_memory %}
         memory: "{{ kernel_memory }}"
         {% endif %}
-        {% if kernel_gpus is defined %}
+        {% if kernel_gpus %}
         nvidia.com/gpu: "{{ kernel_gpus }}"
         {% endif %}
       {% endif %}
-      {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+      {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
       limits:
-        {% if kernel_cpus_limit is defined %}
+        {% if kernel_cpus_limit %}
         cpu: "{{ kernel_cpus_limit }}"
         {% endif %}
-        {% if kernel_memory_limit is defined %}
+        {% if kernel_memory_limit %}
         memory: "{{ kernel_memory_limit }}"
         {% endif %}
-        {% if kernel_gpus_limit is defined %}
+        {% if kernel_gpus_limit %}
         nvidia.com/gpu: "{{ kernel_gpus_limit }}"
         {% endif %}
       {% endif %}
     {% endif %}
-    {% if kernel_working_dir is defined %}
+    {% if kernel_working_dir %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
     volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-    {% if kernel_volume_mounts is defined %}
+    {% if kernel_volume_mounts %}
       {% for volume_mount in kernel_volume_mounts %}
     - {{ volume_mount }}
       {% endfor %}
     {% endif %}
   volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-  {% if kernel_volumes is defined %}
+  {% if kernel_volumes %}
     {% for volume in kernel_volumes %}
   - {{ volume }}
     {% endfor %}

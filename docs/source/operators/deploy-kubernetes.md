@@ -722,12 +722,12 @@ metadata:
 spec:
   restartPolicy: Never
   serviceAccountName: "{{ kernel_service_account_name }}"
-  {% if kernel_uid is defined or kernel_gid is defined %}
+  {% if kernel_uid or kernel_gid %}
   securityContext:
-    {% if kernel_uid is defined %}
+    {% if kernel_uid %}
     runAsUser: {{ kernel_uid | int }}
     {% endif %}
-    {% if kernel_gid is defined %}
+    {% if kernel_gid %}
     runAsGroup: {{ kernel_gid | int }}
     {% endif %}
     fsGroup: 100
@@ -781,14 +781,14 @@ Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. A
 ```yaml+jinja
 volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
 {% endif %}
 volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
@@ -802,7 +802,7 @@ volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
 - mountPath: /dev/shm
   name: dshm
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
@@ -812,7 +812,7 @@ volumes:
 - name: dshm
 emptyDir:
   medium: Memory
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
@@ -835,29 +835,29 @@ Memory and CPU units are based on the [Kubernetes Official Documentation](https:
 When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
 ```yaml+jinja
-{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
   resources:
-    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus %}
     requests:
-      {% if kernel_cpus is defined %}
+      {% if kernel_cpus %}
       cpu: "{{ kernel_cpus }}"
       {% endif %}
-      {% if kernel_memory is defined %}
+      {% if kernel_memory %}
       memory: "{{ kernel_memory }}"
       {% endif %}
-      {% if kernel_gpus is defined %}
+      {% if kernel_gpus %}
       nvidia.com/gpu: "{{ kernel_gpus }}"
       {% endif %}
     {% endif %}
-    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
+    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
     limits:
-      {% if kernel_cpus_limit is defined %}
+      {% if kernel_cpus_limit %}
       cpu: "{{ kernel_cpus_limit }}"
       {% endif %}
-      {% if kernel_memory_limit is defined %}
+      {% if kernel_memory_limit %}
       memory: "{{ kernel_memory_limit }}"
       {% endif %}
-      {% if kernel_gpus_limit is defined %}
+      {% if kernel_gpus_limit %}
       nvidia.com/gpu: "{{ kernel_gpus_limit }}"
       {% endif %}
     {% endif %}
