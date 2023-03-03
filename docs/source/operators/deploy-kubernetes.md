@@ -722,13 +722,13 @@ metadata:
 spec:
   restartPolicy: Never
   serviceAccountName: "{{ kernel_service_account_name }}"
-  {% if kernel_uid or kernel_gid %}
+  {% if kernel_uid is defined or kernel_gid is defined %}
   securityContext:
-    {% if kernel_uid %}
+    {% if kernel_uid is defined %}
     runAsUser: {{ kernel_uid | int }}
     {% endif %}
     {% if kernel_gid %}
-    runAsGroup: {{ kernel_gid | int }}
+    runAsGroup: {{ kernel_gid is defined | int }}
     {% endif %}
     fsGroup: 100
   {% endif %}

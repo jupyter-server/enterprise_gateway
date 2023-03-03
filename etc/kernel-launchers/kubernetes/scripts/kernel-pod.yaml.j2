@@ -27,12 +27,12 @@ spec:
 # should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
 # that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
 # "kernel_uid" and "kernel_gid" values.
-  {% if kernel_uid or kernel_gid %}
+  {% if kernel_uid is defined or kernel_gid is defined %}
   securityContext:
-    {% if kernel_uid %}
+    {% if kernel_uid is defined %}
     runAsUser: {{ kernel_uid | int }}
     {% endif %}
-    {% if kernel_gid %}
+    {% if kernel_gid is defined %}
     runAsGroup: {{ kernel_gid | int }}
     {% endif %}
     fsGroup: 100
