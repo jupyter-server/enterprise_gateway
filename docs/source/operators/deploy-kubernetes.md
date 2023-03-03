@@ -728,7 +728,7 @@ spec:
     runAsUser: {{ kernel_uid | int }}
     {% endif %}
     {% if kernel_gid %}
-    runAsGroup: {{ kernel_gid is defined | int }}
+    runAsGroup: {{ kernel_gid | int }}
     {% endif %}
     fsGroup: 100
   {% endif %}
