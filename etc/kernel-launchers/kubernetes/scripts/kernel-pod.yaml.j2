@@ -71,19 +71,19 @@ spec:
         {% endif %}
       {% endif %}
     {% endif %}
-    {% if kernel_working_dir  %}
+    {% if kernel_working_dir %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
     volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-    {% if kernel_volume_mounts  %}
+    {% if kernel_volume_mounts %}
       {% for volume_mount in kernel_volume_mounts %}
     - {{ volume_mount }}
       {% endfor %}
     {% endif %}
   volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-  {% if kernel_volumes  %}
+  {% if kernel_volumes %}
     {% for volume in kernel_volumes %}
   - {{ volume }}
     {% endfor %}
