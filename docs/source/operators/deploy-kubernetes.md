@@ -835,29 +835,29 @@ Memory and CPU units are based on the [Kubernetes Official Documentation](https:
 When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
 ```yaml+jinja
-{% if kernel_cpus or kernel_memory or kernel_gpus or kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
+{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
   resources:
-    {% if kernel_cpus or kernel_memory or kernel_gpus %}
+    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
     requests:
-      {% if kernel_cpus %}
+      {% if kernel_cpus is defined %}
       cpu: "{{ kernel_cpus }}"
       {% endif %}
-      {% if kernel_memory %}
+      {% if kernel_memory is defined %}
       memory: "{{ kernel_memory }}"
       {% endif %}
-      {% if kernel_gpus %}
+      {% if kernel_gpus is defined %}
       nvidia.com/gpu: "{{ kernel_gpus }}"
       {% endif %}
     {% endif %}
-    {% if kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
+    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
     limits:
-      {% if kernel_cpus_limit %}
+      {% if kernel_cpus_limit is defined %}
       cpu: "{{ kernel_cpus_limit }}"
       {% endif %}
-      {% if kernel_memory_limit %}
+      {% if kernel_memory_limit is defined %}
       memory: "{{ kernel_memory_limit }}"
       {% endif %}
-      {% if kernel_gpus_limit %}
+      {% if kernel_gpus_limit is defined %}
       nvidia.com/gpu: "{{ kernel_gpus_limit }}"
       {% endif %}
     {% endif %}
