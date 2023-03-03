@@ -27,7 +27,7 @@ spec:
 # should be enabled to ensure expected behavior.  In addition, 'fsGroup: 100' is recommended so
 # that /home/jovyan can be written to via the 'users' group (gid: 100) irrespective of the
 # "kernel_uid" and "kernel_gid" values.
-  {% if kernel_uid is defined or kernel_gid %}
+  {% if kernel_uid or kernel_gid %}
   securityContext:
     {% if kernel_uid %}
     runAsUser: {{ kernel_uid | int }}
@@ -44,9 +44,9 @@ spec:
 # Add any custom envs here that aren't already configured for the kernel's environment
 #    - name: MY_CUSTOM_ENV
 #      value: "my_custom_value"
-    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
+    {% if kernel_cpus or kernel_memory or kernel_gpus or kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
     resources:
-      {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus %}
+      {% if kernel_cpus or kernel_memory or kernel_gpus %}
       requests:
         {% if kernel_cpus %}
         cpu: "{{ kernel_cpus }}"
@@ -58,7 +58,7 @@ spec:
         nvidia.com/gpu: "{{ kernel_gpus }}"
         {% endif %}
       {% endif %}
-      {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
+      {% if kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
       limits:
         {% if kernel_cpus_limit %}
         cpu: "{{ kernel_cpus_limit }}"

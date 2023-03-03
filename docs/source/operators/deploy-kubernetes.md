@@ -835,9 +835,9 @@ Memory and CPU units are based on the [Kubernetes Official Documentation](https:
 When defined, these variables are then substituted into the appropriate location of the corresponding kernel-pod.yaml.j2 template.
 
 ```yaml+jinja
-{% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined or kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
+{% if kernel_cpus or kernel_memory or kernel_gpus or kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
   resources:
-    {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus %}
+    {% if kernel_cpus or kernel_memory or kernel_gpus %}
     requests:
       {% if kernel_cpus %}
       cpu: "{{ kernel_cpus }}"
@@ -849,7 +849,7 @@ When defined, these variables are then substituted into the appropriate location
       nvidia.com/gpu: "{{ kernel_gpus }}"
       {% endif %}
     {% endif %}
-    {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit %}
+    {% if kernel_cpus_limit or kernel_memory_limit or kernel_gpus_limit %}
     limits:
       {% if kernel_cpus_limit %}
       cpu: "{{ kernel_cpus_limit }}"
