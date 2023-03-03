@@ -781,14 +781,14 @@ Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. A
 ```yaml+jinja
 volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
 {% endif %}
 volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
@@ -802,7 +802,7 @@ volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
 - mountPath: /dev/shm
   name: dshm
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
@@ -812,7 +812,7 @@ volumes:
 - name: dshm
 emptyDir:
   medium: Memory
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
