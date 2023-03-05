@@ -73,11 +73,11 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
     def get_initial_states(self) -> set:
         """Return list of states indicating container is starting (includes running)."""
-        return {"Pending", "Running"}
+        return ["pending", "running"]
 
     def get_error_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
-        return {"Failed"}
+        """Return list of states indicating container failed ."""
+        return ["failed"]
 
     def get_container_status(self, iteration: int | None) -> str | None:
         """Return current container state."""
