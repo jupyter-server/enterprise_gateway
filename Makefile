@@ -83,7 +83,7 @@ kernelspecs:  kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs
 kernelspecs_all kernelspecs_yarn kernelspecs_conductor kernelspecs_kubernetes kernelspecs_docker kernel_image_files:
 	make VERSION=$(VERSION) TAG=$(TAG) SPARK_VERSION=$(SPARK_VERSION) -C  etc $@
 
-test-install: test-install-wheel test-install-tar ## Install and minimally run EG with the wheel and tar distributions
+test-install: dist test-install-wheel test-install-tar ## Install and minimally run EG with the wheel and tar distributions
 
 test-install-wheel:
 	pip uninstall -y jupyter_enterprise_gateway
