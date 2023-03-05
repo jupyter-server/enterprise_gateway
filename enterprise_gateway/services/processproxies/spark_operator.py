@@ -88,3 +88,48 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             #     raise RuntimeError(error_message)
 
         return None
+
+    # def detect_launch_failure(self) -> None:
+    #     """
+    #     Detect spark operator submission id
+    #     """
+    #
+    #     with suppress(Exception):
+    #         custom_resource = client.CustomObjectsApi().get_namespaced_custom_object(
+    #             self.group,
+    #             self.version,
+    #             self.kernel_namespace,
+    #             self.plural,
+    #             self.kernel_resource_name,
+    #         )
+    #
+    #         if not custom_resource:
+    #             return None
+    #
+    #         application_state = custom_resource['status']['applicationState']['state']
+    #
+    #         self.log.debug(
+    #             f"Checking CRD status: {custom_resource['status']['applicationState']['state']}"
+    #         )
+    #
+    #         if application_state.lower() in self.get_initial_states():
+    #             # retrieve the actual pod application status
+    #             return super.detect_launch_failure()
+    #
+    #         if application_state.lower() in self.get_error_states():
+    #             exception_text = self._get_exception_text(
+    #                 custom_resource['status']['applicationState']['errorMessage']
+    #             )
+    #
+    #             error_message = f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
+    #             self.log_and_raise(http_status_code=500, reason=error_message)
+    #
+    #     return None
+
+    def _get_exception_text(self, error_message):
+        match = re.search(r'Exception\s*:\s*(.*)', error_message, re.MULTILINE)
+
+        if match:
+            error_message = match.group(1)
+
+        return error_message
