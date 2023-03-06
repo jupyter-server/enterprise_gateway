@@ -56,26 +56,23 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             if not custom_resource:
                 return None
 
-            application_state = custom_resource['status']['applicationState']['state']
+            application_state = custom_resource['status']['applicationState']['state'].lower()
 
-            self.log.debug(
-                f"Checking CRD status: {custom_resource['status']['applicationState']['state']}"
-            )
-            if application_state.lower() in self.get_error_states():
+            self.log.debug(f"Checking CRD status: {application_state}")
+
+            if application_state in self.get_error_states():
                 exception_text = self._get_exception_text(
                     custom_resource['status']['applicationState']['errorMessage']
                 )
                 error_message = (
                     f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
                 )
-
                 self.log.debug(error_message)
+            elif application_state == "running" and not self.assigned_host:
+                super().get_container_status(iteration)
 
-            if application_state.lower() in self.get_initial_states():
-                # retrieve the actual pod application status
-                return super.get_container_status()
-            else:
-                return application_state
+            self.log.debug(">>> SparkOperator->get_container_status returning initial state")
+            return application_state
 
             # should raise error to flow the fail details?
             # if application_state == "FAILED":
@@ -86,7 +83,10 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             #         f"Error starting kernel: {application_status_message.splitlines}"
             #     )
             #     raise RuntimeError(error_message)
+        # except Exception as e:
+        #     self.log.debug(f">>>SparkOperator->get_container_status Error: {str(e)}")
 
+        self.log.debug(">>> SparkOperator->get_container_status returning NONE")
         return None
 
     # def detect_launch_failure(self) -> None:
