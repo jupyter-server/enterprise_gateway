@@ -148,7 +148,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         # Do not check whether container_status is None
         # EG couldn't restart kernels although connections exists.
         # See https://github.com/jupyter-server/enterprise_gateway/issues/827
-        if container_status.lower() in self.get_initial_states():
+        if container_status and container_status.lower in self.get_initial_states():
             result = None
         return result
 
@@ -202,7 +202,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             container_status = self.get_container_status(str(i))
             if container_status:
                 self.log.debug(f"Received startup status: {container_status}")
-                if container_status.lower() == "failed":
+                if container_status.lower() in self.get_error_states():
                     self.log_and_raise(
                         http_status_code=500, reason="Error starting kernel container."
                     )
