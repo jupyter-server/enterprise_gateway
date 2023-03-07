@@ -17,6 +17,8 @@ metadata:
     app: enterprise-gateway
     component: kernel
     source: kernel-pod.yaml
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 spec:
   restartPolicy: Never
   serviceAccountName: "{{ kernel_service_account_name }}"
