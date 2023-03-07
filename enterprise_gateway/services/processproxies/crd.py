@@ -61,3 +61,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         result = delete_status and delete_status.get("status", None) in termination_stati
 
         return result
+
+    def get_initial_states(self) -> set:
+        """Return list of states in lowercase indicating container is starting (includes running)."""
+        return ["submitted", "pending", "running"]

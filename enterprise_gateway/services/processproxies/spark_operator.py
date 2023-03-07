@@ -29,12 +29,8 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
         self.version = "v1beta2"
         self.plural = "sparkapplications"
 
-    def get_initial_states(self) -> set:
-        """Return list of states in lowercase indicating container is starting (includes running)."""
-        return ["submitted", "pending", "running"]
-
     def get_container_status(self, iteration: int | None) -> str:
-        """Determines if container is still active.
+        """Determines submitted CRD application status
 
         Submitting a new kernel application to the spark operator
         will take a while to be Running and can also fail before it
