@@ -4,11 +4,9 @@
 from __future__ import annotations
 
 import os
-import re
-from contextlib import suppress
 
 from ..kernels.remotemanager import RemoteKernelManager
-from .crd import CustomResourceProcessProxy, client
+from .crd import CustomResourceProcessProxy
 
 enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
 
@@ -28,58 +26,3 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
         self.group = "sparkoperator.k8s.io"
         self.version = "v1beta2"
         self.plural = "sparkapplications"
-
-    def get_container_status(self, iteration: int | None) -> str:
-        """Determines submitted CRD application status
-
-        Submitting a new kernel application to the spark operator
-        will take a while to be Running and can also fail before it
-        can actually start any pods. So we will validate that the
-        application succeeds on the Spark Operator side and then
-        delegate to parent to check if the application pod is running.
-
-        Returns
-        -------
-        Empty string if the container cannot be found otherwise.
-        The pod application status in case of success on Spark Operator side
-        Or the retrieved spark operator submission status in other cases (e.g. Failed)
-        """
-        with suppress(Exception):
-            custom_resource = client.CustomObjectsApi().get_namespaced_custom_object(
-                self.group,
-                self.version,
-                self.kernel_namespace,
-                self.plural,
-                self.kernel_resource_name,
-            )
-
-            if not custom_resource:
-                return ""
-
-            application_state = custom_resource['status']['applicationState']['state'].lower()
-
-            if iteration:
-                self.log.debug(f"Checking CRD status: {application_state}")
-
-            if application_state in self.get_error_states():
-                exception_text = self._get_exception_text(
-                    custom_resource['status']['applicationState']['errorMessage']
-                )
-                error_message = (
-                    f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
-                )
-                self.log.debug(error_message)
-            elif application_state == "running" and not self.assigned_host:
-                super().get_container_status(iteration)
-
-            return application_state
-
-        return ""
-
-    def _get_exception_text(self, error_message):
-        match = re.search(r'Exception\s*:\s*(.*)', error_message, re.MULTILINE)
-
-        if match:
-            error_message = match.group(1)
-
-        return error_message
