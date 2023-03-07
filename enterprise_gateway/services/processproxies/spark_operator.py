@@ -29,7 +29,11 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
         self.version = "v1beta2"
         self.plural = "sparkapplications"
 
-    def get_container_status(self, iteration):
+    def get_initial_states(self) -> set:
+        """Return list of states in lowercase indicating container is starting (includes running)."""
+        return ["submitted", "pending", "running"]
+
+    def get_container_status(self, iteration: int | None) -> str:
         """Determines if container is still active.
 
         Submitting a new kernel application to the spark operator
@@ -40,7 +44,7 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
 
         Returns
         -------
-        None if the container cannot be found otherwise.
+        Empty string if the container cannot be found otherwise.
         The pod application status in case of success on Spark Operator side
         Or the retrieved spark operator submission status in other cases (e.g. Failed)
         """
@@ -54,7 +58,7 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             )
 
             if not custom_resource:
-                return None
+                return ""
 
             application_state = custom_resource['status']['applicationState']['state'].lower()
 
@@ -73,7 +77,7 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
 
             return application_state
 
-        return None
+        return ""
 
     def _get_exception_text(self, error_message):
         match = re.search(r'Exception\s*:\s*(.*)', error_message, re.MULTILINE)

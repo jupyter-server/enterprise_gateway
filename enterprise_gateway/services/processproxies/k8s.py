@@ -72,18 +72,18 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return self
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         return ["pending", "running"]
 
     def get_error_states(self) -> set:
-        """Return list of states indicating container failed ."""
+        """Return list of states in lowercase indicating container failed ."""
         return ["failed"]
 
-    def get_container_status(self, iteration: int | None) -> str | None:
+    def get_container_status(self, iteration: int | None) -> str:
         """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
-        pod_status = None
+        pod_status = ""
         kernel_label_selector = "kernel_id=" + self.kernel_id + ",component=kernel"
         ret = client.CoreV1Api().list_namespaced_pod(
             namespace=self.kernel_namespace, label_selector=kernel_label_selector
@@ -92,8 +92,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             pod_info = ret.items[0]
             self.container_name = pod_info.metadata.name
             if pod_info.status:
-                pod_status = pod_info.status.phase
-                if pod_status.lower() == "running" and self.assigned_host == "":
+                pod_status = pod_info.status.phase.lower()
+                if pod_status == "running" and self.assigned_host == "":
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
                     self.assigned_host = self.container_name

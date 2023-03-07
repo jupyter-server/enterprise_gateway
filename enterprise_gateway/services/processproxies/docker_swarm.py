@@ -89,14 +89,14 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the status indicates an initial state we
         # should be able to get at the NetworksAttachments and determine the associated container's IP address.
-        task_state = None
+        task_state = ""
         task_id = None
         task = self._get_task()
         if task:
             task_status = task["Status"]
             task_id = task["ID"]
             if task_status:
-                task_state = task_status["State"]
+                task_state = task_status["State"].lower()
                 if (
                     self.assigned_host == "" and task_state == "running"
                 ):  # in self.get_initial_states():
@@ -200,13 +200,13 @@ class DockerProcessProxy(ContainerProcessProxy):
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.  Only used when docker mode == regular (non swarm)
-        container_status = None
+        container_status = ""
 
         container = self._get_container()
         if container:
             self.container_name = container.name
             if container.status:
-                container_status = container.status
+                container_status = container.status.lower()
                 if container_status == "running" and self.assigned_host == "":
                     # Container is running, capture IP
 
