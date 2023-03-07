@@ -239,7 +239,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     @abc.abstractmethod
     def get_error_states(self):
-        """Return list of states indicating container is starting (includes running)."""
+        """Returns the list of error states (in lowercase)."""
         raise NotImplementedError
 
     @abc.abstractmethod
