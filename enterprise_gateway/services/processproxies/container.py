@@ -204,7 +204,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
                 self.log.debug(f"Received startup status: {container_status}")
                 if container_status in self.get_error_states():
                     self.log_and_raise(
-                        http_status_code=500, reason="Error starting kernel container."
+                        http_status_code=500, reason=f"Error starting kernel container; status: '{container_status}'."
                     )
                 else:
                     if self.assigned_host != "":
