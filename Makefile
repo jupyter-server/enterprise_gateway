@@ -71,7 +71,7 @@ lint: ## Check code style
 	black --check --diff --color .
 	mdformat --check *.md
 	pipx run 'validate-pyproject[all]' pyproject.toml
-	# pipx run interrogate -v .
+	pipx run interrogate -v .
 
 run-dev: test-install-wheel ## Make a server in jupyter_websocket mode
 	python enterprise_gateway
