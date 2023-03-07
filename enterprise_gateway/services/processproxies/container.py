@@ -244,7 +244,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     @abc.abstractmethod
     def get_container_status(self, iteration: int | None) -> str:
-        """Return current container state or empty string."""
+        """Returns the current container state (in lowercase) or the empty string if not available."""
         raise NotImplementedError
 
     @abc.abstractmethod
