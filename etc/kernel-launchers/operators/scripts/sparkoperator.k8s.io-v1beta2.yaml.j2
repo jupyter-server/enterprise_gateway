@@ -3,6 +3,8 @@ kind: SparkApplication
 metadata:
   name: {{ kernel_resource_name }}
 spec:
+  restartPolicy:
+    type: Never
   type: Python
   pythonVersion: "3"
   sparkVersion: 2.4.5
@@ -20,6 +22,8 @@ spec:
     - "--public-key"
     - "{{ eg_public_key }}"
   driver:
+    annotations:
+      cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     env:
 # Add any custom envs here that aren't already configured for the kernel's environment
 # Note: For envs to flow to the pods, the webhook server must be enabled during deployment
