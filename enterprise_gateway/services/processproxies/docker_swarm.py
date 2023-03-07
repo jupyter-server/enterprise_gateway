@@ -47,7 +47,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         return super().launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"preparing", "starting", "running"}
 
     def _get_service(self) -> Service:
@@ -176,7 +176,7 @@ class DockerProcessProxy(ContainerProcessProxy):
         return super().launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"created", "running"}
 
     def _get_container(self) -> Container:
