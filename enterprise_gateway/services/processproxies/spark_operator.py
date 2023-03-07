@@ -71,22 +71,8 @@ class SparkOperatorProcessProxy(CustomResourceProcessProxy):
             elif application_state == "running" and not self.assigned_host:
                 super().get_container_status(iteration)
 
-            self.log.debug(">>> SparkOperator->get_container_status returning initial state")
             return application_state
 
-            # should raise error to flow the fail details?
-            # if application_state == "FAILED":
-            #     application_status_message = custom_resource['status']['applicationState'][
-            #         'errorMessage'
-            #     ]
-            #     error_message = (
-            #         f"Error starting kernel: {application_status_message.splitlines}"
-            #     )
-            #     raise RuntimeError(error_message)
-        # except Exception as e:
-        #     self.log.debug(f">>>SparkOperator->get_container_status Error: {str(e)}")
-
-        self.log.debug(">>> SparkOperator->get_container_status returning NONE")
         return None
 
     def _get_exception_text(self, error_message):
