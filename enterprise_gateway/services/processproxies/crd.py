@@ -91,7 +91,8 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
                 self.log.debug(
                     f"{iteration}: Waiting from CRD status from resource manager {self.object_kind.lower()} in "
-                    f"namespace '{self.kernel_namespace}'."
+                    f"namespace '{self.kernel_namespace}' Name: '{self.container_name}', "
+                    f"Status: '{application_state}', KernelID: '{self.kernel_id}'."
                 )
 
             return application_state
