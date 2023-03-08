@@ -199,9 +199,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
             i += 1
             await self.handle_timeout()
 
-            container_status = self.get_container_status(str(i))
+            container_status = self.get_container_status(i)
             if container_status:
-                self.log.debug(f"Received startup status: {container_status}")
                 if container_status in self.get_error_states():
                     self.log_and_raise(
                         http_status_code=500,

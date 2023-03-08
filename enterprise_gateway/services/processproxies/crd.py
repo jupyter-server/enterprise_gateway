@@ -75,9 +75,6 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             if custom_resource:
                 application_state = custom_resource['status']['applicationState']['state'].lower()
 
-                if iteration:
-                    self.log.debug(f"CRD status is: {application_state}")
-
                 if application_state in self.get_error_states():
                     exception_text = self._get_exception_text(
                         custom_resource['status']['applicationState']['errorMessage']
@@ -89,14 +86,14 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
                 elif application_state == "running" and not self.assigned_host:
                     super().get_container_status(iteration)
 
-            # only log if iteration is not None (otherwise poll() is too noisy)
-            # check for running state to avoid double logging with superclass"
-            if iteration and application_state != "running":
-                self.log.debug(
-                    f"{iteration}: Waiting from CRD status from resource manager {self.object_kind.lower()} in "
-                    f"namespace '{self.kernel_namespace}'. Name: '{self.kernel_resource_name}', "
-                    f"Status: '{application_state}', KernelID: '{self.kernel_id}'"
-                )
+        # only log if iteration is not None (otherwise poll() is too noisy)
+        # check for running state to avoid double logging with superclass
+        if iteration and application_state != "running":
+            self.log.debug(
+                f"{iteration}: Waiting from CRD status from resource manager {self.object_kind.lower()} in "
+                f"namespace '{self.kernel_namespace}'. Name: '{self.kernel_resource_name}', "
+                f"Status: '{application_state}', KernelID: '{self.kernel_id}'"
+            )
 
         return application_state
 
