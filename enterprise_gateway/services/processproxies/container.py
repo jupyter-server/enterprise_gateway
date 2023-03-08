@@ -191,6 +191,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     async def confirm_remote_startup(self) -> None:
         """Confirms the container has started and returned necessary connection information."""
+        self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
@@ -198,14 +199,20 @@ class ContainerProcessProxy(RemoteProcessProxy):
             i += 1
             await self.handle_timeout()
 
-            container_status = self.get_container_status(str(i))
+            container_status = self.get_container_status(i)
             if container_status:
-                if self.assigned_host != "":
-                    ready_to_connect = await self.receive_connection_info()
-                    self.pid = (
-                        0  # We won't send process signals for kubernetes lifecycle management
+                if container_status in self.get_error_states():
+                    self.log_and_raise(
+                        http_status_code=500,
+                        reason=f"Error starting kernel container; status: '{container_status}'.",
                     )
-                    self.pgid = 0
+                else:
+                    if self.assigned_host != "":
+                        ready_to_connect = await self.receive_connection_info()
+                        self.pid = (
+                            0  # We won't send process signals for kubernetes lifecycle management
+                        )
+                        self.pgid = 0
             else:
                 self.detect_launch_failure()
 
@@ -226,12 +233,17 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     @abc.abstractmethod
     def get_initial_states(self):
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_container_status(self, iteration_string):
-        """Return current container state."""
+    def get_error_states(self):
+        """Returns the list of error states (in lowercase)."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_container_status(self, iteration: int | None) -> str:
+        """Returns the current container state (in lowercase) or the empty string if not available."""
         raise NotImplementedError
 
     @abc.abstractmethod
