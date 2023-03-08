@@ -60,6 +60,9 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         The pod application status in case of success on Spark Operator side
         Or the retrieved spark operator submission status in other cases (e.g. Failed)
         """
+
+        application_state = ""
+
         with suppress(Exception):
             custom_resource = client.CustomObjectsApi().get_namespaced_custom_object(
                 self.group,
@@ -69,35 +72,33 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
                 self.kernel_resource_name,
             )
 
-            if not custom_resource:
-                return ""
+            if custom_resource:
+                application_state = custom_resource['status']['applicationState']['state'].lower()
 
-            application_state = custom_resource['status']['applicationState']['state'].lower()
+                if iteration:
+                    self.log.debug(f"CRD status is: {application_state}")
 
-            if iteration:
-                self.log.debug(f"CRD status is: {application_state}")
+                if application_state in self.get_error_states():
+                    exception_text = self._get_exception_text(
+                        custom_resource['status']['applicationState']['errorMessage']
+                    )
+                    error_message = (
+                        f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
+                    )
+                    self.log.debug(error_message)
+                elif application_state == "running" and not self.assigned_host:
+                    super().get_container_status(iteration)
 
-            if application_state in self.get_error_states():
-                exception_text = self._get_exception_text(
-                    custom_resource['status']['applicationState']['errorMessage']
-                )
-                error_message = (
-                    f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
-                )
-                self.log.debug(error_message)
-            elif application_state == "running" and not self.assigned_host:
-                super().get_container_status(iteration)
-
-            if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
+            # only log if iteration is not None (otherwise poll() is too noisy)
+            # check for running state to avoid double logging with superclass"
+            if iteration and application_state != "running":
                 self.log.debug(
                     f"{iteration}: Waiting from CRD status from resource manager {self.object_kind.lower()} in "
-                    f"namespace '{self.kernel_namespace}' Name: '{self.container_name}', "
-                    f"Status: '{application_state}', KernelID: '{self.kernel_id}'."
+                    f"namespace '{self.kernel_namespace}'. Name: '{self.kernel_resource_name}', "
+                    f"Status: '{application_state}', KernelID: '{self.kernel_id}'"
                 )
 
-            return application_state
-
-        return ""
+        return application_state
 
     def delete_managed_object(self, termination_stati: list[str]) -> bool:
         """Deletes the object managed by this process-proxy
