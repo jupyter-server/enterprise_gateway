@@ -45,11 +45,14 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
     def get_container_status(self, iteration: int | None) -> str:
         """Determines submitted CRD application status
 
-        Submitting a new kernel application to the spark operator
-        will take a while to be Running and can also fail before it
-        can actually start any pods. So we will validate that the
-        application succeeds on the Spark Operator side and then
-        delegate to parent to check if the application pod is running.
+        Submitting a new kernel application CRD will take a while to
+        reach the Running state and the submission can also fail due
+        to malformation or other issues which will prevent the application
+        pod to reach the desired Running state.
+
+        This function check the CRD submission state and in case of
+        success it then delegates to parent to check if the application
+        pod is running.
 
         Returns
         -------
