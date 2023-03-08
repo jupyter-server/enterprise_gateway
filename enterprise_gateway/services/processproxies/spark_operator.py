@@ -8,8 +8,6 @@ import os
 from ..kernels.remotemanager import RemoteKernelManager
 from .crd import CustomResourceProcessProxy
 
-enterprise_gateway_namespace = os.environ.get('EG_NAMESPACE', 'default')
-
 
 class SparkOperatorProcessProxy(CustomResourceProcessProxy):
     """Spark operator process proxy."""
