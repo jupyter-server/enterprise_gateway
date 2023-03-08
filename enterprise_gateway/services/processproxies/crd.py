@@ -75,7 +75,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             application_state = custom_resource['status']['applicationState']['state'].lower()
 
             if iteration:
-                self.log.debug(f"Checking CRD status: {application_state}")
+                self.log.debug(f"CRD status is: {application_state}")
 
             if application_state in self.get_error_states():
                 exception_text = self._get_exception_text(
