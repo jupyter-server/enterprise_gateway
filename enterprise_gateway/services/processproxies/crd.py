@@ -88,6 +88,12 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             elif application_state == "running" and not self.assigned_host:
                 super().get_container_status(iteration)
 
+            if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
+                self.log.debug(
+                    f"{iteration}: Waiting from CRD status from resource manager {self.object_kind.lower()} in "
+                    f"namespace '{self.kernel_namespace}'."
+                )
+
             return application_state
 
         return ""
