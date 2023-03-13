@@ -50,6 +50,10 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"preparing", "starting", "running"}
 
+    def get_error_states(self) -> set:
+        """Returns the list of error states indicating container is shutting down or receiving error."""
+        return {"failed", "rejected", "complete", "shutdown", "orphaned", "remove"}
+
     def _get_service(self) -> Service:
         # Fetches the service object corresponding to the kernel with a matching label.
         service = None
