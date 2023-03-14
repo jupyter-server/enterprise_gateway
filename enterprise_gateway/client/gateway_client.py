@@ -88,6 +88,7 @@ class GatewayClient:
 
         kernel.shutdown()
 
+
 class KernelClient:
     """A kernel client class."""
 
