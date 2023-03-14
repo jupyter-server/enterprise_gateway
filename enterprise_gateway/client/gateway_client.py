@@ -88,16 +88,6 @@ class GatewayClient:
 
         kernel.shutdown()
 
-        url = f"{self.http_api_endpoint}/{kernel.kernel_id}"
-        response = requests.delete(url, timeout=60)
-        if response.status_code == 204:
-            self.log.debug(f"Kernel {kernel.kernel_id} shutdown")
-            return True
-        else:
-            msg = f"Error shutting down kernel {kernel.kernel_id}: {response.content}"
-            raise RuntimeError(msg)
-
-
 class KernelClient:
     """A kernel client class."""
 
@@ -124,8 +114,10 @@ class KernelClient:
                 f"{ws_api_endpoint}/{kernel_id}/channels", timeout=timeout, enable_multithread=True
             )
         except Exception as e:
+            self.kernel_socket = None
             self.log.error(e)
             self.shutdown()
+            raise e
 
         self.response_queues = {}
 
@@ -139,19 +131,28 @@ class KernelClient:
         # Terminate thread, close socket and clear queues.
         self.shutting_down = True
 
-        if self.kernel_socket:
+        if hasattr(self, 'kernel_socket') and self.kernel_socket:
             self.kernel_socket.close()
             self.kernel_socket = None
 
-        if self.response_queues:
+        if hasattr(self, 'response_queues') and self.response_queues:
             self.response_queues.clear()
             self.response_queues = None
 
-        if self.response_reader:
+        if hasattr(self, 'response_reader') and self.response_reader:
             self.response_reader.join(timeout=2.0)
             if self.response_reader.is_alive():
                 self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
+
+        url = f"{self.http_api_endpoint}/{self.kernel_id}"
+        response = requests.delete(url, timeout=60)
+        if response.status_code == 204:
+            self.log.info(f"Kernel {self.kernel_id} shutdown")
+            return True
+        else:
+            msg = f"Error shutting down kernel {self.kernel_id}: {response.content}"
+            raise RuntimeError(msg)
 
     def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
