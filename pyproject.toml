@@ -167,6 +167,8 @@ ignore = [
   "PLR2004",
   # PLW0603 Using the global statement to update is discouraged
   "PLW0603",
+  # PLW1508 Invalid type for environment variable default
+  "PLW1508",
 ]
 unfixable = [
   # Don't touch print statements
