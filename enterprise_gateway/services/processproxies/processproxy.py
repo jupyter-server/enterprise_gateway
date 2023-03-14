@@ -534,7 +534,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             ]
 
         env = kwargs.get("env").copy()
-        for key in env.keys():
+        for key in env:
             if any(phrase in key.lower() for phrase in sensitive_env):
                 env.pop(key, None)
 
