@@ -523,7 +523,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         if sensitive_env is None:
             sensitive_env = ["pwd", "password", "secret", "token", "key", "code", "auth", "state", "xsrf"]
 
-        env = kwargs.get("env")
+        env = kwargs.get("env").copy()
         for key in env.keys():
             if any(phrase in key.lower() for phrase in sensitive_env):
                 env.pop(key, None)
