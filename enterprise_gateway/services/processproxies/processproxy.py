@@ -56,6 +56,10 @@ logging.getLogger("paramiko").setLevel(os.getenv("EG_SSH_LOG_LEVEL", logging.WAR
 # Pop certain env variables that don't need to be logged, e.g. remote_pwd
 env_pop_list = ["EG_REMOTE_PWD", "LS_COLORS"]
 
+# Comma separated list of env variables that shouldn't be logged
+sensitive_env_keys = os.getenv("EG_SENSITIVE_ENV_KEYS", "").lower().split(",")
+redaction_mask = os.getenv("EG_REDACTION_MASK", "********")
+
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
 max_poll_attempts = int(os.getenv("EG_MAX_POLL_ATTEMPTS", "10"))
 poll_interval = float(os.getenv("EG_POLL_INTERVAL", "0.5"))
@@ -518,7 +522,15 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self._enforce_authorization(**kwargs)
 
-        self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get("env")))
+        # Filter sensitive values from being logged
+        env_copy = kwargs.get("env").copy()
+
+        if sensitive_env_keys:
+            for key in list(env_copy):
+                if any(phrase in key.lower() for phrase in sensitive_env_keys):
+                    env_copy[key] = redaction_mask
+
+        self.log.debug(f"BaseProcessProxy.launch_process() env: {env_copy}")
 
     def launch_kernel(
         self, cmd: list[str], **kwargs: dict[str, Any] | None
