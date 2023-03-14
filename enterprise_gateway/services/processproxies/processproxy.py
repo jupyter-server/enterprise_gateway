@@ -533,12 +533,12 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 "xsrf",
             ]
 
-        env = kwargs.get("env").copy()
-        for key in env.keys():
+        env_copy = kwargs.get("env").copy()
+        for key in list(env_copy):
             if any(phrase in key.lower() for phrase in sensitive_env):
-                env.pop(key, None)
+                env_copy[key] = "[secret]"
 
-        self.log.debug(f"BaseProcessProxy.launch_process() env: {env}")
+        self.log.debug(f"BaseProcessProxy.launch_process() env: {env_copy}")
 
     def launch_kernel(
         self, cmd: list[str], **kwargs: dict[str, Any] | None
