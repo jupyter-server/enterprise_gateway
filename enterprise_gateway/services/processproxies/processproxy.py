@@ -57,7 +57,7 @@ logging.getLogger("paramiko").setLevel(os.getenv("EG_SSH_LOG_LEVEL", logging.WAR
 env_pop_list = ["EG_REMOTE_PWD", "LS_COLORS"]
 
 # Comma separated list of env variables that shouldn't be logged
-sensitive_env_keys = os.getenv("EG_SENSITIVE_ENV_KEYS", "").split(",")
+sensitive_env_keys = os.getenv("EG_SENSITIVE_ENV_KEYS", "").lower().split(",")
 redaction_mask = os.getenv("EG_REDACTION_MASK", "********")
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))

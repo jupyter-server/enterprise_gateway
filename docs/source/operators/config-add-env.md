@@ -32,6 +32,15 @@ Besides those environment variables associated with configurable options, the fo
     startup attempt will take place.  If a second timeout occurs, Enterprise
     Gateway will report a failure to the client.
 
+  EG_SENSITIVE_ENV_KEYS=""
+    A comma separated list (e.g. "secret,pwd,auth") of sensitive environment
+    variables. Any environment variables that contain any of the words from this
+    list will have their values as EG_REDACTION_MASK whenever logged.
+
+  EG_REDACTION_MASK=********
+    The redaction mask used if EG_SENSITIVE_ENV_KEYS is set. Sensitive environment
+    variables will be logged as this redaction mask instead.
+
   EG_KERNEL_LOG_DIR=/tmp
     The directory used during remote kernel launches of DistributedProcessProxy
     kernels.  Files in this directory will be of the form kernel-<kernel_id>.log.
