@@ -518,7 +518,17 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self._enforce_authorization(**kwargs)
 
-        self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get("env")))
+        # Filter sensitive values from being logged
+        sensitive_env = kwargs.get("sensitive_env")
+        if sensitive_env is None:
+            sensitive_env = ["pwd", "password", "secret", "token", "key", "code", "auth", "state", "xsrf"]
+
+        env = kwargs.get("env")
+        for key in env.keys():
+            if any(phrase in key.lower() for phrase in sensitive_env):
+                env.pop(key, None)
+
+        self.log.debug("BaseProcessProxy.launch_process() env: {}".format(env))
 
     def launch_kernel(
         self, cmd: list[str], **kwargs: dict[str, Any] | None
