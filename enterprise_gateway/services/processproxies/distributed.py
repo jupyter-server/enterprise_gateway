@@ -212,7 +212,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                 )
             )
 
-            if self.assigned_host != "":
+            if self.assigned_host:
                 ready_to_connect = await self.receive_connection_info()
 
     async def handle_timeout(self) -> None:

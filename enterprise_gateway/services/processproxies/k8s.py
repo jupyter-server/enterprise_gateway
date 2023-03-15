@@ -93,7 +93,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             self.container_name = pod_info.metadata.name
             if pod_info.status:
                 pod_status = pod_info.status.phase.lower()
-                if pod_status == "running" and self.assigned_host == "":
+                if pod_status == "running" and not self.assigned_host:
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
                     self.assigned_host = self.container_name

@@ -102,8 +102,8 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
             if task_status:
                 task_state = task_status["State"].lower()
                 if (
-                    self.assigned_host == "" and task_state == "running"
-                ):  # in self.get_initial_states():
+                    not self.assigned_host and task_state == "running"
+                ):  # in self.get_initial_states()
                     # get the NetworkAttachments and pick out the first of the Network and first
                     networks_attachments = task["NetworksAttachments"]
                     if len(networks_attachments) > 0:
@@ -211,7 +211,7 @@ class DockerProcessProxy(ContainerProcessProxy):
             self.container_name = container.name
             if container.status:
                 container_status = container.status.lower()
-                if container_status == "running" and self.assigned_host == "":
+                if container_status == "running" and not self.assigned_host:
                     # Container is running, capture IP
 
                     # we'll use this as a fallback in case we don't find our network

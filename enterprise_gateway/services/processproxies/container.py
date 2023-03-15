@@ -207,7 +207,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         reason=f"Error starting kernel container; status: '{container_status}'.",
                     )
                 else:
-                    if self.assigned_host != "":
+                    if self.assigned_host:
                         ready_to_connect = await self.receive_connection_info()
                         self.pid = (
                             0  # We won't send process signals for kubernetes lifecycle management

@@ -68,7 +68,7 @@ lint = [
   "black[jupyter]==23.1.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
-  "ruff==0.0.254"
+  "ruff==0.0.255"
 ]
 
 [tool.ruff.pylint]
@@ -167,6 +167,8 @@ ignore = [
   "PLR2004",
   # PLW0603 Using the global statement to update is discouraged
   "PLW0603",
+  # PLW1508 Invalid type for environment variable default
+  "PLW1508",
 ]
 unfixable = [
   # Don't touch print statements

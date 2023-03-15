@@ -383,7 +383,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     )
                 )
 
-                if self.assigned_host != "":
+                if self.assigned_host:
                     ready_to_connect = await self.receive_connection_info()
             else:
                 self.detect_launch_failure()
@@ -400,7 +400,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             for app in apps:
                 if "state" in app:
                     app_state = app["state"]
-                if self.assigned_host == "" and app["driver"]:
+                if not self.assigned_host and app["driver"]:
                     self.assigned_host = app["driver"]["host"]
                     # Set the driver host to the actual host where the application landed.
                     self.assigned_ip = socket.gethostbyname(self.assigned_host)
