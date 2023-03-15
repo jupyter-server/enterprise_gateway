@@ -132,7 +132,7 @@ class KernelClient:
         # Terminate thread, close socket and clear queues.
         self.shutting_down = True
 
-        if not hasattr(self.failed_ws_connection):
+        if not hasattr(self, 'failed_ws_connection'):
             if self.kernel_socket:
                 self.kernel_socket.close()
                 self.kernel_socket = None
