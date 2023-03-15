@@ -88,15 +88,6 @@ class GatewayClient:
 
         kernel.shutdown()
 
-        url = f"{self.http_api_endpoint}/{kernel.kernel_id}"
-        response = requests.delete(url, timeout=60)
-        if response.status_code == 204:
-            self.log.debug(f"Kernel {kernel.kernel_id} shutdown")
-            return True
-        else:
-            msg = f"Error shutting down kernel {kernel.kernel_id}: {response.content}"
-            raise RuntimeError(msg)
-
 
 class KernelClient:
     """A kernel client class."""
@@ -117,6 +108,10 @@ class KernelClient:
         self.kernel_ws_api_endpoint = f"{ws_api_endpoint}/{kernel_id}/channels"
         self.kernel_id = kernel_id
         self.log = logger
+        self.kernel_socket = None
+        self.response_reader = Thread(target=self._read_responses)
+        self.response_queues = {}
+        self.interrupt_thread = None
         self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
         try:
@@ -126,13 +121,10 @@ class KernelClient:
         except Exception as e:
             self.log.error(e)
             self.shutdown()
-
-        self.response_queues = {}
+            raise e
 
         # startup reader thread
-        self.response_reader = Thread(target=self._read_responses)
         self.response_reader.start()
-        self.interrupt_thread = None
 
     def shutdown(self):
         """Shut down the client."""
@@ -152,6 +144,15 @@ class KernelClient:
             if self.response_reader.is_alive():
                 self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
+
+        url = f"{self.http_api_endpoint}/{self.kernel_id}"
+        response = requests.delete(url, timeout=60)
+        if response.status_code == 204:
+            self.log.info(f"Kernel {self.kernel_id} shutdown")
+            return True
+        else:
+            msg = f"Error shutting down kernel {self.kernel_id}: {response.content}"
+            raise RuntimeError(msg)
 
     def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
