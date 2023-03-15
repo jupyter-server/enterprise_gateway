@@ -108,6 +108,10 @@ class KernelClient:
         self.kernel_ws_api_endpoint = f"{ws_api_endpoint}/{kernel_id}/channels"
         self.kernel_id = kernel_id
         self.log = logger
+        self.kernel_socket = None
+        self.response_reader = Thread(target=self._read_responses)
+        self.response_queues = {}
+        self.interrupt_thread = None
         self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
         try:
@@ -115,32 +119,27 @@ class KernelClient:
                 f"{ws_api_endpoint}/{kernel_id}/channels", timeout=timeout, enable_multithread=True
             )
         except Exception as e:
-            self.kernel_socket = None
             self.log.error(e)
             self.shutdown()
             raise e
 
-        self.response_queues = {}
-
         # startup reader thread
-        self.response_reader = Thread(target=self._read_responses)
         self.response_reader.start()
-        self.interrupt_thread = None
 
     def shutdown(self):
         """Shut down the client."""
         # Terminate thread, close socket and clear queues.
         self.shutting_down = True
 
-        if hasattr(self, 'kernel_socket') and self.kernel_socket:
+        if self.kernel_socket:
             self.kernel_socket.close()
             self.kernel_socket = None
 
-        if hasattr(self, 'response_queues') and self.response_queues:
+        if self.response_queues:
             self.response_queues.clear()
             self.response_queues = None
 
-        if hasattr(self, 'response_reader') and self.response_reader:
+        if self.response_reader:
             self.response_reader.join(timeout=2.0)
             if self.response_reader.is_alive():
                 self.log.warning("Response reader thread is not terminated, continuing...")
