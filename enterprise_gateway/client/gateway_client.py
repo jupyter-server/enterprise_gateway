@@ -88,6 +88,7 @@ class GatewayClient:
 
         kernel.shutdown()
 
+
 class KernelClient:
     """A kernel client class."""
 
@@ -114,37 +115,36 @@ class KernelClient:
                 f"{ws_api_endpoint}/{kernel_id}/channels", timeout=timeout, enable_multithread=True
             )
         except Exception as e:
+            self.kernel_socket = None
             self.log.error(e)
-            self.failed_ws_connection = True
             self.shutdown()
             raise e
 
         self.response_queues = {}
+
         # startup reader thread
         self.response_reader = Thread(target=self._read_responses)
         self.response_reader.start()
         self.interrupt_thread = None
-        self.kernel_socket = None
 
     def shutdown(self):
         """Shut down the client."""
         # Terminate thread, close socket and clear queues.
         self.shutting_down = True
 
-        if not hasattr(self, 'failed_ws_connection'):
-            if self.kernel_socket:
-                self.kernel_socket.close()
-                self.kernel_socket = None
+        if hasattr(self, 'kernel_socket') and self.kernel_socket:
+            self.kernel_socket.close()
+            self.kernel_socket = None
 
-            if self.response_queues:
-                self.response_queues.clear()
-                self.response_queues = None
+        if hasattr(self, 'response_queues') and self.response_queues:
+            self.response_queues.clear()
+            self.response_queues = None
 
-            if self.response_reader:
-                self.response_reader.join(timeout=2.0)
-                if self.response_reader.is_alive():
-                    self.log.warning("Response reader thread is not terminated, continuing...")
-                self.response_reader = None
+        if hasattr(self, 'response_reader') and self.response_reader:
+            self.response_reader.join(timeout=2.0)
+            if self.response_reader.is_alive():
+                self.log.warning("Response reader thread is not terminated, continuing...")
+            self.response_reader = None
 
         url = f"{self.http_api_endpoint}/{self.kernel_id}"
         response = requests.delete(url, timeout=60)
