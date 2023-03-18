@@ -10,7 +10,7 @@ version: "3.5"
 # 3. We only use one replica since session affinity is another point of investigation in Swarm
 services:
   enterprise-gateway:
-    image: elyra/enterprise-gateway:3.2.2
+    image: elyra/enterprise-gateway:dev
     user: root
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
