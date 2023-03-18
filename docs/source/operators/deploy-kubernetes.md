@@ -945,10 +945,10 @@ NAME                                     READY     STATUS    RESTARTS   AGE
 po/enterprise-gateway-74c46cb7fc-jrkl7   1/1       Running   0          2h
 
 NAME                     TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-svc/enterprise-gateway   NodePort   10.110.253.2.1   <none>        8888:32422/TCP   2h
+svc/enterprise-gateway   NodePort   10.110.253.2.2   <none>        8888:32422/TCP   2h
 ```
 
-Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you are performing this on the same host as where the notebook will run, then you will need to note the cluster-ip entry (e.g.,`10.110.253.2.1`).
+Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you are performing this on the same host as where the notebook will run, then you will need to note the cluster-ip entry (e.g.,`10.110.253.2.2`).
 
 (Note: if the number of replicas is > 1, then you will see two pods listed with different five-character suffixes.)
 
@@ -1004,10 +1004,10 @@ kubectl logs -f pod/alice-5e755458-a114-4215-96b7-bcb016fc7b62
 
 Note that if using multiple replicas, commands against each pod are required.
 
-- The Kubernetes dashboard is useful as well. It's located at port `3.2.1` of the master node
+- The Kubernetes dashboard is useful as well. It's located at port `3.2.2` of the master node
 
 ```bash
-https://elyra-kube1.foo.bar.com:3.2.1/dashboard/#!/overview?namespace=default
+https://elyra-kube1.foo.bar.com:3.2.2/dashboard/#!/overview?namespace=default
 ```
 
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on
