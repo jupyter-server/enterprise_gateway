@@ -14,7 +14,7 @@ SHELL:=/bin/bash
 MULTIARCH_BUILD?=
 TARGET_ARCH?=undefined
 
-VERSION?=3.2.2
+VERSION?=3.3.0.dev0
 SPARK_VERSION?=3.2.1
 
 ifeq (dev, $(findstring dev, $(VERSION)))
