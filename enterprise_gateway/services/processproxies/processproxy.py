@@ -474,7 +474,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or "
                     "`EG_REMOTE_USER` is set. "
                     "Those options are mutually exclusive, you configuration may be incorrect. "
-                    "EG_REMOTE_GSS_SSH will take priority."
+                    "EG_REMOTE_GSS_SSH will take priority.",
+                    stacklevel=2,
                 )
             self.remote_user = None
         else:
