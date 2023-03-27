@@ -159,6 +159,8 @@ ignore = [
   "E501",
   # SIM105 Use `contextlib.suppress(...)`
   "SIM105",
+  # S311 Standard pseudo-random generators are not suitable for cryptographic purposes
+  "S311",
   # TID252 Relative imports from parent modules are banned
   "TID252",
   # N806 Variable `sqlContext` in function should be lowercase
