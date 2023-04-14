@@ -178,7 +178,7 @@ spec:
           readOnly: true
           mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.externalCluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoConfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
