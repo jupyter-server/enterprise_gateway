@@ -39,7 +39,7 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         kwargs["env"]["KERNEL_CRD_VERSION"] = self.version
         kwargs["env"]["KERNEL_CRD_PLURAL"] = self.plural
 
-        use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
+        use_remote_cluster = is_env_true("EG_USE_REMOTE_CLUSTER")
         if use_remote_cluster:
             kwargs["env"]["EG_USE_REMOTE_CLUSTER"] = 'true'
             kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv(
