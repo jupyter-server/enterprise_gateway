@@ -976,7 +976,7 @@ Enterprise Gateway will now launch kernel pods in whichever cluster you have set
 For Enterprise Gateway to work accross clusters, Enterprise Gateway must create the following resources in the cluster your kernels will be launched on.
 
 - The kernel resource.
-- A service account for the kernel pods (if `externalCluster.autoconfigureRemote` is set to `true`).
+- A service account for the kernel pods (if `externalCluster.autoConfigureRemote` is set to `true`).
 - A namespaced role for the namespace where your kernel pods will be launched.
 - A role binding between your namespaced role and your service account.
 
