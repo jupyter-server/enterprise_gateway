@@ -192,4 +192,4 @@ externalCluster:
   # Filename of kubeconfig
   configFilename: kubeconfig
   # Automatically create service account and role in remote cluster
-  autoconfigureRemote: false
+  autoConfigureRemote: false

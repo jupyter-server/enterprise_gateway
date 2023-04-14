@@ -1,4 +1,4 @@
-{{- if .Values.externalCluster.autoconfigureRemote }}
+{{- if .Values.externalCluster.autoConfigureRemote }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

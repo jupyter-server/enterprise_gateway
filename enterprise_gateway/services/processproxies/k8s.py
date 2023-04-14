@@ -293,7 +293,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
             # If remote cluster is being used, service account may not be present, create before role binding
             # If creating service account is disabled, operator must manually create svc account
-            if is_env_true('EG_USE_REMOTE_CLUSTER') and os.getenv('EG_CREATE_REMOTE_SVC_ACCOUNT'):
+            if is_env_true('EG_USE_REMOTE_CLUSTER') and is_env_true('EG_CREATE_REMOTE_SVC_ACCOUNT'):
                 self._create_service_account_if_not_exists(
                     namespace=namespace, service_account_name=service_account_name
                 )

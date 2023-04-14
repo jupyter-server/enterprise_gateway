@@ -523,7 +523,7 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `externalCluster.enable`                   | Launch kernels in a remote cluster. Used for multi-cluster environments. **Must place a kubeconfig file in the `config/` folder of the helm chart**.                                                                                             | `false`                                                                        |
 | `externalCluster.configPath`               | Path to mount kubeconfig at                                                                                                                                                                                                                      | `/etc/kube/config`                                                             |
 | `externalCluster.configFilename`           | Filename to kubeconfig file inside `config/` directory of chart                                                                                                                                                                                  | `kubeconfig`                                                                   |
-| `externalCluster.autoconfigureRemote`      | Automatically create service account in remote cluster                                                                                                                                                                                           | `false`                                                                        |
+| `externalCluster.autoConfigureRemote`      | Automatically create service account in remote cluster                                                                                                                                                                                           | `false`                                                                        |
 
 ## Uninstalling Enterprise Gateway
 
@@ -973,10 +973,10 @@ Enterprise Gateway will now launch kernel pods in whichever cluster you have set
 
 ### Resources in Remote Clusters
 
-For Enterprise Gateway to work accross clusters, Enterprise Gateway must create the following resources in the cluster your kernels will be launched on.
+For Enterprise Gateway to work across clusters, Enterprise Gateway must create the following resources in the cluster your kernels will be launched on.
 
 - The kernel resource.
-- A service account for the kernel pods (if `externalCluster.autoconfigureRemote` is set to `true`).
+- A service account for the kernel pods (if `externalCluster.autoConfigureRemote` is set to `true`).
 - A namespaced role for the namespace where your kernel pods will be launched.
 - A role binding between your namespaced role and your service account.
 
