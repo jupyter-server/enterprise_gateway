@@ -56,6 +56,10 @@ logging.getLogger("paramiko").setLevel(os.getenv("EG_SSH_LOG_LEVEL", logging.WAR
 # Pop certain env variables that don't need to be logged, e.g. remote_pwd
 env_pop_list = ["EG_REMOTE_PWD", "LS_COLORS"]
 
+# Comma separated list of env variables that shouldn't be logged
+sensitive_env_keys = os.getenv("EG_SENSITIVE_ENV_KEYS", "").lower().split(",")
+redaction_mask = os.getenv("EG_REDACTION_MASK", "********")
+
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
 max_poll_attempts = int(os.getenv("EG_MAX_POLL_ATTEMPTS", "10"))
 poll_interval = float(os.getenv("EG_POLL_INTERVAL", "0.5"))
@@ -227,7 +231,7 @@ class ResponseManager(SingletonConfigurable):
                     continue
                 else:
                     msg = f"Failed to bind to port '{port}' for response address due to: '{e}'"
-                    raise RuntimeError(msg)
+                    raise RuntimeError(msg) from e
             else:
                 response_port = port
                 break
@@ -470,7 +474,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                     "Both `EG_REMOTE_GSS_SSH` and one of `EG_REMOTE_PWD` or "
                     "`EG_REMOTE_USER` is set. "
                     "Those options are mutually exclusive, you configuration may be incorrect. "
-                    "EG_REMOTE_GSS_SSH will take priority."
+                    "EG_REMOTE_GSS_SSH will take priority.",
+                    stacklevel=2,
                 )
             self.remote_user = None
         else:
@@ -518,7 +523,15 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self._enforce_authorization(**kwargs)
 
-        self.log.debug("BaseProcessProxy.launch_process() env: {}".format(kwargs.get("env")))
+        # Filter sensitive values from being logged
+        env_copy = kwargs.get("env").copy()
+
+        if sensitive_env_keys:
+            for key in list(env_copy):
+                if any(phrase in key.lower() for phrase in sensitive_env_keys):
+                    env_copy[key] = redaction_mask
+
+        self.log.debug(f"BaseProcessProxy.launch_process() env: {env_copy}")
 
     def launch_kernel(
         self, cmd: list[str], **kwargs: dict[str, Any] | None
@@ -1034,7 +1047,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> type["LocalProcessProxy"]:
+    ) -> type[LocalProcessProxy]:
         """Launch a process for a kernel."""
         await super().launch_process(kernel_cmd, **kwargs)
 
@@ -1543,7 +1556,6 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         # using anything other than the socket-based signal (via signal_addr) will not work.
 
         if self.comm_port > 0:
-
             try:
                 self._send_listener_request({"signum": signum})
 

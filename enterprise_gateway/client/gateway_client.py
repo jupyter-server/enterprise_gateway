@@ -29,23 +29,35 @@ class GatewayClient:
     DEFAULT_GATEWAY_HOST = os.getenv("GATEWAY_HOST", "localhost:8888")
     KERNEL_LAUNCH_TIMEOUT = os.getenv("KERNEL_LAUNCH_TIMEOUT", "40")
 
-    def __init__(self, host=DEFAULT_GATEWAY_HOST):
+    def __init__(self, host=DEFAULT_GATEWAY_HOST, use_secure_connection=False):
         """Initialize the client."""
-        self.http_api_endpoint = f"http://{host}/api/kernels"
-        self.ws_api_endpoint = f"ws://{host}/api/kernels"
+        self.http_api_endpoint = (
+            f"https://{host}/api/kernels" if use_secure_connection else f"http://{host}/api/kernels"
+        )
+        self.ws_api_endpoint = (
+            f"wss://{host}/api/kernels" if use_secure_connection else f"ws://{host}/api/kernels"
+        )
         self.log = logging.getLogger("GatewayClient")
         self.log.setLevel(log_level)
 
-    def start_kernel(self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT):
+    def start_kernel(
+        self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT, extra_env=None
+    ):
         """Start a kernel."""
         self.log.info(f"Starting a {kernelspec_name} kernel ....")
 
+        if extra_env is None:
+            extra_env = {}
+
+        env = {
+            "KERNEL_USERNAME": username,
+            "KERNEL_LAUNCH_TIMEOUT": GatewayClient.KERNEL_LAUNCH_TIMEOUT,
+        }
+        env.update(extra_env)
+
         json_data = {
             "name": kernelspec_name,
-            "env": {
-                "KERNEL_USERNAME": username,
-                "KERNEL_LAUNCH_TIMEOUT": GatewayClient.KERNEL_LAUNCH_TIMEOUT,
-            },
+            "env": env,
         }
 
         response = requests.post(self.http_api_endpoint, data=json_encode(json_data), timeout=60)
@@ -76,15 +88,6 @@ class GatewayClient:
 
         kernel.shutdown()
 
-        url = f"{self.http_api_endpoint}/{kernel.kernel_id}"
-        response = requests.delete(url, timeout=60)
-        if response.status_code == 204:
-            self.log.debug(f"Kernel {kernel.kernel_id} shutdown")
-            return True
-        else:
-            msg = f"Error shutting down kernel {kernel.kernel_id}: {response.content}"
-            raise RuntimeError(msg)
-
 
 class KernelClient:
     """A kernel client class."""
@@ -105,18 +108,23 @@ class KernelClient:
         self.kernel_ws_api_endpoint = f"{ws_api_endpoint}/{kernel_id}/channels"
         self.kernel_id = kernel_id
         self.log = logger
+        self.kernel_socket = None
+        self.response_reader = Thread(target=self._read_responses)
+        self.response_queues = {}
+        self.interrupt_thread = None
         self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
 
-        self.kernel_socket = websocket.create_connection(
-            self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True
-        )
-
-        self.response_queues = {}
+        try:
+            self.kernel_socket = websocket.create_connection(
+                f"{ws_api_endpoint}/{kernel_id}/channels", timeout=timeout, enable_multithread=True
+            )
+        except Exception as e:
+            self.log.error(e)
+            self.shutdown()
+            raise e
 
         # startup reader thread
-        self.response_reader = Thread(target=self._read_responses)
         self.response_reader.start()
-        self.interrupt_thread = None
 
     def shutdown(self):
         """Shut down the client."""
@@ -137,11 +145,21 @@ class KernelClient:
                 self.log.warning("Response reader thread is not terminated, continuing...")
             self.response_reader = None
 
-    def execute(self, code, timeout=REQUEST_TIMEOUT):  # noqa
+        url = f"{self.http_api_endpoint}/{self.kernel_id}"
+        response = requests.delete(url, timeout=60)
+        if response.status_code == 204:
+            self.log.info(f"Kernel {self.kernel_id} shutdown")
+            return True
+        else:
+            msg = f"Error shutting down kernel {self.kernel_id}: {response.content}"
+            raise RuntimeError(msg)
+
+    def execute(self, code, timeout=REQUEST_TIMEOUT):
         """
         Executes the code provided and returns the result of that execution.
         """
         response = []
+        has_error = False
         try:
             msg_id = self._send_request(code)
 
@@ -155,6 +173,7 @@ class KernelClient:
                         response_message_type == "execute_reply"
                         and response_message["content"]["status"] == "error"
                     ):
+                        has_error = True
                         response.append(
                             "{}:{}:{}".format(
                                 response_message["content"]["ename"],
@@ -208,7 +227,7 @@ class KernelClient:
         except Exception as e:
             self.log.debug(e)
 
-        return "".join(response)
+        return "".join(response), has_error
 
     def interrupt(self):
         """Interrupt the kernel."""
@@ -239,9 +258,8 @@ class KernelClient:
             return True
         else:
             self.restarting = False
-            msg = "Unexpected response restarting kernel {}: {}".format(
-                self.kernel_id, response.content
-            )
+            msg = f"Unexpected response restarting kernel {self.kernel_id}: {response.content}"
+            self.log.debug(msg)
             raise RuntimeError(msg)
 
     def get_state(self):
@@ -317,7 +335,7 @@ class KernelClient:
 
         return response
 
-    def _read_responses(self):  # noqa
+    def _read_responses(self):
         """
         Reads responses from the websocket.  For each response read, it is added to the response queue based
         on the messages parent_header.msg_id.  It does this for the duration of the class's lifetime until its

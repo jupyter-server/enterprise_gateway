@@ -31,8 +31,9 @@ ENV SPARK_VER $SPARK_VERSION
 ENV HADOOP_VER 3.3.1
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
-RUN apt-get update && apt-get -yq dist-upgrade \
- && apt-get install -yq --no-install-recommends \
+RUN dpkg --purge --force-depends ca-certificates-java \
+    && apt-get update && apt-get -yq dist-upgrade \
+    && apt-get install -yq --no-install-recommends \
     wget \
     bzip2 \
     tar \
@@ -52,9 +53,12 @@ RUN apt-get update && apt-get -yq dist-upgrade \
     software-properties-common \
     openssh-server \
     openssh-client \
- && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
- && apt-get update && apt-get install -yq --no-install-recommends openjdk-8-jdk \
- && rm -rf /var/lib/apt/lists/*
+    && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
+    && apt-get update && apt-get install -yq --no-install-recommends  \
+    openjdk-8-jre-headless \
+    ca-certificates-java \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
@@ -96,12 +100,13 @@ RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$S
 
 USER root
 
-RUN conda install --yes --quiet -c conda-forge \
+RUN conda install mamba -n base -c conda-forge && \
+    mamba install --yes --quiet -c conda-forge \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \
     'r-argparse' && \
-    conda clean --all &&\
+    mamba clean -y --all &&\
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 

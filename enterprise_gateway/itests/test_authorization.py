@@ -10,7 +10,6 @@ class TestAuthorization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        print(">>>")
 
         # initialize environment
         cls.gateway_client = GatewayClient()
@@ -25,8 +24,9 @@ class TestAuthorization(unittest.TestCase):
         kernel = None
         try:
             kernel = self.gateway_client.start_kernel(TestAuthorization.KERNELSPEC, username="bob")
-            result = kernel.execute("print('The cow jumped over the moon.')")
+            result, has_error = kernel.execute("print('The cow jumped over the moon.')")
             self.assertEqual(result, "The cow jumped over the moon.\n")
+            self.assertEqual(has_error, False)
         finally:
             if kernel:
                 self.gateway_client.shutdown_kernel(kernel)

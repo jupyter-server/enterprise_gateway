@@ -17,9 +17,9 @@ launch_python_kernel() {
 
   if [ -z "${KERNEL_CLASS_NAME}" ]
   then
-    kernel_class_option = ""
+    kernel_class_option=""
   else
-    kernel_class_option = "--kernel_class_name ${KERNEL_CLASS_NAME}"
+    kernel_class_option="--kernel-class-name ${KERNEL_CLASS_NAME}"
   fi
 
 	set -x

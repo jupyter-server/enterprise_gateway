@@ -87,7 +87,7 @@ def _parse_k8s_exception(exc: ApiException) -> str:
     return ""
 
 
-def launch_kubernetes_kernel(  # noqa
+def launch_kubernetes_kernel(
     kernel_id,
     port_range,
     response_addr,
@@ -223,6 +223,8 @@ def launch_kubernetes_kernel(  # noqa
                     f"kernel launch terminating!"
                 )
         else:
+            print("ERROR processing Kubernetes yaml file - kernel launch terminating!")
+            print(k8s_yaml)
             sys.exit(
                 f"ERROR - Unknown Kubernetes object '{k8s_obj}' found in yaml file - kernel launch terminating!"
             )

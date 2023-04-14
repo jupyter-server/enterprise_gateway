@@ -12,32 +12,32 @@ class RKernelBaseTestCase(TestBase):
     """
 
     def test_get_hostname(self):
-        result = self.kernel.execute('system("hostname", intern=TRUE)')
+        result, has_error = self.kernel.execute('system("hostname", intern=TRUE)')
         self.assertRegex(result, self.get_expected_hostname())
+        self.assertEqual(has_error, False)
 
     def test_hello_world(self):
-        result = self.kernel.execute('print("Hello World", quote = FALSE)')
+        result, has_error = self.kernel.execute('print("Hello World", quote = FALSE)')
         self.assertRegex(result, "Hello World")
+        self.assertEqual(has_error, False)
 
     def test_restart(self):
-
         # 1. Set a variable to a known value.
         # 2. Restart the kernel
         # 3. Attempt to increment the variable, verify an error was received (due to undefined variable)
 
         self.kernel.execute("x = 123")
-        original_value = int(
-            self.kernel.execute("write(x,stdout())")
-        )  # This will only return the value.
-        self.assertEqual(original_value, 123)
+        original_value, has_error = self.kernel.execute("write(x,stdout())")
+        self.assertEqual(int(original_value), 123)
+        self.assertEqual(has_error, False)
 
         self.assertTrue(self.kernel.restart())
 
-        error_result = self.kernel.execute("y = x + 1")
+        error_result, has_error = self.kernel.execute("y = x + 1")
         self.assertRegex(error_result, "Error in eval")
+        self.assertEqual(has_error, True)
 
     def test_interrupt(self):
-
         # 1. Set a variable to a known value.
         # 2. Spawn a thread that will perform an interrupt after some number of seconds,
         # 3. Issue a long-running command - that spans during of interrupt thread wait time,
@@ -45,10 +45,9 @@ class RKernelBaseTestCase(TestBase):
         # 5. Attempt to increment the variable, verify expected result.
 
         self.kernel.execute("x = 123")
-        original_value = int(
-            self.kernel.execute("write(x,stdout())")
-        )  # This will only return the value.
-        self.assertEqual(original_value, 123)
+        original_value, has_error = self.kernel.execute("write(x,stdout())")
+        self.assertEqual(int(original_value), 123)
+        self.assertEqual(has_error, False)
 
         # Start a thread that performs the interrupt.  This thread must wait long enough to issue
         # the next cell execution.
@@ -59,20 +58,20 @@ class RKernelBaseTestCase(TestBase):
         interrupted_code.append('write("begin",stdout())\n')
         interrupted_code.append("Sys.sleep(30)\n")
         interrupted_code.append('write("end",stdout())\n')
-        interrupted_result = self.kernel.execute(interrupted_code)
+        interrupted_result, has_error = self.kernel.execute(interrupted_code)
 
         # Ensure the result indicates an interrupt occurred
         self.assertEqual(interrupted_result.strip(), "begin")
+        self.assertEqual(has_error, False)
 
         # Wait for thread to terminate - should be terminated already
         self.kernel.terminate_interrupt_thread()
 
         # Increment the pre-interrupt variable and ensure its value is correct
         self.kernel.execute("y = x + 1")
-        interrupted_value = int(
-            self.kernel.execute("write(y,stdout())")
-        )  # This will only return the value.
-        self.assertEqual(interrupted_value, 124)
+        interrupted_value, has_error = self.kernel.execute("write(y,stdout())")
+        self.assertEqual(int(interrupted_value), 124)
+        self.assertEqual(has_error, False)
 
 
 class RKernelBaseSparkTestCase(RKernelBaseTestCase):
@@ -81,22 +80,26 @@ class RKernelBaseSparkTestCase(RKernelBaseTestCase):
     """
 
     def test_get_application_id(self):
-        result = self.kernel.execute(
+        result, has_error = self.kernel.execute(
             'SparkR:::callJMethod(SparkR:::callJMethod(sc, "sc"), "applicationId")'
         )
         self.assertRegex(result, self.get_expected_application_id())
+        self.assertEqual(has_error, False)
 
     def test_get_spark_version(self):
-        result = self.kernel.execute("sparkR.version()")
+        result, has_error = self.kernel.execute("sparkR.version()")
         self.assertRegex(result, self.get_expected_spark_version())
+        self.assertEqual(has_error, False)
 
     def test_get_resource_manager(self):
-        result = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
+        result, has_error = self.kernel.execute('unlist(sparkR.conf("spark.master"))')
         self.assertRegex(result, self.get_expected_spark_master())
+        self.assertEqual(has_error, False)
 
     def test_get_deploy_mode(self):
-        result = self.kernel.execute('unlist(sparkR.conf("spark.submit.deployMode"))')
+        result, has_error = self.kernel.execute('unlist(sparkR.conf("spark.submit.deployMode"))')
         self.assertRegex(result, self.get_expected_deploy_mode())
+        self.assertEqual(has_error, False)
 
 
 class TestRKernelLocal(unittest.TestCase, RKernelBaseTestCase):

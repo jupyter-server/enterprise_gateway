@@ -520,10 +520,13 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kip.pullPolicy`                           | Determines whether the Kernel Image Puller will pull kernel images it has previously pulled (`Always`) or only those it hasn't yet pulled (`IfNotPresent`)                                                                                       | `IfNotPresent`                                                                 |
 | `kip.criSocket`                            | The container runtime interface socket, use `/run/containerd/containerd.sock` for containerd installations                                                                                                                                       | `/var/run/docker.sock`                                                         |
 | `kip.defaultContainerRegistry`             | Prefix to use if a registry is not already specified on image name (e.g., elyra/kernel-py:VERSION)                                                                                                                                               | `docker.io`                                                                    |
+| `kip.fetcher`                              | fetcher to fetch image names, defaults to KernelSpecsFetcher                                                                                                                                                                                     | `KernelSpecsFetcher`                                                           |
+| `kip.images`                               | if StaticListFetcher is used KIP_IMAGES defines the list of images pullers will fetch                                                                                                                                                            | `[]`                                                                           |
+| `kip.internalFetcher `                     | if CombinedImagesFetcher is used KIP_INTERNAL_FETCHERS defines the fetchers that get used internally 
 | `externalCluster.enable`                   | Launch kernels in a remote cluster. Used for multi-cluster environments. **Must place a kubeconfig file in the `config/` folder of the helm chart**.                                                                                             | `false`                                                                        |
 | `externalCluster.configPath`               | Path to mount kubeconfig at                                                                                                                                                                                                                      | `/etc/kube/config`                                                             |
 | `externalCluster.configFilename`           | Filename to kubeconfig file inside `config/` directory of chart                                                                                                                                                                                  | `kubeconfig`                                                                   |
-| `externalCluster.autoConfigureRemote`      | Automatically create service account in remote cluster                                                                                                                                                                                           | `false`                                                                        |
+| `externalCluster.autoConfigureRemote`      | Automatically create service account in remote cluster                    
 
 ## Uninstalling Enterprise Gateway
 
@@ -782,14 +785,14 @@ Unconditional volume mounts can be added in the `kernel-pod.yaml.j2` template. A
 ```yaml+jinja
 volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
 {% endif %}
 volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
@@ -803,7 +806,7 @@ volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
 - mountPath: /dev/shm
   name: dshm
-{% if kernel_volume_mounts is defined %}
+{% if kernel_volume_mounts %}
   {% for volume_mount in kernel_volume_mounts %}
 - {{ volume_mount }}
   {% endfor %}
@@ -813,7 +816,7 @@ volumes:
 - name: dshm
 emptyDir:
   medium: Memory
-{% if kernel_volumes is defined %}
+{% if kernel_volumes %}
 {% for volume in kernel_volumes %}
 - {{ volume }}
 {% endfor %}
@@ -946,10 +949,10 @@ NAME                                     READY     STATUS    RESTARTS   AGE
 po/enterprise-gateway-74c46cb7fc-jrkl7   1/1       Running   0          2h
 
 NAME                     TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-svc/enterprise-gateway   NodePort   10.110.253.220   <none>        8888:32422/TCP   2h
+svc/enterprise-gateway   NodePort   10.110.253.2.2   <none>        8888:32422/TCP   2h
 ```
 
-Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you are performing this on the same host as where the notebook will run, then you will need to note the cluster-ip entry (e.g.,`10.110.253.220`).
+Of particular importance is the mapping to port `8888` (e.g.,`32422`). If you are performing this on the same host as where the notebook will run, then you will need to note the cluster-ip entry (e.g.,`10.110.253.2.2`).
 
 (Note: if the number of replicas is > 1, then you will see two pods listed with different five-character suffixes.)
 
@@ -1028,10 +1031,10 @@ kubectl logs -f pod/alice-5e755458-a114-4215-96b7-bcb016fc7b62
 
 Note that if using multiple replicas, commands against each pod are required.
 
-- The Kubernetes dashboard is useful as well. It's located at port `3.2.0` of the master node
+- The Kubernetes dashboard is useful as well. It's located at port `3.2.2` of the master node
 
 ```bash
-https://elyra-kube1.foo.bar.com:3.2.0/dashboard/#!/overview?namespace=default
+https://elyra-kube1.foo.bar.com:3.2.2/dashboard/#!/overview?namespace=default
 ```
 
 From there, logs can be accessed by selecting the `Pods` option in the left-hand pane followed by the _lined_ icon on

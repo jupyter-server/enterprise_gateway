@@ -117,7 +117,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "YarnClusterProcessProxy":
+    ) -> YarnClusterProcessProxy:
         """
         Launches the specified process within a YARN cluster environment.
         """
@@ -377,7 +377,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                     )
                 )
 
-                if self.assigned_host != "":
+                if self.assigned_host:
                     ready_to_connect = await self.receive_connection_info()
             else:
                 self.detect_launch_failure()
@@ -440,7 +440,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 app_state = app.get("state")
                 self.last_known_state = app_state
 
-            if self.assigned_host == "" and app.get("amHostHttpAddress"):
+            if not self.assigned_host and app.get("amHostHttpAddress"):
                 self.assigned_host = app.get("amHostHttpAddress").split(":")[0]
                 # Set the kernel manager ip to the actual host where the application landed.
                 self.assigned_ip = socket.gethostbyname(self.assigned_host)

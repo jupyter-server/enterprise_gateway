@@ -37,12 +37,12 @@ Entries in the remote hosts configuration should be fully qualified domain names
 All the kernel *specifications* configured to use the `DistributedProcessProxy` must be on all nodes to which there's a reference in the remote hosts configuration!  With YARN cluster node, only the Python and R kernel _packages_ are required on each node, not the entire kernel specification.
 ```
 
-The following installs the sample `python_distributed` kernel specification relative to the 3.2.0 release on the given node. This step must be repeated for each node and each kernel specification.
+The following installs the sample `python_distributed` kernel specification relative to the 3.2.2 release on the given node. This step must be repeated for each node and each kernel specification.
 
 ```Bash
-wget https://github.com/jupyter-server/enterprise_gateway/releases/download/v3.2.0/jupyter_enterprise_gateway_kernelspecs-3.2.0.tar.gz
+wget https://github.com/jupyter-server/enterprise_gateway/releases/download/v3.2.2/jupyter_enterprise_gateway_kernelspecs-3.2.2.tar.gz
 KERNELS_FOLDER=/usr/local/share/jupyter/kernels
-tar -zxvf jupyter_enterprise_gateway_kernelspecs-3.2.0.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
+tar -zxvf jupyter_enterprise_gateway_kernelspecs-3.2.2.tar.gz --strip 1 --directory $KERNELS_FOLDER/python_distributed/ python_distributed/
 ```
 
 ```{tip}

@@ -17,6 +17,8 @@ metadata:
     app: enterprise-gateway
     component: kernel
     source: kernel-pod.yaml
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 spec:
   restartPolicy: Never
   serviceAccountName: "{{ kernel_service_account_name }}"
@@ -71,19 +73,19 @@ spec:
         {% endif %}
       {% endif %}
     {% endif %}
-    {% if kernel_working_dir is defined %}
+    {% if kernel_working_dir %}
     workingDir: "{{ kernel_working_dir }}"
     {% endif %}
     volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
-    {% if kernel_volume_mounts is defined %}
+    {% if kernel_volume_mounts %}
       {% for volume_mount in kernel_volume_mounts %}
     - {{ volume_mount }}
       {% endfor %}
     {% endif %}
   volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
-  {% if kernel_volumes is defined %}
+  {% if kernel_volumes %}
     {% for volume in kernel_volumes %}
   - {{ volume }}
     {% endfor %}

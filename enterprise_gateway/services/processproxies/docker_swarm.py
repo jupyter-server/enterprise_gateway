@@ -47,8 +47,12 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         return super().launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"preparing", "starting", "running"}
+
+    def get_error_states(self) -> set:
+        """Returns the list of error states indicating container is shutting down or receiving error."""
+        return {"failed", "rejected", "complete", "shutdown", "orphaned", "remove"}
 
     def _get_service(self) -> Service:
         # Fetches the service object corresponding to the kernel with a matching label.
@@ -89,17 +93,17 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the status indicates an initial state we
         # should be able to get at the NetworksAttachments and determine the associated container's IP address.
-        task_state = None
+        task_state = ""
         task_id = None
         task = self._get_task()
         if task:
             task_status = task["Status"]
             task_id = task["ID"]
             if task_status:
-                task_state = task_status["State"]
+                task_state = task_status["State"].lower()
                 if (
-                    self.assigned_host == "" and task_state == "running"
-                ):  # in self.get_initial_states():
+                    not self.assigned_host and task_state == "running"
+                ):  # in self.get_initial_states()
                     # get the NetworkAttachments and pick out the first of the Network and first
                     networks_attachments = task["NetworksAttachments"]
                     if len(networks_attachments) > 0:
@@ -176,7 +180,7 @@ class DockerProcessProxy(ContainerProcessProxy):
         return super().launch_process(kernel_cmd, **kwargs)
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
+        """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"created", "running"}
 
     def _get_container(self) -> Container:
@@ -200,14 +204,14 @@ class DockerProcessProxy(ContainerProcessProxy):
         """Return current container state."""
         # Locates the kernel container using the kernel_id filter.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.  Only used when docker mode == regular (non swarm)
-        container_status = None
+        container_status = ""
 
         container = self._get_container()
         if container:
             self.container_name = container.name
             if container.status:
-                container_status = container.status
-                if container_status == "running" and self.assigned_host == "":
+                container_status = container.status.lower()
+                if container_status == "running" and not self.assigned_host:
                     # Container is running, capture IP
 
                     # we'll use this as a fallback in case we don't find our network

@@ -52,6 +52,9 @@ content-type = "text/plain"
 [project.urls]
 Homepage = "http://github.com/jupyter/enterprise_gateway"
 
+[project.scripts]
+jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
+
 [project.optional-dependencies]
 test = [
   "coverage",
@@ -62,14 +65,15 @@ test = [
   "websocket-client"
 ]
 lint = [
-  "black[jupyter]==22.12.0",
+  "black[jupyter]==23.3.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
-  "ruff==0.0.237"
+  "ruff==0.0.261"
 ]
 
-[project.scripts]
-jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_instance"
+[tool.ruff.pylint]
+max-args = 10
+max-statements = 60
 
 [tool.hatch.build.targets.wheel]
 include = ["enterprise_gateway"]
@@ -143,7 +147,7 @@ target-version = "py37"
 line-length = 100
 select = [
   "A", "B", "C", "DTZ", "E", "EM", "F", "FBT", "I", "ICN", "ISC", "N",
-  "PLC", "PLE", "PLR", "PLW", "Q", "RUF", "S", "SIM", "T", "TID", "UP",
+  "PLC", "PLE", "PLW", "Q", "RUF", "S", "SIM", "T", "TID", "UP",
   "W", "YTT",
 ]
 ignore = [
@@ -155,13 +159,18 @@ ignore = [
   "E501",
   # SIM105 Use `contextlib.suppress(...)`
   "SIM105",
+  # S311 Standard pseudo-random generators are not suitable for cryptographic purposes
+  "S311",
   # TID252 Relative imports from parent modules are banned
   "TID252",
   # N806 Variable `sqlContext` in function should be lowercase
   "N806",
   # PLR2004 Magic value used in comparison
   "PLR2004",
-
+  # PLW0603 Using the global statement to update is discouraged
+  "PLW0603",
+  # PLW1508 Invalid type for environment variable default
+  "PLW1508",
 ]
 unfixable = [
   # Don't touch print statements
@@ -179,6 +188,13 @@ unfixable = [
 "enterprise_gateway/itests/*" = ["S101", "F841", "S105", "T201"]
 # T201 `print` found
 "etc/*" = ["T201"]
+# C901 Function is too complex
+"enterprise_gateway/client/gateway_client.py" = ["C901"]  # `_read_responses` is too complex (12)
+"etc/docker/kernel-image-puller/kernel_image_puller.py" = ["C901"]  # `fetch_image_names` is too complex (13)
+"enterprise_gateway/services/processproxies/k8s.py" = ["C901"]  # `terminate_container_resources` is too complex (13)
+"etc/kernel-launchers/kubernetes/scripts/launch_kubernetes.py" = ["C901"]  # `launch_kubernetes_kernel` is too complex (32)
+"etc/docker/kernel-image-puller/image_fetcher.py" = ["C901"]  # `fetch_image_names` is too complex (11)
+
 
 [tool.interrogate]
 ignore-init-module=true

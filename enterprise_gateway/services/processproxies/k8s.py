@@ -55,7 +55,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "KubernetesProcessProxy":
+    ) -> KubernetesProcessProxy:
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call, so we can see these in the debug output
         use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
@@ -80,14 +80,18 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         return self
 
     def get_initial_states(self) -> set:
-        """Return list of states indicating container is starting (includes running)."""
-        return {"Pending", "Running"}
+        """Return list of states in lowercase indicating container is starting (includes running)."""
+        return ["pending", "running"]
 
-    def get_container_status(self, iteration: int | None) -> str | None:
+    def get_error_states(self) -> set:
+        """Return list of states in lowercase indicating container failed ."""
+        return ["failed"]
+
+    def get_container_status(self, iteration: int | None) -> str:
         """Return current container state."""
         # Locates the kernel pod using the kernel_id selector.  If the phase indicates Running, the pod's IP
         # is used for the assigned_ip.
-        pod_status = None
+        pod_status = ""
         kernel_label_selector = "kernel_id=" + self.kernel_id + ",component=kernel"
         ret = client.CoreV1Api(api_client=kubernetes_client).list_namespaced_pod(
             namespace=self.kernel_namespace, label_selector=kernel_label_selector
@@ -96,8 +100,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             pod_info = ret.items[0]
             self.container_name = pod_info.metadata.name
             if pod_info.status:
-                pod_status = pod_info.status.phase
-                if pod_status == "Running" and self.assigned_host == "":
+                pod_status = pod_info.status.phase.lower()
+                if pod_status == "running" and not self.assigned_host:
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
                     self.assigned_host = self.container_name
@@ -136,7 +140,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
-    def terminate_container_resources(self) -> bool | None:  # noqa
+    def terminate_container_resources(self) -> bool | None:
         """Terminate any artifacts created on behalf of the container's lifetime."""
         # Kubernetes objects don't go away on their own - so we need to tear down the namespace
         # and/or pod associated with the kernel.  We'll always target the pod first so that shutdown

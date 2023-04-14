@@ -33,8 +33,8 @@ a "Kernel error" and State: 'FAILED'.**
 
 1. Check the output from Enterprise Gateway for an error message. If an applicationId was
    generated, make a note of it. For example, you can locate the applicationId
-   `application_15065522733.2.0011` from the following snippet of message:
-   `[D 2017-09-28 17:13:22.675 EnterpriseGatewayApp] 13: State: 'ACCEPTED', Host: 'burna2.yourcompany.com', KernelID: '28a5e827-4676-4415-bbfc-ac30a0dcc4c3', ApplicationID: 'application_15065522733.2.0011' 17/09/28 17:13:22 INFO YarnClientImpl: Submitted application application_15065522733.2.0011 17/09/28 17:13:22 INFO Client: Application report for application_15065522733.2.0011 (state: ACCEPTED) 17/09/28 17:13:22 INFO Client: client token: N/A diagnostics: AM container is launched, waiting for AM container to Register with RM ApplicationMaster host: N/A ApplicationMaster RPC port: -1 queue: default start time: 1506644002471 final status: UNDEFINED tracking URL: http://burna1.yourcompany.com:8088/proxy/application_15065522733.2.0011/`
+   `application_15065522733.2.2011` from the following snippet of message:
+   `[D 2017-09-28 17:13:22.675 EnterpriseGatewayApp] 13: State: 'ACCEPTED', Host: 'burna2.yourcompany.com', KernelID: '28a5e827-4676-4415-bbfc-ac30a0dcc4c3', ApplicationID: 'application_15065522733.2.2011' 17/09/28 17:13:22 INFO YarnClientImpl: Submitted application application_15065522733.2.2011 17/09/28 17:13:22 INFO Client: Application report for application_15065522733.2.2011 (state: ACCEPTED) 17/09/28 17:13:22 INFO Client: client token: N/A diagnostics: AM container is launched, waiting for AM container to Register with RM ApplicationMaster host: N/A ApplicationMaster RPC port: -1 queue: default start time: 1506644002471 final status: UNDEFINED tracking URL: http://burna1.yourcompany.com:8088/proxy/application_15065522733.2.2011/`
 1. Lookup the YARN log for that applicationId in the YARN ResourceManager UI: ![YARN ResourceManager UI](../images/yarnui.jpg)
 1. Drill down from the applicationId to find logs for the failed attempts and take appropriate
    actions. For example, for the error below,

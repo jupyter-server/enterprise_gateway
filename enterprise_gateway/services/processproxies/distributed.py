@@ -85,7 +85,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
-    ) -> "DistributedProcessProxy":
+    ) -> DistributedProcessProxy:
         """
         Launches a kernel process on a selected host.
         """
@@ -212,7 +212,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                 )
             )
 
-            if self.assigned_host != "":
+            if self.assigned_host:
                 ready_to_connect = await self.receive_connection_info()
 
     async def handle_timeout(self) -> None:
