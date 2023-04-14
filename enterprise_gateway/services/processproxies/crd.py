@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 from contextlib import suppress
 from typing import Any
@@ -12,6 +11,7 @@ from typing import Any
 from kubernetes import client
 
 from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
+
 from ..kernels.remotemanager import RemoteKernelManager
 from .k8s import KubernetesProcessProxy
 

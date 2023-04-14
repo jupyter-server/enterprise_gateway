@@ -30,7 +30,9 @@ class KubernetesClientFactory(SingletonConfigurable):
                 )
             else:
                 if is_env_true('EG_USE_REMOTE_CLUSTER'):
-                    self.log.warning(f"Cannot use EG_USE_REMOTE_CLUSTER and EG_SHARED_NAMESPACE at the same time. Using local cluster....")
+                    self.log.warning(
+                        "Cannot use EG_USE_REMOTE_CLUSTER and EG_SHARED_NAMESPACE at the same time. Using local cluster...."
+                    )
 
                 config.load_incluster_config(client_configuration=kubernetes_config)
         else:

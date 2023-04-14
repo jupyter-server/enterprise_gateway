@@ -15,6 +15,7 @@ from kubernetes import client
 from kubernetes.utils.create_from_yaml import create_from_yaml_single_item
 
 from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
+
 from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from ..utils.envutils import is_env_true
