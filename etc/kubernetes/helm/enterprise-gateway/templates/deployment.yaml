@@ -97,14 +97,20 @@ spec:
           value: {{ toJson .Values.kernel.allowedKernels | squote }}
         - name: EG_DEFAULT_KERNEL_NAME
           value: {{ .Values.kernel.defaultKernelName }}
+          {{- if .Values.kernel.serviceAccountName }}
+        - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
+          value: {{ .Values.kernel.serviceAccountName }}
+          {{- end }}
+          {{- if .Values.kernel.namespace }}
+        - name: KERNEL_NAMESPACE
+          value: {{ .Values.kernel.namespace }}
+          {{- end }}
         # Set environment variables to point k8s client to kubeconfig
         {{- if .Values.externalCluster.enabled }}
         - name: EG_USE_REMOTE_CLUSTER
           value: "True"
         - name: EG_REMOTE_CLUSTER_KUBECONFIG_PATH
           value: {{ .Values.externalCluster.configPath }}{{ .Values.externalCluster.configFilename }}
-        - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
-          value: kernel-svcaccount
         {{- if .Values.externalCluster.context }}
         - name: EG_REMOTE_CLUSTER_CONTEXT
           value: {{ .Values.externalCluster.context }}

@@ -14,7 +14,7 @@ import yaml
 from kubernetes import client
 from kubernetes.utils.create_from_yaml import create_from_yaml_single_item
 
-from ..external.k8s_client import kubernetes_client
+from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
 from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from ..utils.envutils import is_env_true
@@ -58,6 +58,12 @@ class KubernetesProcessProxy(ContainerProcessProxy):
     ) -> "KubernetesProcessProxy":
         """Launches the specified process within a Kubernetes environment."""
         # Set env before superclass call, so we can see these in the debug output
+        use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
+        if use_remote_cluster:
+            kwargs["env"]["EG_USE_REMOTE_CLUSTER"] = 'true'
+            kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv(
+                "EG_REMOTE_CLUSTER_KUBECONFIG_PATH"
+            )
 
         # Kubernetes relies on internal env variables to determine its configuration.  When
         # running within a K8s cluster, these start with KUBERNETES_SERVICE, otherwise look
@@ -237,7 +243,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # If KERNEL_NAMESPACE was provided, then we assume it already exists.  If not provided, then we'll
         # create the namespace and record that we'll want to delete it as well.
-        namespace = kwargs["env"].get("KERNEL_NAMESPACE")
+        namespace = os.environ.get("KERNEL_NAMESPACE")
         if namespace is None:
             # check if share gateway namespace is configured...
             if share_gateway_namespace:  # if so, set to EG namespace

@@ -9,7 +9,7 @@ from typing import Any
 
 from kubernetes import client
 
-from ..external.k8s_client import kubernetes_client
+from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
 from ..kernels.remotemanager import RemoteKernelManager
 from .k8s import KubernetesProcessProxy
 
@@ -38,13 +38,6 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
         kwargs["env"]["KERNEL_CRD_GROUP"] = self.group
         kwargs["env"]["KERNEL_CRD_VERSION"] = self.version
         kwargs["env"]["KERNEL_CRD_PLURAL"] = self.plural
-
-        use_remote_cluster = os.getenv("EG_USE_REMOTE_CLUSTER")
-        if use_remote_cluster:
-            kwargs["env"]["EG_USE_REMOTE_CLUSTER"] = 'true'
-            kwargs["env"]["EG_REMOTE_CLUSTER_KUBECONFIG_PATH"] = os.getenv(
-                "EG_REMOTE_CLUSTER_KUBECONFIG_PATH"
-            )
 
         await super().launch_process(kernel_cmd, **kwargs)
         return self

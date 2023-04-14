@@ -25,6 +25,20 @@ RUN apt update && apt install -yq curl openjdk-8-jdk
 ENV JAVA_HOME /usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
+RUN curl https://apt.releases.teleport.dev/gpg \
+-o /usr/share/keyrings/teleport-archive-keyring.asc
+
+RUN source /etc/os-release
+RUN echo "deb [signed-by=/usr/share/keyrings/teleport-archive-keyring.asc] \
+https://apt.releases.teleport.dev/ubuntu jammy stable/v11" \
+| tee /etc/apt/sources.list.d/teleport.list > /dev/null
+
+RUN apt-get update && apt-get install teleport
+
+# Download and install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+RUN sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
 # Download and install Spark
 RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPARK_VER}-bin-hadoop2.7.tgz | \
     tar -xz -C /opt && \

@@ -85,6 +85,10 @@ authToken:
 kernel:
   # Kernel cluster role created by this chart.
   clusterRole: kernel-controller
+  # Service Account to Use (optional)
+  serviceAccountName:
+  # Namespace to launch in (optional)
+  namespace:
   # Will start kernels in the same namespace as EG if True.
   shareGatewayNamespace: false
   # Timeout for kernel launching in seconds.

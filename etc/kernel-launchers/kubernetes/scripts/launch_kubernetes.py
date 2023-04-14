@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from enterprise_gateway.services.external.k8s_client import kubernetes_client
+from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
 
 urllib3.disable_warnings()
 

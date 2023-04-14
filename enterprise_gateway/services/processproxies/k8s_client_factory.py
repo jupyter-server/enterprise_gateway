@@ -4,17 +4,13 @@ import os
 from kubernetes import client, config
 from traitlets.config import SingletonConfigurable
 
-from ..utils.envutils import is_env_true
+from enterprise_gateway.services.utils.envutils import is_env_true
 
 
 class KubernetesClientFactory(SingletonConfigurable):
     """Manages kubernetes client creation from environment variables"""
 
-    def __init__(self) -> None:
-        """Maintain a single configuration object and populate based on environment"""
-        super().__init__()
-
-    def get_kubernetes_client(self, get_remote_client: bool = True) -> client.ApiClient:
+    def get_kubernetes_client(self, get_remote_client: bool = False) -> client.ApiClient:
         """Get kubernetes api client with appropriate configuration
 
         Args:
