@@ -149,7 +149,7 @@ spec:
           readOnly: true
           mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.externalCluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoConfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
@@ -164,7 +164,7 @@ spec:
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.externalCluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoConfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.name }}-configmap-role
@@ -192,7 +192,7 @@ spec:
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.externalCluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoConfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.name}}-configmap-role
@@ -206,7 +206,7 @@ spec:
           readOnly: true
           mountPath: {{ .Values.externalCluster.configPath }}
         {{- end}}
-        {{- if .Values.externalCluster.autoconfigureRemote }}
+        {{- if .Values.externalCluster.autoConfigureRemote }}
         - name: role
           readOnly: true
           mountPath: "/etc/config/role"
@@ -220,7 +220,7 @@ spec:
         configMap:
           name: {{ .Release.Name }}-configmap
       {{- end}}
-      {{- if .Values.externalCluster.autoconfigureRemote }}
+      {{- if .Values.externalCluster.autoConfigureRemote }}
       - name: role
         configMap:
           name: {{ .Release.Name }}-configmap-role
