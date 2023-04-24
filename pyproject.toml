@@ -161,6 +161,8 @@ ignore = [
   "SIM105",
   # S311 Standard pseudo-random generators are not suitable for cryptographic purposes
   "S311",
+  # S603 `subprocess` call: check for execution of untrusted input
+  "S603",
   # TID252 Relative imports from parent modules are banned
   "TID252",
   # N806 Variable `sqlContext` in function should be lowercase
