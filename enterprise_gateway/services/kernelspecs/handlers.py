@@ -105,8 +105,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin,
                     list_kernels_found.append(d["name"])
                 else:
                     self.log.debug(
-                        "User %s is not authorized to use kernel spec %s"
-                        % (kernel_user, kernel_name)
+                        f"User {kernel_user} is not authorized to use kernel spec {kernel_name}"
                     )
             except Exception:
                 self.log.error("Failed to load kernel spec: '%s'", kernel_name)
