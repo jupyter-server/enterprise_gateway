@@ -183,6 +183,10 @@ class DockerProcessProxy(ContainerProcessProxy):
         """Return list of states in lowercase indicating container is starting (includes running)."""
         return {"created", "running"}
 
+    def get_error_states(self) -> set:
+        """Returns the list of error states indicating container is shutting down or receiving error."""
+        return {"restarting", "removing", "paused", "exited", "dead"}
+
     def _get_container(self) -> Container:
         # Fetches the container object corresponding the the kernel_id label.
         # Only used when docker mode == regular (not swarm)
