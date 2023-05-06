@@ -82,3 +82,6 @@ _site/
 # jetbrains ide stuff
 *.iml
 .idea/
+
+# virtual environment
+.venv/

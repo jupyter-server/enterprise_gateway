@@ -8,8 +8,7 @@
     push-kernel-images push-enterprise-gateway push-kernel-py push-kernel-spark-py push-kernel-r push-kernel-spark-r \
     push-kernel-scala push-kernel-tf-py push-kernel-tf-gpu-py push-kernel-image-puller publish helm-chart
 
-SA?=source activate
-ENV:=enterprise-gateway-dev
+ENV:=.venv
 SHELL:=/bin/bash
 MULTIARCH_BUILD?=
 TARGET_ARCH?=undefined
@@ -42,11 +41,11 @@ help:
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 env: ## Make a dev environment
-	-conda env create --file requirements.yml --name $(ENV)
-	-conda env config vars set PYTHONPATH=$(PWD) --name $(ENV)
+	-python3 -m venv $(ENV)
+	-$(ENV)/bin/pip install -e .
 
 activate: ## Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
-	@echo "Run \`$(SA) $(ENV)\` to activate the environment."
+	@echo "Run \`source $(ENV)/bin/activate\` to activate the environment."
 
 clean: ## Make a clean source tree
 	-rm -rf dist
@@ -61,8 +60,8 @@ clean: ## Make a clean source tree
 	-make -C docs clean
 	-make -C etc clean
 
-clean-env: ## Remove conda env
-	-conda env remove -n $(ENV) -y
+clean-env: ## Remove virtual environment
+	-rm -rf $(ENV)
 
 lint: ## Check code style
 	@pip install -q -e ".[lint]"
