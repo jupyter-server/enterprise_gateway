@@ -58,8 +58,8 @@ Some of the more useful commands are listed below.
 Build a Python 3 virtual environment that can be used to run
 the Enterprise Gateway server within an IDE. May be necessary prior
 to [debugging Enterprise Gateway](./debug.md) based on your local Python environment.
-See Python's [Virtual Environments](https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages), 
-and [Installing Packages](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-from-a-local-src-tree) 
+See Python's [Virtual Environments](https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages),
+and [Installing Packages](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-from-a-local-src-tree)
 documentation pages for background on environments and why you may find them useful as you develop on Enterprise Gateway.
 
 ```bash
