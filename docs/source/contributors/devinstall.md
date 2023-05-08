@@ -28,8 +28,8 @@ Enterprise Gateway's build environment is centered around `make` and the corresp
 Entering `make` with no parameters yields the following:
 
 ```
-activate                       Print instructions to activate the virtualenv (default: enterprise-gateway-dev)
-clean-env                      Remove conda env
+activate                       Print instructions to activate the virtualenv (default: .venv)
+clean-env                      Remove virtual env
 clean-images                   Remove docker images (includes kernel-based images)
 clean-kernel-images            Remove kernel-based images
 clean                          Make a clean source tree
@@ -53,19 +53,20 @@ test                           Run unit tests
 
 Some of the more useful commands are listed below.
 
-## Build the conda environment
+## Build the virtual environment
 
-Build a Python 3 conda environment that can be used to run
+Build a Python 3 virtual environment that can be used to run
 the Enterprise Gateway server within an IDE. May be necessary prior
 to [debugging Enterprise Gateway](./debug.md) based on your local Python environment.
-See [Conda's Managing environments](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html#managing-environments)
-for background on environments and why you may find them useful as you develop on Enterprise Gateway.
+See Python's [Virtual Environments](https://docs.python.org/3/tutorial/venv.html#virtual-environments-and-packages), 
+and [Installing Packages](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-from-a-local-src-tree) 
+documentation pages for background on environments and why you may find them useful as you develop on Enterprise Gateway.
 
 ```bash
 make env
 ```
 
-By default, the env built will be named `enterprise-gateway-dev`. To produce a different conda env,
+By default, the env built will be named `.venv`. To produce a different conda env,
 you can specify the name via the `ENV=` parameter.
 
 ```bash
