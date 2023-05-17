@@ -1536,7 +1536,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                             self.log.warning(
                                 f"Exception occurred attempting to shutdown communication "
                                 f"socket to {self.comm_ip}:{self.comm_port} "
-                                f"for KernelID '{self.kernel_id}' (ignored): {str(e2)}"
+                                f"for KernelID '{self.kernel_id}' (ignored): {e2!s}"
                             )
                 sock.close()
         else:
