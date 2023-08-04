@@ -499,10 +499,10 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         kwargs : optional
             Additional arguments used during the launch - primarily the env to use for the kernel.
         """
-        env_dict = kwargs.get("env")
-        if env_dict is None:
-            env_dict = dict(os.environ.copy())
-            kwargs.update({"env": env_dict})
+        env_dict = dict(os.environ.copy())
+        if kwargs.get("env"):
+            env_dict.update(kwargs.get("env"))
+        kwargs.update({"env": env_dict})
 
         # see if KERNEL_LAUNCH_TIMEOUT was included from user.  If so, override default
         if env_dict.get("KERNEL_LAUNCH_TIMEOUT"):
