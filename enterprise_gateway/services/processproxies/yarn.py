@@ -92,11 +92,13 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 endpoints.append(self.alt_yarn_endpoint)
 
         if self.yarn_endpoint_security_enabled:
-            from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL, DEFAULT
+            from requests_kerberos import DEFAULT, OPTIONAL, REQUIRED, HTTPKerberosAuth
 
             auth = HTTPKerberosAuth(
                 mutual_authentication={
-                    "REQUIRED": REQUIRED, "OPTIONAL": OPTIONAL, "DEFAULT": DEFAULT
+                    "REQUIRED": REQUIRED,
+                    "OPTIONAL": OPTIONAL,
+                    "DEFAULT": DEFAULT,
                 }.get(mutual_authentication.upper())
             )
         else:
