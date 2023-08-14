@@ -35,6 +35,7 @@ yarn_shutdown_wait_time = float(os.getenv("EG_YARN_SHUTDOWN_WAIT_TIME", "15.0"))
 #            whether we verify the server's TLS certificate in yarn-api-client.
 #            Or a string, in which case it must be a path to a CA bundle(.pem file) to use.
 cert_path = os.getenv("EG_YARN_CERT_BUNDLE", True)
+mutual_authentication = os.getenv("EG_YARN_MUTUAL_AUTHENTICATION", "REQUIRED")
 
 
 class YarnClusterProcessProxy(RemoteProcessProxy):
@@ -91,9 +92,13 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                 endpoints.append(self.alt_yarn_endpoint)
 
         if self.yarn_endpoint_security_enabled:
-            from requests_kerberos import HTTPKerberosAuth
+            from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL, DEFAULT
 
-            auth = HTTPKerberosAuth()
+            auth = HTTPKerberosAuth(
+                mutual_authentication={
+                    "REQUIRED": REQUIRED, "OPTIONAL": OPTIONAL, "DEFAULT": DEFAULT
+                }.get(mutual_authentication.upper())
+            )
         else:
             # If we have the appropriate version of yarn-api-client, use its SimpleAuth class.
             # This allows EG to continue to issue requests against the YARN api when anonymous
