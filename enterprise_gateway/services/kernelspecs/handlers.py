@@ -20,7 +20,7 @@ def apply_user_filter(
     kernelspec_model: Dict[str, object],
     global_authorized_list: Set,
     global_unauthorized_list: Set,
-    kernel_user: str = None,
+    kernel_user: Optional[str] = None,
 ) -> Optional[Dict[str, object]]:
     """
     If authorization lists are configured - either within the kernelspec or globally, ensure

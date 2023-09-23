@@ -10,7 +10,7 @@ import os
 import signal
 from socket import gethostbyname
 from subprocess import STDOUT
-from typing import Any
+from typing import Any, ClassVar
 
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import BaseProcessProxyABC, RemoteProcessProxy
@@ -24,8 +24,8 @@ kernel_log_dir = os.getenv(
 class TrackKernelOnHost:
     """A class for tracking a kernel on a host."""
 
-    _host_kernels = {}
-    _kernel_host_mapping = {}
+    _host_kernels: ClassVar = {}
+    _kernel_host_mapping: ClassVar = {}
 
     def add_kernel_id(self, host: str, kernel_id: str) -> None:
         """Add a kernel to a host."""
@@ -229,9 +229,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                     self.kernel_launch_timeout, self.assigned_host, self.kernel_log
                 )
             )
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(
-                self.kernel_id, reason
-            )
+            timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=500, reason=timeout_message)
 

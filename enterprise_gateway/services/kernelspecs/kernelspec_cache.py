@@ -4,7 +4,7 @@
 
 
 import os
-from typing import Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 
 from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.utils import ensure_async
@@ -105,11 +105,7 @@ class KernelSpecCache(SingletonConfigurable):
                     pass
             if not kernelspec:
                 self.cache_misses += 1
-                self.log.debug(
-                    "Cache miss ({misses}) for kernelspec: {kernel_name}".format(
-                        misses=self.cache_misses, kernel_name=kernel_name
-                    )
-                )
+                self.log.debug(f"Cache miss ({self.cache_misses}) for kernelspec: {kernel_name}")
         return kernelspec
 
     def get_all_items(self) -> Dict[str, CacheItemType]:
@@ -147,11 +143,7 @@ class KernelSpecCache(SingletonConfigurable):
             observed_dir = os.path.dirname(resource_dir)
             if observed_dir not in self.observed_dirs:
                 # New directory to watch, schedule it...
-                self.log.debug(
-                    "KernelSpecCache: observing directory: {observed_dir}".format(
-                        observed_dir=observed_dir
-                    )
-                )
+                self.log.debug(f"KernelSpecCache: observing directory: {observed_dir}")
                 self.observed_dirs.add(observed_dir)
                 self.observer.schedule(KernelSpecChangeHandler(self), observed_dir, recursive=True)
 
@@ -186,19 +178,15 @@ class KernelSpecCache(SingletonConfigurable):
             for kernel_dir in self.kernel_spec_manager.kernel_dirs:
                 if kernel_dir not in self.observed_dirs:
                     if os.path.exists(kernel_dir):
-                        self.log.info(
-                            "KernelSpecCache: observing directory: {kernel_dir}".format(
-                                kernel_dir=kernel_dir
-                            )
-                        )
+                        self.log.info(f"KernelSpecCache: observing directory: {kernel_dir}")
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(
                             KernelSpecChangeHandler(self), kernel_dir, recursive=True
                         )
                     else:
                         self.log.warning(
-                            "KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
-                            " and will not be observed.".format(kernel_dir=kernel_dir)
+                            f"KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
+                            " and will not be observed."
                         )
             self.observer.start()
 
@@ -223,7 +211,7 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
     # Events related to these files trigger the management of the KernelSpec cache.  Should we find
     # other files qualify as indicators of a kernel specification's state (like perhaps detached parameter
     # files in the future) should be added to this list - at which time it should become configurable.
-    watched_files = ["kernel.json"]
+    watched_files: ClassVar = ["kernel.json"]
 
     def __init__(self, kernel_spec_cache: KernelSpecCache, **kwargs):
         """Initialize the handler."""

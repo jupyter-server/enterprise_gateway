@@ -226,7 +226,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
     @staticmethod
     def pre_save_transformation(session: dict) -> dict:
         """Handle a pre_save for a session."""
-        kernel_id = list(session.keys())[0]
+        kernel_id = next(iter(session.keys()))
         session_info = session[kernel_id]
         if session_info.get("connection_info"):
             info = session_info["connection_info"]
@@ -239,7 +239,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
     @staticmethod
     def post_load_transformation(session: dict) -> dict:
         """Handle a post_load for a session."""
-        kernel_id = list(session.keys())[0]
+        kernel_id = next(iter(session.keys()))
         session_info = session[kernel_id]
         if session_info.get("connection_info"):
             info = session_info["connection_info"]

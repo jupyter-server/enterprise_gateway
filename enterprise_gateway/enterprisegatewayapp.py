@@ -12,7 +12,7 @@ import ssl
 import sys
 import time
 import weakref
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from jupyter_client.kernelspec import KernelSpecManager
 from jupyter_core.application import JupyterApp, base_aliases
@@ -78,7 +78,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     """
 
     # Also include when generating help options
-    classes = [
+    classes: ClassVar = [
         KernelSpecCache,
         FileKernelSessionManager,
         WebhookKernelSessionManager,
@@ -369,7 +369,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         self.io_loop.add_callback_from_signal(self.io_loop.stop)
 
     _last_config_update = int(time.time())
-    _dynamic_configurables = {}
+    _dynamic_configurables: ClassVar = {}
 
     def update_dynamic_configurables(self) -> bool:
         """
@@ -403,7 +403,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
             self.log.info(
                 "Configuration file changes detected.  Instances for the following "
-                "configurables have been updated: {}".format(configs)
+                f"configurables have been updated: {configs}"
             )
         return updated
 

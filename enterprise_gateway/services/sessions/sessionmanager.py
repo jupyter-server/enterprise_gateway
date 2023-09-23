@@ -170,7 +170,7 @@ class SessionManager(LoggingConfigurable):
 
         # multiple columns are never passed into kwargs so just using the
         # first and only one.
-        column = list(kwargs.keys())[0]
+        column = next(iter(kwargs.keys()))
         row = self.get_session_by_key(column, kwargs[column])
 
         if not row:

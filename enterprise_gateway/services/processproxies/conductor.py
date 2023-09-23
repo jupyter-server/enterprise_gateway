@@ -13,7 +13,7 @@ import socket
 import subprocess
 import time
 from random import randint
-from typing import Any
+from typing import Any, ClassVar
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape
@@ -32,8 +32,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
     Kernel lifecycle management for Conductor clusters.
     """
 
-    initial_states = {"SUBMITTED", "WAITING", "RUNNING"}
-    final_states = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
+    initial_states: ClassVar = {"SUBMITTED", "WAITING", "RUNNING"}
+    final_states: ClassVar = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
@@ -227,9 +227,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         if updated_one_notebook_master_rest_url and updated_one_notebook_master_web_submission_url:
             self.log.debug(
-                "Updating KERNEL_NOTEBOOK_MASTER_REST to '{}'.".format(
-                    updated_one_notebook_master_rest_url
-                )
+                f"Updating KERNEL_NOTEBOOK_MASTER_REST to '{updated_one_notebook_master_rest_url}'."
             )
             os.environ["KERNEL_NOTEBOOK_MASTER_REST"] = updated_one_notebook_master_rest_url
             env_dict["KERNEL_NOTEBOOK_MASTER_REST"] = updated_one_notebook_master_rest_url
@@ -416,9 +414,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
 
         if time_interval > self.kernel_launch_timeout:
-            reason = "Application failed to start within {} seconds.".format(
-                self.kernel_launch_timeout
-            )
+            reason = f"Application failed to start within {self.kernel_launch_timeout} seconds."
             error_http_code = 500
             if self._get_application_id(True):
                 if self._query_app_state_by_driver_id(self.driver_id) != "WAITING":
@@ -435,9 +431,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                         self.application_id, self.kernel_launch_timeout
                     )
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(
-                self.kernel_id, reason
-            )
+            timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def _get_application_id(self, ignore_final_states: bool = False) -> str:
@@ -473,9 +467,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                         )
             else:
                 self.log.debug(
-                    "ApplicationID not yet assigned for KernelID: '{}' - retrying...".format(
-                        self.kernel_id
-                    )
+                    f"ApplicationID not yet assigned for KernelID: '{self.kernel_id}' - retrying..."
                 )
         return self.application_id
 
@@ -525,9 +517,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = None if not response or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
-                "Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".format(
-                    cmd, e
-                )
+                f"Getting application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
             )
         return response
 
@@ -557,9 +547,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = None if response is None or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
-                "Getting application with cmd '{}' failed with exception: '{}'.  Continuing...".format(
-                    cmd, e
-                )
+                f"Getting application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
             )
         return response
 

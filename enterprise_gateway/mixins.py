@@ -9,7 +9,7 @@ import ssl
 import traceback
 from distutils.util import strtobool
 from http.client import responses
-from typing import Any, Awaitable, Dict, List, Optional, Set
+from typing import Any, Awaitable, ClassVar, Dict, List, Optional, Set
 
 from tornado import web
 from tornado.log import LogFormatter
@@ -36,7 +36,7 @@ class CORSMixin:
     Mixes CORS headers into tornado.web.RequestHandlers.
     """
 
-    SETTINGS_TO_HEADERS = {
+    SETTINGS_TO_HEADERS: ClassVar = {
         "eg_allow_credentials": "Access-Control-Allow-Credentials",
         "eg_allow_headers": "Access-Control-Allow-Headers",
         "eg_allow_methods": "Access-Control-Allow-Methods",
