@@ -261,9 +261,7 @@ class DockerProcessProxy(ContainerProcessProxy):
                 container.remove(force=True)  # Container still exists, attempt forced removal
             except Exception as err:
                 self.log.debug(
-                    "Container termination for container: {} raised exception: {}".format(
-                        container.name, err
-                    )
+                    f"Container termination for container: {container.name} raised exception: {err}"
                 )
                 if isinstance(err, NotFound):
                     pass  # okay if its not found

@@ -237,9 +237,7 @@ class KernelClient:
             self.log.debug(f"Kernel {self.kernel_id} interrupted")
             return True
         else:
-            msg = "Unexpected response interrupting kernel {}: {}".format(
-                self.kernel_id, response.content
-            )
+            msg = f"Unexpected response interrupting kernel {self.kernel_id}: {response.content}"
             raise RuntimeError(msg)
 
     def restart(self, timeout=REQUEST_TIMEOUT):

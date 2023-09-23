@@ -211,8 +211,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         if self.candidate_queue is None:
             self.log.warning(
-                "Queue: {} not found in cluster."
-                "Availability check will not be performed".format(candidate_queue_name)
+                f"Queue: {candidate_queue_name} not found in cluster."
+                "Availability check will not be performed"
             )
             return
 
@@ -222,16 +222,14 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         if self.candidate_partition is None:
             self.log.debug(
-                "Partition: {} not found in {} queue."
-                "Availability check will not be performed".format(node_label, candidate_queue_name)
+                f"Partition: {node_label} not found in {candidate_queue_name} queue."
+                "Availability check will not be performed"
             )
             return
 
         self.log.debug(
-            "Checking endpoint: {} if partition: {} "
-            "has used capacity <= {}%".format(
-                self.yarn_endpoint, self.candidate_partition, partition_availability_threshold
-            )
+            f"Checking endpoint: {self.yarn_endpoint} if partition: {self.candidate_partition} "
+            f"has used capacity <= {partition_availability_threshold}%"
         )
 
         yarn_available = self.resource_mgr.cluster_scheduler_queue_availability(
@@ -421,9 +419,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                         )
                     )
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(
-                self.kernel_id, reason
-            )
+            timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
     def get_process_info(self) -> dict[str, Any]:
@@ -480,9 +476,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
                     )
             if not self.application_id:
                 self.log.debug(
-                    "ApplicationID not yet assigned for KernelID: '{}' - retrying...".format(
-                        self.kernel_id
-                    )
+                    f"ApplicationID not yet assigned for KernelID: '{self.kernel_id}' - retrying..."
                 )
         return self.application_id
 
@@ -542,9 +536,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             response = self.resource_mgr.cluster_application(application_id=app_id)
         except Exception as e:
             self.log.warning(
-                "Query for application ID '{}' failed with exception: '{}'.  Continuing...".format(
-                    app_id, e
-                )
+                f"Query for application ID '{app_id}' failed with exception: '{e}'.  Continuing..."
             )
         else:
             data = response.data
@@ -564,8 +556,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             response = self.resource_mgr.cluster_application_state(application_id=app_id)
         except Exception as e:
             self.log.warning(
-                "Query for application '{}' state failed with exception: '{}'.  "
-                "Continuing with last known state = '{}'...".format(app_id, e, state)
+                f"Query for application '{app_id}' state failed with exception: '{e}'.  "
+                f"Continuing with last known state = '{state}'..."
             )
         else:
             state = response.data["state"]

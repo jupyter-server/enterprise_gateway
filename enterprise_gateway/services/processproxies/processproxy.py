@@ -357,8 +357,8 @@ class ResponseManager(SingletonConfigurable):
                     new_connection_info["kernel_id"] = kernel_id
                     connection_info_str = json.dumps(new_connection_info)
                     self.log.warning(
-                        "WARNING!!!! Legacy kernel response received for kernel_id '{}'! "
-                        "Update kernel launchers to current version!".format(kernel_id)
+                        f"WARNING!!!! Legacy kernel response received for kernel_id '{kernel_id}'! "
+                        "Update kernel launchers to current version!"
                     )
                     break  # If we're here, we made it!
                 except Exception as ex2:
@@ -464,7 +464,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         if self._use_gss_raw.lower() not in ("", "true", "false"):
             msg = (
                 "Invalid Value for EG_REMOTE_GSS_SSH expected one of "
-                '"", "True", "False", got {!r}'.format(self._use_gss_raw)
+                f'"", "True", "False", got {self._use_gss_raw!r}'
             )
             raise ValueError(msg)
         self.use_gss = self._use_gss_raw == "true"
@@ -842,10 +842,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         kernel_name = self.kernel_manager.kernel_spec.display_name
         kernel_clause = f" '{kernel_name}'." if kernel_name is not None else "s."
         error_message = (
-            "User '{}' is {} to start kernel{} "
-            "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request.".format(
-                kernel_username, differentiator_clause, kernel_clause
-            )
+            f"User '{kernel_username}' is {differentiator_clause} to start kernel{kernel_clause} "
+            "Ensure KERNEL_USERNAME is set to an appropriate value and retry the request."
         )
         self.log_and_raise(http_status_code=403, reason=error_message)
 
@@ -921,26 +919,26 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 if self.lower_port < 1024 or self.lower_port > 65535:
                     self.log_and_raise(
                         http_status_code=500,
-                        reason="Invalid port range '{}' specified. "
-                        "Range for valid port numbers is (1024, 65535).".format(port_range),
+                        reason=f"Invalid port range '{port_range}' specified. "
+                        "Range for valid port numbers is (1024, 65535).",
                     )
                 if self.upper_port < 1024 or self.upper_port > 65535:
                     self.log_and_raise(
                         http_status_code=500,
-                        reason="Invalid port range '{}' specified. "
-                        "Range for valid port numbers is (1024, 65535).".format(port_range),
+                        reason=f"Invalid port range '{port_range}' specified. "
+                        "Range for valid port numbers is (1024, 65535).",
                     )
         except ValueError as ve:
             self.log_and_raise(
                 http_status_code=500,
-                reason="Port range validation failed for range: '{}'.  "
-                "Error was: {}".format(port_range, ve),
+                reason=f"Port range validation failed for range: '{port_range}'.  "
+                f"Error was: {ve}",
             )
         except IndexError as ie:
             self.log_and_raise(
                 http_status_code=500,
-                reason="Port range validation failed for range: '{}'.  "
-                "Error was: {}".format(port_range, ie),
+                reason=f"Port range validation failed for range: '{port_range}'.  "
+                f"Error was: {ie}",
             )
 
         self.kernel_manager.port_range = port_range
@@ -1131,14 +1129,14 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             if poll_result and poll_result > 0:
                 self.local_proc.wait()
                 error_message = (
-                    "Error occurred during launch of KernelID: {}.  "
-                    "Check Enterprise Gateway log for more information.".format(self.kernel_id)
+                    f"Error occurred during launch of KernelID: {self.kernel_id}.  "
+                    "Check Enterprise Gateway log for more information."
                 )
                 self.local_proc = None
                 self.log_and_raise(http_status_code=500, reason=error_message)
 
     def _tunnel_to_kernel(
-        self, connection_info: dict, server: str, port: int = ssh_port, key: str = None
+        self, connection_info: dict, server: str, port: int = ssh_port, key: str | None = None
     ) -> tuple:
         """
         Tunnel connections to a kernel over SSH
@@ -1188,7 +1186,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         remote_port: int,
         server: str,
         port: int = ssh_port,
-        key: str = None,
+        key: str | None = None,
     ) -> int:
         """
         Analogous to _tunnel_to_kernel, but deals with a single port.  This will typically be called for
@@ -1228,9 +1226,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         except Exception as e:
             self.log_and_raise(
                 http_status_code=500,
-                reason="Could not open SSH tunnel for port {}. Exception: '{}'".format(
-                    channel_name, e
-                ),
+                reason=f"Could not open SSH tunnel for port {channel_name}. Exception: '{e}'",
             )
 
     def _spawn_ssh_tunnel(
@@ -1420,8 +1416,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             )
         else:
             error_message = (
-                "Unexpected runtime encountered for Kernel ID '{}' - "
-                "connection information is null!".format(self.kernel_id)
+                f"Unexpected runtime encountered for Kernel ID '{self.kernel_id}' - "
+                "connection information is null!"
             )
             self.log_and_raise(http_status_code=500, reason=error_message)
 
@@ -1451,9 +1447,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self.pid = int(pid)
             except ValueError:
                 self.log.warning(
-                    "pid returned from kernel launcher is not an integer: {} - ignoring.".format(
-                        pid
-                    )
+                    f"pid returned from kernel launcher is not an integer: {pid} - ignoring."
                 )
                 pid = None
         pgid = connect_info.pop("pgid", None)
@@ -1462,9 +1456,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self.pgid = int(pgid)
             except ValueError:
                 self.log.warning(
-                    "pgid returned from kernel launcher is not an integer: {} - ignoring.".format(
-                        pgid
-                    )
+                    f"pgid returned from kernel launcher is not an integer: {pgid} - ignoring."
                 )
                 pgid = None
         if (
@@ -1487,12 +1479,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
         if time_interval > self.kernel_launch_timeout:
             error_http_code = 500
-            reason = "Waited too long ({}s) to get connection file".format(
-                self.kernel_launch_timeout
-            )
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(
-                self.kernel_id, reason
-            )
+            reason = f"Waited too long ({self.kernel_launch_timeout}s) to get connection file"
+            timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
 
@@ -1645,7 +1633,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             # communication socket (comm_ip, comm_port) members as well.
             self._setup_connection_info(process_info["tunneled_connect_info"])
 
-    def log_and_raise(self, http_status_code: int = None, reason: str = None):
+    def log_and_raise(self, http_status_code: int | None = None, reason: str | None = None):
         """
         Override log_and_raise method in order to verify that the response socket is properly closed
         before raise exception

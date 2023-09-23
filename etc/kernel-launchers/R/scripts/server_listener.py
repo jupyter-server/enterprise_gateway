@@ -67,8 +67,8 @@ def return_connection_info(
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error(
-            "Invalid format for response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid format for response address '{response_addr}'. "
+            "Assuming 'pull' mode..."
         )
         return
 
@@ -77,8 +77,8 @@ def return_connection_info(
         response_port = int(response_parts[1])
     except ValueError:
         logger.error(
-            "Invalid port component found in response address '{}'. "
-            "Assuming 'pull' mode...".format(response_addr)
+            f"Invalid port component found in response address '{response_addr}'. "
+            "Assuming 'pull' mode..."
         )
         return
 
@@ -113,9 +113,7 @@ def prepare_comm_socket(lower_port, upper_port):
     """
     sock = _select_socket(lower_port, upper_port)
     logger.info(
-        "Signal socket bound to host: {}, port: {}".format(
-            sock.getsockname()[0], sock.getsockname()[1]
-        )
+        f"Signal socket bound to host: {sock.getsockname()[0]}, port: {sock.getsockname()[1]}"
     )
     sock.listen(1)
     sock.settimeout(5)

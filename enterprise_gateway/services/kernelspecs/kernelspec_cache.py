@@ -106,9 +106,7 @@ class KernelSpecCache(SingletonConfigurable):
             if not kernelspec:
                 self.cache_misses += 1
                 self.log.debug(
-                    "Cache miss ({misses}) for kernelspec: {kernel_name}".format(
-                        misses=self.cache_misses, kernel_name=kernel_name
-                    )
+                    f"Cache miss ({self.cache_misses}) for kernelspec: {kernel_name}"
                 )
         return kernelspec
 
@@ -148,9 +146,7 @@ class KernelSpecCache(SingletonConfigurable):
             if observed_dir not in self.observed_dirs:
                 # New directory to watch, schedule it...
                 self.log.debug(
-                    "KernelSpecCache: observing directory: {observed_dir}".format(
-                        observed_dir=observed_dir
-                    )
+                    f"KernelSpecCache: observing directory: {observed_dir}"
                 )
                 self.observed_dirs.add(observed_dir)
                 self.observer.schedule(KernelSpecChangeHandler(self), observed_dir, recursive=True)
@@ -187,9 +183,7 @@ class KernelSpecCache(SingletonConfigurable):
                 if kernel_dir not in self.observed_dirs:
                     if os.path.exists(kernel_dir):
                         self.log.info(
-                            "KernelSpecCache: observing directory: {kernel_dir}".format(
-                                kernel_dir=kernel_dir
-                            )
+                            f"KernelSpecCache: observing directory: {kernel_dir}"
                         )
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(
@@ -197,8 +191,8 @@ class KernelSpecCache(SingletonConfigurable):
                         )
                     else:
                         self.log.warning(
-                            "KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
-                            " and will not be observed.".format(kernel_dir=kernel_dir)
+                            f"KernelSpecCache: kernel_dir '{kernel_dir}' does not exist"
+                            " and will not be observed."
                         )
             self.observer.start()
 

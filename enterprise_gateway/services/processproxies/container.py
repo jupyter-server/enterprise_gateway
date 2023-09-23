@@ -112,17 +112,13 @@ class ContainerProcessProxy(RemoteProcessProxy):
         if kernel_uid in prohibited_uids:
             http_status_code = 403
             error_message = (
-                "Kernel's UID value of '{}' has been denied via EG_PROHIBITED_UIDS!".format(
-                    kernel_uid
-                )
+                f"Kernel's UID value of '{kernel_uid}' has been denied via EG_PROHIBITED_UIDS!"
             )
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         elif kernel_gid in prohibited_gids:
             http_status_code = 403
             error_message = (
-                "Kernel's GID value of '{}' has been denied via EG_PROHIBITED_GIDS!".format(
-                    kernel_gid
-                )
+                f"Kernel's GID value of '{kernel_gid}' has been denied via EG_PROHIBITED_GIDS!"
             )
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
 

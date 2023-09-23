@@ -229,9 +229,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
                     self.kernel_launch_timeout, self.assigned_host, self.kernel_log
                 )
             )
-            timeout_message = "KernelID: '{}' launch timeout due to: {}".format(
-                self.kernel_id, reason
-            )
+            timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
             self.log_and_raise(http_status_code=500, reason=timeout_message)
 

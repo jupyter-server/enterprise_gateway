@@ -403,7 +403,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
             self.log.info(
                 "Configuration file changes detected.  Instances for the following "
-                "configurables have been updated: {}".format(configs)
+                f"configurables have been updated: {configs}"
             )
         return updated
 
