@@ -11,7 +11,7 @@ import os
 import signal
 import socket
 import time
-from typing import Any
+from typing import Any, ClassVar
 
 from jupyter_client import localinterfaces
 from yarn_api_client.base import Response
@@ -43,8 +43,8 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
     Kernel lifecycle management for YARN clusters.
     """
 
-    initial_states = {"NEW", "SUBMITTED", "ACCEPTED", "RUNNING"}
-    final_states = {"FINISHED", "KILLED", "FAILED"}
+    initial_states: ClassVar = {"NEW", "SUBMITTED", "ACCEPTED", "RUNNING"}
+    final_states: ClassVar = {"FINISHED", "KILLED", "FAILED"}
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""
@@ -456,7 +456,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         if not self.application_id:
             app = self._query_app_by_name(self.kernel_id)
             state_condition = True
-            if type(app) is dict:
+            if isinstance(app, dict):
                 state = app.get("state")
                 self.last_known_state = state
 
@@ -518,7 +518,11 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             )
         else:
             data = response.data
-            if type(data) is dict and type(data.get("apps")) is dict and "app" in data.get("apps"):
+            if (
+                isinstance(data, dict)
+                and isinstance(data.get("apps"), dict)
+                and "app" in data.get("apps")
+            ):
                 for app in data["apps"]["app"]:
                     if app.get("name", "").find(kernel_id) >= 0 and app.get("id") > top_most_app_id:
                         target_app = app
@@ -540,7 +544,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             )
         else:
             data = response.data
-            if type(data) is dict and "app" in data:
+            if isinstance(data, dict) and "app" in data:
                 app = data["app"]
 
         return app

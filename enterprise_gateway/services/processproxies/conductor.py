@@ -13,7 +13,7 @@ import socket
 import subprocess
 import time
 from random import randint
-from typing import Any
+from typing import Any, ClassVar
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape
@@ -32,8 +32,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
     Kernel lifecycle management for Conductor clusters.
     """
 
-    initial_states = {"SUBMITTED", "WAITING", "RUNNING"}
-    final_states = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
+    initial_states: ClassVar = {"SUBMITTED", "WAITING", "RUNNING"}
+    final_states: ClassVar = {"FINISHED", "KILLED", "RECLAIMED"}  # Don't include FAILED state
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
         """Initialize the proxy."""

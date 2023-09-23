@@ -67,8 +67,7 @@ def return_connection_info(
     response_parts = response_addr.split(":")
     if len(response_parts) != 2:
         logger.error(
-            f"Invalid format for response address '{response_addr}'. "
-            "Assuming 'pull' mode..."
+            f"Invalid format for response address '{response_addr}'. Assuming 'pull' mode..."
         )
         return
 

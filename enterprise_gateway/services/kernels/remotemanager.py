@@ -10,7 +10,7 @@ import re
 import signal
 import time
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import KernelSpec
@@ -136,7 +136,7 @@ class TrackPendingRequests:
     """
 
     _pending_requests_all = 0
-    _pending_requests_user = {}
+    _pending_requests_user: ClassVar = {}
 
     def increment(self, username: str) -> None:
         """Increment the requests for a username."""
@@ -658,7 +658,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                     if alt_sigint:
                         try:
                             sig_value = getattr(signal, alt_sigint)
-                            if type(sig_value) is int:  # Python 2
+                            if isinstance(sig_value, int):  # Python 2
                                 self.sigint_value = sig_value
                             else:  # Python 3
                                 self.sigint_value = sig_value.value
