@@ -178,7 +178,7 @@ the icon filenames to be used by the front-end application.
             "env": {
               "SPARK_HOME": "/usr/hdp/current/spark2-client",
               "PYSPARK_PYTHON": "/opt/conda/bin/python",
-              "PYTHONPATH": "${HOME}/.local/lib/python3.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
+              "PYTHONPATH": "${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
               "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
               "LAUNCH_OPTS": ""
             },
@@ -215,8 +215,8 @@ the icon filenames to be used by the front-end application.
             "env": {
               "SPARK_HOME": "/usr/hdp/current/spark2-client",
               "PYSPARK_PYTHON": "/opt/conda/bin/python",
-              "PYTHONPATH": "${HOME}/.local/lib/python3.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
-              "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/${KERNEL_USERNAME}/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python3.7/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/conda/bin:$PATH ${KERNEL_EXTRA_SPARK_OPTS}",
+              "PYTHONPATH": "${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
+              "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/${KERNEL_USERNAME}/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/conda/bin:$PATH ${KERNEL_EXTRA_SPARK_OPTS}",
               "LAUNCH_OPTS": ""
             },
             "display_name": "Spark - Python (YARN Cluster Mode)",

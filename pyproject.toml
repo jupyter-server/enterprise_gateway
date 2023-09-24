@@ -15,13 +15,12 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
   "docker>=3.5.0",
   "future",
@@ -29,11 +28,11 @@ dependencies = [
   "jupyter_client>=6.1.12,<7",  # Remove cap once EG supports kernel provisioners
   "jupyter_core>=4.7.0",
   "kubernetes>=18.20.0",
-  "jupyter_server>=1.3,<2.0",  # Remove cap (increase floor) once EG suport kernel provisioners
+  "jupyter_server>=1.7,<2.0",  # Remove cap (increase floor) once EG suport kernel provisioners
   "paramiko>=2.11",
   "pexpect>=4.8.0",
   "pycryptodomex>=3.9.7",
-  "pyzmq>=17.0,<25.0",  # Pyzmq 25 removes deprecated code that jupyter_client 6 uses, remove if v6 gets updated
+  "pyzmq>=20.0,<25.0",  # Pyzmq 25 removes deprecated code that jupyter_client 6 uses, remove if v6 gets updated
   "requests>=2.14.2",
   "tornado>=6.1",
   "traitlets>=5.3.0",
@@ -65,7 +64,7 @@ test = [
   "websocket-client"
 ]
 lint = [
-  "black[jupyter]==23.3.0",
+  "black[jupyter]==23.9.1",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
   "ruff==0.0.290"
