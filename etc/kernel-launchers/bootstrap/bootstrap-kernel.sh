@@ -21,12 +21,20 @@ launch_python_kernel() {
   else
     kernel_class_option="--kernel-class-name ${KERNEL_CLASS_NAME}"
   fi
-
+  if [ ! -z "${KERNEL_WORKING_DIR}" ]
+  then
+    CURR_DIR=$(pwd)
+    cd "${KERNEL_WORKING_DIR}"
+  fi
 	set -x
 	python ${KERNEL_LAUNCHERS_DIR}/python/scripts/launch_ipykernel.py --kernel-id ${KERNEL_ID} \
 	      --port-range ${PORT_RANGE} --response-address ${RESPONSE_ADDRESS} --public-key ${PUBLIC_KEY} \
 	      --spark-context-initialization-mode ${KERNEL_SPARK_CONTEXT_INIT_MODE} ${kernel_class_option}
 	{ set +x; } 2>/dev/null
+  if [ ! -z "${CURR_DIR}" ]
+  then
+    cd "${CURR_DIR}"
+  fi
 }
 
 launch_R_kernel() {
