@@ -581,9 +581,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             response = self.resource_mgr.cluster_application_kill(application_id=app_id)
         except Exception as e:
             self.log.warning(
-                "Termination of application '{}' failed with exception: '{}'.  Continuing...".format(
-                    app_id, e
-                )
+                f"Termination of application '{app_id}' failed with exception: '{e}'.  Continuing..."
             )
 
         return response
