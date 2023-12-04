@@ -8,8 +8,10 @@ from typing import Dict, List
 import urllib3
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
+
+from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
 
 urllib3.disable_warnings()
 
@@ -96,12 +98,6 @@ def launch_kubernetes_kernel(
     kernel_class_name,
 ):
     """Launches a containerized kernel as a kubernetes pod."""
-
-    if os.getenv("KUBERNETES_SERVICE_HOST"):
-        config.load_incluster_config()
-    else:
-        config.load_kube_config()
-
     # Capture keywords and their values.
     keywords = {}
 
@@ -154,13 +150,13 @@ def launch_kubernetes_kernel(
                 pod_template = extend_pod_env(k8s_obj)
                 if pod_template_file is None:
                     try:
-                        pod_created = client.CoreV1Api(client.ApiClient()).create_namespaced_pod(
-                            body=k8s_obj, namespace=kernel_namespace
-                        )
+                        pod_created = client.CoreV1Api(
+                            api_client=kubernetes_client
+                        ).create_namespaced_pod(body=k8s_obj, namespace=kernel_namespace)
                     except ApiException as exc:
                         if _parse_k8s_exception(exc) == K8S_ALREADY_EXIST_REASON:
                             pod_created = (
-                                client.CoreV1Api(client.ApiClient())
+                                client.CoreV1Api(api_client=kubernetes_client)
                                 .list_namespaced_pod(
                                     namespace=kernel_namespace,
                                     label_selector=f"kernel_id={kernel_id}",
@@ -172,14 +168,14 @@ def launch_kubernetes_kernel(
                             raise exc
             elif k8s_obj["kind"] == "Secret":
                 if pod_template_file is None:
-                    client.CoreV1Api(client.ApiClient()).create_namespaced_secret(
+                    client.CoreV1Api(api_client=kubernetes_client).create_namespaced_secret(
                         body=k8s_obj, namespace=kernel_namespace
                     )
             elif k8s_obj["kind"] == "PersistentVolumeClaim":
                 if pod_template_file is None:
                     try:
                         client.CoreV1Api(
-                            client.ApiClient()
+                            api_client=kubernetes_client
                         ).create_namespaced_persistent_volume_claim(
                             body=k8s_obj, namespace=kernel_namespace
                         )
@@ -190,7 +186,9 @@ def launch_kubernetes_kernel(
                             raise exc
             elif k8s_obj["kind"] == "PersistentVolume":
                 if pod_template_file is None:
-                    client.CoreV1Api(client.ApiClient()).create_persistent_volume(body=k8s_obj)
+                    client.CoreV1Api(api_client=kubernetes_client).create_persistent_volume(
+                        body=k8s_obj
+                    )
             elif k8s_obj["kind"] == "Service":
                 if pod_template_file is None and pod_created is not None:
                     # Create dependency between pod and service, useful to delete service when kernel stops
@@ -202,7 +200,7 @@ def launch_kubernetes_kernel(
                             "uid": str(pod_created.metadata.uid),
                         }
                     ]
-                    client.CoreV1Api(client.ApiClient()).create_namespaced_service(
+                    client.CoreV1Api(api_client=kubernetes_client).create_namespaced_service(
                         body=k8s_obj, namespace=kernel_namespace
                     )
             elif k8s_obj["kind"] == "ConfigMap":
@@ -216,7 +214,7 @@ def launch_kubernetes_kernel(
                             "uid": str(pod_created.metadata.uid),
                         }
                     ]
-                    client.CoreV1Api(client.ApiClient()).create_namespaced_config_map(
+                    client.CoreV1Api(api_client=kubernetes_client).create_namespaced_config_map(
                         body=k8s_obj, namespace=kernel_namespace
                     )
             else:

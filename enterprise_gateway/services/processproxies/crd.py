@@ -10,6 +10,8 @@ from typing import Any
 
 from kubernetes import client
 
+from enterprise_gateway.services.processproxies.k8s_client import kubernetes_client
+
 from ..kernels.remotemanager import RemoteKernelManager
 from .k8s import KubernetesProcessProxy
 
@@ -105,7 +107,9 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
 
         Note: the caller is responsible for handling exceptions.
         """
-        delete_status = client.CustomObjectsApi().delete_namespaced_custom_object(
+        delete_status = client.CustomObjectsApi(
+            api_client=kubernetes_client
+        ).delete_namespaced_custom_object(
             self.group,
             self.version,
             self.kernel_namespace,

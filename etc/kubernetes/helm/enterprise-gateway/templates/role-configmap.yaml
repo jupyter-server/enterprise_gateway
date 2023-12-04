@@ -1,0 +1,11 @@
+{{- if .Values.externalCluster.autoConfigureRemote }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap-role
+data:
+  # Pass in Role from helm chart into configmap that k8s client uses to create role in remote cluster
+  # Allows for Role permissions to be defined via helm chart, not source code
+  role.yaml: |
+    {{- include "kernel-role" . | indent 4 }}
+{{- end }}

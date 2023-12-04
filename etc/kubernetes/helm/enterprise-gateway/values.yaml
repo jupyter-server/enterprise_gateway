@@ -85,6 +85,10 @@ authToken:
 kernel:
   # Kernel cluster role created by this chart.
   clusterRole: kernel-controller
+  # Service Account to Use (optional)
+  serviceAccountName:
+  # Namespace to launch in (optional)
+  namespace:
   # Will start kernels in the same namespace as EG if True.
   shareGatewayNamespace: false
   # Timeout for kernel launching in seconds.
@@ -180,3 +184,13 @@ kip:
   #   requests:
   #     cpu: 1
   #     memory: 1Gi
+
+externalCluster:
+  # Set to enable to point k8s client to remote cluster
+  enabled: false
+  # Mount config at this path inside pod
+  configPath: /etc/kube/config/
+  # Filename of kubeconfig
+  configFilename: kubeconfig
+  # Automatically create service account and role in remote cluster
+  autoConfigureRemote: false

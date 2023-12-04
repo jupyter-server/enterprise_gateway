@@ -23,6 +23,12 @@ rules:
   - apiGroups: ["sparkoperator.k8s.io"]
     resources: ["sparkapplications", "sparkapplications/status", "scheduledsparkapplications", "scheduledsparkapplications/status"]
     verbs: ["get", "watch", "list", "create", "delete"]
+  # If externalCluster used, need to be able to read and forward service account
+  {{- if .Values.externalCluster.enabled }}
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles"]
+    verbs: ["get", "create"]
+  {{- end}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
