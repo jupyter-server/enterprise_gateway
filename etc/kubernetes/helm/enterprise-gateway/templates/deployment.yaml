@@ -124,6 +124,7 @@ spec:
       - name: image-kernelspecs
         emptyDir:
           medium: Memory
+  {{- end }}
 
   {{- if .Values.deployment.tolerations }}
       tolerations:
@@ -136,7 +137,5 @@ spec:
   {{- if .Values.deployment.affinity }}
       affinity:
       {{- toYaml .Values.deployment.affinity | nindent 8 }}
-  {{- end }}
-
   {{- end }}
 {{- end }}
