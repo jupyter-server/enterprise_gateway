@@ -21,6 +21,7 @@ services:
     environment:
       - "EG_DOCKER_NETWORK=${EG_DOCKER_NETWORK:-enterprise-gateway_enterprise-gateway}"
       - "EG_KERNEL_LAUNCH_TIMEOUT=${EG_KERNEL_LAUNCH_TIMEOUT:-60}"
+      - "EG_KERNEL_INFO_TIMEOUT=${EG_KERNEL_INFO_TIMEOUT:-60}"
       - "EG_CULL_IDLE_TIMEOUT=${EG_CULL_IDLE_TIMEOUT:-3600}"
       # Use double-defaulting for B/C.  Support for EG_KERNEL_WHITELIST will be removed in a future release
       - "EG_ALLOWED_KERNELS=${EG_ALLOWED_KERNELS:-${EG_KERNEL_WHITELIST:-'r_docker','python_docker','python_tf_docker','python_tf_gpu_docker','scala_docker'}}"

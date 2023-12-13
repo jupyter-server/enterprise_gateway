@@ -54,6 +54,10 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     be submitted in the kernel startup if that particular kernel's startup time is
     expected to exceed that of the EG_KERNEL_LAUNCH_TIMEOUT set when Enterprise
     Gateway starts.
+    
+  KERNEL_INFO_TIMEOUT=<from user> or EG_KERNEL_INFO_TIMEOUT=60
+    The time (in seconds) Enterprise Gateway will wait for kernel info response
+    before deeming the request a failure.
 
   KERNEL_NAMESPACE=<from user> or KERNEL_POD_NAME or EG_NAMESPACE
     Kubernetes only.  This indicates the name of the namespace to use or create on

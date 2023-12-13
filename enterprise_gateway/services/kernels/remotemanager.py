@@ -26,6 +26,7 @@ from ..processproxies.processproxy import BaseProcessProxyABC, LocalProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
+default_kernel_info_timeout = float(os.getenv("EG_KERNEL_INFO_TIMEOUT", "60"))
 kernel_restart_status_poll_interval = float(os.getenv("EG_RESTART_STATUS_POLL_INTERVAL", 1.0))
 
 
@@ -437,6 +438,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         self.kernel_id = None
         self.user_overrides = {}
         self.kernel_launch_timeout = default_kernel_launch_timeout
+        self.kernel_info_timeout = default_kernel_info_timeout
         self.restarting = False  # need to track whether we're in a restart situation or not
         self._activity_stream = None
 
@@ -512,6 +514,10 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # If KERNEL_LAUNCH_TIMEOUT is passed in the payload, override it.
         self.kernel_launch_timeout = float(
             env.get("KERNEL_LAUNCH_TIMEOUT", default_kernel_launch_timeout)
+        )
+        # if KERNEL_INFO_TIMEOUT is passed in the payload, override it.
+        self.kernel_info_timeout = float(
+            env.get("KERNEL_INFO_TIMEOUT", default_kernel_info_timeout)
         )
         self.user_overrides.update(
             {
