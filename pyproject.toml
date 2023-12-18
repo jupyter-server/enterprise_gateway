@@ -64,7 +64,7 @@ test = [
   "websocket-client"
 ]
 lint = [
-  "black[jupyter]==23.9.1",
+  "black[jupyter]==23.12.0",
   "mdformat>0.7",
   "mdformat-gfm>=0.3.5",
   "ruff==0.0.291"
