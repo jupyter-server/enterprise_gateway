@@ -8,7 +8,7 @@ ENV SPARK_VER $SPARK_VERSION
 ENV SPARK_HOME /opt/spark
 
 
-RUN conda install --quiet --yes \
+RUN mamba install --quiet --yes \
     cffi \
     send2trash \
     requests \
