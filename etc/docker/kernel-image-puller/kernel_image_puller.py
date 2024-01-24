@@ -10,6 +10,7 @@ from typing import List, Optional
 
 from docker.client import DockerClient
 from docker.errors import NotFound
+from kubernetes import client, config
 
 # initialize root logger
 logging.basicConfig(format="[%(levelname)1.1s %(asctime)s %(name)s.%(threadName)s] %(message)s")
@@ -223,6 +224,8 @@ class KernelImagePuller:
         """Checks for the existence of the named image using the configured container runtime."""
         result = True
         absolute_image_name = self.get_absolute_image_name(image_name)
+        kernel_namespace = os.environ.get("KERNEL_NAMESPACE", "default")
+        secret_name = "gcr-cyberagent-402"
         t0 = time.time()
         if self.container_runtime == KernelImagePuller.DOCKER_CLIENT:
             try:
@@ -230,7 +233,13 @@ class KernelImagePuller:
             except NotFound:
                 result = False
         elif self.container_runtime == KernelImagePuller.CONTAINERD_CLIENT:
-            argv = ["crictl", "-r", self.runtime_endpoint, "inspecti", "-q", absolute_image_name]
+            config.load_incluster_config()
+            v1 = client.CoreV1Api()
+            secret = v1.read_namespaced_secret(secret_name, kernel_namespace)
+            username = secret.data["username"].decode("utf-8")
+            password = secret.data["password"].decode("utf-8")
+            creds = f"{username}:{password}"
+            argv = ["crictl", "--creds", creds, "-r", self.runtime_endpoint, "inspecti", "-q", absolute_image_name]
             result = self.execute_cmd(argv)
         else:  # invalid container runtime
             logger.error(f"Invalid container runtime detected: '{self.container_runtime}'!")
@@ -245,6 +254,8 @@ class KernelImagePuller:
         """Downloads (pulls) the named image using the configured container runtime."""
         result = True
         absolute_image_name = self.get_absolute_image_name(image_name)
+        kernel_namespace = os.environ.get("KERNEL_NAMESPACE", "default")
+        secret_name = "gcr-cyberagent-402"
         t0 = time.time()
         if self.container_runtime == KernelImagePuller.DOCKER_CLIENT:
             try:
@@ -252,7 +263,13 @@ class KernelImagePuller:
             except NotFound:
                 result = False
         elif self.container_runtime == KernelImagePuller.CONTAINERD_CLIENT:
-            argv = ["crictl", "-r", self.runtime_endpoint, "pull", absolute_image_name]
+            config.load_incluster_config()
+            v1 = client.CoreV1Api()
+            secret = v1.read_namespaced_secret(secret_name, kernel_namespace)
+            username = secret.data["username"].decode("utf-8")
+            password = secret.data["password"].decode("utf-8")
+            creds = f"{username}:{password}"
+            argv = ["crictl", "--creds", creds, "-r", self.runtime_endpoint, "pull", absolute_image_name]
             result = self.execute_cmd(argv)
         else:  # invalid container runtime
             logger.error(f"Invalid container runtime detected: '{self.container_runtime}'!")
