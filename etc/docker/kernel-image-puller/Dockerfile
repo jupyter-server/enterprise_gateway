@@ -8,15 +8,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY kernel_image_puller.py ./
 COPY image_fetcher.py ./
-ARG OS=Debian_11
+ARG OS=Debian_12
 
 # Install crictl for use by KIP when non-docker installations are encountered.
 RUN echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${OS}/ /"|tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
 RUN curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
 RUN apt-get update && apt-get install cri-tools
-RUN wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.24.0/crictl-v1.24.0-linux-amd64.tar.gz \
-    && tar zxvf crictl-v1.24.0-linux-amd64.tar.gz -C /usr/local/bin \
-    && rm -f crictl-v1.24.0-linux-amd64.tar.gz
 
 RUN echo $PATH
 # The following environment variables are supported - defaults provided.  Override as needed.
