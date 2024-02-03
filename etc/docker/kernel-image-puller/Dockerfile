@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY kernel_image_puller.py ./
 COPY image_fetcher.py ./
-ARG OS=Debian_11
+ARG OS=Debian_12
 
 # Install crictl for use by KIP when non-docker installations are encountered.
 RUN echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${OS}/ /"|tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
