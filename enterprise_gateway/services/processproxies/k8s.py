@@ -223,7 +223,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         else:
             self.log.debug(f"Processing KERNEL_POD_NAME based on env var => {pod_name}")
             if "{{" in pod_name and "}}" in pod_name:
-                self.log.debug(f"Processing KERNEL_POD_NAME as jinja template")
+                self.log.debug("Processing KERNEL_POD_NAME as jinja template")
                 # Create Jinja2 environment
                 keywords = {}
                 for name, value in kwargs["env"].items():
