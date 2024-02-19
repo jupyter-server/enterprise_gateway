@@ -218,9 +218,7 @@ class KernelClient:
                 ):  # We timed out.  If post idle, its ok, else make mention of it
                     if not post_idle:
                         self.log.warning(
-                            "Unexpected timeout occurred for msg_id: {} - no 'idle' status received!".format(
-                                msg_id
-                            )
+                            f"Unexpected timeout occurred for msg_id: {msg_id} - no 'idle' status received!"
                         )
                     break
 

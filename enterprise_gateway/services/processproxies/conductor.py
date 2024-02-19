@@ -189,9 +189,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 response = None
         except Exception as e:
             self.log.warning(
-                "Getting instance group with cmd '{}' failed with exception: '{}'.  Continuing...".format(
-                    cmd, e
-                )
+                f"Getting instance group with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
             )
             return
 
@@ -623,9 +621,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = json.loads(output) if output else None
         except Exception as e:
             self.log.warning(
-                "Termination of application with cmd '{}' failed with exception: '{}'.  Continuing...".format(
-                    cmd, e
-                )
+                f"Termination of application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
             )
         self.log.debug(f"Kill response: {response}")
         return response
