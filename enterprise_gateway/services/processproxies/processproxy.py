@@ -61,7 +61,6 @@ sensitive_env_keys = os.getenv("EG_SENSITIVE_ENV_KEYS", "").lower().split(",")
 redaction_mask = os.getenv("EG_REDACTION_MASK", "********")
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
-default_kernel_info_timeout = float(os.getenv("EG_KERNEL_INFO_TIMEOUT", "60"))
 max_poll_attempts = int(os.getenv("EG_MAX_POLL_ATTEMPTS", "10"))
 poll_interval = float(os.getenv("EG_POLL_INTERVAL", "0.5"))
 socket_timeout = float(os.getenv("EG_SOCKET_TIMEOUT", "0.005"))
@@ -431,7 +430,6 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         self.kernel_id = self.kernel_manager.kernel_id
         self.kernel_launch_timeout = default_kernel_launch_timeout
-        self.kernel_info_timeout = default_kernel_info_timeout
         self.lower_port = 0
         self.upper_port = 0
         self._validate_port_range()
