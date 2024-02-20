@@ -32,6 +32,10 @@ Besides those environment variables associated with configurable options, the fo
     startup attempt will take place.  If a second timeout occurs, Enterprise
     Gateway will report a failure to the client.
 
+  EG_KERNEL_INFO_TIMEOUT=60
+    The time (in seconds) Enterprise Gateway will wait for kernel info response
+    before deeming the request a failure.
+
   EG_SENSITIVE_ENV_KEYS=""
     A comma separated list (e.g. "secret,pwd,auth") of sensitive environment
     variables. Any environment variables that contain any of the words from this

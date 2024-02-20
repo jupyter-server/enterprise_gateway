@@ -29,6 +29,7 @@ export EG_CULL_CONNECTED=${EG_CULL_CONNECTED:-False}
 EG_ALLOWED_KERNELS=${EG_ALLOWED_KERNELS:-${EG_KERNEL_WHITELIST:-"null"}}
 export EG_ALLOWED_KERNELS=`echo ${EG_ALLOWED_KERNELS} | sed 's/[][]//g'` # sed is used to strip off surrounding brackets as they should no longer be included.
 export EG_DEFAULT_KERNEL_NAME=${EG_DEFAULT_KERNEL_NAME:-python_docker}
+export EG_KERNEL_INFO_TIMEOUT=${EG_KERNEL_INFO_TIMEOUT:-60}
 
 # Determine whether the kernels-allowed list should be added to the start command.
 # This is conveyed via a 'null' value for the env - which indicates no kernel names
@@ -46,4 +47,5 @@ exec jupyter enterprisegateway \
 	--RemoteMappingKernelManager.cull_idle_timeout=${EG_CULL_IDLE_TIMEOUT} \
 	--RemoteMappingKernelManager.cull_interval=${EG_CULL_INTERVAL} \
 	--RemoteMappingKernelManager.cull_connected=${EG_CULL_CONNECTED} \
-	--RemoteMappingKernelManager.default_kernel_name=${EG_DEFAULT_KERNEL_NAME}
+	--RemoteMappingKernelManager.default_kernel_name=${EG_DEFAULT_KERNEL_NAME} \
+	--RemoteMappingKernelManager.kernel_info_timeout=${EG_KERNEL_INFO_TIMEOUT}
