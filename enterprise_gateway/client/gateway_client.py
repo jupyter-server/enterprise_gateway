@@ -1,4 +1,5 @@
 """An Enterprise Gateway client."""
+
 import logging
 import os
 import queue

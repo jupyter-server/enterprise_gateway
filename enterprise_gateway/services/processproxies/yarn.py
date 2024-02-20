@@ -1,4 +1,5 @@
 """Code related to managing kernels running in YARN clusters."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 

@@ -1,4 +1,5 @@
 """image name fetcher abstract class and concrete implementation"""
+
 import abc
 import importlib
 import os

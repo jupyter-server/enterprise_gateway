@@ -1,4 +1,5 @@
 """Kernel managers that operate against a remote process."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 

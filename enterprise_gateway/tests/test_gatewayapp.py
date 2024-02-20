@@ -96,9 +96,9 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["EG_CERTFILE"] = "/test/fake.crt"
         os.environ["EG_CLIENT_CA"] = "/test/fake_ca.crt"
         os.environ["EG_SSL_VERSION"] = "3"
-        os.environ[
-            "EG_KERNEL_SESSION_PERSISTENCE"
-        ] = "True"  # availability mode will be defaulted to replication
+        os.environ["EG_KERNEL_SESSION_PERSISTENCE"] = (
+            "True"  # availability mode will be defaulted to replication
+        )
 
         self._assert_envs_to_traitlets("EG_")
 
