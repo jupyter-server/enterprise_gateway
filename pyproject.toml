@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jupyter_enterprise_gateway"
-version = "3.3.0.dev0"
+version = "3.2.3"
 description = "A web server for spawning and communicating with remote Jupyter kernels"
 license = { file = "LICENSE.md" }
 keywords = ["Interactive","Interpreter","Kernel", "Web", "Cloud"]
@@ -78,7 +78,7 @@ max-statements = 60
 include = ["enterprise_gateway"]
 
 [tool.tbump.version]
-current = "3.3.0.dev0"
+current = "3.2.3"
 regex = '''
   (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
   ((?P<channel>a|b|rc|.dev)(?P<release>\d+))?

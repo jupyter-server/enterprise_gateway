@@ -9,7 +9,7 @@ version: 3.3.0-dev0
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
-appVersion: 3.3.0.dev0
+appVersion: 3.2.3
 
 icon: https://avatars1.githubusercontent.com/u/7388996?s=200&v=4
 home: https://jupyter.org
