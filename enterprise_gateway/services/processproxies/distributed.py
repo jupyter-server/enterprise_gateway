@@ -1,4 +1,5 @@
 """Code used for the generic distribution of kernels across a set of hosts."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 

@@ -1,4 +1,5 @@
 """Code related to managing kernels running based on k8s custom resource."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 

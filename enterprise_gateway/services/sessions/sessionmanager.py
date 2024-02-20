@@ -1,4 +1,5 @@
 """Session manager that keeps all its metadata in memory."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 

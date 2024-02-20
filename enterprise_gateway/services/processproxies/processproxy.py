@@ -1,4 +1,5 @@
 """Kernel managers that operate against a remote process."""
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
@@ -1332,9 +1333,9 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             f"Host assigned to the kernel is: '{self.assigned_host}' '{self.assigned_ip}'"
         )
 
-        connect_info[
-            "ip"
-        ] = self.assigned_ip  # Set connection to IP address of system where the kernel was launched
+        connect_info["ip"] = (
+            self.assigned_ip
+        )  # Set connection to IP address of system where the kernel was launched
 
         if tunneling_enabled is True:
             # Capture the current(tunneled) connect_info relative to the IP and ports (including the
@@ -1398,9 +1399,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         Note: Do NOT update connect_info with IP and other such artifacts in this method/function.
         """
         # Reset the ports to 0 so load can take place (which resets the members to value from file or json)...
-        self.kernel_manager.stdin_port = (
-            self.kernel_manager.iopub_port
-        ) = (
+        self.kernel_manager.stdin_port = self.kernel_manager.iopub_port = (
             self.kernel_manager.shell_port
         ) = self.kernel_manager.hb_port = self.kernel_manager.control_port = 0
 
