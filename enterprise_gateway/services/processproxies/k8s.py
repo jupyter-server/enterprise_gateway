@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 import urllib3
+from jinja2 import BaseLoader, Environment
 from kubernetes import client, config
 
 from ..kernels.remotemanager import RemoteKernelManager
@@ -216,8 +217,22 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
     def _determine_kernel_pod_name(self, **kwargs: dict[str, Any] | None) -> str:
         pod_name = kwargs["env"].get("KERNEL_POD_NAME")
+
         if pod_name is None:
             pod_name = KernelSessionManager.get_kernel_username(**kwargs) + "-" + self.kernel_id
+        else:
+            self.log.debug(f"Processing KERNEL_POD_NAME based on env var => {pod_name}")
+            if "{{" in pod_name and "}}" in pod_name:
+                self.log.debug("Processing KERNEL_POD_NAME as jinja template")
+                # Create Jinja2 environment
+                keywords = {}
+                for name, value in kwargs["env"].items():
+                    if name.startswith("KERNEL_"):
+                        keywords[name.lower()] = value
+                keywords["kernel_id"] = self.kernel_id
+                self.log.debug("Processing pod_name jinja template")
+                env = Environment(loader=BaseLoader(), autoescape=True)
+                pod_name = env.from_string(pod_name).render(**keywords)
 
         # Rewrite pod_name to be compatible with DNS name convention
         # And put back into env since kernel needs this
