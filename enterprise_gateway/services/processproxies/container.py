@@ -198,7 +198,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             await self.handle_timeout()
 
             container_status = self.get_container_status(i)
-        
+
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
@@ -222,7 +222,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
                 self.log_and_raise(
                     http_status_code=500,
                     reason="Error starting kernel container; status was not available. "
-                           "Perhaps the kernel pod died unexpectedly"
+                    "Perhaps the kernel pod died unexpectedly",
                 )
 
     def get_process_info(self) -> dict[str, Any]:
