@@ -221,7 +221,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
             else:
                 self.log_and_raise(
                     http_status_code=500,
-                    reason="Error starting kernel container; status not available. "
+                    reason="Error starting kernel container; status was not available. "
                            "Perhaps the kernel pod died unexpectedly"
                 )
 
