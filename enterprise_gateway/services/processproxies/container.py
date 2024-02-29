@@ -190,7 +190,15 @@ class ContainerProcessProxy(RemoteProcessProxy):
         """Confirms the container has started and returned necessary connection information."""
         self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
-        i = 0
+        i = 1
+        container_status = self.get_container_status(i)
+        while not container_status:
+            i += 1
+            self.detect_launch_failure()
+            await self.handle_timeout()
+
+            container_status = self.get_container_status(i)
+        
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
@@ -211,7 +219,11 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         )
                         self.pgid = 0
             else:
-                self.detect_launch_failure()
+                self.log_and_raise(
+                    http_status_code=500,
+                    reason="Error starting kernel container; status not available. "
+                           "Perhaps the kernel pod died unexpectedly"
+                )
 
     def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to containers."""
