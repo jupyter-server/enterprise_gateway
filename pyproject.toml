@@ -57,7 +57,7 @@ jupyter-enterprisegateway = "enterprise_gateway.enterprisegatewayapp:launch_inst
 [project.optional-dependencies]
 test = [
   "coverage",
-  "pytest",
+  "pytest<8.1.0",
   "pytest-tornasync",
   "ipykernel",
   "pre-commit",
