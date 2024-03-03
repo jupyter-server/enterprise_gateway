@@ -53,7 +53,8 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     software-properties-common \
     openssh-server \
     openssh-client \
-    && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main' \
+    && apt-add-repository 'deb http://security.debian.org/debian-security bullseye-security main' \
+    && apt-add-repository 'deb http://deb.debian.org/debian/ sid main' \
     && apt-get update && apt-get install -yq --no-install-recommends  \
     openjdk-8-jre-headless \
     ca-certificates-java \
