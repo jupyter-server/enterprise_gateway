@@ -71,6 +71,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Install Python dependencies
+        run: |
+          pip install ".[test]"
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
           ignore_links: "http://my-gateway-server.com:8888"
