@@ -23,6 +23,7 @@ from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
+from ...metrics import KERNEL_SHUTDOWN_DURATION_SECONDS, KERNEL_START_DURATION_SECONDS
 from ..processproxies.processproxy import BaseProcessProxyABC, LocalProcessProxy, RemoteProcessProxy
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
@@ -501,7 +502,12 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         """
         self._get_process_proxy()
         self._capture_user_overrides(**kwargs)
-        await super().start_kernel(**kwargs)
+        with KERNEL_START_DURATION_SECONDS.time() as timer:
+            timer.labels(
+                kernel_name=self.kernel_name,
+                process_proxy=f'{self.process_proxy.__class__.__module__}.{type(self.process_proxy).__name__}',
+            )
+            await super().start_kernel(**kwargs)
 
     def _capture_user_overrides(self, **kwargs: dict[str, Any] | None) -> None:
         """
@@ -587,6 +593,31 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         # shutting down so it can exit its listener thread, if its using one.
         if isinstance(self.process_proxy, RemoteProcessProxy):
             self.process_proxy.shutdown_listener()
+
+    async def shutdown_kernel(self, now: bool = False, restart: bool = False):
+        """Attempts to stop the kernel process cleanly.
+
+        This attempts to shutdown the kernels cleanly by:
+
+        1. Sending it a shutdown message over the control channel.
+        2. If that fails, the kernel is shutdown forcibly by sending it
+           a signal.
+
+        Parameters
+        ----------
+        now : bool
+            Should the kernel be forcible killed *now*. This skips the
+            first, nice shutdown attempt.
+        restart: bool
+            Will this kernel be restarted after it is shutdown. When this
+            is True, connection files will not be cleaned up.
+        """
+        with KERNEL_SHUTDOWN_DURATION_SECONDS.time() as timer:
+            timer.labels(
+                kernel_name=self.kernel_name,
+                process_proxy=f'{self.process_proxy.__class__.__module__}.{type(self.process_proxy).__name__}',
+            )
+            await super().shutdown_kernel(now=now, restart=restart)
 
     async def restart_kernel(self, now: bool = False, **kwargs: dict[str, Any] | None) -> None:
         """
