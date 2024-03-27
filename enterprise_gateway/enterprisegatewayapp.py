@@ -37,6 +37,7 @@ from .services.sessions.kernelsessionmanager import (
     WebhookKernelSessionManager,
 )
 from .services.sessions.sessionmanager import SessionManager
+from .webapp import EnterpriseGatewayWebApp
 
 try:
     from jupyter_server.auth.authorizer import AllowAllAuthorizer
@@ -219,7 +220,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         handlers = self._create_request_handlers()
 
-        self.web_app = web.Application(
+        self.web_app = EnterpriseGatewayWebApp(
             handlers=handlers,
             kernel_manager=self.kernel_manager,
             session_manager=self.session_manager,
