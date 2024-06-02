@@ -47,6 +47,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
+        self.kernel_events_to_occurrence_time = {}
         self._initialize_kernel_launch_terminate_on_events()
 
     def _initialize_kernel_launch_terminate_on_events(self):
@@ -199,7 +200,15 @@ class ContainerProcessProxy(RemoteProcessProxy):
         """Confirms the container has started and returned necessary connection information."""
         self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
-        i = 0
+        self.kernel_events_to_occurrence_time = {}
+        i = 1
+        container_status = self.get_container_status(i)
+        while not container_status:
+            i += 1
+            self.detect_launch_failure()
+            await self.handle_timeout()
+            container_status self.get_container_status(i)
+
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
@@ -212,6 +221,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         http_status_code=500,
                         reason=f"Error starting kernel container; status: '{container_status}'.",
                     )
+                elif container_status == "pending":
+                    self._handle_pending_kernel()
                 else:
                     if self.assigned_host:
                         ready_to_connect = await self.receive_connection_info()
@@ -220,7 +231,29 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         )
                         self.pgid = 0
             else:
-                self.detect_launch_failure()
+                self.log_and_raise(
+                    http_status_code=500,
+                    reason="Error starting kernel container; status was not available. Perhaps the kernel pod died unexpectedly"
+                )
+        self.kernel_events_to_occurrence_time = {}
+
+    def _handle_pending_kernel(self):
+        self.log.debug("Sampling kernel container events")
+        kernel_pod_events = self.get_container_events()
+        for event in kernel_pod_events:
+            if event.type in self.kernel_launch_terminate_on_events and event.reason in self.kernel_launch_terminate_on_events[event.type]:
+                hashed_event = hash(f"{event.type}{event.reason}")
+                if hashed_event not in self.kernel_events_to_occurrence_time:
+                    self.kernel_events_to_occurrence_time[hashed_event] = RemoteProcessProxy.get_current_time()
+                if RemoteProcessProxy.get_time_diff(
+                    RemoteProcessProxy.get_current_time(),
+                    self.kernel_events_to_occurrence_time[hashed_event]
+                ) >= self.kernel_launch_terminate_on_events[event.type][event.reason]:
+                    self.kill()
+                    self.log_and_raise(
+                        http_status_code=409,
+                        reason=f"Error starting kernel container; The container encountered an event which may cause a longer than usual startup: '{event.reason} - {event.message[:64]}'"
+                    )
 
     def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to containers."""
@@ -250,6 +283,11 @@ class ContainerProcessProxy(RemoteProcessProxy):
     @abc.abstractmethod
     def get_container_status(self, iteration: int | None) -> str:
         """Returns the current container state (in lowercase) or the empty string if not available."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_container_events(self) -> list:
+        """Returns a list of container events, or empty list if the container has no events."""
         raise NotImplementedError
 
     @abc.abstractmethod
