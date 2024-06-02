@@ -116,7 +116,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         core_v1_api = client.CoreV1Api()
         if self.container_name:
             ret = core_v1_api.list_namespaced_event(
-                namespace=self.kernel_namespace, field_selector=f"involvedObject.name={self.container_name}"
+                namespace=self.kernel_namespace,
+                field_selector=f"involvedObject.name={self.container_name}",
             )
             if ret and ret.items:
                 pod_events = ret.items

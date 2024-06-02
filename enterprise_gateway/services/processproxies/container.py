@@ -59,9 +59,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
         """
         self.kernel_launch_terminate_on_events = defaultdict(dict)
         for configuration in self.kernel_manager.parent.kernel_launch_terminate_on_events:
-            self.kernel_launch_terminate_on_events[
-                configuration["type"]
-            ][configuration["reason"]] = configuration["timeout_in_seconds"]
+            self.kernel_launch_terminate_on_events[configuration["type"]][
+                configuration["reason"]
+            ] = configuration["timeout_in_seconds"]
 
     def _determine_kernel_images(self, **kwargs: dict[str, Any] | None) -> None:
         """
@@ -237,18 +237,26 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.log.debug("Sampling kernel container events")
         kernel_pod_events = self.get_container_events()
         for event in kernel_pod_events:
-            if event.type in self.kernel_launch_terminate_on_events and event.reason in self.kernel_launch_terminate_on_events[event.type]:
+            if (
+                event.type in self.kernel_launch_terminate_on_events
+                and event.reason in self.kernel_launch_terminate_on_events[event.type]
+            ):
                 event_key = f"{event.type}{event.reason}"
                 if event_key not in self.kernel_events_to_occurrence_time:
-                    self.kernel_events_to_occurrence_time[event_key] = RemoteProcessProxy.get_current_time()
-                if RemoteProcessProxy.get_time_diff(
-                    RemoteProcessProxy.get_current_time(),
-                    self.kernel_events_to_occurrence_time[event_key]
-                ) >= self.kernel_launch_terminate_on_events[event.type][event.reason]:
+                    self.kernel_events_to_occurrence_time[event_key] = (
+                        RemoteProcessProxy.get_current_time()
+                    )
+                if (
+                    RemoteProcessProxy.get_time_diff(
+                        RemoteProcessProxy.get_current_time(),
+                        self.kernel_events_to_occurrence_time[event_key],
+                    )
+                    >= self.kernel_launch_terminate_on_events[event.type][event.reason]
+                ):
                     self.kill()
                     self.log_and_raise(
                         http_status_code=409,
-                        reason=f"Error starting kernel container; The container encountered an event which may cause a longer than usual startup: '{event.reason} - {event.message[:64]}'"
+                        reason=f"Error starting kernel container; The container encountered an event which may cause a longer than usual startup: '{event.reason} - {event.message[:64]}'",
                     )
 
     def get_process_info(self) -> dict[str, Any]:
