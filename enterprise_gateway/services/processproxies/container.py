@@ -8,6 +8,7 @@ from __future__ import annotations
 import abc
 import os
 import signal
+from collections import defaultdict
 from typing import Any
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
@@ -46,6 +47,14 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
+        self._initialize_kernel_launch_terminate_on_events()
+
+    def _initialize_kernel_launch_terminate_on_events(self):
+        self.kernel_launch_terminate_on_events = defaultdict(dict)
+        for configuration in self.kernel_manager.parent.kernel_launch_terminate_on_events:
+            self.kernel_launch_terminate_on_events[
+                configuration["type"]
+            ][configuration["reason"]] = configuration["timeout_in_seconds"]
 
     def _determine_kernel_images(self, **kwargs: dict[str, Any] | None) -> None:
         """
