@@ -164,7 +164,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """
 
     kernel_launch_terminate_on_events_env = "EG_KERNEL_LAUNCH_TERMINATE_ON_EVENTS"
-    kernel_launch_terminate_on_events_default_value = []
+    kernel_launch_terminate_on_events_default_value: ClassVar[list] = []
     kernel_launch_terminate_on_events = ListTrait(
         default_value=kernel_launch_terminate_on_events_default_value,
         config=True,
