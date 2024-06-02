@@ -51,6 +51,12 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self._initialize_kernel_launch_terminate_on_events()
 
     def _initialize_kernel_launch_terminate_on_events(self):
+        """
+        Parse the `kernel_launch_terminate_on_events` configuration, for easier access during startup.
+        [{"type": "Warning", "reason": "FailedMount", "timeout_in_seconds": 0},
+        {"type": Warning", "reason": "Unschedulable", "timeout_in_seconds": 30}] ->
+        {"Warning": {"FailedMount": 0, "Unschedulable": 30}}
+        """
         self.kernel_launch_terminate_on_events = defaultdict(dict)
         for configuration in self.kernel_manager.parent.kernel_launch_terminate_on_events:
             self.kernel_launch_terminate_on_events[
@@ -201,14 +207,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
         self.kernel_events_to_occurrence_time = {}
-        i = 1
-        container_status = self.get_container_status(i)
-        while not container_status:
-            i += 1
-            self.detect_launch_failure()
-            await self.handle_timeout()
-            container_status self.get_container_status(i)
-
+        i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
             i += 1
@@ -231,10 +230,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         )
                         self.pgid = 0
             else:
-                self.log_and_raise(
-                    http_status_code=500,
-                    reason="Error starting kernel container; status was not available. Perhaps the kernel pod died unexpectedly"
-                )
+                self.detect_launch_failure()
         self.kernel_events_to_occurrence_time = {}
 
     def _handle_pending_kernel(self):
@@ -242,12 +238,12 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kernel_pod_events = self.get_container_events()
         for event in kernel_pod_events:
             if event.type in self.kernel_launch_terminate_on_events and event.reason in self.kernel_launch_terminate_on_events[event.type]:
-                hashed_event = hash(f"{event.type}{event.reason}")
-                if hashed_event not in self.kernel_events_to_occurrence_time:
-                    self.kernel_events_to_occurrence_time[hashed_event] = RemoteProcessProxy.get_current_time()
+                event_key = f"{event.type}{event.reason}"
+                if event_key not in self.kernel_events_to_occurrence_time:
+                    self.kernel_events_to_occurrence_time[event_key] = RemoteProcessProxy.get_current_time()
                 if RemoteProcessProxy.get_time_diff(
                     RemoteProcessProxy.get_current_time(),
-                    self.kernel_events_to_occurrence_time[hashed_event]
+                    self.kernel_events_to_occurrence_time[event_key]
                 ) >= self.kernel_launch_terminate_on_events[event.type][event.reason]:
                     self.kill()
                     self.log_and_raise(
