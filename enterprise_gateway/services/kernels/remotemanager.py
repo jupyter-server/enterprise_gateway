@@ -6,21 +6,21 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import signal
 import time
 import uuid
-import json
 from typing import Any, ClassVar
 
 from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from tornado import web
-from traitlets import directional_link, default
-from traitlets import log as traitlets_log
 from traitlets import List as ListTrait
+from traitlets import default, directional_link
+from traitlets import log as traitlets_log
 from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
@@ -171,7 +171,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         help="""Comma-separated list of dictionaries, each describing an event by `type`, `reason`,
          and `timeout_in_seconds` (e.g. [{"type": "Warning", "reason": "FailedMount", "timeout_in_seconds": 0}]).
          Kernel pod events will be sampled during startup, and if an event described in this list is detected,
-         the kernel launch will be terminated after the set timeout. Only available for container kernels. """
+         the kernel launch will be terminated after the set timeout. Only available for container kernels. """,
     )
 
     @default("kernel_launch_terminate_on_events")
