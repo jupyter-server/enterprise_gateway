@@ -349,7 +349,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         binding_role_ref = client.V1RoleRef(
             api_group="", kind="ClusterRole", name=kernel_cluster_role
         )
-        binding_subjects = client.V1Subject(
+        binding_subjects = client.RbacV1Subject(
             api_group="", kind="ServiceAccount", name=service_account_name, namespace=namespace
         )
 
