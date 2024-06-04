@@ -234,6 +234,11 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.kernel_events_to_occurrence_time = {}
 
     def _handle_pending_kernel(self):
+        """Sample container events and compare them to configured events which may cause termination.
+        The event type and the event reason should match those sampled in the environment to initiate termination.
+        Possible event types: `Warning`, `Normal`.
+        Possible event reasons (may differ in different container platforms and versions): `FailedMount`, `FailedMountAttach`,
+        `FailedSchedule`, `ImagePullBackoff`, etc."""
         self.log.debug("Sampling kernel container events")
         kernel_pod_events = self.get_container_events()
         for event in kernel_pod_events:
