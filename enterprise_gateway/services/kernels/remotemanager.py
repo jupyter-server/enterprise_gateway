@@ -171,8 +171,8 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         help="""Comma-separated list of dictionaries, each describing an event by `type`, `reason`,
          and `timeout_in_seconds` (e.g. [{"type": "Warning", "reason": "FailedMount", "timeout_in_seconds": 0}]).
          Kernel pod events will be sampled during startup, and if an event described in this list is detected,
-         the kernel launch will be terminated after the set timeout. Only available for container kernels. 
-         Make sure to provide the exact event type and reason as it appears in your container platform, 
+         the kernel launch will be terminated after the set timeout. Only available for container kernels.
+         Make sure to provide the exact event type and reason as it appears in your container platform,
          A guide to finding the event type and reason in kubernetes can be found here:
         `https://www.bluematador.com/blog/kubernetes-events-explained`""",
     )
