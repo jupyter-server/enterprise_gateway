@@ -141,7 +141,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         """
         result = False
 
-        container_status = self.get_container_status(None)
+        container_status = self.get_container_status(None).lower()
         # Do not check whether container_status is None
         # EG couldn't restart kernels although connections exists.
         # See https://github.com/jupyter-server/enterprise_gateway/issues/827
