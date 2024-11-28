@@ -1061,7 +1061,9 @@ class LocalProcessProxy(BaseProcessProxyABC):
             except OSError:
                 pass
         self.ip = local_ip
-        if os.name == "nt": # if operating system is Windows then link the win32_interrupt_event from the kernel
+        if (
+            os.name == "nt"
+        ):  # if operating system is Windows then link the win32_interrupt_event from the kernel
             self.win32_interrupt_event = self.local_proc.win32_interrupt_event
         self.log.info(
             "Local kernel launched on '{}', pid: {}, pgid: {}, KernelID: {}, cmd: '{}'".format(
