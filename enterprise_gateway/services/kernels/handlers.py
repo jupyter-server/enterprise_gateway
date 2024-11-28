@@ -58,7 +58,17 @@ class MainKernelHandler(
                 raise tornado.web.HTTPError(400)
 
             # Transfer inherited environment variables from current process
-            env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
+            if os.name == "nt":
+                # We need to ensure we pass all needed environment variables to the kernel
+                # Users can use inherited_envs to add custom envrioment variables,
+                # and we ensure PATH, SYSTEMROOT, TEMP, USERPROFILE, WINDIR, COMSPEC, APPDATA, LOCALAPPDATA, PROGRAMDATA and PROGRAMFILES are included
+                # this allows a more out-of-the-box experience for users
+                required_envs: set[str] = {"PATH", "SYSTEMROOT", "TEMP", "USERPROFILE", "WINDIR", "COMSPEC",
+                                           "APPDATA", "LOCALAPPDATA", "PROGRAMDATA", "PROGRAMFILES"}
+                env = {key: value for key, value in os.environ.items() if
+                       key in self.inherited_envs or key in required_envs}
+            else:
+                env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
 
             # Allow all KERNEL_* envs and those specified in client_envs and set from client.  If this EG
             # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead

@@ -1043,6 +1043,8 @@ class LocalProcessProxy(BaseProcessProxyABC):
         """Initialize the proxy."""
         super().__init__(kernel_manager, proxy_config)
         kernel_manager.ip = localinterfaces.LOCALHOST
+        if os.name == "nt":
+            self.win32_interrupt_event = None
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
@@ -1059,6 +1061,8 @@ class LocalProcessProxy(BaseProcessProxyABC):
             except OSError:
                 pass
         self.ip = local_ip
+        if os.name == "nt": # if operating system is Windows then link the win32_interrupt_event from the kernel
+            self.win32_interrupt_event = self.local_proc.win32_interrupt_event
         self.log.info(
             "Local kernel launched on '{}', pid: {}, pgid: {}, KernelID: {}, cmd: '{}'".format(
                 self.ip, self.pid, self.pgid, self.kernel_id, kernel_cmd
