@@ -79,6 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ZMQ_SYSTEM_LIBZMQ: 1
+      PYTHON_VERSION: '3.11'
     steps:
       - uses: actions/checkout@v4
 
