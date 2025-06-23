@@ -25,10 +25,12 @@ jobs:
           python --version
           pip --version
           conda --version
-      - name: Add SBT launcher
-        run: |
-          mkdir -p $HOME/.sbt/launchers/1.9.3
-          curl -L -o $HOME/.sbt/launchers/1.9.3/sbt-launch.jar https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.9.3/sbt-launch-1.9.3.jar
+#      - name: Add SBT launcher
+#        run: |
+#          mkdir -p $HOME/.sbt/launchers/1.9.3
+#          curl -L -o $HOME/.sbt/launchers/1.9.3/sbt-launch.jar https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.9.3/sbt-launch-1.9.3.jar
+      - name: Setup sbt launcher
+        uses: sbt/setup-sbt@v1
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
