@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kernel-image-puller
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace | default .Release.Namespace }}
   labels:
     gateway-selector: enterprise-gateway
     app: enterprise-gateway

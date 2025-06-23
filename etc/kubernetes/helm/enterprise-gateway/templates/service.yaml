@@ -13,7 +13,7 @@ metadata:
   {{- end }}
 
   name: enterprise-gateway
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace | default .Release.Namespace }}
 spec:
   ports:
     {{- range $key, $val := .Values.service.ports }}
