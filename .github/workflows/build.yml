@@ -77,6 +77,7 @@ jobs:
 
   link_check:
     runs-on: ubuntu-latest
+    python-version: ['3.11']
     env:
       ZMQ_SYSTEM_LIBZMQ: 1
       PYTHON_VERSION: '3.11'
