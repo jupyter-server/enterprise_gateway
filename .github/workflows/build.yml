@@ -92,14 +92,15 @@ jobs:
         run: |
           python -c "import sys; print(sys.version)"
           whereis python
+          whereis python3
 
       - name: Force Python 3.11
         run: |
           sudo update-alternatives --install /usr/local/bin/python python /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
           sudo update-alternatives --install /usr/local/bin/python3 python3 /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
           echo "/usr/local/bin:$PATH" >> $GITHUB_PATH
+          echo "PYTHON_VERSION=3.11" >> $GITHUB_ENV
           sudo update-alternatives --config python3
-          
 
       - name: Downgrade GCC to version 12
         run: |
