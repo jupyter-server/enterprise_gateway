@@ -77,6 +77,8 @@ jobs:
 
   link_check:
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: '3.11'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
