@@ -78,6 +78,7 @@ jobs:
   link_check:
     runs-on: ubuntu-latest
     env:
+      ZMQ_SYSTEM_LIBZMQ: 1
       PYTHON_VERSION: '3.11'
     steps:
       - uses: actions/checkout@v4
@@ -85,6 +86,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Downgrade GCC to version 12
+        run: |
+          sudo apt-get install -y gcc-12 g++-12
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
+          gcc --version
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - name: Install Python dependencies
         run: |
