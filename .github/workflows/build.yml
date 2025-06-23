@@ -111,7 +111,11 @@ jobs:
       - name: Install system ZeroMQ
         run: sudo apt-get update && sudo apt-get install -y libzmq3-dev
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        with:
+          python-version: '3.11'
       - name: Install Python dependencies
+        with:
+          python-version: '3.11'
         run: |
           pip install ".[test]"
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
