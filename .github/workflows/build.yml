@@ -80,13 +80,8 @@ jobs:
     python-version: ['3.11']
     env:
       ZMQ_SYSTEM_LIBZMQ: 1
-      PYTHON_VERSION: '3.11'
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       - name: Downgrade GCC to version 12
         run: |
           sudo apt-get install -y gcc-12 g++-12
