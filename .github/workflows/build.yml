@@ -7,7 +7,6 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      ZMQ_SYSTEM_LIBZMQ: 1
       ASYNC_TEST_TIMEOUT: 30
       CONDA_HOME: /usr/share/miniconda
     strategy:
@@ -16,12 +15,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
     steps:
-      - name: Downgrade GCC to version 12
-        run: |
-          sudo apt-get install -y gcc-12 g++-12
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
-          gcc --version
+      # - name: Downgrade GCC to version 12
+      #   run: |
+      #     sudo apt-get install -y gcc-12 g++-12
+      #     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
+      #     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
+      #     gcc --version
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -79,48 +78,45 @@ jobs:
 
   link_check:
     runs-on: ubuntu-latest
-    env:
-      ZMQ_SYSTEM_LIBZMQ: 1
-      PYTHON_VERSION: '3.11'
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Display Python version
-        run: |
-          python -c "import sys; print(sys.version)"
-          whereis python
-          whereis python3
+      # - name: Display Python version
+      #   run: |
+      #     python -c "import sys; print(sys.version)"
+      #     whereis python
+      #     whereis python3
 
-      - name: Force Python 3.11
-        run: |
-          sudo update-alternatives --install /usr/local/bin/python python /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
-          sudo update-alternatives --install /usr/local/bin/python3 python3 /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
-          echo "/usr/local/bin:$PATH" >> $GITHUB_PATH
-          echo "PYTHON_VERSION=3.11" >> $GITHUB_ENV
-          sudo update-alternatives --config python3
+      # - name: Force Python 3.11
+      #   run: |
+      #     sudo update-alternatives --install /usr/local/bin/python python /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
+      #     sudo update-alternatives --install /usr/local/bin/python3 python3 /opt/hostedtoolcache/Python/3.11.13/x64/bin/python 1
+      #     echo "/usr/local/bin:$PATH" >> $GITHUB_PATH
+      #     echo "PYTHON_VERSION=3.11" >> $GITHUB_ENV
+      #     sudo update-alternatives --config python3
 
-      - name: Downgrade GCC to version 12
-        run: |
-          sudo apt-get install -y gcc-12 g++-12
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
-          gcc --version
-      - name: Install system ZeroMQ
-        run: sudo apt-get update && sudo apt-get install -y libzmq3-dev
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-        with:
-          python-version: '3.11'
+      # - name: Downgrade GCC to version 12
+      #   run: |
+      #     sudo apt-get install -y gcc-12 g++-12
+      #     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100
+      #     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
+      #     gcc --version
+      # - name: Install system ZeroMQ
+      #   run: sudo apt-get update && sudo apt-get install -y libzmq3-dev
+      # - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      #   with:
+      #     python-version: '3.11'
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
           ignore_links: "http://my-gateway-server.com:8888"
+          python-version: '3.11'
 
   build_docs:
     runs-on: windows-latest
