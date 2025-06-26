@@ -27,7 +27,7 @@ jobs:
           clean: true
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python_version: "3.11"
+          python_version: "${{ matrix.python-version }}"
       - name: Display dependency info
         run: |
           python --version
