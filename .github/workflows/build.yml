@@ -136,10 +136,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python_version: "3.9"
-      - uses: jupyterlab/maintainer-tools/.github/actions/install-minimums@v1
+          python_version: "3.11"
+      - name: Install dependencies with minimum versions
+        run: |
+          pip install ".[test]"
       - name: Run the unit tests
         run: |
           pytest -vv -W default || pytest -vv -W default --lf
