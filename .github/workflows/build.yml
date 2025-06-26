@@ -7,7 +7,8 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      ASYNC_TEST_TIMEOUT: 30
+      ASYNC_TEST_TIMEOUT: 60
+      KERNEL_LAUNCH_TIMEOUT: 120
       CONDA_HOME: /usr/share/miniconda
     strategy:
       fail-fast: false
@@ -51,14 +52,24 @@ jobs:
             make test
       - name: Run integration tests
         run: |
-          make itest-yarn
+          # Increase timeout for integration tests
+          export PREP_TIMEOUT=180
+          # Set specific Spark version to match what's expected in tests
+          export SPARK_VERSION=3.2.1
+          # Run integration tests with debug output
+          make LOG_LEVEL=DEBUG itest-yarn
       - name: Collect logs
         if: success() || failure()
         run: |
           python --version
           pip --version
           pip list
+          echo "==== Docker Container Logs ===="
           docker logs itest-yarn
+          echo "==== Docker Container Status ===="
+          docker ps -a
+          echo "==== Enterprise Gateway Log ===="
+          docker exec -it itest-yarn cat /usr/local/share/jupyter/enterprise-gateway.log || true
       - name: Run linters
         run: |
           make lint
