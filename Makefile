@@ -224,7 +224,7 @@ PREP_TIMEOUT?=60
 itest-yarn-prep:
 	@-docker rm -f itest-yarn >> /dev/null
 	@echo "Starting enterprise-gateway container (run \`docker logs itest-yarn\` to see container log)..."
-	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -p 8088:8088 -p 8042:8042 -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:dev-lresende --gateway
+	@-docker run -itd -p $(ITEST_YARN_PORT):$(ITEST_YARN_PORT) -p 8088:8088 -p 8042:8042 -h itest-yarn --name itest-yarn -v `pwd`/enterprise_gateway/itests:/tmp/byok elyra/enterprise-gateway-demo:dev --gateway
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker logs itest-yarn |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)
 
 
