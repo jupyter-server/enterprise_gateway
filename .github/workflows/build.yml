@@ -51,13 +51,14 @@ jobs:
           command: |
             make test
       - name: Run integration tests
-        run: |
-          # Increase timeout for integration tests
-          export PREP_TIMEOUT=180
-          # Set specific Spark version to match what's expected in tests
-          export SPARK_VERSION=3.2.1
-          # Run integration tests with debug output
-          make itest-yarn-debug
+        uses: nick-invision/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 1
+          command: |
+            export PREP_TIMEOUT=180
+            # Run integration tests with debug output
+            make itest-yarn-debug
       - name: Collect logs
         if: success() || failure()
         run: |
