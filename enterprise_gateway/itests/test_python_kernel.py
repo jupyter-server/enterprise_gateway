@@ -122,18 +122,12 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
         pi_code = []
         pi_code.append("from random import random\n")
         pi_code.append("from operator import add\n")
-        pi_code.append("from pyspark.cloudpickle import cloudpickle\n")
         pi_code.append("partitions = 20\n")
         pi_code.append("n = 100000 * partitions\n")
-        # Define the function with explicit imports inside to avoid serialization issues
         pi_code.append("def f(_):\n")
-        pi_code.append("    from random import random\n")  # Include import inside function
         pi_code.append("    x = random() * 2 - 1\n")
         pi_code.append("    y = random() * 2 - 1\n")
         pi_code.append("    return 1 if x ** 2 + y ** 2 <= 1 else 0\n")
-        pi_code.append("pickled_f = cloudpickle.dumps(f)\n")
-        pi_code.append("print('Function f successfully pickled!')\n")
-        # Use a lambda function directly in map to avoid complex serialization
         pi_code.append("count = sc.parallelize(range(1, n + 1), partitions).map(f).reduce(add)\n")
         pi_code.append('print("Pi is roughly %f" % (4.0 * count / n))\n')
         result, has_error = self.kernel.execute(pi_code)
