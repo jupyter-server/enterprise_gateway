@@ -106,7 +106,8 @@ RUN conda install mamba -n base -c conda-forge && \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \
-    'r-argparse' && \
+    'r-argparse' \
+    'python=3.10' && \
     mamba clean -y --all &&\
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
@@ -152,7 +153,7 @@ RUN ssh-keygen -q -N "" -t rsa -f /home/$NB_USER/.ssh/id_rsa && \
 USER root
 
 # SETUP PASSWORDLESS SSH
-RUN yes y | ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_dsa_key && \
+RUN yes y | ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_dsa_key && \
     yes y | ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && \
     yes y | ssh-keygen -q -N "" -t rsa -f /root/.ssh/id_rsa && \
     cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
