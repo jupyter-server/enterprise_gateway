@@ -58,8 +58,6 @@ jobs:
           export SPARK_VERSION=3.2.1
           # Run integration tests with debug output
           make itest-yarn-debug
-        with:
-          python-version: "3.9"
       - name: Collect logs
         if: success() || failure()
         run: |
@@ -93,7 +91,6 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
           ignore_links: "http://my-gateway-server.com:8888"
-          python-version: '3.11'
 
   build_docs:
     runs-on: windows-latest
