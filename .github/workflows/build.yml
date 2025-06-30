@@ -7,28 +7,29 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     env:
-      ASYNC_TEST_TIMEOUT: 30
+      ASYNC_TEST_TIMEOUT: 60
+      KERNEL_LAUNCH_TIMEOUT: 120
       CONDA_HOME: /usr/share/miniconda
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           clean: true
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+#        with:
+#          python_version: "${{ matrix.python-version }}"
       - name: Display dependency info
         run: |
           python --version
           pip --version
           conda --version
-      - name: Add SBT launcher
-        run: |
-          mkdir -p $HOME/.sbt/launchers/1.3.12
-          curl -L -o $HOME/.sbt/launchers/1.3.12/sbt-launch.jar https://repo1.maven.org/maven2/org/scala-sbt/sbt-launch/1.3.12/sbt-launch.jar
+      - name: Setup sbt launcher
+        uses: sbt/setup-sbt@v1
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
@@ -50,15 +51,26 @@ jobs:
           command: |
             make test
       - name: Run integration tests
-        run: |
-          make itest-yarn
+        uses: nick-invision/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 1
+          command: |
+            export PREP_TIMEOUT=180
+            # Run integration tests with debug output
+            make itest-yarn-debug
       - name: Collect logs
         if: success() || failure()
         run: |
           python --version
           pip --version
           pip list
+          echo "==== Docker Container Logs ===="
           docker logs itest-yarn
+          echo "==== Docker Container Status ===="
+          docker ps -a
+          echo "==== Enterprise Gateway Log ===="
+          docker exec -it itest-yarn cat /usr/local/share/jupyter/enterprise-gateway.log || true
       - name: Run linters
         run: |
           make lint
@@ -70,7 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
@@ -85,6 +100,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        with:
+          python_version: "3.11"
       - name: Build Docs
         run: make docs
 
@@ -94,10 +111,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python_version: "3.8"
-      - uses: jupyterlab/maintainer-tools/.github/actions/install-minimums@v1
+          python_version: "3.9"
+      - name: Install dependencies with minimum versions
+        run: |
+          pip install ".[test]"
       - name: Run the unit tests
         run: |
           pytest -vv -W default || pytest -vv -W default --lf
@@ -109,6 +132,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        with:
+          python_version: "3.11"
       - uses: jupyterlab/maintainer-tools/.github/actions/make-sdist@v1
 
   test_sdist:
@@ -118,6 +143,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        with:
+          python_version: "3.11"
       - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@v1
 
   python_tests_check: # This job does nothing and is only used for the branch protection

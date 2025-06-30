@@ -14,4 +14,4 @@ resolvers += "Typesafe Repo" at "https://repo.typesafe.com/typesafe/releases/"
 resolvers += "Sonatype Maven Central Mirror" at "https://maven-central.storage-download.googleapis.com/maven2/"
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4" // Apache v2
-libraryDependencies += "org.apache.toree" % "toree-assembly" % "0.5.0-incubating" from "https://repository.apache.org/content/repositories/orgapachetoree-1020/org/apache/toree/toree-assembly/0.5.0-incubating/toree-assembly-0.5.0-incubating.jar"
+libraryDependencies += "org.apache.toree" % "toree-assembly" % "0.5.0-incubating"

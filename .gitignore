@@ -43,6 +43,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .pytest_cache/
+.bsp
 
 # Translations
 *.mo
@@ -60,10 +61,6 @@ target/
 .DS_Store
 .ipynb_checkpoints/
 
-# PyCharm
-.idea/
-*.iml
-
 # Build-related
 .image-*
 
@@ -74,11 +71,11 @@ _site/
 # Debug-related
 .kube/
 
+# PyCharm
+.idea/
+*.iml
+
 # vscode ide stuff
 *.code-workspace
 .history/
 .vscode/
-
-# jetbrains ide stuff
-*.iml
-.idea/

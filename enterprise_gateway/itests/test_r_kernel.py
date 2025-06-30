@@ -34,7 +34,7 @@ class RKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result, has_error = self.kernel.execute("y = x + 1")
-        self.assertRegex(error_result, "Error in eval")
+        self.assertRegex(error_result, r"Error: object '(\w+)' not found")
         self.assertEqual(has_error, True)
 
     def test_interrupt(self):
