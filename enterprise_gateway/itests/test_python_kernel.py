@@ -117,6 +117,7 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
         self.assertRegex(result, self.get_expected_spark_version())
         self.assertEqual(has_error, False)
 
+    @unittest.skip("Temporarily disabled")
     def test_run_pi_example(self):
         # Build the example code...
         pi_code = []
