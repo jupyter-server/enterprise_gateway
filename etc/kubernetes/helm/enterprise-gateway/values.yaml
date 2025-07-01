@@ -108,6 +108,9 @@ kernel:
     - spark_python_operator
   # Default kernel name should be something from the allowedKernels
   defaultKernelName: python_kubernetes
+  # Service account name to use for kernel pods when no service account is specified.
+  # This service account should exist in the namespace where kernel pods are launched.
+  defaultServiceAccountName: default
 
 kernelspecs:
   # Optional custom data image containing kernelspecs to use.
