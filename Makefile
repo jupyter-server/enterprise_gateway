@@ -67,7 +67,7 @@ clean-env: ## Remove conda env
 lint: ## Check code style
 	@pip install -q -e ".[lint]"
 	@pip install -q pipx
-	ruff .
+	ruff check .
 	black --check --diff --color .
 	mdformat --check *.md
 	pipx run 'validate-pyproject[all]' pyproject.toml

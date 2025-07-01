@@ -10,6 +10,7 @@ import os
 import re
 from typing import Any
 
+import kubernetes
 import urllib3
 from jinja2 import BaseLoader, Environment
 from kubernetes import client, config
@@ -32,6 +33,26 @@ share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lo
 kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")  # noqa
 
 config.load_incluster_config()
+
+
+def get_subject_class():
+    """
+    Returns the appropriate Subject class based on the kubernetes client version.
+
+    In kubernetes-client, V1Subject was renamed to RbacV1Subject.
+    This function returns the appropriate class based on the installed version.
+    """
+    # Check if V1Subject exists in the client
+    if hasattr(client, 'V1Subject'):
+        logging.debug(
+            "Using client.V1Subject for Kubernetes client version: %s", kubernetes.__version__
+        )
+        return client.V1Subject
+    # Fall back to RbacV1Subject for older versions
+    logging.debug(
+        "Using client.RbacV1Subject for Kubernetes client version: %s", kubernetes.__version__
+    )
+    return client.RbacV1Subject
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
@@ -349,7 +370,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         binding_role_ref = client.V1RoleRef(
             api_group="", kind="ClusterRole", name=kernel_cluster_role
         )
-        binding_subjects = client.RbacV1Subject(
+        # Use the appropriate Subject class based on kubernetes client version
+        SubjectClass = get_subject_class()
+        binding_subjects = SubjectClass(
             api_group="", kind="ServiceAccount", name=service_account_name, namespace=namespace
         )
 
