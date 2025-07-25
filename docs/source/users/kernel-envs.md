@@ -80,7 +80,7 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     (e.g "{{ kernel_prefix }}-{{ kernel_id | replace('-', '') }}")
     which will be processed for safe substitution against existing list
     of environment variables. In case of invalid template (e.g. missing variables)
-    it will fall back to original way to calculate the pod name using 
+    it will fall back to original way to calculate the pod name using
     KERNEL_USERNAME - KERNEL_ID.
 
   KERNEL_REMOTE_HOST=<remote host name>

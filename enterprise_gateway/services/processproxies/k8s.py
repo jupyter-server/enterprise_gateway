@@ -240,7 +240,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         # Check if there are any remaining {{ }} patterns that didn't match our simple pattern
         # This catches malicious templates like {{ foo.__class__ }} or {{ 1+1 }}
         if '{{' in result and '}}' in result:
-            self.log.warning(f"Invalid template syntax detected in KERNEL_POD_NAME: contains unsupported expressions")
+            self.log.warning(
+                "Invalid template syntax detected in KERNEL_POD_NAME: contains unsupported expressions"
+            )
             return None
 
         # Log missing variables and return None if any are missing

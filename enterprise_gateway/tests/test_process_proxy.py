@@ -6,8 +6,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 # Mock Kubernetes configuration before importing the module
-with patch('kubernetes.config.load_incluster_config'), \
-     patch('kubernetes.config.load_kube_config'):
+with patch('kubernetes.config.load_incluster_config'), patch('kubernetes.config.load_kube_config'):
     from enterprise_gateway.services.processproxies.k8s import KubernetesProcessProxy
 
 
@@ -19,15 +18,14 @@ class TestKubernetesProcessProxy(unittest.TestCase):
         self.mock_kernel_manager = Mock()
         self.mock_kernel_manager.get_kernel_username.return_value = "testuser"
         self.mock_kernel_manager.port_range = "0..0"  # Mock port range
-        
+
         # Mock proxy config
-        self.proxy_config = {
-            "kernel_id": "test-kernel-id",
-            "kernel_name": "python3"
-        }
+        self.proxy_config = {"kernel_id": "test-kernel-id", "kernel_name": "python3"}
 
         # Mock KernelSessionManager methods
-        with patch('enterprise_gateway.services.processproxies.k8s.KernelSessionManager') as mock_session_manager:
+        with patch(
+            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+        ) as mock_session_manager:
             mock_session_manager.get_kernel_username.return_value = "testuser"
             self.proxy = KubernetesProcessProxy(self.mock_kernel_manager, self.proxy_config)
             self.proxy.kernel_id = "test-kernel-id"
@@ -54,7 +52,7 @@ class TestKubernetesProcessProxy(unittest.TestCase):
                 result = self.proxy._safe_template_substitute(template, variables)
                 self.assertEqual(result, expected)
 
-    def test_missing_variables_fallback(self):        
+    def test_missing_variables_fallback(self):
         # Test the full pod name determination process
         kwargs = {
             "env": {
@@ -63,8 +61,9 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), \
-             patch('enterprise_gateway.services.processproxies.k8s.KernelSessionManager') as mock_session_manager:
+        with patch.object(self.proxy, 'log'), patch(
+            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+        ) as mock_session_manager:
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming: kernel_username + "-" + kernel_id
@@ -132,8 +131,9 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), \
-             patch('enterprise_gateway.services.processproxies.k8s.KernelSessionManager') as mock_session_manager:
+        with patch.object(self.proxy, 'log'), patch(
+            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+        ) as mock_session_manager:
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming
@@ -148,8 +148,9 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), \
-             patch('enterprise_gateway.services.processproxies.k8s.KernelSessionManager') as mock_session_manager:
+        with patch.object(self.proxy, 'log'), patch(
+            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+        ) as mock_session_manager:
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming
