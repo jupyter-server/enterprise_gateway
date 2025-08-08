@@ -188,19 +188,25 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             "kernel_image_pull_policy",
             "a",
             "var123",
-            "_private_var",
             "KERNEL_ID",
         ]
 
+        # Variables that should be blocked by the regex pattern
         invalid_vars = [
             "123invalid",  # starts with number
             "invalid-var",  # contains dash
             "invalid.var",  # contains dot
             "invalid var",  # contains space
             "invalid@var",  # contains special char
+            "_private_var",  # starts with underscore (security risk)
+            "__class__",  # magic method (security risk)
+            "__dict__",  # magic method (security risk)
+            "__globals__",  # magic method (security risk)
         ]
 
         variables = {var: "value" for var in valid_vars}
+        # Also add underscore variables to test they're not substituted even if present
+        variables.update({"_private_var": "private", "__class__": "dangerous", "__dict__": "dangerous"})
 
         # Valid variables should be substituted
         for var in valid_vars:
@@ -208,12 +214,12 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             result = self.proxy._safe_template_substitute(template, variables)
             self.assertEqual(result, "value", f"Valid variable {var} should be substituted")
 
-        # Invalid variables should be treated as missing
+        # Invalid variables should be treated as having invalid syntax
         for var in invalid_vars:
             template = f"{{{{ {var} }}}}"
             with patch.object(self.proxy, 'log') as mock_log:
                 result = self.proxy._safe_template_substitute(template, variables)
-                self.assertIsNone(result, f"Invalid variable {var} should be treated as missing")
+                self.assertIsNone(result, f"Invalid variable {var} should be rejected")
                 mock_log.warning.assert_called_once()
                 # Should warn about unsupported expressions since invalid var names don't match regex
                 self.assertIn("Invalid template syntax", mock_log.warning.call_args[0][0])

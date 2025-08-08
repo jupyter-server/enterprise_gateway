@@ -222,7 +222,8 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         Logs missing variables and returns None if any are missing.
         """
         # Pattern to match {{ variable_name }} with optional whitespace
-        pattern = r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}'
+        # Explicitly exclude variables starting with underscore to prevent magic method attacks
+        pattern = r'\{\{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\}\}'
         missing_vars = []
 
         def replace_var(match):
