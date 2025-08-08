@@ -206,7 +206,9 @@ class TestKubernetesProcessProxy(unittest.TestCase):
 
         variables = {var: "value" for var in valid_vars}
         # Also add underscore variables to test they're not substituted even if present
-        variables.update({"_private_var": "private", "__class__": "dangerous", "__dict__": "dangerous"})
+        variables.update(
+            {"_private_var": "private", "__class__": "dangerous", "__dict__": "dangerous"}
+        )
 
         # Valid variables should be substituted
         for var in valid_vars:
