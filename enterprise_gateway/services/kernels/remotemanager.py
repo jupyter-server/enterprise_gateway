@@ -197,7 +197,11 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
     def _refresh_kernel(self, kernel_id: str) -> bool:
         if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
-            self.parent.kernel_session_manager.load_session(kernel_id)
+            try:
+                self.parent.kernel_session_manager.load_session(kernel_id)
+            except Exception as e:
+                self.log.error(f"Failed to load session, kernel_id:{kernel_id}", e)
+                return False
             return self.parent.kernel_session_manager.start_session(kernel_id)
         # else we should throw 404 when not using an availability mode of 'replication'
         return False
