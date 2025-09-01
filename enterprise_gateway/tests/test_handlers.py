@@ -557,6 +557,12 @@ class TestDefaults(TestHandlers):
             if ws:
                 ws.close()
 
+    @gen_test
+    def test_get_metrics(self):
+        """Getting the swagger.json spec should be ok"""
+        response = yield self.http_client.fetch(self.get_url("/metrics"))
+        self.assertEqual(response.code, 200)
+
 
 class TestCustomDefaultKernel(TestHandlers):
     """Tests gateway behavior when setting a custom default kernelspec."""
