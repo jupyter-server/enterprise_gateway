@@ -130,6 +130,19 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return pod_status
 
+    def get_container_events(self) -> list:
+        """Return container events"""
+        pod_events = []
+        core_v1_api = client.CoreV1Api()
+        if self.container_name:
+            ret = core_v1_api.list_namespaced_event(
+                namespace=self.kernel_namespace,
+                field_selector=f"involvedObject.name={self.container_name}",
+            )
+            if ret and ret.items:
+                pod_events = ret.items
+        return pod_events
+
     def delete_managed_object(self, termination_stati: list[str]) -> bool:
         """Deletes the object managed by this process-proxy
 
