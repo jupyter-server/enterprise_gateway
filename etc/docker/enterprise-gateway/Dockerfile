@@ -20,7 +20,7 @@ RUN mamba install --quiet --yes \
 
 USER root
 
-RUN apt update && apt install -yq curl openjdk-8-jdk
+RUN apt update && apt install -yq curl openjdk-8-jdk iputils-ping telnet netcat-openbsd net-tools iproute2 dnsutils curl
 
 ENV JAVA_HOME=/usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
@@ -53,6 +53,6 @@ USER jovyan
 
 CMD ["/usr/local/bin/start-enterprise-gateway.sh"]
 
-EXPOSE 8888
+EXPOSE 8888 8877
 
 WORKDIR /usr/local/bin
