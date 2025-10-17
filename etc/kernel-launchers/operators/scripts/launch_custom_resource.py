@@ -115,6 +115,7 @@ def launch_custom_resource_kernel(
         )
 
     custom_resource_yaml = generate_kernel_custom_resource_yaml(kernel_crd_template, keywords)
+    print(f">>> Generated YAML \n{custom_resource_yaml}")
 
     kernel_namespace = keywords["kernel_namespace"]
     group = keywords["kernel_crd_group"]

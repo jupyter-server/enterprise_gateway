@@ -74,11 +74,15 @@ class CustomResourceProcessProxy(KubernetesProcessProxy):
             )
 
             if custom_resource:
-                application_state = custom_resource['status']['applicationState']['state'].lower()
+                application_state = custom_resource.get("status", {}).get("state", "").lower()
+
+                self.log.debug(f">>> crd.get_container_status: {application_state}")
 
                 if application_state in self.get_error_states():
                     exception_text = self._get_exception_text(
-                        custom_resource['status']['applicationState']['errorMessage']
+                        custom_resource.get("status", {})
+                        .get("applicationState", {})
+                        .get("errorMessage")
                     )
                     error_message = (
                         f"CRD submission for kernel {self.kernel_id} failed: {exception_text}"
