@@ -5,7 +5,7 @@ FROM $BASE_CONTAINER
 ENV PATH=$PATH:$CONDA_DIR/bin
 
 # Add debugger support
-RUN pip install --upgrade ipykernel
+RUN pip install --upgrade --no-cache-dir ipykernel
 
 RUN conda install --quiet --yes \
     cffi \
