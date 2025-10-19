@@ -7,7 +7,7 @@ ENV PATH=$PATH:$CONDA_DIR/bin
 # Add debugger support
 # ipykernel 7 has asyncio rewrite affecting kernels to become idle
 # jupyter_client/server/pyzmq capped to converge with the rest of the fleet
-RUN pip install --upgrade \
+RUN pip install --upgrade --no-cache-dir \
     "ipykernel<7" \
     "jupyter_client<9" \
     "jupyter_server<3" \
