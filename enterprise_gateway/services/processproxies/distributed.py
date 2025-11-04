@@ -80,8 +80,12 @@ class DistributedProcessProxy(RemoteProcessProxy):
             self.hosts = proxy_config.get("remote_hosts").split(",")
         else:
             self.hosts = kernel_manager.remote_hosts  # from command line or env
-
         if self.least_connection:
+            DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
+        
+        # Add FCFS support
+        self.fcfs = kernel_manager.load_balancing_algorithm == "fcfs"
+        if self.fcfs:
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
 
     async def launch_process(
@@ -179,10 +183,17 @@ class DistributedProcessProxy(RemoteProcessProxy):
         return cmd
 
     def _determine_next_host(self, env_dict: dict) -> str:
-        """Simple round-robin index into list of hosts or use least-connection ."""
+        """Simple round-robin index into list of hosts or use least-connection or use fcfs ."""
         remote_host = env_dict.get("KERNEL_REMOTE_HOST")
         if self.least_connection:
             next_host = DistributedProcessProxy.kernel_on_host.min_or_remote_host(remote_host)
+            DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
+        # Add FCFS
+        elif self.fcfs:
+            next_host = min(
+                DistributedProcessProxy.kernel_on_host._host_kernels,
+                key=lambda h: DistributedProcessProxy.kernel_on_host._host_kernels[h]
+            )
             DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
         else:
             next_host = (

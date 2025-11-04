@@ -480,7 +480,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def _validate_load_balancing_algorithm(self, proposal: Dict[str, str]) -> str:
         value = proposal["value"]
         try:
-            if value not in ["round-robin", "least-connection"]:
+            if value not in ["round-robin", "least-connection", "fcfs"]:
                 msg = f"Unrecognized proposal value {value}"
                 raise AssertionError(msg)
         except ValueError:
