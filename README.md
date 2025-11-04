@@ -10,7 +10,6 @@ created to explore and evaluate different kernel scheduling strategies - includi
 - Compare resource fairness and latency between strategies.
 - Provide experimental insights for future scalability improvements in JEG.
 
-
 ## Algorithms Under Study
 
 | Scheduler | Description |
@@ -19,4 +18,4 @@ created to explore and evaluate different kernel scheduling strategies - includi
 | **LC (Least Connection)** | Assigns kernels to the gateway node with the fewest active connections. |
 | **FCFS (First Come First Serve)** | Assigns tasks in strict arrival order. |
 
-Round Robin and Least Connection are the defaults algorithm of Jupyter Enterprise Gateway.
+Round Robin and Least Connection are the default algorithms of Jupyter Enterprise Gateway.
