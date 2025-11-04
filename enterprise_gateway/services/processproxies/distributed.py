@@ -83,7 +83,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         if self.least_connection:
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
         
-        # Add FCFS support
+        # Add FCFS mechanism
         self.fcfs = kernel_manager.load_balancing_algorithm == "fcfs"
         if self.fcfs:
             DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
@@ -185,16 +185,25 @@ class DistributedProcessProxy(RemoteProcessProxy):
     def _determine_next_host(self, env_dict: dict) -> str:
         """Simple round-robin index into list of hosts or use least-connection or use fcfs ."""
         remote_host = env_dict.get("KERNEL_REMOTE_HOST")
+        
+        # Least connection algorithm
         if self.least_connection:
             next_host = DistributedProcessProxy.kernel_on_host.min_or_remote_host(remote_host)
             DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
-        # Add FCFS
-        elif self.fcfs:
+        
+        # FCFS algorithm
+        elif getattr(self, "fcfs", False):
+        # initialize host tracking if not done
+            if not DistributedProcessProxy.kernel_on_host._host_kernels:
+                DistributedProcessProxy.kernel_on_host.init_host_kernels(self.hosts)
+            # select the host with the fewest number of kernels (similar to LC, but not dynamic
             next_host = min(
                 DistributedProcessProxy.kernel_on_host._host_kernels,
                 key=lambda h: DistributedProcessProxy.kernel_on_host._host_kernels[h]
             )
             DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)
+        
+        # Default algorithm: Round robin
         else:
             next_host = (
                 remote_host
@@ -202,6 +211,11 @@ class DistributedProcessProxy(RemoteProcessProxy):
                 else self.hosts[DistributedProcessProxy.host_index % self.hosts.__len__()]
             )
             DistributedProcessProxy.host_index += 1
+        
+        self.log.info(
+            f"[SCHEDULER] Algorithm={self.kernel_manager.load_balancing_algorithm}, "
+            f"Selected host={next_host}, Current loads={DistributedProcessProxy.kernel_on_host._host_kernels}"
+        )
 
         return next_host
 
