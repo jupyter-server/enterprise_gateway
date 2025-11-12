@@ -14,8 +14,8 @@ created to explore and evaluate different kernel scheduling strategies - includi
 
 | Scheduler | Description |
 |------------|-------------|
-| **RR (Round Robin)** | Distributes workloads evenly in a rotating order. |
-| **LC (Least Connection)** | Assigns kernels to the gateway node with the fewest active connections. |
+| **Round Robin** | Distributes workloads evenly in a rotating order. |
+| **Least Connection** | Assigns kernels to the gateway node with the fewest active connections. |
 | **FCFS (First Come First Serve)** | Assigns tasks in strict arrival order. |
 
-Round Robin and Least Connection are the default algorithms of Jupyter Enterprise Gateway.
+Round Robin and Least Connection are the default algorithms of Jupyter Enterprise Gateway (JEG).
