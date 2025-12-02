@@ -23,4 +23,3 @@ helm repo update
 
 helm upgrade --install hub jupyterhub/jupyterhub --namespace hub --version 4.3.1 --values jupyterhub-config.yaml --create-namespace --timeout 10m --wait
 minikube service --url proxy-public -n hub
-
