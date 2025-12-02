@@ -17,5 +17,5 @@ RUN adduser --system -uid 1000 jovyan --ingroup users && \
     chown -R jovyan:users /usr/local/bin/kernel-launchers
 
 USER jovyan
-ENV KERNEL_LANGUAGE scala
+ENV KERNEL_LANGUAGE=scala
 CMD /usr/local/bin/bootstrap-kernel.sh

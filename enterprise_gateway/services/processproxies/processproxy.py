@@ -201,6 +201,7 @@ class ResponseManager(SingletonConfigurable):
 
     async def get_connection_info(self, kernel_id: str) -> dict:
         """Performs a timeout wait on the event, returning the conenction information on completion."""
+        self.log.debug(f">>> processproxy.get_connection_info() for kernel_id {kernel_id}")
         await asyncio.wait_for(self._response_registry[kernel_id].wait(), connection_interval)
         return self._response_registry.pop(kernel_id).response
 
@@ -1300,9 +1301,13 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         """
         # Polls the socket using accept.  When data is found, returns ready indicator and encrypted data.
         ready_to_connect = False
-
+        self.log.debug(
+            f">>> processproxy.receive_connection_info(): initializing ready to connect as {ready_to_connect}"
+        )
         try:
             connect_info = await self.response_manager.get_connection_info(self.kernel_id)
+            self.log.debug(">>> processproxy.receive_connection_info(): connect info received")
+            self.log.debug(connect_info)
             self._setup_connection_info(connect_info)
             ready_to_connect = True
         except Exception as e:
@@ -1320,6 +1325,9 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self.kill()
                 self.log_and_raise(http_status_code=500, reason=error_message)
 
+        self.log.debug(
+            f">>> processproxy.receive_connection_info(): returning ready to connect {ready_to_connect}"
+        )
         return ready_to_connect
 
     def _setup_connection_info(self, connect_info: dict) -> None:

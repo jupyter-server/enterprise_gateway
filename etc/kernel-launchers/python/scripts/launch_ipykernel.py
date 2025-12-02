@@ -63,7 +63,7 @@ def initialize_namespace(namespace, cluster_type="spark"):
 
     Parameters
     ----------
-    cluster_type : {'spark', 'dask', 'none'}
+    cluster_type : {'spark', 'ray', 'dask', 'none'}
         The cluster type to initialize. ``'none'`` results in no variables in
         the initial namespace.
     """
@@ -115,6 +115,19 @@ def initialize_namespace(namespace, cluster_type="spark"):
         )
 
         init_thread.start()
+
+    elif cluster_type == "ray":
+        try:
+            import ray
+
+            ray.init(address="127.0.0.1:6379")
+            print(ray.cluster_resources())
+        except ImportError:
+            logger.info(
+                "A Ray init was desired but the ray distribution is not present.  "
+                "Ray.init will not occur."
+            )
+            return
 
     elif cluster_type == "dask":
         import dask_yarn
@@ -517,7 +530,7 @@ if __name__ == "__main__":
         "--cluster-type",
         dest="cluster_type",
         nargs="?",
-        help="the kind of cluster to initialize: spark, dask, or none",
+        help="the kind of cluster to initialize: spark, ray, dask, or none",
     )
     parser.add_argument(
         "--kernel-class-name",
@@ -570,7 +583,7 @@ if __name__ == "__main__":
         dest="rpp_cluster_type",
         nargs="?",
         default="spark",
-        help="the kind of cluster to initialize: spark, dask, or none (deprecated)",
+        help="the kind of cluster to initialize: spark, ray, dask, or none (deprecated)",
     )
 
     arguments = vars(parser.parse_args())
