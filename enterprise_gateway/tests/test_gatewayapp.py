@@ -107,6 +107,55 @@ class TestGatewayAppConfig(unittest.TestCase):
         ssl_options = app._build_ssl_options()
         self.assertIsNone(ssl_options)
 
+    def test_authorizer_class_default(self):
+        """Test that authorizer_class defaults to None when not configured."""
+        app = EnterpriseGatewayApp()
+        app.init_configurables()
+        app.init_webapp()
+
+        # By default, should use AllowAllAuthorizer
+        from jupyter_server.auth.authorizer import AllowAllAuthorizer
+
+        authorizer = app.web_app.settings.get("authorizer")
+        self.assertIsNotNone(authorizer)
+        self.assertIsInstance(authorizer, AllowAllAuthorizer)
+
+    def test_authorizer_class_env_var(self):
+        """Test that authorizer_class can be configured via environment variable."""
+        # Create a custom authorizer for testing
+        from jupyter_server.auth.authorizer import Authorizer
+
+        class CustomTestAuthorizer(Authorizer):
+            """Test authorizer for validation"""
+
+            def is_authorized(self, handler, user, action, resource):
+                return True
+
+        # Set the environment variable to point to our custom authorizer
+        # We need to make it importable first
+        import sys
+        from types import ModuleType
+
+        # Create a test module
+        test_module = ModuleType("test_auth_module")
+        test_module.CustomTestAuthorizer = CustomTestAuthorizer
+        sys.modules["test_auth_module"] = test_module
+
+        try:
+            os.environ["EG_AUTHORIZER_CLASS"] = "test_auth_module.CustomTestAuthorizer"
+
+            app = EnterpriseGatewayApp()
+            app.init_configurables()
+            app.init_webapp()
+
+            # Should use our custom authorizer
+            authorizer = app.web_app.settings.get("authorizer")
+            self.assertIsNotNone(authorizer)
+            self.assertIsInstance(authorizer, CustomTestAuthorizer)
+        finally:
+            # Clean up
+            if "test_auth_module" in sys.modules:
+                del sys.modules["test_auth_module"]
 
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     """Base class for integration style tests using HTTP/Websockets against an
