@@ -38,6 +38,18 @@ spec:
     cores: 1
     coreLimit: 1000m
     memory: 1g
+    volumeMounts:
+      {% if kernel_volume_mounts is defined %}
+        {% for mount in kernel_volume_mounts %}
+      - {{ mount }}
+        {% endfor %}
+      {% endif %}
+    volumes:
+      {% if kernel_volumes is defined %}
+        {% for volume in kernel_volumes %}
+      - {{ volume }}
+        {% endfor %}
+      {% endif %}
   executor:
     env:
 # Add any custom envs here that aren't already configured for the kernel's environment
@@ -54,6 +66,18 @@ spec:
     cores: 1
     coreLimit: 1000m
     memory: 1g
+    volumeMounts:
+      {% if kernel_volume_mounts is defined %}
+        {% for mount in kernel_volume_mounts %}
+      - {{ mount }}
+        {% endfor %}
+      {% endif %}
+    volumes:
+      {% if kernel_volumes is defined %}
+        {% for volume in kernel_volumes %}
+      - {{ volume }}
+        {% endfor %}
+      {% endif %}
 {% if kernel_sparkapp_config_map %}
   sparkConfigMap: {{ kernel_sparkapp_config_map }}
 {% endif %}
