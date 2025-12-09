@@ -762,3 +762,29 @@ class EnterpriseGatewayConfigMixin(Configurable):
         of `enterprise_gateway.services.sessions.KernelSessionManager`.
         """,
     )
+
+    authorizer_class = Type(
+        klass="jupyter_server.auth.authorizer.Authorizer",
+        default_value="jupyter_server.auth.authorizer.AllowAllAuthorizer",
+        config=True,
+        help="""
+        The authorizer class to use for authenticating and authorizing requests.
+
+        By default, Enterprise Gateway uses AllowAllAuthorizer which allows all
+        authenticated requests. You can configure a custom authorizer to implement
+        authentication and authorization logic.
+
+        Example usage:
+            c.EnterpriseGatewayApp.authorizer_class = 'my_module.MyAuthorizer'
+
+        Environment variable: EG_AUTHORIZER_CLASS
+        """,
+    )
+
+    authorizer_class_env = "EG_AUTHORIZER_CLASS"
+
+    @default("authorizer_class")
+    def _authorizer_class_default(self):
+        return os.getenv(
+            self.authorizer_class_env, "jupyter_server.auth.authorizer.AllowAllAuthorizer"
+        )
