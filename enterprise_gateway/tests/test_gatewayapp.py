@@ -157,6 +157,7 @@ class TestGatewayAppConfig(unittest.TestCase):
             if "test_auth_module" in sys.modules:
                 del sys.modules["test_auth_module"]
 
+
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     """Base class for integration style tests using HTTP/Websockets against an
     instance of the gateway app.
