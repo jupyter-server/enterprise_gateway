@@ -11,7 +11,7 @@ minikube profile ray
 helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo update
 
-helm install kuberay-operator kuberay/kuberay-operator --version 1.5.0 --create-namespace --wait
+helm install kuberay-operator kuberay/kuberay-operator --version 1.5.1 --create-namespace --wait
 
 helm upgrade --install enterprise-gateway ../../../dist/jupyter_enterprise_gateway_helm-*.tar.gz --namespace enterprise-gateway --values enterprise-gateway-minikube-helm.yaml --create-namespace --wait
 kubectl apply -f enterprise-gateway-network.yaml
