@@ -72,18 +72,30 @@ spec:
             - containerPort: 44227
               name: dash-metrics # dashboard
             startupProbe:
-              httpGet:
-                path: /
-                port: 8265
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check GCS port 6379
+                  nc -z localhost 6379 || exit 1
+                  # Check dashboard port 8265
+                  wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
               initialDelaySeconds: 15
               periodSeconds: 5
               timeoutSeconds: 5
               failureThreshold: 24
               successThreshold: 1
             readinessProbe:
-              httpGet:
-                path: /
-                port: 8265
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check GCS port 6379
+                  nc -z localhost 6379 || exit 1
+                  # Check dashboard port 8265
+                  wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
               initialDelaySeconds: 0
               periodSeconds: 10
               timeoutSeconds: 3
