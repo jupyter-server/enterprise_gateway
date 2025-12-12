@@ -118,10 +118,11 @@ def initialize_namespace(namespace, cluster_type="spark"):
 
     elif cluster_type == "ray":
         try:
-            import ray
+            pass
+            # import ray
 
-            ray.init(address="127.0.0.1:6379")
-            print(ray.cluster_resources())
+            # ray.init(address="127.0.0.1:6379")
+            # print(ray.cluster_resources())
         except ImportError:
             logger.info(
                 "A Ray init was desired but the ray distribution is not present.  "
