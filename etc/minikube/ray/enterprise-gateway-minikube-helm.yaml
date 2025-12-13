@@ -1,0 +1,52 @@
+#image: elyra/enterprise-gateway:dev
+image: lresende/enterprise-gateway:dev
+imagePullPolicy: Always
+logLevel: DEBUG
+rbac: true
+hostNetwork: true
+kernel:
+  # All kernels reside in the EG namespace if True, otherwise KERNEL_NAMESPACE
+  # must be provided or one will be created for each kernel.
+  shareGatewayNamespace: true
+  launchTimeout: 500
+  infoTimeout: 500
+  requestTimeout: 500
+  # Current idle timeout is 1 hour.
+  cullIdleTimeout: 3600
+  allowedKernels:
+#    - spark_python_operator
+    - ray_python_operator
+    - python_kubernetes
+  defaultKernelName: ray_python_operator
+# for Spark
+#  defaultServiceAccountName: "spark-operator-spark"
+# for Ray
+  defaultServiceAccountName: "enterprise-gateway-sa"
+# kernelspecsPvc:
+#   enabled: true
+#   name: pvc-kernelspecs
+#deployment:
+#  extraEnv:
+#    EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME: "kuberay-operator"
+service:
+  type: "NodePort"
+  externalIPs:
+    # Master public IP on which to expose EG.
+    k8sMasterPublicIP: ''
+  ports:
+    # The primary port on which Enterprise Gateway is servicing requests.
+    - name: "http"
+      port: 8888
+      targetPort: 8888
+      nodePort: 30088 # optional nodePort
+    # The  port on which Enterprise Gateway will receive kernel connection info responses.
+    - name: "http-response"
+      port: 8877
+      targetPort: 8877
+      nodePort: 30077 # optional nodePort
+kip:
+  enabled: true
+  image: elyra/kernel-image-puller:3.2.3
+  imagePullPolicy: Always
+  pullPolicy: Always
+  defaultContainerRegistry: "docker.io"
