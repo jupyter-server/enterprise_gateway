@@ -386,7 +386,9 @@ class FileKernelSessionManager(KernelSessionManager):
             self.log.debug(f"Loading saved session(s) from {kernel_session_file_path}")
             try:
                 with open(kernel_session_file_path) as fp:
-                    self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
+                    self._sessions.update(
+                        KernelSessionManager.post_load_transformation(json.load(fp))
+                    )
             except json.JSONDecodeError as e:
                 self.log.error(
                     f"Failed to load session from {kernel_session_file_path}: Invalid JSON - {e}"
