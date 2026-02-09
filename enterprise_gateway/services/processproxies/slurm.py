@@ -72,11 +72,13 @@ class SlurmProcessProxy(RemoteProcessProxy):
     default_batch_job = """#!/bin/bash
 #SBATCH --job-name=test_job
 #SBATCH --output=test_%j.log
-#SBATCH --time=00:05:00
+#SBATCH --error=error_%j.log
+#SBATCH --time=00:00:30
 #SBATCH --ntasks=1
 #SBATCH --nodelist=michmanc3ab4d15-3d62-4d03-879d-011ddbd7f6f3
 
 {COMMAND}    
+echo HEHEHHEHE
 """
 
     def __init__(self, kernel_manager: RemoteKernelManager, proxy_config: dict):
@@ -120,8 +122,9 @@ class SlurmProcessProxy(RemoteProcessProxy):
         env_dict = kwargs.get("env")
         await super().launch_process(kernel_cmd, **kwargs)
 
-        self.assigned_host = self._determine_next_host(env_dict)
-        self.ip = gethostbyname(self.assigned_host)  # convert to ip if host is provided
+        #self.assigned_host = self._determine_next_host(env_dict)
+        self.assigned_host = "michmanc3ab4d15-3d62-4d03-879d-011ddbd7f6f3.novalocal"
+        self.ip = gethostbyname("michmanc3ab4d15-3d62-4d03-879d-011ddbd7f6f3.novalocal")  # convert to ip if host is provided
         self.assigned_ip = self.ip
 
         try:
@@ -163,6 +166,17 @@ class SlurmProcessProxy(RemoteProcessProxy):
             result_pid = line.strip()
 
         return result_pid
+    
+    def poll(self) -> Any | None:
+        """
+        Determines if process proxy is still alive.
+
+        If this corresponds to a local (popen) process, poll() is called on the subprocess.
+        Otherwise, the zero signal is used to determine if active.
+        """
+
+        return self.send_signal(0)
+    
 
     def _build_startup_command(self, argv_cmd: str, **kwargs: dict[str, Any] | None) -> str:
         """
@@ -190,13 +204,15 @@ class SlurmProcessProxy(RemoteProcessProxy):
             for key, value in self.kernel_manager.kernel_spec.env.items():
                 cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
 
-            cmd += "nohup"
+            #cmd += "nohup"
             for arg in argv_cmd:
                 cmd += f" {arg}"
 
-            cmd += f" >> {self.kernel_log} 2>&1 &"  # return the process id    echo $!
+            cmd += f" >> {self.kernel_log} 2>&1"  # return the process id    echo $!
         
         inputs = self.default_batch_job.format(COMMAND = cmd)
+        
+        print(inputs)
 
         return inputs
 
@@ -261,7 +277,7 @@ class SlurmProcessProxy(RemoteProcessProxy):
         # DistributedProcessProxy can have a tendency to leave zombies, particularly when EG is
         # abruptly terminated.  This extra call to shutdown_lister does the trick.
         self.shutdown_listener()
-        self._unregister_assigned_host()
+       # self._unregister_assigned_host()
         if self.local_stdout:
             self.local_stdout.close()
             self.local_stdout = None

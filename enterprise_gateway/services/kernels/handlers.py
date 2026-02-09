@@ -146,24 +146,6 @@ class KernelHandler(
         model = km.kernel_model(kernel_id)
         self.finish(json.dumps(model, default=date_default))
 
-    @web.authenticated
-    async def delete(self, kernel_id):
-        """Remove a kernel."""
-        self.kernel_manager.check_kernel_id(kernel_id=kernel_id)
-        await super().delete(kernel_id=kernel_id)
-
-
-class ZMQChannelsHandler(
-    TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, jupyter_server_handlers.ZMQChannelsHandler
-):
-    """Extends the kernel websocket handler."""
-
-    async def get(self, kernel_id):
-        """Handle a get request for a kernel."""
-        # Synchronize Kernel and check if it exists.
-        self.kernel_manager.check_kernel_id(kernel_id=kernel_id)
-        await super().get(kernel_id=kernel_id)
-
 
 default_handlers: list[tuple] = []
 for path, cls in jupyter_server_handlers.default_handlers:

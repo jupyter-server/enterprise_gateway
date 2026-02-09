@@ -182,7 +182,6 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
     def _start_session(self, kernel_session: dict) -> bool:
         # Attempt to start kernel from persisted state.  if started, record kernel_session in dictionary
         # else delete session
-        print("WAYAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         kernel_id = kernel_session["kernel_id"]
         kernel_started = self.kernel_manager.start_kernel_from_session(
             kernel_id=kernel_id,

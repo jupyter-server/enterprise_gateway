@@ -699,8 +699,9 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                         password=self.remote_pwd,
                     )
                 else:
+                    print("wtf")
                     self.log.debug("Connecting to remote host with ssh key.")
-                    ssh.connect(host_ip, port=ssh_port, username=self.remote_user)
+                    ssh.connect(host_ip, port=ssh_port, username=self.remote_user, key_filename="/home/michman/.ssh/jupyterhub_slurm")
         except Exception as e:
             http_status_code = 500
             current_host = gethostbyname(gethostname())
@@ -1565,7 +1566,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                         signum, self.kernel_id, str(e)
                     )
                 )
-
+        print("CHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOo")
         return super().send_signal(signum)
 
     def shutdown_listener(self):
@@ -1623,6 +1624,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         """
         Captures the base information necessary for kernel persistence relative to remote processes.
         """
+        print(f"\n\n\nWTFFFFFFFFFFFFFFFFFF\n\n\n")
         super().load_process_info(process_info)
         self.assigned_ip = process_info["assigned_ip"]
         self.assigned_host = process_info["assigned_host"]

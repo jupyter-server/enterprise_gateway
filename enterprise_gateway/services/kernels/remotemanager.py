@@ -197,11 +197,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
     def _refresh_kernel(self, kernel_id: str) -> bool:
         if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
-            try:
-                self.parent.kernel_session_manager.load_session(kernel_id)
-            except Exception as e:
-                self.log.error(f"Failed to load session, kernel_id:{kernel_id}", e)
-                return False
+            self.parent.kernel_session_manager.load_session(kernel_id)
             return self.parent.kernel_session_manager.start_session(kernel_id)
         # else we should throw 404 when not using an availability mode of 'replication'
         return False
@@ -371,6 +367,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """
         # Create a KernelManger instance and load connection and process info, then confirm the kernel is still
         # alive.
+        print("\n\n\n LETS GOOOOOOOOOOOOOOOOO\n\n\n")
         constructor_kwargs = {}
         if self.kernel_spec_manager:
             constructor_kwargs["kernel_spec_manager"] = self.kernel_spec_manager
@@ -627,13 +624,15 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                     "clients connected at this time.".format(kernel_id)
                 )
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
+                print("\n\n\nEBAAAAAAAAAT\n\n\n")
                 await self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
                 return
 
         if now:  # if auto-restarting (when now is True), indicate we're restarting.
             self.restarting = True
-
+        #kwargs.pop('newports', None)  # Удаляем если существует
         await super().restart_kernel(now, **kwargs)
+        
         if isinstance(self.process_proxy, RemoteProcessProxy):  # for remote kernels...
             # Re-establish activity watching...
             if self._activity_stream:
