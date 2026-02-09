@@ -723,7 +723,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         return ssh
 
-    def rsh(self, host: str, command: str) -> list[str]:
+    def rsh(self, host: str, command: str, inputs: str=None) -> list[str]:
         """
         Executes a command on a remote host using ssh.
 
@@ -742,6 +742,10 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         ssh = self._get_ssh_client(host)
         try:
             stdin, stdout, stderr = ssh.exec_command(command, timeout=30)
+            if inputs:
+                stdin.write(inputs)
+                stdin.flush()
+                stdin.channel.shutdown_write() 
             lines = stdout.readlines()
             if len(lines) == 0:  # if nothing in stdout, return stderr
                 lines = stderr.readlines()
