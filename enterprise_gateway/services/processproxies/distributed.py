@@ -59,7 +59,7 @@ class TrackKernelOnHost:
     def init_host_kernels(self, hosts) -> None:
         """Inititialize the kernels for a set of hosts."""
         if len(self._host_kernels) == 0:
-            self._host_kernels.update({key: 0 for key in hosts})
+            self._host_kernels.update(dict.fromkeys(hosts, 0))
 
 
 class DistributedProcessProxy(RemoteProcessProxy):
@@ -101,20 +101,11 @@ class DistributedProcessProxy(RemoteProcessProxy):
             result_pid = self._launch_remote_process(kernel_cmd, **kwargs)
             self.pid = int(result_pid)
         except Exception as e:
-            error_message = "Failure occurred starting kernel on '{}'.  Returned result: {}".format(
-                self.ip, e
-            )
+            error_message = f"Failure occurred starting kernel on '{self.ip}'.  Returned result: {e}"
             self.log_and_raise(http_status_code=500, reason=error_message)
 
         self.log.info(
-            "Kernel launched on '{}', pid: {}, ID: {}, Log file: {}:{}, Command: '{}'.  ".format(
-                self.assigned_host,
-                self.pid,
-                self.kernel_id,
-                self.assigned_host,
-                self.kernel_log,
-                kernel_cmd,
-            )
+            f"Kernel launched on '{self.assigned_host}', pid: {self.pid}, ID: {self.kernel_id}, Log file: {self.assigned_host}:{self.kernel_log}, Command: '{kernel_cmd}'.  "
         )
         await self.confirm_remote_startup()
         return self
@@ -126,7 +117,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
         """
 
         cmd = self._build_startup_command(kernel_cmd, **kwargs)
-        self.log.debug(f"Invoking cmd: '{cmd}' on host: {self.assigned_host}")
+        self.log.debug("Invoking cmd: '%s' on host: %s", cmd, self.assigned_host)
         result_pid = "bad_pid"  # purposely initialize to bad int value
 
         if BaseProcessProxyABC.ip_is_local(self.ip):
@@ -208,9 +199,7 @@ class DistributedProcessProxy(RemoteProcessProxy):
             await self.handle_timeout()
 
             self.log.debug(
-                "{}: Waiting to connect.  Host: '{}', KernelID: '{}'".format(
-                    i, self.assigned_host, self.kernel_id
-                )
+                f"{i}: Waiting to connect.  Host: '{self.assigned_host}', KernelID: '{self.kernel_id}'"
             )
 
             if self.assigned_host:
@@ -225,10 +214,8 @@ class DistributedProcessProxy(RemoteProcessProxy):
 
         if time_interval > self.kernel_launch_timeout:
             reason = (
-                "Waited too long ({}s) to get connection file.  Check Enterprise Gateway log and kernel "
-                "log ({}:{}) for more information.".format(
-                    self.kernel_launch_timeout, self.assigned_host, self.kernel_log
-                )
+                f"Waited too long ({self.kernel_launch_timeout}s) to get connection file.  Check Enterprise Gateway log and kernel "
+                f"log ({self.assigned_host}:{self.kernel_log}) for more information."
             )
             timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             await asyncio.get_event_loop().run_in_executor(None, self.kill)

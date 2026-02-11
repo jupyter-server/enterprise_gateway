@@ -209,7 +209,7 @@ class TestEnterpriseGateway(TestHandlers):
         kernel_response = yield self.http_client.fetch(
             self.get_url("/api/kernels"),
             method="POST",
-            body='{"env": {"KERNEL_ID": "%s"}}' % expected_kernel_id,
+            body=f'{{"env": {{"KERNEL_ID": "{expected_kernel_id}"}}}}',
             raise_error=False,
         )
         self.assertEqual(kernel_response.code, 201)

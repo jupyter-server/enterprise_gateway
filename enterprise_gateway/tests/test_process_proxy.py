@@ -204,7 +204,7 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             "__globals__",  # magic method (security risk)
         ]
 
-        variables = {var: "value" for var in valid_vars}
+        variables = dict.fromkeys(valid_vars, "value")
         # Also add underscore variables to test they're not substituted even if present
         variables.update(
             {"_private_var": "private", "__class__": "dangerous", "__dict__": "dangerous"}

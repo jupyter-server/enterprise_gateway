@@ -88,10 +88,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         self.ip = local_ip
 
         self.log.debug(
-            "Conductor cluster kernel launched using Conductor endpoint: {}, pid: {}, Kernel ID: {}, "
-            "cmd: '{}'".format(
-                self.conductor_endpoint, self.local_proc.pid, self.kernel_id, kernel_cmd
-            )
+            f"Conductor cluster kernel launched using Conductor endpoint: {self.conductor_endpoint}, pid: {self.local_proc.pid}, Kernel ID: {self.kernel_id}, "
+            f"cmd: '{kernel_cmd}'"
         )
         await self.confirm_remote_startup()
         return self
@@ -144,7 +142,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         response = None
         # Assemble REST call
         header = "Accept: application/json"
-        authorization = "Authorization: %s" % self.rest_credential
+        authorization = f"Authorization: {self.rest_credential}"
         if (
             "KERNEL_NOTEBOOK_DATA_DIR" not in env_dict
             or "KERNEL_NOTEBOOK_COOKIE_JAR" not in env_dict
@@ -179,7 +177,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True
             )
-            output, stderr = process.communicate()
+            output, _stderr = process.communicate()
             response = json.loads(output) if output else None
             if (
                 response is None
@@ -253,7 +251,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         :param signum
         :return: None if signal was successfully sent to kernel, False if an exception was thrown
         """
-        self.log.debug(f"ConductorClusterProcessProxy.send_signal {signum}")
+        self.log.debug("ConductorClusterProcessProxy.send_signal %s", signum)
         if signum == 0:
             return self.poll()
         elif signum == signal.SIGKILL:
@@ -271,8 +269,8 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         if self.driver_id:
             resp = self._kill_app_by_driver_id(self.driver_id)
             self.log.debug(
-                "ConductorClusterProcessProxy.kill: kill_app_by_driver_id({}) response: {}, confirming "
-                "app state is not RUNNING".format(self.driver_id, resp)
+                f"ConductorClusterProcessProxy.kill: kill_app_by_driver_id({self.driver_id}) response: {resp}, confirming "
+                "app state is not RUNNING"
             )
             i = 1
             state = self._query_app_state_by_driver_id(self.driver_id)
@@ -287,9 +285,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         super().kill()
 
         self.log.debug(
-            "ConductorClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}".format(
-                self.application_id, self.kernel_id, state
-            )
+            f"ConductorClusterProcessProxy.kill, application ID: {self.application_id}, kernel ID: {self.kernel_id}, state: {state}"
         )
         return result
 
@@ -299,9 +295,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # a local_proc.
         if self.local_proc:
             self.log.debug(
-                "ConductorClusterProcessProxy.cleanup: Clearing possible defunct process, pid={}...".format(
-                    self.local_proc.pid
-                )
+                f"ConductorClusterProcessProxy.cleanup: Clearing possible defunct process, pid={self.local_proc.pid}..."
             )
             if super().poll():
                 super().kill()
@@ -320,18 +314,18 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         :param submission_response
         """
         if submission_response:
-            self.log.debug(f"Submission Response: {submission_response}\n")
+            self.log.debug("Submission Response: %s\n", submission_response)
             matched_lines = [
                 line for line in submission_response.split("\n") if "submissionId" in line
             ]
             if matched_lines and len(matched_lines) > 0:
                 driver_info = matched_lines[0]
-                self.log.debug(f"Driver Info: {driver_info}")
+                self.log.debug("Driver Info: %s", driver_info)
                 driver_id = driver_info.split(":")[1]
                 driver_id = re.findall(r'"([^"]*)"', driver_id)
                 if driver_id and len(driver_id) > 0:
                     self.driver_id = driver_id[0]
-                    self.log.debug(f"Driver ID: {driver_id[0]}")
+                    self.log.debug("Driver ID: %s", driver_id[0])
             # Handle Checking for submission error to report
             err_lines = [
                 line
@@ -367,17 +361,13 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
                 if app_state in ConductorClusterProcessProxy.final_states:
                     error_message = (
-                        "KernelID: '{}', ApplicationID: '{}' unexpectedly found in state '{}' "
-                        "during kernel startup!".format(
-                            self.kernel_id, self.application_id, app_state
-                        )
+                        f"KernelID: '{self.kernel_id}', ApplicationID: '{self.application_id}' unexpectedly found in state '{app_state}' "
+                        "during kernel startup!"
                     )
                     self.log_and_raise(http_status_code=500, reason=error_message)
 
                 self.log.debug(
-                    "{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".format(
-                        i, app_state, self.assigned_host, self.kernel_id, self.application_id
-                    )
+                    f"{i}: State: '{app_state}', Host: '{self.assigned_host}', KernelID: '{self.kernel_id}', ApplicationID: '{self.application_id}'"
                 )
 
                 if self.assigned_host:
@@ -426,9 +416,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                     )
                     error_http_code = 503
                 else:
-                    reason = "App {} is WAITING, but waited too long ({} secs) to get connection file".format(
-                        self.application_id, self.kernel_launch_timeout
-                    )
+                    reason = f"App {self.application_id} is WAITING, but waited too long ({self.kernel_launch_timeout} secs) to get connection file"
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
             timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
             self.log_and_raise(http_status_code=error_http_code, reason=timeout_message)
@@ -460,9 +448,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                         )
                     else:
                         self.log.debug(
-                            "ApplicationID not yet assigned for KernelID: '{}' - retrying...".format(
-                                self.kernel_id
-                            )
+                            f"ApplicationID not yet assigned for KernelID: '{self.kernel_id}' - retrying..."
                         )
             else:
                 self.log.debug(
@@ -499,7 +485,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = "Accept: application/json"
-        authorization = "Authorization: %s" % self.rest_credential
+        authorization = f"Authorization: {self.rest_credential}"
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
         sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
         url = f"{self.conductor_endpoint}/v1/applications?driverid={driver_id}"
@@ -511,7 +497,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True
             )
-            output, stderr = process.communicate()
+            output, _stderr = process.communicate()
             response = json.loads(output) if output else None
             response = None if not response or not response["applist"] else response["applist"]
         except Exception as e:
@@ -530,7 +516,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Assemble REST call
         env = self.env
         header = "Accept: application/json"
-        authorization = "Authorization: %s" % self.rest_credential
+        authorization = f"Authorization: {self.rest_credential}"
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
         sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
         url = f"{self.conductor_endpoint}/v1/applications?applicationid={app_id}"
@@ -541,7 +527,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True
             )
-            output, stderr = process.communicate()
+            output, _stderr = process.communicate()
             response = json.loads(output) if output else None
             response = None if response is None or not response["applist"] else response["applist"]
         except Exception as e:
@@ -587,14 +573,12 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         :param driver_id
         :return: The JSON response of killing the application. None if driver is not found.
         """
-        self.log.debug(f"Kill driver: {driver_id}")
+        self.log.debug("Kill driver: %s", driver_id)
         if driver_id is None:
             if self.application_id is None:
                 return None
             self.log.debug(
-                "Driver does not exist, retrieving DriverID with ApplicationID: {}".format(
-                    self.application_id
-                )
+                f"Driver does not exist, retrieving DriverID with ApplicationID: {self.application_id}"
             )
             driver_info = self._get_driver_by_app_id(self.application_id)
             if driver_info:
@@ -606,7 +590,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         response = None
         env = self.env
         header = "Accept: application/json"
-        authorization = "Authorization: %s" % self.rest_credential
+        authorization = f"Authorization: {self.rest_credential}"
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
         sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
         url = f"{self.conductor_endpoint}/v1/submissions/kill/{self.driver_id}"
@@ -618,13 +602,13 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True
             )
-            output, stderr = process.communicate()
+            output, _stderr = process.communicate()
             response = json.loads(output) if output else None
         except Exception as e:
             self.log.warning(
                 f"Termination of application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
             )
-        self.log.debug(f"Kill response: {response}")
+        self.log.debug("Kill response: %s", response)
         return response
 
     def _performRestCall(self, cmd: list[str], url: str, HA_LIST: list[str]) -> tuple:  # noqa
@@ -684,13 +668,13 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         HA_LIST.insert(0, host)
 
         header = "Accept: application/json"
-        authorization = "Authorization: Bearer %s" % jwt_token
+        authorization = f"Authorization: Bearer {jwt_token}"
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
         sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
         url = "{}/auth/logon/jwt?topology={}".format(self.ascd_endpoint, env["KERNEL_TOPOLOGY"])
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
-        output, stderr = self._performRestCall(cmd, url, HA_LIST)
+        output, _stderr = self._performRestCall(cmd, url, HA_LIST)
         if "Error" in output:
             reasonErr = "Failed to perform JWT Auth Logon. " + output.splitlines()[0]
             self.log.warning(cmd)
@@ -699,10 +683,10 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         # Assemble EGO Token Logon REST call
         authorization = "Authorization: PlatformToken token=" + output.strip('"')
-        url = "%s/auth/logon" % self.ascd_endpoint
+        url = f"{self.ascd_endpoint}/auth/logon"
         cmd = ["curl", "-v", "-c", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
-        output, stderr = self._performRestCall(cmd, url, HA_LIST)
+        output, _stderr = self._performRestCall(cmd, url, HA_LIST)
         if "Error" in output:
             reasonErr = "Failed to perform EGO Auth Logon. " + output.splitlines()[0]
             self.log.warning(cmd)
@@ -714,7 +698,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
-        output, stderr = self._performRestCall(cmd, url, HA_LIST)
+        output, _stderr = self._performRestCall(cmd, url, HA_LIST)
         response = json.loads(output) if output else None
         if response is None or not response["parameters"]["deploy_home"]["value"]:
             reasonErr = "Could not retrieve anaconda instance. Verify anaconda instance with id "
@@ -736,7 +720,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
-        output, stderr = self._performRestCall(cmd, url, HA_LIST)
+        output, _stderr = self._performRestCall(cmd, url, HA_LIST)
         response = json.loads(output) if output else None
 
         if response is None or len(response) == 0 or response[0] is None:

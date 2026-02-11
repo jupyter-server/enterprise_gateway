@@ -12,7 +12,7 @@ import ssl
 import sys
 import time
 import weakref
-from typing import ClassVar, List, Optional
+from typing import ClassVar, Optional
 
 from jupyter_client.kernelspec import KernelSpecManager
 from jupyter_core.application import JupyterApp, base_aliases
@@ -83,7 +83,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
     # Enable some command line shortcuts
     aliases = aliases
 
-    def initialize(self, argv: Optional[List[str]] = None) -> None:
+    def initialize(self, argv: Optional[list[str]] = None) -> None:
         """Initializes the base class, configurable manager instances, the
         Tornado web app, and the tornado HTTP server.
 
@@ -161,7 +161,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.init_dynamic_configs()
 
-    def _create_request_handlers(self) -> List[tuple]:
+    def _create_request_handlers(self) -> list[tuple]:
         """Create default Jupyter handlers and redefine them off of the
         base_url path. Assumes init_configurables() has already been called.
         """
@@ -215,7 +215,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         handlers = self._create_request_handlers()
 
         # Instantiate the configured authorizer class
-        self.log.info(f"Using authorizer: {self.authorizer_class}")
+        self.log.info("Using authorizer: %s", self.authorizer_class)
         authorizer = self.authorizer_class(parent=self, log=self.log)
 
         self.web_app = web.Application(
@@ -285,10 +285,10 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                 self.http_server.listen(port, self.ip)
             except OSError as e:
                 if e.errno == errno.EADDRINUSE:
-                    self.log.info("The port %i is already in use, trying another port." % port)
+                    self.log.info("The port %s is already in use, trying another port.", port)
                     continue
                 elif e.errno in (errno.EACCES, getattr(errno, "WSAEACCES", errno.EACCES)):
-                    self.log.warning("Permission to listen on port %i denied" % port)
+                    self.log.warning("Permission to listen on port %s denied", port)
                     continue
                 else:
                     raise
@@ -317,10 +317,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             gateway_user = getpass.getuser()
             if gateway_user.lower() not in self.unauthorized_users:
                 self.log.warning(
-                    "Impersonation is enabled and gateway user '{}' is NOT specified in the set of "
-                    "unauthorized users!  Kernels may execute as that user with elevated privileges.".format(
-                        gateway_user
-                    )
+                    f"Impersonation is enabled and gateway user '{gateway_user}' is NOT specified in the set of "
+                    "unauthorized users!  Kernels may execute as that user with elevated privileges."
                 )
 
         self.io_loop = ioloop.IOLoop.current()
@@ -349,7 +347,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
                     self.kernel_manager.shutdown_kernel(kid, now=True)
                 )
             except Exception as ex:
-                self.log.warning(f"Failed to shut down kernel {kid}: {ex}")
+                self.log.warning("Failed to shut down kernel %s: %s", kid, ex)
         self.log.info("Shut down complete")
 
     def stop(self) -> None:
@@ -382,7 +380,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         for file in self.loaded_config_files:
             mod_time = int(os.path.getmtime(file))
             if mod_time > self._last_config_update:
-                self.log.debug(f"Config file was updated: {file}!")
+                self.log.debug("Config file was updated: %s!", file)
                 self._last_config_update = mod_time
                 updated = True
 
@@ -433,9 +431,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             self.add_dynamic_configurable("KernelSessionManager", self.kernel_session_manager)
 
             self.log.info(
-                "Dynamic updates have been configured.  Checking every {} seconds.".format(
-                    self.dynamic_config_interval
-                )
+                f"Dynamic updates have been configured.  Checking every {self.dynamic_config_interval} seconds."
             )
 
             self.log.info(
@@ -444,7 +440,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             )
             for config, options in self.cli_config.items():
                 for option, value in options.items():
-                    self.log.info(f"    '{config}.{option}': '{value}'")
+                    self.log.info("    '%s.%s': '%s'", config, option, value)
 
             if self.dynamic_config_poller is None:
                 self.dynamic_config_poller = ioloop.PeriodicCallback(

@@ -86,11 +86,9 @@ class MainKernelHandler(
                     else:
                         missing_headers.append(name)
 
-            if len(missing_headers):
+            if missing_headers:
                 self.log.warning(
-                    "The following headers specified in 'kernel-headers' were not found: {}".format(
-                        missing_headers
-                    )
+                    f"The following headers specified in 'kernel-headers' were not found: {missing_headers}"
                 )
 
             # No way to override the call to start_kernel on the kernel manager

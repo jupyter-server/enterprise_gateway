@@ -62,9 +62,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
         num_services = len(services)
         if num_services != 1:
             if num_services > 1:
-                msg = "{}: Found more than one service ({}) for kernel_id '{}'!".format(
-                    self.__class__.__name__, num_services, self.kernel_id
-                )
+                msg = f"{self.__class__.__name__}: Found more than one service ({num_services}) for kernel_id '{self.kernel_id}'!"
                 raise RuntimeError(msg)
         else:
             service = services[0]
@@ -82,9 +80,7 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
             num_tasks = len(tasks)
             if num_tasks != 1:
                 if num_tasks > 1:
-                    msg = "{}: Found more than one task ({}) for service '{}', kernel_id '{}'!".format(
-                        self.__class__.__name__, num_tasks, service.name, self.kernel_id
-                    )
+                    msg = f"{self.__class__.__name__}: Found more than one task ({num_tasks}) for service '{service.name}', kernel_id '{self.kernel_id}'!"
                     raise RuntimeError(msg)
             else:
                 task = tasks[0]
@@ -115,15 +111,8 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug(
-                "{}: Waiting to connect to docker container. "
-                "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}', TaskID: '{}'".format(
-                    iteration,
-                    self.container_name,
-                    task_state,
-                    self.assigned_ip,
-                    self.kernel_id,
-                    task_id,
-                )
+                f"{iteration}: Waiting to connect to docker container. "
+                f"Name: '{self.container_name}', Status: '{task_state}', IPAddress: '{self.assigned_ip}', KernelID: '{self.kernel_id}', TaskID: '{task_id}'"
             )
         return task_state
 
@@ -138,28 +127,22 @@ class DockerSwarmProcessProxy(ContainerProcessProxy):
                 service.remove()  # Service still exists, attempt removal
             except Exception as err:
                 self.log.debug(
-                    "{} Termination of service: {} raised exception: {}".format(
-                        self.__class__.__name__, service.name, err
-                    )
+                    f"{self.__class__.__name__} Termination of service: {service.name} raised exception: {err}"
                 )
                 if isinstance(err, NotFound):
                     pass  # okay if its not found
                 else:
                     result = False
-                    self.log.warning(f"Error occurred removing service: {err}")
+                    self.log.warning("Error occurred removing service: %s", err)
         if result:
             self.log.debug(
-                "{}.terminate_container_resources, service {}, kernel ID: {} has been terminated.".format(
-                    self.__class__.__name__, self.container_name, self.kernel_id
-                )
+                f"{self.__class__.__name__}.terminate_container_resources, service {self.container_name}, kernel ID: {self.kernel_id} has been terminated."
             )
             self.container_name = None
             result = None  # maintain jupyter contract
         else:
             self.log.warning(
-                "{}.terminate_container_resources, container {}, kernel ID: {} has not been terminated.".format(
-                    self.__class__.__name__, self.container_name, self.kernel_id
-                )
+                f"{self.__class__.__name__}.terminate_container_resources, container {self.container_name}, kernel ID: {self.kernel_id} has not been terminated."
             )
         return result
 
@@ -197,9 +180,7 @@ class DockerProcessProxy(ContainerProcessProxy):
         num_containers = len(containers)
         if num_containers != 1:
             if num_containers > 1:
-                msg = "{}: Found more than one container ({}) for kernel_id '{}'!".format(
-                    self.__class__.__name__, num_containers, self.kernel_id
-                )
+                msg = f"{self.__class__.__name__}: Found more than one container ({num_containers}) for kernel_id '{self.kernel_id}'!"
                 raise RuntimeError(msg)
         else:
             container = containers[0]
@@ -225,28 +206,20 @@ class DockerProcessProxy(ContainerProcessProxy):
                     if len(networks) > 0:
                         self.assigned_ip = networks.get(docker_network).get("IPAddress")
                         self.log.debug(
-                            "Using assigned_ip {} from docker network '{}'.".format(
-                                self.assigned_ip, docker_network
-                            )
+                            f"Using assigned_ip {self.assigned_ip} from docker network '{docker_network}'."
                         )
                     else:
                         self.log.warning(
-                            "Docker network '{}' could not be located in container attributes - "
-                            "using assigned_ip '{}'.".format(docker_network, self.assigned_ip)
+                            f"Docker network '{docker_network}' could not be located in container attributes - "
+                            f"using assigned_ip '{self.assigned_ip}'."
                         )
 
                     self.assigned_host = self.container_name
 
         if iteration:  # only log if iteration is not None (otherwise poll() is too noisy)
             self.log.debug(
-                "{}: Waiting to connect to docker container. "
-                "Name: '{}', Status: '{}', IPAddress: '{}', KernelID: '{}'".format(
-                    iteration,
-                    self.container_name,
-                    container_status,
-                    self.assigned_ip,
-                    self.kernel_id,
-                )
+                f"{iteration}: Waiting to connect to docker container. "
+                f"Name: '{self.container_name}', Status: '{container_status}', IPAddress: '{self.assigned_ip}', KernelID: '{self.kernel_id}'"
             )
 
         return container_status
@@ -268,20 +241,16 @@ class DockerProcessProxy(ContainerProcessProxy):
                     pass  # okay if its not found
                 else:
                     result = False
-                    self.log.warning(f"Error occurred removing container: {err}")
+                    self.log.warning("Error occurred removing container: %s", err)
 
         if result:
             self.log.debug(
-                "{}.terminate_container_resources, container {}, kernel ID: {} has been terminated.".format(
-                    self.__class__.__name__, self.container_name, self.kernel_id
-                )
+                f"{self.__class__.__name__}.terminate_container_resources, container {self.container_name}, kernel ID: {self.kernel_id} has been terminated."
             )
             self.container_name = None
             result = None  # maintain jupyter contract
         else:
             self.log.warning(
-                "{}.terminate_container_resources, container {}, kernel ID: {} has not been terminated.".format(
-                    self.__class__.__name__, self.container_name, self.kernel_id
-                )
+                f"{self.__class__.__name__}.terminate_container_resources, container {self.container_name}, kernel ID: {self.kernel_id} has not been terminated."
             )
         return result

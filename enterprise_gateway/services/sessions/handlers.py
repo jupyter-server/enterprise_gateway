@@ -1,7 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 """Tornado handlers for session CRUD."""
-from typing import List
 
 import jupyter_server.services.sessions.handlers as jupyter_server_handlers
 import tornado
@@ -32,7 +31,7 @@ class SessionRootHandler(
             await ensure_async(super().get())
 
 
-default_handlers: List[tuple] = []
+default_handlers: list[tuple] = []
 for path, cls in jupyter_server_handlers.default_handlers:
     if cls.__name__ in globals():
         # Use the same named class from here if it exists

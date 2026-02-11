@@ -8,9 +8,10 @@ import json
 import os
 import ssl
 import traceback
+from collections.abc import Awaitable
 from distutils.util import strtobool
 from http.client import responses
-from typing import Any, Awaitable, ClassVar, Dict, List, Optional, Set
+from typing import Any, ClassVar, Optional
 
 from tornado import web
 from tornado.log import LogFormatter
@@ -426,7 +427,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("inherited_envs")
-    def _inherited_envs_default(self) -> List[str]:
+    def _inherited_envs_default(self) -> list[str]:
         return os.getenv(self.inherited_envs_env, os.getenv("EG_ENV_PROCESS_WHITELIST", "")).split(
             ","
         )
@@ -439,7 +440,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("kernel_headers")
-    def _kernel_headers_default(self) -> List[str]:
+    def _kernel_headers_default(self) -> list[str]:
         default_headers = os.getenv(self.kernel_headers_env)
         return default_headers.split(",") if default_headers else []
 
@@ -455,7 +456,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("remote_hosts")
-    def _remote_hosts_default(self) -> List[str]:
+    def _remote_hosts_default(self) -> list[str]:
         return os.getenv(self.remote_hosts_env, self.remote_hosts_default_value).split(",")
 
     # load_balancing_algorithm
@@ -477,7 +478,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         )
 
     @validate("load_balancing_algorithm")
-    def _validate_load_balancing_algorithm(self, proposal: Dict[str, str]) -> str:
+    def _validate_load_balancing_algorithm(self, proposal: dict[str, str]) -> str:
         value = proposal["value"]
         try:
             if value not in ["round-robin", "least-connection"]:
@@ -588,7 +589,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("unauthorized_users")
-    def _unauthorized_users_default(self) -> Set[str]:
+    def _unauthorized_users_default(self) -> set[str]:
         return os.getenv(self.unauthorized_users_env, self.unauthorized_users_default_value).split(
             ","
         )
@@ -606,7 +607,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
     )
 
     @default("authorized_users")
-    def _authorized_users_default(self) -> Set[str]:
+    def _authorized_users_default(self) -> set[str]:
         au_env = os.getenv(self.authorized_users_env)
         return au_env.split(",") if au_env is not None else []
 
@@ -686,7 +687,7 @@ class EnterpriseGatewayConfigMixin(Configurable):
         )
 
     @observe("dynamic_config_interval")
-    def _dynamic_config_interval_changed(self, event: Dict[str, Any]) -> None:
+    def _dynamic_config_interval_changed(self, event: dict[str, Any]) -> None:
         prev_val = event["old"]
         self.dynamic_config_interval = event["new"]
         if self.dynamic_config_interval != prev_val:

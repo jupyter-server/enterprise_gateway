@@ -52,7 +52,8 @@ def import_item(name: str):
         try:
             pak = getattr(module, obj)
         except AttributeError:
-            raise ImportError("No module named %s" % obj) from None
+            msg = f"No module named {obj}"
+            raise ImportError(msg) from None
         return pak
     else:
         # called with un-dotted string
@@ -114,9 +115,7 @@ def new_kernel_id(**kwargs: dict[str, Any] | None) -> str:
                 raise ValueError(msg)
         except ValueError as ve:
             log.error(
-                "Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{}'!  Error: {}".format(
-                    str_kernel_id, ve
-                )
+                f"Invalid v4 UUID value detected in ['env']['KERNEL_ID']: '{str_kernel_id}'!  Error: {ve}"
             )
             raise ve
         # user-provided id is valid, use it
@@ -173,12 +172,12 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             zmq_max_sock_desired = int(os.getenv("EG_ZMQ_MAX_SOCKETS", zmq_context.MAX_SOCKETS))
             if zmq_max_sock_desired != zmq_context.MAX_SOCKETS:
                 zmq_context.set(MAX_SOCKETS, zmq_max_sock_desired)
-                self.log.info(f"Set ZMQ_MAX_SOCKETS to {zmq_context.MAX_SOCKETS}")
+                self.log.info("Set ZMQ_MAX_SOCKETS to %s", zmq_context.MAX_SOCKETS)
 
             zmq_io_threads_desired = int(os.getenv("EG_ZMQ_IO_THREADS", zmq_context.IO_THREADS))
             if zmq_io_threads_desired != zmq_context.IO_THREADS:
                 zmq_context.set(IO_THREADS, zmq_io_threads_desired)
-                self.log.info(f"Set ZMQ_IO_THREADS to {zmq_context.IO_THREADS}")
+                self.log.info("Set ZMQ_IO_THREADS to %s", zmq_context.IO_THREADS)
 
         return zmq_context
 
@@ -193,14 +192,14 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         """Check that a kernel_id exists and raise 404 if not."""
         if kernel_id not in self and not self._refresh_kernel(kernel_id):
             self.parent.kernel_session_manager.delete_session(kernel_id)
-            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id)
+            raise web.HTTPError(404, f"Kernel does not exist: {kernel_id}")
 
     def _refresh_kernel(self, kernel_id: str) -> bool:
         if self.parent.availability_mode == EnterpriseGatewayConfigMixin.AVAILABILITY_REPLICATION:
             try:
                 self.parent.kernel_session_manager.load_session(kernel_id)
             except Exception as e:
-                self.log.error(f"Failed to load session, kernel_id:{kernel_id}", e)
+                self.log.error("Failed to load session, kernel_id:%s", kernel_id, exc_info=e)
                 return False
             return self.parent.kernel_session_manager.start_session(kernel_id)
         # else we should throw 404 when not using an availability mode of 'replication'
@@ -257,7 +256,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
             await super().shutdown_kernel(kernel_id, now, restart)
         except KeyError as ke:  # this is hint for multiple shutdown request.
             self.log.exception(f"Exception while shutting down kernel: '{kernel_id}': {ke}")
-            raise web.HTTPError(404, "Kernel does not exist: %s" % kernel_id) from None
+            raise web.HTTPError(404, f"Kernel does not exist: {kernel_id}") from None
 
     async def wait_for_restart_finish(self, kernel_id: str, action: str = "shutdown") -> None:
         """Wait for a kernel restart to finish."""
@@ -331,7 +330,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         try:
             super().remove_kernel(kernel_id)
         except KeyError:  # this is hint for multiple shutdown request.
-            self.log.debug(f"Exception while removing kernel {kernel_id}: kernel not found.")
+            self.log.debug("Exception while removing kernel %s: kernel not found.", kernel_id)
 
         self.parent.kernel_session_manager.delete_session(kernel_id)
 
@@ -377,7 +376,7 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
 
         # Construct a kernel manager...
         km = self.kernel_manager_factory(
-            connection_file=os.path.join(self.connection_dir, "kernel-%s.json" % kernel_id),
+            connection_file=os.path.join(self.connection_dir, f"kernel-{kernel_id}.json"),
             parent=self,
             log=self.log,
             kernel_name=kernel_name,
@@ -623,8 +622,8 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         ):
             if self.mapping_kernel_manager._kernel_connections.get(kernel_id, 0) == 0:
                 self.log.warning(
-                    "Remote kernel ({}) will not be automatically restarted since there are no "
-                    "clients connected at this time.".format(kernel_id)
+                    f"Remote kernel ({kernel_id}) will not be automatically restarted since there are no "
+                    "clients connected at this time."
                 )
                 # Use the parent mapping kernel manager so activity monitoring and culling is also shutdown
                 await self.mapping_kernel_manager.shutdown_kernel(kernel_id, now=now)
@@ -668,15 +667,13 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
                             else:  # Python 3
                                 self.sigint_value = sig_value.value
                             self.log.debug(
-                                "Converted EG_ALTERNATE_SIGINT '{}' to value '{}' to use as interrupt signal.".format(
-                                    alt_sigint, self.sigint_value
-                                )
+                                f"Converted EG_ALTERNATE_SIGINT '{alt_sigint}' to value '{self.sigint_value}' to use as interrupt signal."
                             )
                         except AttributeError:
                             self.log.warning(
                                 "Error received when attempting to convert EG_ALTERNATE_SIGINT of "
-                                "'{}' to a value. Check kernelspec entry for kernel '{}' - using "
-                                "default 'SIGINT'".format(alt_sigint, self.kernel_spec.display_name)
+                                f"'{alt_sigint}' to a value. Check kernelspec entry for kernel '{self.kernel_spec.display_name}' - using "
+                                "default 'SIGINT'"
                             )
                 self.kernel.send_signal(self.sigint_value)
             else:
@@ -752,9 +749,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         process_proxy_cfg = get_process_proxy_config(self.kernel_spec)
         process_proxy_class_name = process_proxy_cfg.get("class_name")
         self.log.debug(
-            "Instantiating kernel '{}' with process proxy: {}".format(
-                self.kernel_spec.display_name, process_proxy_class_name
-            )
+            f"Instantiating kernel '{self.kernel_spec.display_name}' with process proxy: {process_proxy_class_name}"
         )
         process_proxy_class = import_item(process_proxy_class_name)
         self.process_proxy = process_proxy_class(

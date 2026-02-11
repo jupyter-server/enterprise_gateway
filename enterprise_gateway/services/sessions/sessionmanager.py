@@ -4,7 +4,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 import uuid
-from typing import Any, Hashable, List, Optional
+from collections.abc import Hashable
+from typing import Any, Optional
 
 from tornado import web
 from traitlets.config.configurable import LoggingConfigurable
@@ -175,7 +176,7 @@ class SessionManager(LoggingConfigurable):
         row = self.get_session_by_key(column, kwargs[column])
 
         if not row:
-            raise web.HTTPError(404, "Session not found: %s" % kwargs[column])
+            raise web.HTTPError(404, f"Session not found: {kwargs[column]}")
 
         return self.row_to_model(row)
 
@@ -240,7 +241,7 @@ class SessionManager(LoggingConfigurable):
         }
         return model
 
-    def list_sessions(self, *args, **kwargs) -> List[dict]:
+    def list_sessions(self, *args, **kwargs) -> list[dict]:
         """Returns a list of dictionaries containing all the information from
         the session store.
 

@@ -71,9 +71,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         if kernel_manager.shutdown_wait_time < yarn_shutdown_wait_time:
             kernel_manager.shutdown_wait_time = yarn_shutdown_wait_time
             self.log.debug(
-                "{class_name} shutdown wait time adjusted to {wait_time} seconds.".format(
-                    class_name=type(self).__name__, wait_time=kernel_manager.shutdown_wait_time
-                )
+                f"{type(self).__name__} shutdown wait time adjusted to {kernel_manager.shutdown_wait_time} seconds."
             )
 
         # If yarn resource check is enabled and it isn't available immediately,
@@ -144,9 +142,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         self.ip = local_ip
 
         self.log.debug(
-            "Yarn cluster kernel launched using YARN RM address: {}, pid: {}, Kernel ID: {}, cmd: '{}'".format(
-                self.rm_addr, self.local_proc.pid, self.kernel_id, kernel_cmd
-            )
+            f"Yarn cluster kernel launched using YARN RM address: {self.rm_addr}, pid: {self.local_proc.pid}, Kernel ID: {self.kernel_id}, cmd: '{kernel_cmd}'"
         )
         await self.confirm_remote_startup()
         return self
@@ -238,9 +234,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         )
         if not yarn_available:
             self.log.debug(
-                "Retrying for {} ms since resources are not available".format(
-                    self.yarn_resource_check_wait_time
-                )
+                f"Retrying for {self.yarn_resource_check_wait_time} ms since resources are not available"
             )
             while not yarn_available:
                 self.handle_yarn_queue_timeout()
@@ -262,9 +256,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         if time_interval > self.yarn_resource_check_wait_time:
             error_http_code = 500
-            reason = "Yarn Compute Resource is unavailable after {} seconds".format(
-                self.yarn_resource_check_wait_time
-            )
+            reason = f"Yarn Compute Resource is unavailable after {self.yarn_resource_check_wait_time} seconds"
             self.log_and_raise(http_status_code=error_http_code, reason=reason)
 
     def poll(self) -> bool | None:
@@ -325,9 +317,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
             result = super().kill()
 
         self.log.debug(
-            "YarnClusterProcessProxy.kill, application ID: {}, kernel ID: {}, state: {}, result: {}".format(
-                self.application_id, self.kernel_id, state, result
-            )
+            f"YarnClusterProcessProxy.kill, application ID: {self.application_id}, kernel ID: {self.kernel_id}, state: {state}, result: {result}"
         )
         return result
 
@@ -337,9 +327,7 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         # a local_proc.
         if self.local_proc:
             self.log.debug(
-                "YarnClusterProcessProxy.cleanup: Clearing possible defunct process, pid={}...".format(
-                    self.local_proc.pid
-                )
+                f"YarnClusterProcessProxy.cleanup: Clearing possible defunct process, pid={self.local_proc.pid}..."
             )
             if super().poll():
                 super().kill()
@@ -370,17 +358,13 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
                 if app_state in YarnClusterProcessProxy.final_states:
                     error_message = (
-                        "KernelID: '{}', ApplicationID: '{}' unexpectedly found in state '{}'"
-                        " during kernel startup!".format(
-                            self.kernel_id, self.application_id, app_state
-                        )
+                        f"KernelID: '{self.kernel_id}', ApplicationID: '{self.application_id}' unexpectedly found in state '{app_state}'"
+                        " during kernel startup!"
                     )
                     self.log_and_raise(http_status_code=500, reason=error_message)
 
                 self.log.debug(
-                    "{}: State: '{}', Host: '{}', KernelID: '{}', ApplicationID: '{}'".format(
-                        i, app_state, self.assigned_host, self.kernel_id, self.application_id
-                    )
+                    f"{i}: State: '{app_state}', Host: '{self.assigned_host}', KernelID: '{self.kernel_id}', ApplicationID: '{self.application_id}'"
                 )
 
                 if self.assigned_host:
@@ -397,27 +381,21 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
 
         if time_interval > self.kernel_launch_timeout:
             reason = (
-                "Application ID is None. Failed to submit a new application to YARN within {} seconds.  "
-                "Check Enterprise Gateway log for more information.".format(
-                    self.kernel_launch_timeout
-                )
+                f"Application ID is None. Failed to submit a new application to YARN within {self.kernel_launch_timeout} seconds.  "
+                "Check Enterprise Gateway log for more information."
             )
             error_http_code = 500
             if self._get_application_id(True):
                 if self._query_app_state_by_id(self.application_id) != "RUNNING":
                     reason = (
-                        "YARN resources unavailable after {} seconds for app {}, launch timeout: {}!  "
-                        "Check YARN configuration.".format(
-                            time_interval, self.application_id, self.kernel_launch_timeout
-                        )
+                        f"YARN resources unavailable after {time_interval} seconds for app {self.application_id}, launch timeout: {self.kernel_launch_timeout}!  "
+                        "Check YARN configuration."
                     )
                     error_http_code = 503
                 else:
                     reason = (
-                        "App {} is RUNNING, but waited too long ({} secs) to get connection file.  "
-                        "Check YARN logs for more information.".format(
-                            self.application_id, self.kernel_launch_timeout
-                        )
+                        f"App {self.application_id} is RUNNING, but waited too long ({self.kernel_launch_timeout} secs) to get connection file.  "
+                        "Check YARN logs for more information."
                     )
             await asyncio.get_event_loop().run_in_executor(None, self.kill)
             timeout_message = f"KernelID: '{self.kernel_id}' launch timeout due to: {reason}"
@@ -501,21 +479,15 @@ class YarnClusterProcessProxy(RemoteProcessProxy):
         except OSError as sock_err:
             if sock_err.errno == errno.ECONNREFUSED:
                 self.log.warning(
-                    "YARN RM address: '{}' refused the connection.  Is the resource manager running?".format(
-                        self.rm_addr
-                    )
+                    f"YARN RM address: '{self.rm_addr}' refused the connection.  Is the resource manager running?"
                 )
             else:
                 self.log.warning(
-                    "Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".format(
-                        kernel_id, type(sock_err), sock_err
-                    )
+                    f"Query for kernel ID '{kernel_id}' failed with exception: {type(sock_err)} - '{sock_err}'.  Continuing..."
                 )
         except Exception as e:
             self.log.warning(
-                "Query for kernel ID '{}' failed with exception: {} - '{}'.  Continuing...".format(
-                    kernel_id, type(e), e
-                )
+                f"Query for kernel ID '{kernel_id}' failed with exception: {type(e)} - '{e}'.  Continuing..."
             )
         else:
             data = response.data

@@ -114,7 +114,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         """
         Refreshes the session from its persisted state. Called on kernel restarts.
         """
-        self.log.debug(f"Refreshing kernel session for id: {kernel_id}")
+        self.log.debug("Refreshing kernel session for id: %s", kernel_id)
         km = self.kernel_manager.get_kernel(kernel_id)
 
         # Compose the kernel_session entry
@@ -163,18 +163,18 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
             sessions_to_remove = []
             for kernel_id, kernel_session in self._sessions.items():
                 self.log.info(
-                    "Attempting startup of persisted kernel session for id: %s..." % kernel_id
+                    f"Attempting startup of persisted kernel session for id: {kernel_id}..."
                 )
                 if self._start_session(kernel_session):
                     self.log.info(
-                        "Startup of persisted kernel session for id '{}' was successful.  Client should "
-                        "reconnect kernel.".format(kernel_id)
+                        f"Startup of persisted kernel session for id '{kernel_id}' was successful.  Client should "
+                        "reconnect kernel."
                     )
                 else:
                     sessions_to_remove.append(kernel_id)
                     self.log.warning(
-                        "Startup of persisted kernel session for id '{}' was not successful.  Check if "
-                        "client is still active and restart kernel.".format(kernel_id)
+                        f"Startup of persisted kernel session for id '{kernel_id}' was not successful.  Check if "
+                        "client is still active and restart kernel."
                     )
 
             self._delete_sessions(sessions_to_remove)
@@ -190,10 +190,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
             process_info=kernel_session["process_info"],
             launch_args=kernel_session["launch_args"],
         )
-        if not kernel_started:
-            return False
-
-        return True
+        return kernel_started
 
     def delete_session(self, kernel_id: str) -> None:
         """
@@ -202,7 +199,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         self._delete_sessions([kernel_id])
 
         if self.enable_persistence:
-            self.log.info("Deleted persisted kernel session for id: %s" % kernel_id)
+            self.log.info("Deleted persisted kernel session for id: %s", kernel_id)
 
     def _delete_sessions(self, kernel_ids: list[str]) -> None:
         # Remove unstarted sessions and rewrite
@@ -342,7 +339,7 @@ class FileKernelSessionManager(KernelSessionManager):
         """Initialize the manager."""
         super().__init__(kernel_manager, **kwargs)
         if self.enable_persistence:
-            self.log.info(f"Kernel session persistence location: {self._get_sessions_loc()}")
+            self.log.info("Kernel session persistence location: %s", self._get_sessions_loc())
 
     def delete_sessions(self, kernel_ids: list[str]) -> None:
         """Delete the sessions for a list of kernels."""
@@ -383,7 +380,7 @@ class FileKernelSessionManager(KernelSessionManager):
     def _load_session_from_file(self, file_name: str) -> None:
         kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)
         if os.path.exists(kernel_session_file_path):
-            self.log.debug(f"Loading saved session(s) from {kernel_session_file_path}")
+            self.log.debug("Loading saved session(s) from %s", kernel_session_file_path)
             try:
                 with open(kernel_session_file_path) as fp:
                     self._sessions.update(
@@ -493,7 +490,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
             response = requests.delete(
                 self.webhook_url, auth=self.auth, json=kernel_ids, timeout=60
             )
-            self.log.debug(f"Webhook kernel session deleting: {kernel_ids}")
+            self.log.debug("Webhook kernel session deleting: %s", kernel_ids)
             if response.status_code != 204:
                 self.log.error(response.raise_for_status())
 
@@ -510,7 +507,7 @@ class WebhookKernelSessionManager(KernelSessionManager):
             response = requests.post(
                 f"{self.webhook_url}/{kernel_id}", auth=self.auth, json=body, timeout=60
             )
-            self.log.debug(f"Webhook kernel session saving: {kernel_id}")
+            self.log.debug("Webhook kernel session saving: %s", kernel_id)
             if response.status_code != 204:
                 self.log.error(response.raise_for_status())
 

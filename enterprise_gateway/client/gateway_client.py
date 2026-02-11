@@ -45,7 +45,7 @@ class GatewayClient:
         self, kernelspec_name, username=DEFAULT_USERNAME, timeout=REQUEST_TIMEOUT, extra_env=None
     ):
         """Start a kernel."""
-        self.log.info(f"Starting a {kernelspec_name} kernel ....")
+        self.log.info("Starting a %s kernel ....", kernelspec_name)
 
         if extra_env is None:
             extra_env = {}
@@ -65,11 +65,9 @@ class GatewayClient:
         if response.status_code == 201:
             json_data = response.json()
             kernel_id = json_data.get("id")
-            self.log.info(f"Started kernel with id {kernel_id}")
+            self.log.info("Started kernel with id %s", kernel_id)
         else:
-            msg = "Error starting kernel : {} response code \n {}".format(
-                response.status_code, response.content
-            )
+            msg = f"Error starting kernel : {response.status_code} response code \n {response.content}"
             raise RuntimeError(msg)
 
         return KernelClient(
@@ -82,7 +80,7 @@ class GatewayClient:
 
     def shutdown_kernel(self, kernel):
         """Shut down a kernel."""
-        self.log.info(f"Shutting down kernel : {kernel.kernel_id} ....")
+        self.log.info("Shutting down kernel : %s ....", kernel.kernel_id)
 
         if not kernel:
             return False
@@ -113,7 +111,7 @@ class KernelClient:
         self.response_reader = Thread(target=self._read_responses)
         self.response_queues = {}
         self.interrupt_thread = None
-        self.log.debug(f"Initializing kernel client ({kernel_id}) to {self.kernel_ws_api_endpoint}")
+        self.log.debug("Initializing kernel client (%s) to %s", kernel_id, self.kernel_ws_api_endpoint)
 
         try:
             self.kernel_socket = websocket.create_connection(
@@ -149,7 +147,7 @@ class KernelClient:
         url = f"{self.http_api_endpoint}/{self.kernel_id}"
         response = requests.delete(url, timeout=60)
         if response.status_code == 204:
-            self.log.info(f"Kernel {self.kernel_id} shutdown")
+            self.log.info("Kernel %s shutdown", self.kernel_id)
             return True
         else:
             msg = f"Error shutting down kernel {self.kernel_id}: {response.content}"
@@ -209,9 +207,7 @@ class KernelClient:
                             continue
                     else:
                         self.log.debug(
-                            "Unhandled response for msg_id: {} of msg_type: {}".format(
-                                msg_id, response_message_type
-                            )
+                            f"Unhandled response for msg_id: {msg_id} of msg_type: {response_message_type}"
                         )
 
                 if (
@@ -233,7 +229,7 @@ class KernelClient:
         url = "{}/{}".format(self.kernel_http_api_endpoint, "interrupt")
         response = requests.post(url, timeout=60)
         if response.status_code == 204:
-            self.log.debug(f"Kernel {self.kernel_id} interrupted")
+            self.log.debug("Kernel %s interrupted", self.kernel_id)
             return True
         else:
             msg = f"Unexpected response interrupting kernel {self.kernel_id}: {response.content}"
@@ -247,7 +243,7 @@ class KernelClient:
         url = "{}/{}".format(self.kernel_http_api_endpoint, "restart")
         response = requests.post(url, timeout=60)
         if response.status_code == 200:
-            self.log.debug(f"Kernel {self.kernel_id} restarted")
+            self.log.debug("Kernel %s restarted", self.kernel_id)
             self.kernel_socket = websocket.create_connection(
                 self.kernel_ws_api_endpoint, timeout=timeout, enable_multithread=True
             )
@@ -265,12 +261,10 @@ class KernelClient:
         response = requests.get(url, timeout=60)
         if response.status_code == 200:
             json = response.json()
-            self.log.debug(f"Kernel {self.kernel_id} state: {json}")
+            self.log.debug("Kernel %s state: %s", self.kernel_id, json)
             return json["execution_state"]
         else:
-            msg = "Unexpected response retrieving state for kernel {}: {}".format(
-                self.kernel_id, response.content
-            )
+            msg = f"Unexpected response retrieving state for kernel {self.kernel_id}: {response.content}"
             raise RuntimeError(msg)
 
     def start_interrupt_thread(self, wait_time=DEFAULT_INTERRUPT_WAIT):
@@ -320,7 +314,7 @@ class KernelClient:
 
         msg_queue = self.response_queues.get(msg_id)
         try:
-            self.log.debug(f"Getting response for msg_id: {msg_id} with timeout: {timeout}")
+            self.log.debug("Getting response for msg_id: %s with timeout: %s", msg_id, timeout)
             response = msg_queue.get(timeout=timeout)
             self.log.debug(
                 "Got response for msg_id: {}, msg_type: {}".format(
@@ -366,7 +360,7 @@ class KernelClient:
                         i = 1
                         while self.restarting:
                             if i >= 10 and i % 2 == 0:
-                                self.log.debug(f"Still restarting after {i} secs...")
+                                self.log.debug("Still restarting after %s secs...", i)
                             time.sleep(1)
                             i += 1
                         continue
@@ -377,7 +371,7 @@ class KernelClient:
 
         except BaseException as be2:
             if not self.shutting_down:
-                self.log.warning(f"Unexpected exception encountered ({be2})")
+                self.log.warning("Unexpected exception encountered (%s)", be2)
 
         self.log.debug("Response reader thread exiting...")
 

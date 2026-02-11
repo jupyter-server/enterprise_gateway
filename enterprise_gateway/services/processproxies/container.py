@@ -97,9 +97,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         self.ip = local_ip
 
         self.log.info(
-            "{}: kernel launched. Kernel image: {}, KernelID: {}, cmd: '{}'".format(
-                self.__class__.__name__, self.kernel_image, self.kernel_id, kernel_cmd
-            )
+            f"{self.__class__.__name__}: kernel launched. Kernel image: {self.kernel_image}, KernelID: {self.kernel_id}, cmd: '{kernel_cmd}'"
         )
 
         await self.confirm_remote_startup()

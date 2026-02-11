@@ -5,7 +5,7 @@
 
 
 import os
-from typing import ClassVar, Dict, Optional, Union
+from typing import ClassVar, Optional, Union
 
 from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.utils import ensure_async
@@ -17,7 +17,7 @@ from watchdog.observers import Observer
 # Simplify the typing.  Cache items are essentially dictionaries of strings
 # to either strings or dictionaries.  The items themselves are indexed by
 # the kernel_name (case-insensitive).
-CacheItemType = Dict[str, Union[str, Dict]]
+CacheItemType = dict[str, Union[str, dict]]
 
 
 class KernelSpecCache(SingletonConfigurable):
@@ -66,7 +66,7 @@ class KernelSpecCache(SingletonConfigurable):
                 self.put_item(kernel_name, kernelspec)
         return kernelspec
 
-    async def get_all_specs(self) -> Dict[str, CacheItemType]:
+    async def get_all_specs(self) -> dict[str, CacheItemType]:
         """Get all available kernel specifications.
 
         This method is equivalent to calling KernelSpecManager.get_all_specs().  If
@@ -106,10 +106,10 @@ class KernelSpecCache(SingletonConfigurable):
                     pass
             if not kernelspec:
                 self.cache_misses += 1
-                self.log.debug(f"Cache miss ({self.cache_misses}) for kernelspec: {kernel_name}")
+                self.log.debug("Cache miss (%s) for kernelspec: %s", self.cache_misses, kernel_name)
         return kernelspec
 
-    def get_all_items(self) -> Dict[str, CacheItemType]:
+    def get_all_items(self) -> dict[str, CacheItemType]:
         """Retrieves all kernel specification from the cache.
 
         If cache is disabled or no items are in the cache, an empty dictionary is returned;
@@ -135,7 +135,7 @@ class KernelSpecCache(SingletonConfigurable):
         that directory will be added to list of observed directories and scheduled accordingly.
         """
         if self.cache_enabled:
-            self.log.info(f"KernelSpecCache: adding/updating kernelspec: {kernel_name}")
+            self.log.info("KernelSpecCache: adding/updating kernelspec: %s", kernel_name)
             if type(cache_item) is KernelSpec:
                 cache_item = KernelSpecCache.kernel_spec_to_cache_item(cache_item)
 
@@ -144,11 +144,11 @@ class KernelSpecCache(SingletonConfigurable):
             observed_dir = os.path.dirname(resource_dir)
             if observed_dir not in self.observed_dirs:
                 # New directory to watch, schedule it...
-                self.log.debug(f"KernelSpecCache: observing directory: {observed_dir}")
+                self.log.debug("KernelSpecCache: observing directory: %s", observed_dir)
                 self.observed_dirs.add(observed_dir)
                 self.observer.schedule(KernelSpecChangeHandler(self), observed_dir, recursive=True)
 
-    def put_all_items(self, kernelspecs: Dict[str, CacheItemType]) -> None:
+    def put_all_items(self, kernelspecs: dict[str, CacheItemType]) -> None:
         """Adds or updates a dictionary of kernel specification in the cache."""
         for kernel_name, cache_item in kernelspecs.items():
             self.put_item(kernel_name, cache_item)
@@ -158,7 +158,7 @@ class KernelSpecCache(SingletonConfigurable):
         cache_item = None
         if self.cache_enabled and kernel_name.lower() in self.cache_items:
             cache_item = self.cache_items.pop(kernel_name.lower())
-            self.log.info(f"KernelSpecCache: removed kernelspec: {kernel_name}")
+            self.log.info("KernelSpecCache: removed kernelspec: %s", kernel_name)
         return cache_item
 
     def _initialize(self):
@@ -179,7 +179,7 @@ class KernelSpecCache(SingletonConfigurable):
             for kernel_dir in self.kernel_spec_manager.kernel_dirs:
                 if kernel_dir not in self.observed_dirs:
                     if os.path.exists(kernel_dir):
-                        self.log.info(f"KernelSpecCache: observing directory: {kernel_dir}")
+                        self.log.info("KernelSpecCache: observing directory: %s", kernel_dir)
                         self.observed_dirs.add(kernel_dir)
                         self.observer.schedule(
                             KernelSpecChangeHandler(self), kernel_dir, recursive=True
@@ -255,8 +255,8 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
             self.kernel_spec_cache.put_item(kernel_name, kernelspec)
         except Exception as e:
             self.log.warning(
-                "The following exception occurred creating cache entry for: {src_resource_dir} "
-                "- continuing...  ({e})".format(src_resource_dir=event.src_resource_dir, e=e)
+                f"The following exception occurred creating cache entry for: {event.src_resource_dir} "
+                f"- continuing...  ({e})"
             )
 
     def on_deleted(self, event):
@@ -276,8 +276,8 @@ class KernelSpecChangeHandler(FileSystemEventHandler):
             self.kernel_spec_cache.put_item(kernel_name, kernelspec)
         except Exception as e:
             self.log.warning(
-                "The following exception occurred updating cache entry for: {src_resource_dir} "
-                "- continuing...  ({e})".format(src_resource_dir=event.src_resource_dir, e=e)
+                f"The following exception occurred updating cache entry for: {event.src_resource_dir} "
+                f"- continuing...  ({e})"
             )
 
     def on_moved(self, event):

@@ -4,7 +4,6 @@
 # Distributed under the terms of the Modified BSD License.
 
 import os
-from typing import List
 
 from jupyter_server.utils import ensure_async
 from tornado import web
@@ -58,7 +57,7 @@ class APIYamlHandler(BaseSpecHandler):
         return "swagger.yaml", "text/x-yaml"
 
 
-default_handlers: List[tuple] = [
+default_handlers: list[tuple] = [
     (f"/api/{SpecJsonHandler.get_resource_metadata()[0]}", SpecJsonHandler),
     (f"/api/{APIYamlHandler.get_resource_metadata()[0]}", APIYamlHandler),
 ]

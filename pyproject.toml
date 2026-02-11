@@ -72,10 +72,6 @@ lint = [
   "ruff==0.3.0"
 ]
 
-[tool.ruff.pylint]
-max-args = 10
-max-statements = 60
-
 [tool.hatch.build.targets.wheel]
 include = ["enterprise_gateway"]
 
@@ -146,6 +142,11 @@ extend-exclude = "enterprise_gateway/.*ipynb"
 [tool.ruff]
 target-version = "py39"
 line-length = 100
+extend-exclude = [
+  "enterprise_gateway/tests/**/*.ipynb",
+]
+
+[tool.ruff.lint]
 select = [
   "A", "B", "C", "DTZ", "E", "EM", "F", "FBT", "I", "ICN", "ISC", "N",
   "PLC", "PLE", "PLW", "Q", "RUF", "S", "SIM", "T", "TID", "UP",
@@ -176,6 +177,10 @@ ignore = [
   "PLW0603",
   # PLW1508 Invalid type for environment variable default
   "PLW1508",
+  # PLC0415 Import outside top-level (often intentional for conditional/lazy imports)
+  "PLC0415",
+  # UP031 Use format specifiers instead of percent format (project uses lazy log formatting)
+  "UP031",
 ]
 unfixable = [
   # Don't touch print statements
@@ -184,12 +189,17 @@ unfixable = [
   "RUF100",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.pylint]
+max-args = 10
+max-statements = 60
+
+[tool.ruff.lint.per-file-ignores]
 # S101 Use of `assert` detected
 # F841 local variable 'foo' is assigned to but never used
 # S105 Possible hardcoded password: `"NeverHeardOf"`
 # T201 `print` found
-"enterprise_gateway/tests/*" = ["S101", "F841", "S105", "T201"]
+# Ignore all ruff rules for tests
+"enterprise_gateway/tests/**/*.py" = ["ALL"]
 "enterprise_gateway/itests/*" = ["S101", "F841", "S105", "T201"]
 # T201 `print` found
 "etc/*" = ["T201"]
