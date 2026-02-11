@@ -98,22 +98,60 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     """
 
     def test_get_application_id(self):
+        # Debug: Check if sc is available
+        sc_check, sc_error = self.kernel.execute("print(type(sc))")
+        print(f"\n[DEBUG] sc type check: result='{sc_check}', has_error={sc_error}")
+
+        # Debug: Check if sc.getConf() works
+        conf_check, conf_error = self.kernel.execute("print(type(sc.getConf()))")
+        print(f"[DEBUG] sc.getConf() type check: result='{conf_check}', has_error={conf_error}")
+
+        # Debug: Try to get the value with print
+        print_result, print_error = self.kernel.execute("print(sc.getConf().get('spark.app.id'))")
+        print(f"[DEBUG] With print(): result='{print_result}', has_error={print_error}")
+
+        # Original execution
         result, has_error = self.kernel.execute("sc.getConf().get('spark.app.id')")
+        print(f"[DEBUG] Without print(): result='{result}', has_error={has_error}")
+        print(f"[DEBUG] Expected pattern: '{self.get_expected_application_id()}'")
+        print(f"[DEBUG] Result length: {len(result)}, Result repr: {repr(result)}")
+
         self.assertRegex(result, self.get_expected_application_id())
         self.assertEqual(has_error, False)
 
     def test_get_deploy_mode(self):
+        # Debug: Try with print() first
+        print_result, print_error = self.kernel.execute("print(sc.getConf().get('spark.submit.deployMode'))")
+        print(f"\n[DEBUG] Deploy mode with print(): result='{print_result}', has_error={print_error}")
+
         result, has_error = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
+        print(f"[DEBUG] Deploy mode without print(): result='{result}', has_error={has_error}")
+        print(f"[DEBUG] Expected pattern: '{self.get_expected_deploy_mode()}'")
+
         self.assertRegex(result, self.get_expected_deploy_mode())
         self.assertEqual(has_error, False)
 
     def test_get_resource_manager(self):
+        # Debug: Try with print() first
+        print_result, print_error = self.kernel.execute("print(sc.getConf().get('spark.master'))")
+        print(f"\n[DEBUG] Spark master with print(): result='{print_result}', has_error={print_error}")
+
         result, has_error = self.kernel.execute("sc.getConf().get('spark.master')")
+        print(f"[DEBUG] Spark master without print(): result='{result}', has_error={has_error}")
+        print(f"[DEBUG] Expected pattern: '{self.get_expected_spark_master()}'")
+
         self.assertRegex(result, self.get_expected_spark_master())
         self.assertEqual(has_error, False)
 
     def test_get_spark_version(self):
+        # Debug: Try with print() first
+        print_result, print_error = self.kernel.execute("print(sc.version)")
+        print(f"\n[DEBUG] Spark version with print(): result='{print_result}', has_error={print_error}")
+
         result, has_error = self.kernel.execute("sc.version")
+        print(f"[DEBUG] Spark version without print(): result='{result}', has_error={has_error}")
+        print(f"[DEBUG] Expected pattern: '{self.get_expected_spark_version()}'")
+
         self.assertRegex(result, self.get_expected_spark_version())
         self.assertEqual(has_error, False)
 
