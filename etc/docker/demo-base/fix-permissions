@@ -17,6 +17,22 @@
 
 set -e
 
+# Debug: Check if NB_GID is set
+if [ -z "$NB_GID" ]; then
+    echo "ERROR: NB_GID environment variable is not set!" >&2
+    exit 1
+fi
+
+echo "DEBUG: NB_GID is set to: $NB_GID"
+
+# Check if the group exists
+if ! getent group "$NB_GID" > /dev/null 2>&1; then
+    echo "WARNING: Group with GID $NB_GID does not exist in /etc/group" >&2
+    echo "DEBUG: Available groups:" >&2
+    getent group | head -5 >&2
+    echo "..." >&2
+fi
+
 for d in "$@"; do
   find "$d" \
     ! \( \
