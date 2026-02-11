@@ -108,7 +108,7 @@ name = "release"
 default = ""
 
 [tool.pytest.ini_options]
-addopts = "-raXs --durations 10 --color=yes --doctest-modules"
+addopts = "-raXs --durations 10 --color=yes --doctest-modules --maxfail=5"
 testpaths = [
     "enterprise_gateway/tests/"
 ]
