@@ -2,7 +2,7 @@
 ARG BASE_CONTAINER=jupyter/scipy-notebook:2023-03-13
 FROM $BASE_CONTAINER
 
-ENV PATH $PATH:$CONDA_DIR/bin
+ENV PATH=$PATH:$CONDA_DIR/bin
 
 # Add debugger support
 RUN pip install --upgrade ipykernel

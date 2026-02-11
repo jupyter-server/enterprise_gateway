@@ -2,7 +2,7 @@
 ARG BASE_CONTAINER=tensorflow/tensorflow:2.9.1-gpu
 FROM $BASE_CONTAINER
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -yq \
     build-essential \

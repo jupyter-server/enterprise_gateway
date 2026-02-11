@@ -18,6 +18,9 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 requires-python = ">=3.9"
 dependencies = [
@@ -136,12 +139,12 @@ exclude_lines = [
 
 [tool.black]
 line-length = 100
-target-version = ["py37"]
+target-version = ["py39"]
 skip-string-normalization = true
 extend-exclude = "enterprise_gateway/.*ipynb"
 
 [tool.ruff]
-target-version = "py37"
+target-version = "py39"
 line-length = 100
 select = [
   "A", "B", "C", "DTZ", "E", "EM", "F", "FBT", "I", "ICN", "ISC", "N",

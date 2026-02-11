@@ -9,26 +9,26 @@ ARG NB_GID="100"
 
 USER root
 
-ENV HADOOP_HOME /usr/hdp/current/hadoop
-ENV ANACONDA_HOME /opt/conda
+ENV HADOOP_HOME=/usr/hdp/current/hadoop \
+    ANACONDA_HOME=/opt/conda
 
-ENV SHELL /bin/bash \
-    NB_USER $NB_USER \
-    NB_UID $NB_UID \
-    NB_GID $NB_GID \
-    LC_ALL en_US.UTF-8 \
-    LANG en_US.UTF-8 \
-    LANGUAGE en_US.UTF-8 \
-    JAVA_HOME /usr/lib/jvm/java \
-    SPARK_HOME /usr/hdp/current/spark2-client \
-    PYSPARK_PYTHON $ANACONDA_HOME/bin/python \
-    HADOOP_CONF_DIR $HADOOP_HOME/etc/hadoop
+ENV SHELL=/bin/bash \
+    NB_USER=$NB_USER \
+    NB_UID=$NB_UID \
+    NB_GID=$NB_GID \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    JAVA_HOME=/usr/lib/jvm/java \
+    SPARK_HOME=/usr/hdp/current/spark2-client \
+    PYSPARK_PYTHON=$ANACONDA_HOME/bin/python \
+    HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
-ENV HOME /home/$NB_USER
-ENV PATH $JAVA_HOME/bin:$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$SPARK_HOME/bin:$PATH
+ENV HOME=/home/$NB_USER \
+    PATH=$JAVA_HOME/bin:$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$SPARK_HOME/bin:$PATH
 
-ENV SPARK_VER $SPARK_VERSION
-ENV HADOOP_VER 3.3.1
+ENV SPARK_VER=$SPARK_VERSION \
+    HADOOP_VER=3.3.1
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
 RUN dpkg --purge --force-depends ca-certificates-java \
