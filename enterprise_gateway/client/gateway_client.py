@@ -111,7 +111,9 @@ class KernelClient:
         self.response_reader = Thread(target=self._read_responses)
         self.response_queues = {}
         self.interrupt_thread = None
-        self.log.debug("Initializing kernel client (%s) to %s", kernel_id, self.kernel_ws_api_endpoint)
+        self.log.debug(
+            "Initializing kernel client (%s) to %s", kernel_id, self.kernel_ws_api_endpoint
+        )
 
         try:
             self.kernel_socket = websocket.create_connection(

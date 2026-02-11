@@ -382,7 +382,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.log.info("Re-using kernel namespace: %s", namespace)
             else:
                 if self.delete_kernel_namespace:
-                    reason = f"Error occurred creating role binding for namespace '{namespace}': {err}"
+                    reason = (
+                        f"Error occurred creating role binding for namespace '{namespace}': {err}"
+                    )
                     # delete the namespace since we'll be using the EG namespace...
                     body = client.V1DeleteOptions(
                         grace_period_seconds=0, propagation_policy="Background"

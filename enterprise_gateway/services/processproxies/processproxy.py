@@ -223,7 +223,9 @@ class ResponseManager(SingletonConfigurable):
                 s.bind((bind_ip, port))
             except OSError as e:
                 if e.errno == errno.EADDRINUSE:
-                    self.log.info("Response port %s is already in use, trying another port...", port)
+                    self.log.info(
+                        "Response port %s is already in use, trying another port...", port
+                    )
                     continue
                 elif e.errno in (errno.EACCES, getattr(errno, "WSAEACCES", errno.EACCES)):
                     self.log.warning(
@@ -710,7 +712,9 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 error_message = error_message_prefix + (
                     " provided" if self.remote_pwd else "-less SSH"
                 )
-                error_message = error_message + f"and EG_REMOTE_GSS_SSH={self._use_gss_raw!r} ({self.use_gss})"
+                error_message = (
+                    error_message + f"and EG_REMOTE_GSS_SSH={self._use_gss_raw!r} ({self.use_gss})"
+                )
 
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
         return ssh

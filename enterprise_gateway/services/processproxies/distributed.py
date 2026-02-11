@@ -101,7 +101,9 @@ class DistributedProcessProxy(RemoteProcessProxy):
             result_pid = self._launch_remote_process(kernel_cmd, **kwargs)
             self.pid = int(result_pid)
         except Exception as e:
-            error_message = f"Failure occurred starting kernel on '{self.ip}'.  Returned result: {e}"
+            error_message = (
+                f"Failure occurred starting kernel on '{self.ip}'.  Returned result: {e}"
+            )
             self.log_and_raise(http_status_code=500, reason=error_message)
 
         self.log.info(
