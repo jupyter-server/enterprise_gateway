@@ -10,8 +10,9 @@ FROM $BASE_CONTAINER
 # use an ARG instruction without a value inside of a build stage:
 ARG SPARK_VERSION
 
-ENV NB_USER="jovyan"
-ENV SPARK_VER=${SPARK_VERSION}
+ENV NB_USER="jovyan" \
+    NB_GID="100" \
+    SPARK_VER=${SPARK_VERSION}
 
 USER $NB_USER
 

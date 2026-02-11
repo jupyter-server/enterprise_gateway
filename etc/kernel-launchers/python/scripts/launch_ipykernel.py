@@ -122,7 +122,8 @@ def initialize_namespace(namespace, cluster_type="spark"):
         cluster = dask_yarn.YarnCluster.from_current()
         namespace.update({"cluster": cluster})
     elif cluster_type != "none":
-        raise RuntimeError("Unknown cluster_type: %r" % cluster_type)
+        msg = f"Unknown cluster_type: {cluster_type!r}"
+        raise RuntimeError(msg)
 
 
 class WaitingForSparkSessionToBeInitialized:
@@ -353,7 +354,7 @@ def get_server_request(sock):
     data = ""
     request_info = None
     try:
-        conn, addr = sock.accept()
+        conn, _addr = sock.accept()
         while True:
             buffer = conn.recv(1024).decode("utf-8")
             if not buffer:  # send is complete
@@ -435,7 +436,8 @@ def import_item(name):
         try:
             pak = getattr(module, obj)
         except AttributeError:
-            raise ImportError("No module named %s" % obj) from None
+            msg = f"No module named {obj}"
+            raise ImportError(msg) from None
         return pak
     else:
         # called with un-dotted string

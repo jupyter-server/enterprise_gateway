@@ -223,7 +223,9 @@ class ResponseManager(SingletonConfigurable):
                 s.bind((bind_ip, port))
             except OSError as e:
                 if e.errno == errno.EADDRINUSE:
-                    self.log.info(f"Response port {port} is already in use, trying another port...")
+                    self.log.info(
+                        "Response port %s is already in use, trying another port...", port
+                    )
                     continue
                 elif e.errno in (errno.EACCES, getattr(errno, "WSAEACCES", errno.EACCES)):
                     self.log.warning(
@@ -274,13 +276,13 @@ class ResponseManager(SingletonConfigurable):
         loop = asyncio.get_event_loop()
         data = ""
         try:
-            conn, addr = await loop.sock_accept(self._response_socket)
+            conn, _addr = await loop.sock_accept(self._response_socket)
             while True:
                 buffer = await loop.sock_recv(conn, 1024)
                 if not buffer:  # send is complete, process payload
-                    self.log.debug(f"Received payload '{data}'")
+                    self.log.debug("Received payload '%s'", data)
                     payload = self._decode_payload(data)
-                    self.log.debug(f"Decrypted payload '{payload}'")
+                    self.log.debug("Decrypted payload '%s'", payload)
                     self._post_connection(payload)
                     break
                 data = data + buffer.decode(
@@ -290,7 +292,7 @@ class ResponseManager(SingletonConfigurable):
         except timeout:
             pass
         except Exception as ex:
-            self.log.error(f"Failure occurred processing connection: {ex}")
+            self.log.error("Failure occurred processing connection: %s", ex)
 
     def _decode_payload(self, data: json) -> dict:
         """
@@ -322,7 +324,7 @@ class ResponseManager(SingletonConfigurable):
             if version is None:
                 msg = "Payload received from kernel does not include a version indicator!"
                 raise ValueError(msg)
-            self.log.debug(f"Version {version} payload received.")
+            self.log.debug("Version %s payload received.", version)
 
             if version == 1:
                 # Decrypt the AES key using the RSA private key
@@ -341,7 +343,7 @@ class ResponseManager(SingletonConfigurable):
         except Exception as ex:
             # Could be version "0", walk the registrant kernel-ids and attempt to decrypt using each as a key.
             # If none are found, re-raise the triggering exception.
-            self.log.debug(f"decode_payload exception - {ex.__class__.__name__}: {ex}")
+            self.log.debug("decode_payload exception - %s: %s", ex.__class__.__name__, ex)
             connection_info_str = None
             for kernel_id in self._response_registry:
                 aes_key = kernel_id[0:16]
@@ -365,9 +367,7 @@ class ResponseManager(SingletonConfigurable):
                 except Exception as ex2:
                     # Any exception fails this experiment and we continue
                     self.log.debug(
-                        "Received the following exception detecting legacy kernel response - {}: {}".format(
-                            ex2.__class__.__name__, ex2
-                        )
+                        f"Received the following exception detecting legacy kernel response - {ex2.__class__.__name__}: {ex2}"
                     )
                     connection_info_str = None
 
@@ -390,7 +390,7 @@ class ResponseManager(SingletonConfigurable):
             )
             return
 
-        self.log.debug(f"Connection info received for kernel '{kernel_id}': {connection_info}")
+        self.log.debug("Connection info received for kernel '%s': %s", kernel_id, connection_info)
         self._response_registry[kernel_id].response = connection_info
 
 
@@ -532,7 +532,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 if any(phrase in key.lower() for phrase in sensitive_env_keys):
                     env_copy[key] = redaction_mask
 
-        self.log.debug(f"BaseProcessProxy.launch_process() env: {env_copy}")
+        self.log.debug("BaseProcessProxy.launch_process() env: %s", env_copy)
 
     def launch_kernel(
         self, cmd: list[str], **kwargs: dict[str, Any] | None
@@ -581,9 +581,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 break
         else:
             self.log.warning(
-                "Wait timeout of {} seconds exhausted. Continuing...".format(
-                    max_poll_attempts * poll_interval
-                )
+                f"Wait timeout of {max_poll_attempts * poll_interval} seconds exhausted. Continuing..."
             )
         return None
 
@@ -632,14 +630,14 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         if i > max_poll_attempts:  # Send -9 signal if process is still alive
             if self.local_proc:
                 result = self.local_proc.kill()
-                self.log.debug(f"BaseProcessProxy.kill(): {result}")
+                self.log.debug("BaseProcessProxy.kill(): %s", result)
             else:
                 if self.ip and self.pid > 0:
                     if BaseProcessProxyABC.ip_is_local(self.ip):
                         result = self.local_signal(signal.SIGKILL)
                     else:
                         result = self.remote_signal(signal.SIGKILL)
-                    self.log.debug(f"SIGKILL signal sent to pid: {self.pid}")
+                    self.log.debug("SIGKILL signal sent to pid: %s", self.pid)
         return result
 
     def terminate(self) -> bool | None:
@@ -653,14 +651,14 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         result = None
         if self.local_proc:
             result = self.local_proc.terminate()
-            self.log.debug(f"BaseProcessProxy.terminate(): {result}")
+            self.log.debug("BaseProcessProxy.terminate(): %s", result)
         else:
             if self.ip and self.pid > 0:
                 if BaseProcessProxyABC.ip_is_local(self.ip):
                     result = self.local_signal(signal.SIGTERM)
                 else:
                     result = self.remote_signal(signal.SIGTERM)
-                self.log.debug(f"SIGTERM signal sent to pid: {self.pid}")
+                self.log.debug("SIGTERM signal sent to pid: %s", self.pid)
         return result
 
     @staticmethod
@@ -705,10 +703,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             http_status_code = 500
             current_host = gethostbyname(gethostname())
             error_message = (
-                "Exception '{}' occurred when creating a SSHClient at {} connecting "
-                "to '{}:{}' with user '{}', message='{}'.".format(
-                    type(e).__name__, current_host, host, ssh_port, self.remote_user, e
-                )
+                f"Exception '{type(e).__name__}' occurred when creating a SSHClient at {current_host} connecting "
+                f"to '{host}:{ssh_port}' with user '{self.remote_user}', message='{e}'."
             )
             if e is paramiko.SSHException or paramiko.AuthenticationException:
                 http_status_code = 403
@@ -716,8 +712,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 error_message = error_message_prefix + (
                     " provided" if self.remote_pwd else "-less SSH"
                 )
-                error_message = error_message + "and EG_REMOTE_GSS_SSH={!r} ({})".format(
-                    self._use_gss_raw, self.use_gss
+                error_message = (
+                    error_message + f"and EG_REMOTE_GSS_SSH={self._use_gss_raw!r} ({self.use_gss})"
                 )
 
             self.log_and_raise(http_status_code=http_status_code, reason=error_message)
@@ -741,7 +737,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         """
         ssh = self._get_ssh_client(host)
         try:
-            stdin, stdout, stderr = ssh.exec_command(command, timeout=30)
+            _stdin, stdout, stderr = ssh.exec_command(command, timeout=30)
             lines = stdout.readlines()
             if len(lines) == 0:  # if nothing in stdout, return stderr
                 lines = stderr.readlines()
@@ -764,15 +760,13 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         target = "-" + str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
         cmd = f"kill -{signum} {target}; echo $?"
         if signum > 0:  # only log if meaningful signal (not for poll)
-            self.log.debug(f"Sending signal: {signum} to target: {target} on host: {self.ip}")
+            self.log.debug("Sending signal: %s to target: %s on host: %s", signum, target, self.ip)
 
         try:
             result = self.rsh(self.ip, cmd)
         except Exception as e:
             self.log.warning(
-                "Remote signal({}) to '{}' on host '{}' failed with exception '{}'.".format(
-                    signum, target, self.ip, e
-                )
+                f"Remote signal({signum}) to '{target}' on host '{self.ip}' failed with exception '{e}'."
             )
             return False
 
@@ -790,7 +784,7 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         # if we have a process group, use that, else use the pid...
         target = "-" + str(self.pgid) if self.pgid > 0 and signum > 0 else str(self.pid)
         if signum > 0:  # only log if meaningful signal (not for poll)
-            self.log.debug(f"Sending signal: {signum} to target: {target}")
+            self.log.debug("Sending signal: %s to target: %s", signum, target)
 
         cmd = ["kill", "-" + str(signum), target]
 
@@ -890,10 +884,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 if port_range_size < min_port_range_size:
                     self.log_and_raise(
                         http_status_code=500,
-                        reason="Port range validation failed for range: '{}'.  "
-                        "Range size must be at least {} as specified by env EG_MIN_PORT_RANGE_SIZE".format(
-                            port_range, min_port_range_size
-                        ),
+                        reason=f"Port range validation failed for range: '{port_range}'.  "
+                        f"Range size must be at least {min_port_range_size} as specified by env EG_MIN_PORT_RANGE_SIZE",
                     )
 
                 # According to RFC 793, port is a 16-bit unsigned int. Which means the port
@@ -992,8 +984,8 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
                 if retries > max_port_range_retries:
                     self.log_and_raise(
                         http_status_code=500,
-                        reason="Failed to locate port within range {} after {} "
-                        "retries!".format(self.kernel_manager.port_range, max_port_range_retries),
+                        reason=f"Failed to locate port within range {self.kernel_manager.port_range} after {max_port_range_retries} "
+                        "retries!",
                     )
         return sock
 
@@ -1060,9 +1052,7 @@ class LocalProcessProxy(BaseProcessProxyABC):
                 pass
         self.ip = local_ip
         self.log.info(
-            "Local kernel launched on '{}', pid: {}, pgid: {}, KernelID: {}, cmd: '{}'".format(
-                self.ip, self.pid, self.pgid, self.kernel_id, kernel_cmd
-            )
+            f"Local kernel launched on '{self.ip}', pid: {self.pid}, pgid: {self.pgid}, KernelID: {self.kernel_id}, cmd: '{kernel_cmd}'"
         )
         return self
 
@@ -1215,9 +1205,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         """
         channel_name = kernel_channel.value
         self.log.debug(
-            "Creating SSH tunnel for '{}': 127.0.0.1:'{}' to '{}':'{}'".format(
-                channel_name, local_port, remote_ip, remote_port
-            )
+            f"Creating SSH tunnel for '{channel_name}': 127.0.0.1:'{local_port}' to '{remote_ip}':'{remote_port}'"
         )
         try:
             process = self._spawn_ssh_tunnel(
@@ -1260,17 +1248,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             ssh_server = server + ":" + str(port)
             return tunnel.paramiko_tunnel(local_port, remote_port, ssh_server, remote_ip, key)
         else:
-            ssh = "ssh -p %s -o ServerAliveInterval=%i" % (
-                port,
-                self._get_keep_alive_interval(kernel_channel),
-            )
-            cmd = "%s -S none -L 127.0.0.1:%i:%s:%i %s" % (
-                ssh,
-                local_port,
-                remote_ip,
-                remote_port,
-                server,
-            )
+            ssh = f"ssh -p {port} -o ServerAliveInterval={self._get_keep_alive_interval(kernel_channel)}"
+            cmd = f"{ssh} -S none -L 127.0.0.1:{local_port}:{remote_ip}:{remote_port} {server}"
             return pexpect.spawn(cmd, env=os.environ.copy().pop("SSH_ASKPASS", None))
 
     def _get_keep_alive_interval(self, kernel_channel: KernelChannel) -> int:
@@ -1308,14 +1287,12 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         except Exception as e:
             if type(e) is timeout or type(e) is asyncio.TimeoutError:
                 self.log.debug(
-                    "Waiting for KernelID '{}' to send connection info from host '{}' - retrying...".format(
-                        self.kernel_id, self.assigned_host
-                    )
+                    f"Waiting for KernelID '{self.kernel_id}' to send connection info from host '{self.assigned_host}' - retrying..."
                 )
             else:
                 error_message = (
-                    "Exception occurred waiting for connection file response for KernelId '{}' "
-                    "on host '{}': {}".format(self.kernel_id, self.assigned_host, e)
+                    f"Exception occurred waiting for connection file response for KernelId '{self.kernel_id}' "
+                    f"on host '{self.assigned_host}': {e}"
                 )
                 self.kill()
                 self.log_and_raise(http_status_code=500, reason=error_message)
@@ -1344,7 +1321,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
 
             # Open tunnels to the 5 ZMQ kernel ports
             tunnel_ports = self._tunnel_to_kernel(connect_info, self.assigned_ip)
-            self.log.debug(f"Local ports used to create SSH tunnels: '{tunnel_ports}'")
+            self.log.debug("Local ports used to create SSH tunnels: '%s'", tunnel_ports)
 
             # Replace the remote connection ports with the local ports used to create SSH tunnels.
             connect_info["ip"] = "127.0.0.1"
@@ -1366,10 +1343,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 )
                 connect_info["comm_port"] = self.comm_port
                 self.log.debug(
-                    "Established gateway communication to: {}:{} for KernelID '{}' via tunneled port "
-                    "127.0.0.1:{}".format(
-                        self.assigned_ip, tunneled_comm_port, self.kernel_id, self.comm_port
-                    )
+                    f"Established gateway communication to: {self.assigned_ip}:{tunneled_comm_port} for KernelID '{self.kernel_id}' via tunneled port "
+                    f"127.0.0.1:{self.comm_port}"
                 )
 
         else:  # tunneling not enabled, still check for and record communication port
@@ -1377,17 +1352,13 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self.comm_ip = connect_info["ip"]
                 self.comm_port = int(connect_info["comm_port"])
                 self.log.debug(
-                    "Established gateway communication to: {}:{} for KernelID '{}'".format(
-                        self.assigned_ip, self.comm_port, self.kernel_id
-                    )
+                    f"Established gateway communication to: {self.assigned_ip}:{self.comm_port} for KernelID '{self.kernel_id}'"
                 )
 
         # If no communication port was provided, record that fact as well since this is useful to know
         if "comm_port" not in connect_info:
             self.log.debug(
-                "Gateway communication port has NOT been established for KernelID '{}' (optional).".format(
-                    self.kernel_id
-                )
+                f"Gateway communication port has NOT been established for KernelID '{self.kernel_id}' (optional)."
             )
 
         self._update_connection(connect_info)
@@ -1409,9 +1380,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             self._extract_pid_info(connect_info)
             self.kernel_manager.load_connection_info(info=connect_info)
             self.log.debug(
-                "Received connection info for KernelID '{}' from host '{}': {}...".format(
-                    self.kernel_id, self.assigned_host, connect_info
-                )
+                f"Received connection info for KernelID '{self.kernel_id}' from host '{self.assigned_host}': {connect_info}..."
             )
         else:
             error_message = (
@@ -1490,7 +1459,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         self.assigned_ip = None
 
         for kernel_channel, process in self.tunnel_processes.items():
-            self.log.debug(f"cleanup: terminating {kernel_channel} tunnel process.")
+            self.log.debug("cleanup: terminating %s tunnel process.", kernel_channel)
             process.terminate()
 
         self.tunnel_processes.clear()
@@ -1547,7 +1516,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                 self._send_listener_request({"signum": signum})
 
                 if signum > 0:  # Polling (signum == 0) is too frequent
-                    self.log.debug(f"Signal ({signum}) sent via gateway communication port.")
+                    self.log.debug("Signal (%s) sent via gateway communication port.", signum)
                 return None
             except Exception as e:
                 if (
@@ -1557,9 +1526,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
                     return False
 
                 self.log.warning(
-                    "An unexpected exception occurred sending signal ({}) for KernelID '{}': {}".format(
-                        signum, self.kernel_id, str(e)
-                    )
+                    f"An unexpected exception occurred sending signal ({signum}) for KernelID '{self.kernel_id}': {e!s}"
                 )
 
         return super().send_signal(signum)
@@ -1582,10 +1549,8 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             except Exception as e:
                 if not isinstance(e, OSError) or e.errno != errno.ECONNREFUSED:
                     self.log.warning(
-                        "An unexpected exception occurred sending listener shutdown to {}:{} for "
-                        "KernelID '{}': {}".format(
-                            self.comm_ip, self.comm_port, self.kernel_id, str(e)
-                        )
+                        f"An unexpected exception occurred sending listener shutdown to {self.comm_ip}:{self.comm_port} for "
+                        f"KernelID '{self.kernel_id}': {e!s}"
                     )
 
             # Also terminate the tunnel process for the communication port - if in play.  Failure to terminate
@@ -1595,7 +1560,7 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
             comm_port_name = KernelChannel.COMMUNICATION.value
             comm_port_tunnel = self.tunnel_processes.get(comm_port_name, None)
             if comm_port_tunnel:
-                self.log.debug(f"shutdown_listener: terminating {comm_port_name} tunnel process.")
+                self.log.debug("shutdown_listener: terminating %s tunnel process.", comm_port_name)
                 comm_port_tunnel.terminate()
                 del self.tunnel_processes[comm_port_name]
 
@@ -1650,4 +1615,4 @@ class RemoteProcessProxy(BaseProcessProxyABC, metaclass=abc.ABCMeta):
         """Return the difference between two timestamps in seconds, assuming the timestamp is in milliseconds."""
         # e.g. the difference between 1504028203000 and 1504028208300 is 5300 milliseconds or 5.3 seconds
         diff = abs(time2 - time1)
-        return float("%d.%d" % (diff / 1000, diff % 1000))
+        return float(f"{diff // 1000}.{diff % 1000}")

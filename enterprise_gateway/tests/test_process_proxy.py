@@ -61,9 +61,12 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), patch(
-            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
-        ) as mock_session_manager:
+        with (
+            patch.object(self.proxy, 'log'),
+            patch(
+                'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+            ) as mock_session_manager,
+        ):
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming: kernel_username + "-" + kernel_id
@@ -97,9 +100,10 @@ class TestKubernetesProcessProxy(unittest.TestCase):
         variables = {"kernel_id": "test-123"}
 
         for malicious_template in malicious_templates:
-            with self.subTest(template=malicious_template), patch.object(
-                self.proxy, 'log'
-            ) as mock_log:
+            with (
+                self.subTest(template=malicious_template),
+                patch.object(self.proxy, 'log') as mock_log,
+            ):
                 result = self.proxy._safe_template_substitute(malicious_template, variables)
                 # All malicious templates should be treated as invalid and return None
                 self.assertIsNone(result)
@@ -131,9 +135,12 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), patch(
-            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
-        ) as mock_session_manager:
+        with (
+            patch.object(self.proxy, 'log'),
+            patch(
+                'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+            ) as mock_session_manager,
+        ):
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming
@@ -148,9 +155,12 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             }
         }
 
-        with patch.object(self.proxy, 'log'), patch(
-            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
-        ) as mock_session_manager:
+        with (
+            patch.object(self.proxy, 'log'),
+            patch(
+                'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+            ) as mock_session_manager,
+        ):
             mock_session_manager.get_kernel_username.return_value = "testuser"
             result = self.proxy._determine_kernel_pod_name(**kwargs)
             # Should fall back to default naming
@@ -204,7 +214,7 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             "__globals__",  # magic method (security risk)
         ]
 
-        variables = {var: "value" for var in valid_vars}
+        variables = dict.fromkeys(valid_vars, "value")
         # Also add underscore variables to test they're not substituted even if present
         variables.update(
             {"_private_var": "private", "__class__": "dangerous", "__dict__": "dangerous"}

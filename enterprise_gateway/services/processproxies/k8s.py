@@ -210,7 +210,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             if isinstance(err, client.rest.ApiException) and err.status == 404:
                 result = True  # okay if it's not found
             else:
-                self.log.warning(f"Error occurred deleting {object_type.lower()}: {err}")
+                self.log.warning("Error occurred deleting %s: %s", object_type.lower(), err)
 
         if result:
             self.log.debug(
@@ -267,7 +267,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         # Log missing variables and return None if any are missing
         if missing_vars:
-            self.log.warning(f"Template variables not found in KERNEL_POD_NAME: {missing_vars}")
+            self.log.warning("Template variables not found in KERNEL_POD_NAME: %s", missing_vars)
             return None  # Signal caller to use default
 
         return result
@@ -278,7 +278,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         if pod_name is None:
             pod_name = KernelSessionManager.get_kernel_username(**kwargs) + "-" + self.kernel_id
         else:
-            self.log.debug(f"Processing KERNEL_POD_NAME based on env var => {pod_name}")
+            self.log.debug("Processing KERNEL_POD_NAME based on env var => %s", pod_name)
             if "{{" in pod_name and "}}" in pod_name:
                 self.log.debug("Processing KERNEL_POD_NAME template variables")
                 keywords = {}
@@ -326,15 +326,13 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             if share_gateway_namespace:  # if so, set to EG namespace
                 namespace = enterprise_gateway_namespace
                 self.log.warning(
-                    "Shared namespace has been configured.  All kernels will reside in EG namespace: {}".format(
-                        namespace
-                    )
+                    f"Shared namespace has been configured.  All kernels will reside in EG namespace: {namespace}"
                 )
             else:
                 namespace = self._create_kernel_namespace(service_account_name)
             kwargs["env"]["KERNEL_NAMESPACE"] = namespace  # record in env since kernel needs this
         else:
-            self.log.info(f"KERNEL_NAMESPACE provided by client: {namespace}")
+            self.log.info("KERNEL_NAMESPACE provided by client: %s", namespace)
 
         return namespace
 
@@ -366,7 +364,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         try:
             client.CoreV1Api().create_namespace(body=body)
             self.delete_kernel_namespace = True
-            self.log.info(f"Created kernel namespace: {namespace}")
+            self.log.info("Created kernel namespace: %s", namespace)
 
             # Now create a RoleBinding for this namespace for the default ServiceAccount.  We'll reference
             # the ClusterRole, but that will only be applied for this namespace.  This prevents the need for
@@ -381,18 +379,18 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.delete_kernel_namespace = (
                     True  # okay if ns already exists and restarting, still mark for delete
                 )
-                self.log.info(f"Re-using kernel namespace: {namespace}")
+                self.log.info("Re-using kernel namespace: %s", namespace)
             else:
                 if self.delete_kernel_namespace:
-                    reason = "Error occurred creating role binding for namespace '{}': {}".format(
-                        namespace, err
+                    reason = (
+                        f"Error occurred creating role binding for namespace '{namespace}': {err}"
                     )
                     # delete the namespace since we'll be using the EG namespace...
                     body = client.V1DeleteOptions(
                         grace_period_seconds=0, propagation_policy="Background"
                     )
                     client.CoreV1Api().delete_namespace(name=namespace, body=body)
-                    self.log.warning(f"Deleted kernel namespace: {namespace}")
+                    self.log.warning("Deleted kernel namespace: %s", namespace)
                 else:
                     reason = f"Error occurred creating namespace '{namespace}': {err}"
                 self.log_and_raise(http_status_code=500, reason=reason)
@@ -431,9 +429,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             namespace=namespace, body=body
         )
         self.log.info(
-            "Created kernel role-binding '{}' in namespace: {} for service account: {}".format(
-                role_binding_name, namespace, service_account_name
-            )
+            f"Created kernel role-binding '{role_binding_name}' in namespace: {namespace} for service account: {service_account_name}"
         )
 
     def get_process_info(self) -> dict[str, Any]:

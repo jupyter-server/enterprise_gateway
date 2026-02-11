@@ -21,6 +21,8 @@ jobs:
         with:
           clean: true
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+#        with:
+#          python_version: "${{ matrix.python-version }}"
       - name: Display dependency info
         run: |
           python --version
@@ -31,13 +33,18 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install ".[test]"
-      - name: Build and install Jupyter Enterprise Gateway
-        uses: nick-invision/retry@v3.0.0
-        with:
-          timeout_minutes: 10
-          max_attempts: 2
-          command: |
-            make clean dist enterprise-gateway-demo test-install-wheel
+      - name: Clean build artifacts
+        run: make clean
+        timeout-minutes: 10
+      - name: Build distribution
+        run: make dist
+        timeout-minutes: 10
+      - name: Build enterprise gateway demo
+        run: make enterprise-gateway-demo
+        timeout-minutes: 10
+      - name: Test install wheel
+        run: make test-install-wheel
+        timeout-minutes: 10
       - name: Log current Python dependencies version
         run: |
           pip freeze
@@ -103,6 +110,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           python_version: "3.9"

@@ -27,8 +27,8 @@ ENV SHELL=/bin/bash \
 ENV HOME=/home/$NB_USER \
     PATH=$JAVA_HOME/bin:$ANACONDA_HOME/bin:$HADOOP_HOME/bin:$SPARK_HOME/bin:$PATH
 
-ENV SPARK_VER $SPARK_VERSION
-ENV HADOOP_VER 3.3.1
+ENV SPARK_VER=$SPARK_VERSION \
+    HADOOP_VER=3.3.1
 
 # INSTALL / DOWNLOAD ALL NEEDED PACKAGES
 RUN dpkg --purge --force-depends ca-certificates-java \
@@ -56,7 +56,7 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     && apt-add-repository 'deb http://security.debian.org/debian-security bullseye-security main' \
     && apt-add-repository 'deb http://deb.debian.org/debian/ sid main' \
     && apt-get update && apt-get install -yq --no-install-recommends  \
-    openjdk-8-jre-headless \
+    openjdk-8-jdk-headless \
     ca-certificates-java \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -71,14 +71,14 @@ ADD fix-permissions /usr/local/bin/fix-permissions
 # and make sure these dirs are writable by the `users` group.
 RUN groupadd wheel -g 11 && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
-    useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+    useradd -m -s /bin/bash -N -u "$NB_UID" "$NB_USER" && \
     mkdir -p /usr/hdp/current && \
     mkdir -p /usr/local/share/jupyter && \
-    chown $NB_USER:$NB_GID $ANACONDA_HOME && \
+    chown "$NB_USER":"$NB_GID" "$ANACONDA_HOME" && \
     chmod g+w /etc/passwd && \
     chmod +x /usr/local/bin/fix-permissions && \
-    fix-permissions $HOME && \
-    fix-permissions $ANACONDA_HOME && \
+    fix-permissions "$HOME" && \
+    fix-permissions "$ANACONDA_HOME" && \
     fix-permissions /usr/hdp/current && \
     fix-permissions /usr/local/share/jupyter
 
@@ -90,8 +90,8 @@ RUN useradd -m -s /bin/bash -N -u 1111 elyra && \
 USER $NB_UID
 
 # Setup work directory for backward-compatibility
-RUN mkdir /home/$NB_USER/work && \
-    fix-permissions /home/$NB_USER
+RUN mkdir "/home/$NB_USER/work" && \
+    fix-permissions "/home/$NB_USER"
 
 # DOWNLOAD HADOOP AND SPARK
 RUN curl -sL https://archive.apache.org/dist/hadoop/common/hadoop-$HADOOP_VER/hadoop-$HADOOP_VER.tar.gz | tar -xz -C /usr/hdp/current
@@ -106,10 +106,11 @@ RUN conda install mamba -n base -c conda-forge && \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \
-    'r-argparse' && \
+    'r-argparse' \
+    'python=3.10' && \
     mamba clean -y --all &&\
-    fix-permissions $ANACONDA_HOME && \
-    fix-permissions /home/$NB_USER
+    fix-permissions "$ANACONDA_HOME" && \
+    fix-permissions "/home/$NB_USER"
 
 USER $NB_UID
 
@@ -141,8 +142,8 @@ RUN cd /tmp && \
     pip install /tmp/toree-0.5.0.tar.gz && \
     jupyter toree install --spark_home=$SPARK_HOME --kernel_name="Spark $SPARK_VER" --interpreters=Scala && \
     rm -f /tmp/toree-0.5.0.tar.gz && \
-    fix-permissions $ANACONDA_HOME && \
-    fix-permissions /home/$NB_USER
+    fix-permissions "$ANACONDA_HOME" && \
+    fix-permissions "/home/$NB_USER"
 
 # SETUP PASSWORDLESS SSH FOR $NB_USER
 RUN ssh-keygen -q -N "" -t rsa -f /home/$NB_USER/.ssh/id_rsa && \
@@ -152,7 +153,7 @@ RUN ssh-keygen -q -N "" -t rsa -f /home/$NB_USER/.ssh/id_rsa && \
 USER root
 
 # SETUP PASSWORDLESS SSH
-RUN yes y | ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_dsa_key && \
+RUN yes y | ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_dsa_key && \
     yes y | ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && \
     yes y | ssh-keygen -q -N "" -t rsa -f /root/.ssh/id_rsa && \
     cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys

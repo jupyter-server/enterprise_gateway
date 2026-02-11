@@ -151,9 +151,7 @@ def _select_socket(lower_port, upper_port):
         except Exception:
             retries = retries + 1
             if retries > max_port_range_retries:
-                msg = "Failed to locate port within range {}..{} after {} retries!".format(
-                    lower_port, upper_port, max_port_range_retries
-                )
+                msg = f"Failed to locate port within range {lower_port}..{upper_port} after {max_port_range_retries} retries!"
                 raise RuntimeError(msg) from None
     return sock
 
@@ -178,7 +176,7 @@ def get_server_request(sock):
     data = ""
     request_info = None
     try:
-        conn, addr = sock.accept()
+        conn, _addr = sock.accept()
         while True:
             buffer = conn.recv(1024).decode("utf-8")
             if not buffer:  # send is complete

@@ -3,7 +3,6 @@
 import argparse
 import os
 import sys
-from typing import Dict, List
 
 import urllib3
 import yaml
@@ -50,7 +49,7 @@ def extend_pod_env(pod_def: dict) -> dict:
     # Walk current set of template env entries and replace those found in the current
     # env with their values (and record those items).   Then add all others from the env
     # that were not already.
-    processed_entries: List[str] = []
+    processed_entries: list[str] = []
     for item in env_stanza:
         item_name = item.get("name")
         if item_name in os.environ:
@@ -252,7 +251,7 @@ def launch_kubernetes_kernel(
             print(additional_spark_opts)
 
 
-def _get_spark_resources(pod_template: Dict) -> str:
+def _get_spark_resources(pod_template: dict) -> str:
     # Gather up resources for cpu/memory requests/limits.  Since gpus require a "discovery script"
     # we'll leave that alone for now:
     # https://spark.apache.org/docs/latest/running-on-kubernetes.html#resource-allocation-and-configuration-overview

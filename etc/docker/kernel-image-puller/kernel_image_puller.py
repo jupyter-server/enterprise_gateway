@@ -7,7 +7,7 @@ import queue
 import time
 from subprocess import CalledProcessError, run
 from threading import Thread
-from typing import List, Optional
+from typing import Optional
 
 from docker.client import DockerClient
 from docker.errors import NotFound
@@ -154,7 +154,7 @@ class KernelImagePuller:
         while True:
             logger.debug("Waiting for new image to pull")
             image_name = self.worker_queue.get()
-            self.log.info(f"Task received to pull image: {image_name}")
+            self.log.info("Task received to pull image: %s", image_name)
             if image_name is None:
                 break
             i = 0
@@ -263,7 +263,7 @@ class KernelImagePuller:
             logger.info(f"Pulled image '{image_name}' in {(t1 - t0):.3f} secs.")
         return result
 
-    def execute_cmd(self, argv: List[str]) -> bool:
+    def execute_cmd(self, argv: list[str]) -> bool:
         """Execute the given command expressed in 'argv'. If expected_output is provided it
 
         will be checked against the command's stdout after stripping off the '\n' character.

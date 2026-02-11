@@ -4,7 +4,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import json
-from typing import Dict, List, Optional
+from typing import Optional
 
 from jupyter_server.base.handlers import JupyterHandler
 from jupyter_server.services.kernelspecs.handlers import is_kernelspec_model, kernelspec_model
@@ -18,11 +18,11 @@ from .kernelspec_cache import KernelSpecCache
 
 
 def apply_user_filter(
-    kernelspec_model: Dict[str, object],
+    kernelspec_model: dict[str, object],
     global_authorized_list: Set,
     global_unauthorized_list: Set,
     kernel_user: Optional[str] = None,
-) -> Optional[Dict[str, object]]:
+) -> Optional[dict[str, object]]:
     """
     If authorization lists are configured - either within the kernelspec or globally, ensure
     the user is authorized for the given kernelspec.
@@ -82,7 +82,7 @@ class MainKernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin,
         if kernel_user_filter:
             kernel_user = kernel_user_filter[0].decode("utf-8")
             if kernel_user:
-                self.log.debug("Searching kernels for user '%s' " % kernel_user)
+                self.log.debug("Searching kernels for user '%s' ", kernel_user)
 
         kspecs = await ensure_async(ksc.get_all_specs())
 
@@ -135,7 +135,7 @@ class KernelSpecHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
         try:
             spec = await ensure_async(ksc.get_kernel_spec(kernel_name))
         except KeyError:
-            raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name) from None
+            raise web.HTTPError(404, f"Kernel spec {kernel_name} not found") from None
         if is_kernelspec_model(spec):
             model = spec
         else:
@@ -179,7 +179,7 @@ class KernelSpecResourceHandler(
             kernelspec = await ensure_async(ksc.get_kernel_spec(kernel_name))
             self.root = kernelspec.resource_dir
         except KeyError as e:
-            raise web.HTTPError(404, "Kernel spec %s not found" % kernel_name) from e
+            raise web.HTTPError(404, f"Kernel spec {kernel_name} not found") from e
         self.log.debug("Serving kernel resource from: %s", self.root)
         return await web.StaticFileHandler.get(self, path, include_body=include_body)
 
@@ -193,8 +193,8 @@ kernel_name_regex: str = r"(?P<kernel_name>[\w\.\-%]+)"
 
 # Extends the default handlers from the jupyter_server package with token auth, CORS
 # and JSON errors.
-default_handlers: List[tuple] = [
+default_handlers: list[tuple] = [
     (r"/api/kernelspecs", MainKernelSpecHandler),
-    (r"/api/kernelspecs/%s" % kernel_name_regex, KernelSpecHandler),
-    (r"/kernelspecs/%s/(?P<path>.*)" % kernel_name_regex, KernelSpecResourceHandler),
+    (rf"/api/kernelspecs/{kernel_name_regex}", KernelSpecHandler),
+    (rf"/kernelspecs/{kernel_name_regex}/(?P<path>.*)", KernelSpecResourceHandler),
 ]
