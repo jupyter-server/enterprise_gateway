@@ -38,11 +38,6 @@ from .services.sessions.kernelsessionmanager import (
 )
 from .services.sessions.sessionmanager import SessionManager
 
-try:
-    from jupyter_server.auth.authorizer import AllowAllAuthorizer
-except ImportError:
-    AllowAllAuthorizer = object
-
 # Add additional command line aliases
 aliases = dict(base_aliases)
 aliases.update(
@@ -219,6 +214,10 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         handlers = self._create_request_handlers()
 
+        # Instantiate the configured authorizer class
+        self.log.info(f"Using authorizer: {self.authorizer_class}")
+        authorizer = self.authorizer_class(parent=self, log=self.log)
+
         self.web_app = web.Application(
             handlers=handlers,
             kernel_manager=self.kernel_manager,
@@ -250,8 +249,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             # setting ws_ping_interval value that can allow it to be modified for the purpose of toggling ping mechanism
             # for zmq web-sockets or increasing/decreasing web socket ping interval/timeouts.
             ws_ping_interval=self.ws_ping_interval * 1000,
-            # Add a pass-through authorizer for now
-            authorizer=AllowAllAuthorizer(),
+            # Use configurable authorizer
+            authorizer=authorizer,
         )
 
     def _build_ssl_options(self) -> Optional[ssl.SSLContext]:

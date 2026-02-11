@@ -10,8 +10,8 @@ import os
 import re
 from typing import Any
 
+import kubernetes
 import urllib3
-from jinja2 import BaseLoader, Environment
 from kubernetes import client, config
 
 from ..kernels.remotemanager import RemoteKernelManager
@@ -32,6 +32,26 @@ share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lo
 kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")  # noqa
 
 config.load_incluster_config()
+
+
+def get_subject_class():
+    """
+    Returns the appropriate Subject class based on the kubernetes client version.
+
+    In kubernetes-client, V1Subject was renamed to RbacV1Subject.
+    This function returns the appropriate class based on the installed version.
+    """
+    # Check if V1Subject exists in the client
+    if hasattr(client, 'V1Subject'):
+        logging.debug(
+            "Using client.V1Subject for Kubernetes client version: %s", kubernetes.__version__
+        )
+        return client.V1Subject
+    # Fall back to RbacV1Subject for older versions
+    logging.debug(
+        "Using client.RbacV1Subject for Kubernetes client version: %s", kubernetes.__version__
+    )
+    return client.RbacV1Subject
 
 
 class KubernetesProcessProxy(ContainerProcessProxy):
@@ -216,6 +236,42 @@ class KubernetesProcessProxy(ContainerProcessProxy):
 
         return result
 
+    def _safe_template_substitute(self, template_str: str, variables: dict) -> str | None:
+        """
+        Safely substitute variables in Jinja2-style template syntax.
+        Only supports simple variable substitution: {{ variable_name }}
+        Logs missing variables and returns None if any are missing.
+        """
+        # Pattern to match {{ variable_name }} with optional whitespace
+        # Explicitly exclude variables starting with underscore to prevent magic method attacks
+        pattern = r'\{\{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\}\}'
+        missing_vars = []
+
+        def replace_var(match):
+            var_name = match.group(1)
+            if var_name in variables:
+                return str(variables[var_name])
+            else:
+                missing_vars.append(var_name)
+                return match.group(0)  # Keep original placeholder
+
+        result = re.sub(pattern, replace_var, template_str)
+
+        # Check if there are any remaining {{ }} patterns that didn't match our simple pattern
+        # This catches malicious templates like {{ foo.__class__ }} or {{ 1+1 }}
+        if '{{' in result and '}}' in result:
+            self.log.warning(
+                "Invalid template syntax detected in KERNEL_POD_NAME: contains unsupported expressions"
+            )
+            return None
+
+        # Log missing variables and return None if any are missing
+        if missing_vars:
+            self.log.warning(f"Template variables not found in KERNEL_POD_NAME: {missing_vars}")
+            return None  # Signal caller to use default
+
+        return result
+
     def _determine_kernel_pod_name(self, **kwargs: dict[str, Any] | None) -> str:
         pod_name = kwargs["env"].get("KERNEL_POD_NAME")
 
@@ -224,16 +280,25 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         else:
             self.log.debug(f"Processing KERNEL_POD_NAME based on env var => {pod_name}")
             if "{{" in pod_name and "}}" in pod_name:
-                self.log.debug("Processing KERNEL_POD_NAME as jinja template")
-                # Create Jinja2 environment
+                self.log.debug("Processing KERNEL_POD_NAME template variables")
                 keywords = {}
                 for name, value in kwargs["env"].items():
                     if name.startswith("KERNEL_"):
                         keywords[name.lower()] = value
                 keywords["kernel_id"] = self.kernel_id
-                self.log.debug("Processing pod_name jinja template")
-                env = Environment(loader=BaseLoader(), autoescape=True)
-                pod_name = env.from_string(pod_name).render(**keywords)
+
+                # Safe template substitution with fallback
+                substituted = self._safe_template_substitute(pod_name, keywords)
+                if substituted is None:
+                    # Fall back to default if template variables are missing
+                    self.log.warning(
+                        "Falling back to default pod name due to missing template variables"
+                    )
+                    pod_name = (
+                        KernelSessionManager.get_kernel_username(**kwargs) + "-" + self.kernel_id
+                    )
+                else:
+                    pod_name = substituted
 
         # Rewrite pod_name to be compatible with DNS name convention
         # And put back into env since kernel needs this
@@ -349,7 +414,9 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         binding_role_ref = client.V1RoleRef(
             api_group="", kind="ClusterRole", name=kernel_cluster_role
         )
-        binding_subjects = client.V1Subject(
+        # Use the appropriate Subject class based on kubernetes client version
+        SubjectClass = get_subject_class()
+        binding_subjects = SubjectClass(
             api_group="", kind="ServiceAccount", name=service_account_name, namespace=namespace
         )
 

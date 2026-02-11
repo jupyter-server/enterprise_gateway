@@ -362,7 +362,6 @@ class FileKernelSessionManager(KernelSessionManager):
             temp_session[kernel_id] = self._sessions[kernel_id]
             with open(kernel_session_file_path, "w") as fp:
                 json.dump(KernelSessionManager.pre_save_transformation(temp_session), fp)
-                fp.close()
 
     def load_sessions(self) -> None:
         """Load the sessions."""
@@ -385,9 +384,19 @@ class FileKernelSessionManager(KernelSessionManager):
         kernel_session_file_path = os.path.join(self._get_sessions_loc(), file_name)
         if os.path.exists(kernel_session_file_path):
             self.log.debug(f"Loading saved session(s) from {kernel_session_file_path}")
-            with open(kernel_session_file_path) as fp:
-                self._sessions.update(KernelSessionManager.post_load_transformation(json.load(fp)))
-                fp.close()
+            try:
+                with open(kernel_session_file_path) as fp:
+                    self._sessions.update(
+                        KernelSessionManager.post_load_transformation(json.load(fp))
+                    )
+            except json.JSONDecodeError as e:
+                self.log.error(
+                    f"Failed to load session from {kernel_session_file_path}: Invalid JSON - {e}"
+                )
+            except Exception as e:
+                self.log.error(
+                    f"Failed to load session from {kernel_session_file_path}: {type(e).__name__} - {e}"
+                )
 
     def _get_sessions_loc(self) -> str:
         path = os.path.join(self.persistence_root, KERNEL_SESSIONS_DIR_NAME)

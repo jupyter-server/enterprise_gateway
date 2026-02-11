@@ -29,7 +29,7 @@ WHEEL_FILE:=dist/jupyter_enterprise_gateway-$(VERSION)-py3-none-any.whl
 SDIST_FILE:=dist/jupyter_enterprise_gateway-$(VERSION).tar.gz
 DIST_FILES=$(WHEEL_FILE) $(SDIST_FILE)
 
-HELM_DESIRED_VERSION:=v3.8.2  # Pin the version of helm to use (v3.8.2 is latest as of 4/21/22)
+HELM_DESIRED_VERSION:=v3.18.3  # Pin the version of helm to use (v3.18.3 is latest as of 6/21/25)
 HELM_CHART_VERSION:=$(shell grep version: etc/kubernetes/helm/enterprise-gateway/Chart.yaml | sed 's/version: //')
 HELM_CHART_PACKAGE:=dist/enterprise-gateway-$(HELM_CHART_VERSION).tgz
 HELM_CHART:=dist/jupyter_enterprise_gateway_helm-$(VERSION).tar.gz
@@ -67,7 +67,7 @@ clean-env: ## Remove conda env
 lint: ## Check code style
 	@pip install -q -e ".[lint]"
 	@pip install -q pipx
-	ruff .
+	ruff check .
 	black --check --diff --color .
 	mdformat --check *.md
 	pipx run 'validate-pyproject[all]' pyproject.toml

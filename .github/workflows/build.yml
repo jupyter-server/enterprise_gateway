@@ -28,7 +28,7 @@ jobs:
           python --version
           pip --version
           conda --version
-      - name: Setup sbt launcher
+      - name: Add SBT launcher
         uses: sbt/setup-sbt@v1
       - name: Install Python dependencies
         run: |
@@ -51,14 +51,9 @@ jobs:
           command: |
             make test
       - name: Run integration tests
-        uses: nick-invision/retry@v3.0.0
-        with:
-          timeout_minutes: 3
-          max_attempts: 1
-          command: |
-            export PREP_TIMEOUT=180
-            # Run integration tests with debug output
-            make itest-yarn-debug
+        run: |
+          # Run integration tests with debug output
+          make itest-yarn-debug
       - name: Collect logs
         if: success() || failure()
         run: |
@@ -82,10 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python-version: '3.11'
+          python_version: "3.11"
       - name: Install Python dependencies
         run: |
           pip install ".[test]"

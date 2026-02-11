@@ -76,9 +76,12 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     it is the user's responsibility that KERNEL_POD_NAME is unique relative to
     any pods in the target namespace.  In addition, the pod must NOT exist -
     unlike the case if KERNEL_NAMESPACE is provided. The KERNEL_POD_NAME can
-    also be provided as a jinja2 template string
+    also be provided as a jinja2 template formatted string
     (e.g "{{ kernel_prefix }}-{{ kernel_id | replace('-', '') }}")
-    which will be evaluated against existing list of environment variables.
+    which will be processed for safe substitution against existing list
+    of environment variables. In case of invalid template (e.g. missing variables)
+    it will fall back to original way to calculate the pod name using
+    KERNEL_USERNAME - KERNEL_ID.
 
   KERNEL_REMOTE_HOST=<remote host name>
     DistributedProcessProxy only.  When specified, this value will override the
