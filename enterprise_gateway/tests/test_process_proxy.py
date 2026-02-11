@@ -21,8 +21,6 @@ class TestKubernetesProcessProxy(unittest.TestCase):
 
         # Mock proxy config
         self.proxy_config = {"kernel_id": "test-kernel-id", "kernel_name": "python3"}
-
-        # Mock KernelSessionManager methods
         with patch(
             'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
         ) as mock_session_manager:
@@ -113,7 +111,7 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             "env": {
                 "KERNEL_POD_NAME": "{{ kernel_namespace }}-{{ kernel_id }}",
                 "KERNEL_NAMESPACE": "production",
-                "KERNEL_IMAGE": "python:3.9",
+                "KERNEL_IMAGE": "python:3.11",
             }
         }
 
@@ -171,7 +169,7 @@ class TestKubernetesProcessProxy(unittest.TestCase):
             "env": {
                 "KERNEL_POD_NAME": "{{ kernel_namespace }}_{{ kernel_id }}",
                 "KERNEL_NAMESPACE": "Test-Namespace",
-                "KERNEL_IMAGE": "python:3.9",
+                "KERNEL_IMAGE": "python:3.11",
             }
         }
 
