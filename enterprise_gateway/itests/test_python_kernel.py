@@ -114,15 +114,19 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
         result, has_error = self.kernel.execute("sc.getConf().get('spark.app.id')")
         print(f"[DEBUG] Without print(): result='{result}', has_error={has_error}")
         print(f"[DEBUG] Expected pattern: '{self.get_expected_application_id()}'")
-        print(f"[DEBUG] Result length: {len(result)}, Result repr: {repr(result)}")
+        print(f"[DEBUG] Result length: {len(result)}, Result repr: {result!r}")
 
         self.assertRegex(result, self.get_expected_application_id())
         self.assertEqual(has_error, False)
 
     def test_get_deploy_mode(self):
         # Debug: Try with print() first
-        print_result, print_error = self.kernel.execute("print(sc.getConf().get('spark.submit.deployMode'))")
-        print(f"\n[DEBUG] Deploy mode with print(): result='{print_result}', has_error={print_error}")
+        print_result, print_error = self.kernel.execute(
+            "print(sc.getConf().get('spark.submit.deployMode'))"
+        )
+        print(
+            f"\n[DEBUG] Deploy mode with print(): result='{print_result}', has_error={print_error}"
+        )
 
         result, has_error = self.kernel.execute("sc.getConf().get('spark.submit.deployMode')")
         print(f"[DEBUG] Deploy mode without print(): result='{result}', has_error={has_error}")
@@ -134,7 +138,9 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     def test_get_resource_manager(self):
         # Debug: Try with print() first
         print_result, print_error = self.kernel.execute("print(sc.getConf().get('spark.master'))")
-        print(f"\n[DEBUG] Spark master with print(): result='{print_result}', has_error={print_error}")
+        print(
+            f"\n[DEBUG] Spark master with print(): result='{print_result}', has_error={print_error}"
+        )
 
         result, has_error = self.kernel.execute("sc.getConf().get('spark.master')")
         print(f"[DEBUG] Spark master without print(): result='{result}', has_error={has_error}")
@@ -146,7 +152,9 @@ class PythonKernelBaseSparkTestCase(PythonKernelBaseTestCase):
     def test_get_spark_version(self):
         # Debug: Try with print() first
         print_result, print_error = self.kernel.execute("print(sc.version)")
-        print(f"\n[DEBUG] Spark version with print(): result='{print_result}', has_error={print_error}")
+        print(
+            f"\n[DEBUG] Spark version with print(): result='{print_result}', has_error={print_error}"
+        )
 
         result, has_error = self.kernel.execute("sc.version")
         print(f"[DEBUG] Spark version without print(): result='{result}', has_error={has_error}")
