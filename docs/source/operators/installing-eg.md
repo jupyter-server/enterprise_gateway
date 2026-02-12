@@ -6,8 +6,8 @@ packages for scientific computing and data science.
 
 Use the following installation steps:
 
-- Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda’s
-  latest Python version (currently Python 3.9).
+- Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda's
+  latest Python version (currently Python 3.11).
 
 - Install the version of Anaconda which you downloaded, following the instructions on the download page.
 
