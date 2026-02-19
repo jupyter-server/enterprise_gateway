@@ -25,7 +25,7 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 
 USER jovyan
 
-ENV KERNEL_LANGUAGE R
+ENV KERNEL_LANGUAGE=R
 
 # Disble healthcheck inherited from notebook image
 HEALTHCHECK NONE

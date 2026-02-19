@@ -1,0 +1,318 @@
+apiVersion: ray.io/v1alpha1
+kind: RayCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+    ray.io/cluster-name: "{{ kernel_resource_name }}"
+  annotations:
+    ray.io/ft-enabled: "false"  # Disable GCS FT for faster startup
+  name: {{ kernel_resource_name }}
+spec:
+    enableInTreeAutoscaling: true
+    autoscalerOptions:
+      upscalingMode: Aggressive
+      idleTimeoutSeconds: 3600
+      imagePullPolicy: Always
+      resources:
+        limits:
+          cpu: 1
+          memory: "1Gi"
+        requests:
+          cpu: 1
+          memory: "1Gi"
+##########################################
+## HEAD Node group spec
+##########################################
+    headGroupSpec:
+      serviceType: ClusterIP # optional
+      # the following params are used to complete the ray start: ray start --head --block --port=6379 ...
+      rayStartParams:
+        disable-usage-stats: 'true'
+        dashboard-host: '0.0.0.0'
+        block: 'true'
+      template:
+        metadata:
+          labels:
+            kernel_id: "{{ kernel_id }}"
+            app: enterprise-gateway
+            component: kernel
+          annotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: "{{ kernel_service_account_name }}"
+#          nodeSelector:
+#            node.kubernetes.io/instance-type: m5d.8xlarge
+          containers:
+          # Combined Ray head + Jupyter kernel container
+          - name: ray-head
+            image: {{ kernel_image }}
+            imagePullPolicy: Always
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsUser: 0
+            resources:
+              limits:
+                cpu: {{ kernel_head_num_cpu_limit | default(3)}}
+                memory: {{ kernel_head_memory_limit | default("6Gi")}}
+              requests:
+                cpu: {{ kernel_head_num_cpu_request | default(2)}}
+                memory: {{ kernel_head_memory_request | default("4Gi")}}
+            env:
+              - name: RAY_ADDRESS
+                value: "127.0.0.1:6379"
+              - name: RAY_PORT
+                value: "6379"
+              - name: RAY_TMPDIR
+                value: "/tmp/ray"
+              - name: SERVE_URI
+                value: "{{ kernel_serve_url }}"
+              - name: BUILD_URI
+                value: "{{ kernel_build_url }}"
+              - name: EG_LOG_LEVEL
+                value: "0"
+              - name: KERNEL_ID
+                value: "{{ kernel_id }}"
+              - name: EG_RESPONSE_ADDRESS
+                value: "{{ eg_response_address }}"
+              - name: EG_PORT_RANGE
+                value: "{{ eg_port_range }}"
+              - name: EG_PUBLIC_KEY
+                value: "{{ eg_public_key }}"
+            volumeMounts:
+              - name: ray-logs
+                mountPath: /tmp/ray
+            ports:
+            - containerPort: 6379
+              name: gcs
+              protocol: TCP
+            - containerPort: 8000
+              name: serve
+              protocol: TCP
+            - containerPort: 8265
+              name: dashboard
+              protocol: TCP
+            - containerPort: 10001
+              name: client
+              protocol: TCP
+            - containerPort: 44217
+              name: as-metrics
+              protocol: TCP
+            - containerPort: 44227
+              name: dash-metrics
+              protocol: TCP
+            command:
+              - "/bin/bash"
+              - "-c"
+              - |
+                set -e
+                echo "Starting Ray head node..."
+
+                # Ensure /tmp/ray directory exists and has correct permissions
+                mkdir -p /tmp/ray
+                chmod 777 /tmp/ray
+
+                # Set RAY_TMPDIR to ensure consistent session directory
+                export RAY_TMPDIR=/tmp/ray
+
+                # Start Ray head in the background
+                ray start --head \
+                  --port=6379 \
+                  --dashboard-host=0.0.0.0 \
+                  --dashboard-port=8265 \
+                  --ray-client-server-port=10001 \
+                  --disable-usage-stats \
+                  --block &
+
+                RAY_PID=$!
+                echo "Ray head started with PID $RAY_PID"
+
+                # Wait for Ray GCS to be ready
+                echo "Waiting for Ray GCS to be ready on port 6379..."
+                timeout=60
+                elapsed=0
+                while ! nc -z 127.0.0.1 6379; do
+                  if [ $elapsed -ge $timeout ]; then
+                    echo "ERROR: Ray GCS failed to start within ${timeout}s"
+                    exit 1
+                  fi
+                  echo "Waiting for Ray GCS... (${elapsed}s/${timeout}s)"
+                  sleep 2
+                  elapsed=$((elapsed + 2))
+                done
+                echo "Ray GCS is ready!"
+
+                # Check Ray cluster status (non-fatal)
+                ray status || echo "Warning: ray status command failed, but GCS is available"
+
+                # Wait for Ray dashboard to be ready
+                echo "Waiting for Ray dashboard to be ready on port 8265..."
+                timeout=60
+                elapsed=0
+                while ! nc -z 127.0.0.1 8265; do
+                  if [ $elapsed -ge $timeout ]; then
+                    echo "WARNING: Ray dashboard not ready within ${timeout}s, continuing anyway..."
+                    break
+                  fi
+                  sleep 2
+                  elapsed=$((elapsed + 2))
+                done
+                echo "Ray dashboard is ready!"
+
+                # Wait for Raylet to be fully initialized (check dashboard agent health)
+                echo "Waiting for Raylet to be ready..."
+                timeout=60
+                elapsed=0
+                while ! wget --tries 1 -T 2 -q -O- http://127.0.0.1:52365/api/local_raylet_healthz 2>/dev/null | grep -q success; do
+                  if [ $elapsed -ge $timeout ]; then
+                    echo "WARNING: Raylet not ready within ${timeout}s, continuing anyway..."
+                    break
+                  fi
+                  echo "Waiting for Raylet... (${elapsed}s/${timeout}s)"
+                  sleep 2
+                  elapsed=$((elapsed + 2))
+                done
+                echo "Raylet is ready!"
+
+                # Launch Jupyter kernel in the foreground
+                echo "Launching Jupyter kernel..."
+                exec python /usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py \
+                  --kernel-id "$KERNEL_ID" \
+                  --response-address "$EG_RESPONSE_ADDRESS" \
+                  --port-range "$EG_PORT_RANGE" \
+                  --public-key "$EG_PUBLIC_KEY" \
+                  --cluster-type "ray"
+            startupProbe:
+              httpGet:
+                path: /
+                port: 8265
+              initialDelaySeconds: 15
+              periodSeconds: 5
+              timeoutSeconds: 5
+              failureThreshold: 24
+              successThreshold: 1
+            readinessProbe:
+              httpGet:
+                path: /
+                port: 8265
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
+            livenessProbe:
+              httpGet:
+                path: /
+                port: 8265
+              initialDelaySeconds: 30
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 3
+              successThreshold: 1
+          volumes:
+            - name: ray-logs
+              emptyDir: {}
+##########################################
+## CPU Workers group specs
+##########################################
+    workerGroupSpecs:
+    - replicas: 1
+      minReplicas: 1
+      maxReplicas:  {{ kernel_num_cpu_worker or 1 }}
+      groupName: cpu-group
+      rayStartParams:
+        block: 'true'
+      template:
+        metadata:
+          annotations:
+           ray.io/compute-image: {{ kernel_image }}
+           cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        spec:
+          serviceAccountName: "{{ kernel_service_account_name }}"
+#          nodeSelector:
+#            node.kubernetes.io/instance-type: {{ kernel_cpu_instance_type | default("m5d.8xlarge")}}
+          initContainers:
+          - name: init
+            image: busybox:1.28
+            command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
+          containers:
+          - name: ray-cpu-worker
+            image: {{ kernel_image }}
+            imagePullPolicy: Always
+            resources:
+              limits:
+                cpu: {{ kernel_cpu_worker_num_cpu_limit | default(2)}}
+                memory: {{ kernel_cpu_worker_num_memory_limit | default("4Gi")}}
+              requests:
+                cpu: {{ kernel_cpu_worker_num_cpu_request | default("1")}}
+                memory: {{ kernel_cpu_worker_num_memory_request | default("2Gi")}}
+            volumeMounts:
+              - name: ray-logs
+                mountPath: /tmp/ray
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsUser: 0
+            # Liveness probe with longer initial delay for dashboard agent startup
+            livenessProbe:
+              exec:
+                command:
+                - bash
+                - -c
+                - wget --tries 1 -T 2 -q -O- http://localhost:52365/api/local_raylet_healthz | grep success
+              initialDelaySeconds: 45
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 20
+              successThreshold: 1
+            # Readiness probe with appropriate timing
+            readinessProbe:
+              exec:
+                command:
+                - bash
+                - -c
+                - wget --tries 1 -T 2 -q -O- http://localhost:52365/api/local_raylet_healthz | grep success
+              initialDelaySeconds: 30
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 10
+              successThreshold: 1
+          volumes:
+            - name: ray-logs
+              emptyDir: {}
+##########################################
+## GPU Workers node groups
+##########################################
+#    - replicas: 0
+#      minReplicas:  0
+#      maxReplicas: {{ kernel_num_gpu_worker or 0 }}
+#      groupName: gpu-group
+#      rayStartParams:
+#        block: 'true'
+#      template:
+#        spec:
+#          serviceAccountName: "{{ kernel_service_account_name }}"
+##          nodeSelector:
+##            node.kubernetes.io/instance-type: {{ kernel_gpu_instance_type | default("g5.4xlarge")}}
+#          initContainers:
+#          - name: init
+#            image: busybox:1.28
+#            command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
+#          containers:
+#          - name: ray-gpu-worker
+#            image: {{ kernel_image }}
+#            imagePullPolicy: Always
+#            env:
+#              - name: PIP_INDEX_URL
+#                value: https://pypi.org
+#            resources:
+#              limits:
+#                cpu: {{ kernel_gpu_worker_num_cpu_limit | default(1)}}
+#                memory: {{ kernel_gpu_worker_num_memory_limit | default("1Gi")}}
+#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0)}}
+#              requests:
+#                cpu: {{kernel_gpu_worker_num_cpu_request | default(0)}}
+#                memory: {{ kernel_gpu_worker_num_memory_request | default("512Mi")}}
+#                nvidia.com/gpu:  {{ kernel_gpu_worker_num_gpu | default(0)}}
+#            securityContext:
+#              allowPrivilegeEscalation: false
+#              runAsUser: 0

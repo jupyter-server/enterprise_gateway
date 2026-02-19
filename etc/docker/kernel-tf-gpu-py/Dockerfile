@@ -27,5 +27,5 @@ RUN adduser --system --uid 1000 --gid 100 jovyan && \
 
 
 USER jovyan
-ENV KERNEL_LANGUAGE python
+ENV KERNEL_LANGUAGE=python
 CMD /usr/local/bin/bootstrap-kernel.sh

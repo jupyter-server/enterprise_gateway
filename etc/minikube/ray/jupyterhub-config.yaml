@@ -1,0 +1,65 @@
+hub:
+  db:
+    type: sqlite-memory
+  config:
+    Authenticator:
+      admin_users:
+          - root
+          - jovyan
+          - lresende
+  extraConfig:
+    customSpawner: |
+      from kubespawner import KubeSpawner
+      from tornado import gen
+      import yaml
+
+      class CustomKubeSpawner(KubeSpawner):
+          def get_env(self):
+              env = super().get_env()
+              env['EG_HTTP_USER'] = self.user.name
+              env['KERNEL_USERNAME'] = self.user.name
+              env['KERNEL_NAMESPACE'] = "default"
+              env['KERNEL_NAMESPACE'] = "enterprise-gateway"
+              env['KERNEL_SERVICE_ACCOUNT_NAME'] = "spark-operator-spark"
+              env['KERNEL_SERVICE_ACCOUNT_NAME'] = "enterprise-gateway-sa"
+              return env
+      c.JupyterHub.spawner_class = CustomKubeSpawner
+      c.Spawner.start_timeout = 500
+
+proxy:
+  secretToken: "992a30653af09eebd07ff22588fbc295e35aea2ce4396230d9a9a0634b9b000e"
+  service:
+     type: NodePort
+
+ingress:
+  enabled: false
+
+  # annotations:
+  #   kubernetes.io/ingress.class: "nginx"
+  # hosts:
+  #   - lresende-alien
+
+singleuser:
+  defaultUrl: "/lab"
+  image:
+    # name: quay.io/elyra/elyra
+    # tag: 3.15.0
+    name: quay.io/jupyterhub/k8s-singleuser-sample
+    tag: 4.3.1
+    # disable this in a production environment
+    pullPolicy: "Always"
+  storage:
+    type: none
+#  storage:
+#    dynamic:
+#      storageClass: nfs-dynamic
+  extraEnv:
+    JUPYTERHUB_SINGLEUSER_APP: "jupyter_server.serverapp.ServerApp"
+    JUPYTER_GATEWAY_URL: http://enterprise-gateway.enterprise-gateway:8888
+    JUPYTER_GATEWAY_REQUEST_TIMEOUT: "500"
+    KERNEL_LAUNCH_TIMEOUT: "500"
+rbac:
+  create: true
+
+debug:
+  enabled: true
