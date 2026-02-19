@@ -8,6 +8,7 @@ from __future__ import annotations
 import abc
 import os
 import signal
+from collections import defaultdict
 from typing import Any
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
@@ -46,6 +47,21 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
+        self.kernel_events_to_occurrence_time = {}
+        self._initialize_kernel_launch_terminate_on_events()
+
+    def _initialize_kernel_launch_terminate_on_events(self):
+        """
+        Parse the `kernel_launch_terminate_on_events` configuration, for easier access during startup.
+        [{"type": "Warning", "reason": "FailedMount", "timeout_in_seconds": 0},
+        {"type": Warning", "reason": "Unschedulable", "timeout_in_seconds": 30}] ->
+        {"Warning": {"FailedMount": 0, "Unschedulable": 30}}
+        """
+        self.kernel_launch_terminate_on_events = defaultdict(dict)
+        for configuration in self.kernel_manager.parent.kernel_launch_terminate_on_events:
+            self.kernel_launch_terminate_on_events[configuration["type"]][
+                configuration["reason"]
+            ] = configuration["timeout_in_seconds"]
 
     def _determine_kernel_images(self, **kwargs: dict[str, Any] | None) -> None:
         """
@@ -190,6 +206,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
         """Confirms the container has started and returned necessary connection information."""
         self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
+        self.kernel_events_to_occurrence_time = {}
         i = 0
         ready_to_connect = False  # we're ready to connect when we have a connection file to use
         while not ready_to_connect:
@@ -203,6 +220,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         http_status_code=500,
                         reason=f"Error starting kernel container; status: '{container_status}'.",
                     )
+                elif container_status == "pending":
+                    self._handle_pending_kernel()
                 else:
                     if self.assigned_host:
                         ready_to_connect = await self.receive_connection_info()
@@ -212,6 +231,38 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         self.pgid = 0
             else:
                 self.detect_launch_failure()
+        self.kernel_events_to_occurrence_time = {}
+
+    def _handle_pending_kernel(self):
+        """Sample container events and compare them to configured events which may cause termination.
+        The event type and the event reason should match those sampled in the environment to initiate termination.
+        Possible event types: `Warning`, `Normal`.
+        Possible event reasons (may differ in different container platforms and versions): `FailedMount`, `FailedMountAttach`,
+        `FailedSchedule`, `ImagePullBackoff`, etc."""
+        self.log.debug("Sampling kernel container events")
+        kernel_pod_events = self.get_container_events()
+        for event in kernel_pod_events:
+            if (
+                event.type in self.kernel_launch_terminate_on_events
+                and event.reason in self.kernel_launch_terminate_on_events[event.type]
+            ):
+                event_key = f"{event.type}{event.reason}"
+                if event_key not in self.kernel_events_to_occurrence_time:
+                    self.kernel_events_to_occurrence_time[event_key] = (
+                        RemoteProcessProxy.get_current_time()
+                    )
+                if (
+                    RemoteProcessProxy.get_time_diff(
+                        RemoteProcessProxy.get_current_time(),
+                        self.kernel_events_to_occurrence_time[event_key],
+                    )
+                    >= self.kernel_launch_terminate_on_events[event.type][event.reason]
+                ):
+                    self.kill()
+                    self.log_and_raise(
+                        http_status_code=409,
+                        reason=f"Error starting kernel container; The container encountered an event which may cause a longer than usual startup: '{event.reason} - {event.message[:64]}'",
+                    )
 
     def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to containers."""
@@ -241,6 +292,11 @@ class ContainerProcessProxy(RemoteProcessProxy):
     @abc.abstractmethod
     def get_container_status(self, iteration: int | None) -> str:
         """Returns the current container state (in lowercase) or the empty string if not available."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_container_events(self) -> list:
+        """Returns a list of container events, or empty list if the container has no events."""
         raise NotImplementedError
 
     @abc.abstractmethod
