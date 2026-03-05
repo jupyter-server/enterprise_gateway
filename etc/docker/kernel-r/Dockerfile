@@ -1,8 +1,5 @@
-# quay.io/jupyter
-ARG HUB_ORG
-
 # Ubuntu 18.04.1 LTS Bionic
-ARG BASE_CONTAINER=$HUB_ORG/r-notebook:r-4.5.2
+ARG BASE_CONTAINER=quay.io/jupyter/r-notebook:r-4.5.2
 FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
