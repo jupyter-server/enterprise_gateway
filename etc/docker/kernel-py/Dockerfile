@@ -5,7 +5,7 @@ FROM $BASE_CONTAINER
 ENV PATH=$PATH:$CONDA_DIR/bin
 
 # Add debugger support
-RUN pip install --upgrade ipykernel
+RUN pip install --upgrade --no-cache-dir ipykernel
 
 RUN conda install --quiet --yes \
     cffi \
@@ -29,7 +29,7 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 
 USER jovyan
 
-ENV KERNEL_LANGUAGE python
+ENV KERNEL_LANGUAGE=python
 
 # Disble healthcheck inherited from notebook image
 HEALTHCHECK NONE

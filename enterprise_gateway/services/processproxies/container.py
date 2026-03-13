@@ -147,6 +147,8 @@ class ContainerProcessProxy(RemoteProcessProxy):
         # See https://github.com/jupyter-server/enterprise_gateway/issues/827
         if container_status in self.get_initial_states():
             result = None
+
+        self.log.debug(f">>> container.poll(): {container_status} --> {result}")
         return result
 
     def send_signal(self, signum: int) -> bool | None:
@@ -188,6 +190,7 @@ class ContainerProcessProxy(RemoteProcessProxy):
 
     async def confirm_remote_startup(self) -> None:
         """Confirms the container has started and returned necessary connection information."""
+        self.log.debug(">>> container.confirm_remote_startup()")
         self.log.debug("Trying to confirm kernel container startup status")
         self.start_time = RemoteProcessProxy.get_current_time()
         i = 0
@@ -197,6 +200,9 @@ class ContainerProcessProxy(RemoteProcessProxy):
             await self.handle_timeout()
 
             container_status = self.get_container_status(i)
+            self.log.debug(
+                f">>> container.confirm_remote_startup() - container_status: {container_status}"
+            )
             if container_status:
                 if container_status in self.get_error_states():
                     self.log_and_raise(
@@ -204,14 +210,24 @@ class ContainerProcessProxy(RemoteProcessProxy):
                         reason=f"Error starting kernel container; status: '{container_status}'.",
                     )
                 else:
+                    self.log.debug(
+                        f">>> container.confirm_remote_startup(): is hosted assigned => {self.assigned_host}"
+                    )
+                    self.log.debug(">>> should call receive_connection_info()")
                     if self.assigned_host:
                         ready_to_connect = await self.receive_connection_info()
+                        self.log.debug(
+                            f">>> container.confirm_remote_startup(): ready to connect => {ready_to_connect}"
+                        )
                         self.pid = (
                             0  # We won't send process signals for kubernetes lifecycle management
                         )
                         self.pgid = 0
             else:
                 self.detect_launch_failure()
+        self.log.debug(
+            f">>> container.confirm_remote_startup(): ready to connect => {ready_to_connect}"
+        )
 
     def get_process_info(self) -> dict[str, Any]:
         """Captures the base information necessary for kernel persistence relative to containers."""
