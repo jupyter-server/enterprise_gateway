@@ -6,7 +6,7 @@ running tests, building docs, packaging kernel specifications, etc.
 
 ## Prerequisites
 
-Install [GNU make](https://www.gnu.org/software/make/) on your system.
+Install GNU make on your system.
 
 ## Clone the repo
 
