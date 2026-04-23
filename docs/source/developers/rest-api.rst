@@ -178,7 +178,7 @@ the icon filenames to be used by the front-end application.
             "env": {
               "SPARK_HOME": "/usr/hdp/current/spark2-client",
               "PYSPARK_PYTHON": "/opt/conda/bin/python",
-              "PYTHONPATH": "${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
+              "PYTHONPATH": "${HOME}/.local/lib/python3.10/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
               "SPARK_OPTS": "--master yarn --deploy-mode client --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} ${KERNEL_EXTRA_SPARK_OPTS}",
               "LAUNCH_OPTS": ""
             },
@@ -215,8 +215,8 @@ the icon filenames to be used by the front-end application.
             "env": {
               "SPARK_HOME": "/usr/hdp/current/spark2-client",
               "PYSPARK_PYTHON": "/opt/conda/bin/python",
-              "PYTHONPATH": "${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
-              "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/${KERNEL_USERNAME}/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python3.8/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/conda/bin:$PATH ${KERNEL_EXTRA_SPARK_OPTS}",
+              "PYTHONPATH": "${HOME}/.local/lib/python3.10/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip",
+              "SPARK_OPTS": "--master yarn --deploy-mode cluster --name ${KERNEL_ID:-ERROR__NO__KERNEL_ID} --conf spark.yarn.submit.waitAppCompletion=false --conf spark.yarn.appMasterEnv.PYTHONUSERBASE=/home/${KERNEL_USERNAME}/.local --conf spark.yarn.appMasterEnv.PYTHONPATH=${HOME}/.local/lib/python3.10/site-packages:/usr/hdp/current/spark2-client/python:/usr/hdp/current/spark2-client/python/lib/py4j-0.10.6-src.zip --conf spark.yarn.appMasterEnv.PATH=/opt/conda/bin:$PATH ${KERNEL_EXTRA_SPARK_OPTS}",
               "LAUNCH_OPTS": ""
             },
             "display_name": "Spark - Python (YARN Cluster Mode)",
@@ -346,7 +346,7 @@ In this example, we will start the ``spark_python_yarn_cluster`` kernel with a `
 
 Kernel code execution
 ~~~~~~~~~~~~~~~~~~~~~
-Upgrading the connection to a websocket and issuing code against that websocket is currently beyond the knowledge of our maintainers.  For this aspect of this discussion we will refer you to our Python `GatewayClient class <https://github.com/jupyter-server/enterprise_gateway/blob/54c8e31d9b17418f35454b49db691d2ce5643c22/enterprise_gateway/client/gateway_client.py#L22>`_ that we use in our integration tests.
+Upgrading the connection to a websocket and issuing code against that websocket is currently beyond the knowledge of our maintainers.  For this aspect of this discussion we will refer you to our Python `GatewayClient class <https://github.com/jupyter-server/enterprise_gateway/blob/main/enterprise_gateway/client/gateway_client.py#L20>`_ that we use in our integration tests.
 
 .. note::
 

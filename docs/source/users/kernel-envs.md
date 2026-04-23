@@ -76,12 +76,15 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     it is the user's responsibility that KERNEL_POD_NAME is unique relative to
     any pods in the target namespace.  In addition, the pod must NOT exist -
     unlike the case if KERNEL_NAMESPACE is provided. The KERNEL_POD_NAME can
-    also be provided as a jinja2 template formatted string
-    (e.g "{{ kernel_prefix }}-{{ kernel_id | replace('-', '') }}")
-    which will be processed for safe substitution against existing list
-    of environment variables. In case of invalid template (e.g. missing variables)
-    it will fall back to original way to calculate the pod name using
-    KERNEL_USERNAME - KERNEL_ID.
+    also be provided as a template string using simple variable substitution
+    (e.g. "{{ kernel_username }}-{{ kernel_id }}"). Only simple
+    {{ variable_name }} references are supported -- Jinja2 filters and
+    expressions are NOT supported and will be rejected for security reasons.
+    Available variables include all KERNEL_* environment variables (lowercased,
+    e.g. kernel_username, kernel_namespace) plus kernel_id. Variable names
+    must start with a letter and contain only letters, digits, and underscores.
+    In case of invalid template syntax or missing variables, Enterprise Gateway
+    will fall back to the default pod name using KERNEL_USERNAME-KERNEL_ID.
 
   KERNEL_REMOTE_HOST=<remote host name>
     DistributedProcessProxy only.  When specified, this value will override the
@@ -115,6 +118,23 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     start the kernel. Of all the KERNEL_ variables, KERNEL_USERNAME is the one that
     should be submitted in the request. In environments in which impersonation is
     used it represents the target of the impersonation.
+
+  KERNEL_VOLUMES=<from user> or None
+    Kubernetes and Spark Operator only. A JSON-formatted string defining
+    Kubernetes volume specifications to mount into the kernel pod. The value
+    is parsed via yaml.safe_load and passed to the kernel pod or
+    SparkApplication template as the kernel_volumes variable. Example:
+    KERNEL_VOLUMES='[{"name": "my-vol", "persistentVolumeClaim": {"claimName": "my-pvc"}}]'
+    See the kernel-pod.yaml.j2 and sparkoperator templates for how volumes
+    are rendered.
+
+  KERNEL_VOLUME_MOUNTS=<from user> or None
+    Kubernetes and Spark Operator only. A JSON-formatted string defining
+    Kubernetes volumeMount specifications for the kernel container. The value
+    is parsed via yaml.safe_load and passed to the kernel pod or
+    SparkApplication template as the kernel_volume_mounts variable. Example:
+    KERNEL_VOLUME_MOUNTS='[{"name": "my-vol", "mountPath": "/data"}]'
+    Must correspond to volumes defined via KERNEL_VOLUMES.
 
   KERNEL_WORKING_DIR=<from user> or None
     Containers only.  This value should model the directory in which the active

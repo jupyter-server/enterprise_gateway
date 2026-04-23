@@ -64,6 +64,28 @@ User 'bob' is not in the set of users authorized to start kernel 'Spark - Python
 KERNEL_USERNAME is set to an appropriate value and retry the request.
 ```
 
+### Authorizer Override
+
+Enterprise Gateway supports overriding the default authorizer class used for authenticating and authorizing
+requests. By default, `AllowAllAuthorizer` from `jupyter_server` is used, which permits all authenticated
+requests.
+
+To configure a custom authorizer, use one of the following methods:
+
+- **Environment variable:** `EG_AUTHORIZER_CLASS`
+- **Configuration file:** `c.EnterpriseGatewayApp.authorizer_class`
+- **Command line:** `--EnterpriseGatewayApp.authorizer_class=my_module.MyAuthorizer`
+
+The authorizer class must be a subclass of `jupyter_server.auth.authorizer.Authorizer`.
+
+````{tip}
+Example configuration file entry:
+
+```python
+c.EnterpriseGatewayApp.authorizer_class = 'my_module.MyAuthorizer'
+```
+````
+
 ## User Impersonation
 
 The Enterprise Gateway server leverages other technologies to implement user impersonation when launching kernels. This
