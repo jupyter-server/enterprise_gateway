@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=python:3.10
+ARG BASE_CONTAINER=python:3.10-bookworm
 FROM $BASE_CONTAINER
 
 WORKDIR /usr/src/app
@@ -11,9 +11,10 @@ COPY image_fetcher.py ./
 ARG OS=Debian_12
 
 # Install crictl for use by KIP when non-docker installations are encountered.
-RUN echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${OS}/ /"|tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-RUN curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
-RUN apt-get update && apt-get install cri-tools
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubic.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/kubic.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${OS}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
+    apt-get update && apt-get install -y cri-tools
 
 RUN echo $PATH
 # The following environment variables are supported - defaults provided.  Override as needed.
