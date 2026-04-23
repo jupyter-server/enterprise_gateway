@@ -4,7 +4,7 @@ ARG BASE_CONTAINER=jupyter/tensorflow-notebook:2023-10-20
 
 FROM $BASE_CONTAINER
 
-ENV KERNEL_LANGUAGE python
+ENV KERNEL_LANGUAGE=python
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

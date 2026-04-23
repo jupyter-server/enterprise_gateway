@@ -29,7 +29,7 @@ RUN chown jovyan:users /usr/local/bin/bootstrap-kernel.sh && \
 
 USER jovyan
 
-ENV KERNEL_LANGUAGE python
+ENV KERNEL_LANGUAGE=python
 
 # Disble healthcheck inherited from notebook image
 HEALTHCHECK NONE
