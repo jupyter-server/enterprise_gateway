@@ -4,6 +4,10 @@ All docker images can be pulled from docker hub's [elyra organization](https://h
 
 Local images can also be built via `make docker-images`.
 
+```{note}
+Base images and versions change over time. Check the Dockerfiles in [etc/docker](https://github.com/jupyter-server/enterprise_gateway/tree/main/etc/docker) for the current base images used in each build.
+```
+
 The following sections describe the docker images used within Kubernetes and Docker Swarm environments.
 
 ## elyra/enterprise-gateway

@@ -89,6 +89,10 @@ As noted above, the availability modes rely on the persisted information relativ
 File Kernel Session Persistence stores kernel sessions as files in a specified directory. To enable this form of persistence, set the environment variable `EG_KERNEL_SESSION_PERSISTENCE=True` or configure `FileKernelSessionManager.enable_persistence=True`. To change the directory in which the kernel session file is being saved, either set the environment variable `EG_PERSISTENCE_ROOT` or configure `FileKernelSessionManager.persistence_root` to the directory. By default, the directory used to store a given kernel's session information is the `JUPYTER_DATA_DIR`.
 
 ```{note}
+Enterprise Gateway handles corrupted or invalid session files gracefully. If a persisted session file contains invalid JSON or cannot be read, the error is logged and that session is skipped rather than preventing Enterprise Gateway from starting.
+```
+
+```{note}
 Because `FileKernelSessionManager` is the default class for kernel session persistence, configuring `EnterpriseGatewayApp.kernel_session_manager_class` to `enterprise_gateway.services.sessions.kernelsessionmanager.FileKernelSessionManager` is not necessary.
 ```
 

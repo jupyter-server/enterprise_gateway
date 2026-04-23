@@ -7,7 +7,7 @@ packages for scientific computing and data science.
 Use the following installation steps:
 
 - Download [Anaconda](https://www.anaconda.com/download). We recommend downloading Anaconda's
-  latest Python version (currently Python 3.11).
+  latest Python version (currently Python 3.11+).
 
 - Install the version of Anaconda which you downloaded, following the instructions on the download page.
 
@@ -16,6 +16,15 @@ Use the following installation steps:
 
 ```{warning}
 Enterprise Gateway is currently incompatible with `jupyter_client >= 7.0`.  As a result, you should **not** install Enterprise Gateway into the same Python environment in which you intend to run Jupyter Notebook or Jupyter Lab since they will likely be using `jupyter_client >= 7.0`.  Since Enterprise Gateway is tupically installed on servers remote from the notebook users, this is usually not an issue.
+```
+
+```{note}
+**Known Dependency Constraints:** Enterprise Gateway pins several key dependencies:
+- `jupyter_client < 7` -- Enterprise Gateway's process proxy mechanism is incompatible with the kernel provisioner framework introduced in jupyter_client 7.x. This cap will be removed when EG adopts kernel provisioners (targeted for 4.0).
+- `jupyter_server < 2.0` -- For the same kernel provisioner compatibility reason.
+- `pyzmq < 25.0` -- pyzmq 25 removed deprecated APIs that jupyter_client 6.x still relies on.
+
+These constraints mean EG should be installed in a dedicated Python environment separate from notebook/lab installations that use newer versions of these packages.
 ```
 
 ```bash
