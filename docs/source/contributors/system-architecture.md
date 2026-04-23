@@ -153,6 +153,23 @@ required to be located within the Enterprise Gateway hierarchy - i.e., we embrac
 
 ![Process Class Hierarchy](../images/process_proxy_hierarchy.png)
 
+The complete process proxy class hierarchy is:
+
+```text
+BaseProcessProxyABC
+├── LocalProcessProxy
+└── RemoteProcessProxy
+    ├── DistributedProcessProxy
+    ├── YarnClusterProcessProxy
+    ├── ConductorClusterProcessProxy
+    └── ContainerProcessProxy
+        ├── DockerSwarmProcessProxy
+        ├── DockerProcessProxy
+        └── KubernetesProcessProxy
+            └── CustomResourceProcessProxy
+                └── SparkOperatorProcessProxy
+```
+
 The process proxy constructor looks as follows:
 
 ```python
