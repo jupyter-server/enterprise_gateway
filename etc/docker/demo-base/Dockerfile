@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=continuumio/miniconda3
+ARG BASE_CONTAINER=continuumio/miniconda3:24.1.2-0
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
@@ -50,13 +50,9 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     libsm6 \
     libxext-dev \
     libxrender1 \
-    software-properties-common \
     openssh-server \
     openssh-client \
-    && apt-add-repository 'deb http://security.debian.org/debian-security bullseye-security main' \
-    && apt-add-repository 'deb http://deb.debian.org/debian/ sid main' \
-    && apt-get update && apt-get install -yq --no-install-recommends  \
-    openjdk-8-jre-headless \
+    openjdk-11-jdk-headless \
     ca-certificates-java \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
