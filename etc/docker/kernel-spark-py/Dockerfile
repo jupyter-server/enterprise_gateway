@@ -7,11 +7,11 @@ FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
 
-ENV SPARK_VER $SPARK_VERSION
-ENV SPARK_HOME /opt/spark
-ENV KERNEL_LANGUAGE python
-ENV R_LIBS_USER $R_LIBS_USER:${SPARK_HOME}/R/lib
-ENV PATH $PATH:$SPARK_HOME/bin
+ENV SPARK_VER=$SPARK_VERSION
+ENV SPARK_HOME=/opt/spark
+ENV KERNEL_LANGUAGE=python
+ENV R_LIBS_USER=$R_LIBS_USER:${SPARK_HOME}/R/lib
+ENV PATH=$PATH:$SPARK_HOME/bin
 
 USER root
 
@@ -26,7 +26,7 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-ENV JAVA_HOME /usr/lib/jvm/java
+ENV JAVA_HOME=/usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 # Download and install Spark

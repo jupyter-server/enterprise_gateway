@@ -4,8 +4,8 @@ FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
 
-ENV SPARK_VER $SPARK_VERSION
-ENV SPARK_HOME /opt/spark
+ENV SPARK_VER=$SPARK_VERSION
+ENV SPARK_HOME=/opt/spark
 
 
 RUN mamba install --quiet --yes \
@@ -22,7 +22,7 @@ USER root
 
 RUN apt update && apt install -yq curl openjdk-8-jdk
 
-ENV JAVA_HOME /usr/lib/jvm/java
+ENV JAVA_HOME=/usr/lib/jvm/java
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 # Download and install Spark
