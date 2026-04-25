@@ -1,13 +1,193 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-"""Tests for Kubernetes process proxy security fixes."""
+"""Tests for process proxy functionality."""
 
+import os
 import unittest
 from unittest.mock import Mock, patch
+
+from tornado import web
+
+from enterprise_gateway.services.processproxies.container import _parse_prohibited_ids
 
 # Mock Kubernetes configuration before importing the module
 with patch('kubernetes.config.load_incluster_config'), patch('kubernetes.config.load_kube_config'):
     from enterprise_gateway.services.processproxies.k8s import KubernetesProcessProxy
+
+
+class TestParseProhibitedIds(unittest.TestCase):
+    """Test parsing of prohibited UID/GID environment variables."""
+
+    def test_default_value(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("TEST_IDS", None)
+            result = _parse_prohibited_ids("TEST_IDS", "0")
+        self.assertEqual(result, [0])
+
+    def test_multiple_values(self):
+        with patch.dict(os.environ, {"TEST_IDS": "0,1000"}):
+            result = _parse_prohibited_ids("TEST_IDS", "0")
+        self.assertEqual(result, [0, 1000])
+
+    def test_values_with_spaces(self):
+        with patch.dict(os.environ, {"TEST_IDS": "0, 1000, 65534"}):
+            result = _parse_prohibited_ids("TEST_IDS", "0")
+        self.assertEqual(result, [0, 1000, 65534])
+
+    def test_invalid_entries_raise_value_error(self):
+        with patch.dict(os.environ, {"TEST_IDS": "0,abc,1000"}):
+            with self.assertRaises(ValueError) as ctx:
+                _parse_prohibited_ids("TEST_IDS", "0")
+            self.assertIn("abc", str(ctx.exception))
+            self.assertIn("TEST_IDS", str(ctx.exception))
+
+    def test_username_instead_of_uid_raises_value_error(self):
+        with patch.dict(os.environ, {"TEST_IDS": "root"}):
+            with self.assertRaises(ValueError) as ctx:
+                _parse_prohibited_ids("TEST_IDS", "0")
+            self.assertIn("root", str(ctx.exception))
+
+    def test_empty_entries_ignored(self):
+        with patch.dict(os.environ, {"TEST_IDS": "0,,1000"}):
+            result = _parse_prohibited_ids("TEST_IDS", "0")
+        self.assertEqual(result, [0, 1000])
+
+
+class TestContainerProxyProhibitedIds(unittest.TestCase):
+    """Test UID/GID validation in ContainerProcessProxy."""
+
+    def setUp(self):
+        self.mock_kernel_manager = Mock()
+        self.mock_kernel_manager.get_kernel_username.return_value = "testuser"
+        self.mock_kernel_manager.port_range = "0..0"
+        self.proxy_config = {"kernel_id": "test-kernel-id", "kernel_name": "python3"}
+        with patch(
+            'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
+        ) as mock_session_manager, patch(
+            'enterprise_gateway.services.processproxies.processproxy.ResponseManager'
+        ):
+            mock_session_manager.get_kernel_username.return_value = "testuser"
+            self.proxy = KubernetesProcessProxy(self.mock_kernel_manager, self.proxy_config)
+
+    def _make_kwargs(self, uid=None, gid=None):
+        env = {}
+        if uid is not None:
+            env["KERNEL_UID"] = uid
+        if gid is not None:
+            env["KERNEL_GID"] = gid
+        return {"env": env}
+
+    def test_valid_uid_gid_passes(self):
+        kwargs = self._make_kwargs(uid="1000", gid="100")
+        self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(kwargs["env"]["KERNEL_UID"], "1000")
+        self.assertEqual(kwargs["env"]["KERNEL_GID"], "100")
+
+    def test_defaults_used_when_not_provided(self):
+        kwargs = self._make_kwargs()
+        self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(kwargs["env"]["KERNEL_UID"], "1000")
+        self.assertEqual(kwargs["env"]["KERNEL_GID"], "100")
+
+    def test_prohibited_uid_exact_match(self):
+        kwargs = self._make_kwargs(uid="0", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_prohibited_gid_exact_match(self):
+        kwargs = self._make_kwargs(uid="1000", gid="0")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_trailing_whitespace_uid_denied(self):
+        kwargs = self._make_kwargs(uid="0 ", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_leading_whitespace_uid_denied(self):
+        kwargs = self._make_kwargs(uid=" 0", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_leading_zeros_uid_denied(self):
+        kwargs = self._make_kwargs(uid="00", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_plus_sign_uid_denied(self):
+        kwargs = self._make_kwargs(uid="+0", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_non_numeric_uid_rejected(self):
+        kwargs = self._make_kwargs(uid="abc", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_empty_uid_rejected(self):
+        kwargs = self._make_kwargs(uid="", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_negative_uid_rejected(self):
+        kwargs = self._make_kwargs(uid="-1", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertIn("must be in range", ctx.exception.reason)
+
+    def test_negative_gid_rejected(self):
+        kwargs = self._make_kwargs(uid="1000", gid="-1")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertIn("must be in range", ctx.exception.reason)
+
+    def test_uid_exceeding_uint32_max_rejected(self):
+        kwargs = self._make_kwargs(uid="4294967296", gid="100")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertIn("must be in range", ctx.exception.reason)
+
+    def test_gid_exceeding_uint32_max_rejected(self):
+        kwargs = self._make_kwargs(uid="1000", gid="4294967296")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertIn("must be in range", ctx.exception.reason)
+
+    def test_uid_at_uint32_max_allowed(self):
+        kwargs = self._make_kwargs(uid="4294967295", gid="100")
+        self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(kwargs["env"]["KERNEL_UID"], "4294967295")
+
+    def test_normalized_values_stored(self):
+        kwargs = self._make_kwargs(uid=" 1000 ", gid=" 100 ")
+        self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(kwargs["env"]["KERNEL_UID"], "1000")
+        self.assertEqual(kwargs["env"]["KERNEL_GID"], "100")
+
+    def test_both_uid_and_gid_checked_independently(self):
+        kwargs = self._make_kwargs(uid="1000", gid="0")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertIn("GID", ctx.exception.reason)
+
+    def test_trailing_whitespace_gid_denied(self):
+        kwargs = self._make_kwargs(uid="1000", gid="0 ")
+        with self.assertRaises(web.HTTPError) as ctx:
+            self.proxy._enforce_prohibited_ids(**kwargs)
+        self.assertEqual(ctx.exception.status_code, 403)
 
 
 class TestKubernetesProcessProxy(unittest.TestCase):
@@ -23,7 +203,9 @@ class TestKubernetesProcessProxy(unittest.TestCase):
         self.proxy_config = {"kernel_id": "test-kernel-id", "kernel_name": "python3"}
         with patch(
             'enterprise_gateway.services.processproxies.k8s.KernelSessionManager'
-        ) as mock_session_manager:
+        ) as mock_session_manager, patch(
+            'enterprise_gateway.services.processproxies.processproxy.ResponseManager'
+        ):
             mock_session_manager.get_kernel_username.return_value = "testuser"
             self.proxy = KubernetesProcessProxy(self.mock_kernel_manager, self.proxy_config)
             self.proxy.kernel_id = "test-kernel-id"

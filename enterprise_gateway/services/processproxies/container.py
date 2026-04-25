@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import abc
+import logging
 import os
 import signal
 from typing import Any
@@ -16,6 +17,8 @@ from jupyter_client import localinterfaces
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import RemoteProcessProxy
 
+log = logging.getLogger(__name__)
+
 urllib3.disable_warnings()
 
 local_ip = localinterfaces.public_ips()[0]
@@ -23,11 +26,39 @@ local_ip = localinterfaces.public_ips()[0]
 default_kernel_uid = "1000"  # jovyan user is the default
 default_kernel_gid = "100"  # users group is the default
 
+
+def _parse_prohibited_ids(env_var: str, default: str) -> list[int]:
+    """Parse a comma-separated list of IDs from an environment variable into integers.
+
+    Raises:
+        ValueError: If any entry in the configured value is not a valid integer.
+            This enforces a fail-closed posture — a misconfigured prohibited list
+            (e.g. usernames instead of numeric IDs) will prevent startup rather than
+            silently yielding an empty list.
+    """
+    result: list[int] = []
+    raw_value = os.getenv(env_var, default)
+    for item in raw_value.split(","):
+        item = item.strip()
+        if item:
+            try:
+                result.append(int(item))
+            except ValueError:
+                msg = (
+                    f"Invalid entry '{item}' in {env_var}='{raw_value}'. "
+                    f"All entries must be numeric IDs, not usernames or group names. "
+                    f"Example: {env_var}=0,1000"
+                )
+                log.critical(msg)
+                raise ValueError(msg)
+    return result
+
+
 # These could be enforced via a PodSecurityPolicy, but those affect
 # all pods so the cluster admin would need to configure those for
 # all applications.
-prohibited_uids = os.getenv("EG_PROHIBITED_UIDS", "0").split(",")
-prohibited_gids = os.getenv("EG_PROHIBITED_GIDS", "0").split(",")
+prohibited_uids = _parse_prohibited_ids("EG_PROHIBITED_UIDS", "0")
+prohibited_gids = _parse_prohibited_ids("EG_PROHIBITED_GIDS", "0")
 
 mirror_working_dirs = bool(os.getenv("EG_MIRROR_WORKING_DIRS", "false").lower() == "true")
 
@@ -110,22 +141,51 @@ class ContainerProcessProxy(RemoteProcessProxy):
         kernel_uid = kwargs["env"].get("KERNEL_UID", default_kernel_uid)
         kernel_gid = kwargs["env"].get("KERNEL_GID", default_kernel_gid)
 
-        if kernel_uid in prohibited_uids:
-            http_status_code = 403
-            error_message = (
-                f"Kernel's UID value of '{kernel_uid}' has been denied via EG_PROHIBITED_UIDS!"
+        try:
+            uid_int = int(kernel_uid)
+        except (ValueError, TypeError):
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Invalid KERNEL_UID value '{kernel_uid}': not a valid integer!",
             )
-            self.log_and_raise(http_status_code=http_status_code, reason=error_message)
-        elif kernel_gid in prohibited_gids:
-            http_status_code = 403
-            error_message = (
-                f"Kernel's GID value of '{kernel_gid}' has been denied via EG_PROHIBITED_GIDS!"
-            )
-            self.log_and_raise(http_status_code=http_status_code, reason=error_message)
 
-        # Ensure the kernel's env has what it needs in case they came from defaults
-        kwargs["env"]["KERNEL_UID"] = kernel_uid
-        kwargs["env"]["KERNEL_GID"] = kernel_gid
+        try:
+            gid_int = int(kernel_gid)
+        except (ValueError, TypeError):
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Invalid KERNEL_GID value '{kernel_gid}': not a valid integer!",
+            )
+
+        max_id = 4294967295  # uint32 max — Linux uid_t/gid_t upper bound
+
+        if not (0 <= uid_int <= max_id):
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Invalid KERNEL_UID value '{kernel_uid}': must be in range 0-{max_id}!",
+            )
+
+        if not (0 <= gid_int <= max_id):
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Invalid KERNEL_GID value '{kernel_gid}': must be in range 0-{max_id}!",
+            )
+
+        if uid_int in prohibited_uids:
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Kernel's UID value of '{kernel_uid}' has been denied via EG_PROHIBITED_UIDS!",
+            )
+
+        if gid_int in prohibited_gids:
+            self.log_and_raise(
+                http_status_code=403,
+                reason=f"Kernel's GID value of '{kernel_gid}' has been denied via EG_PROHIBITED_GIDS!",
+            )
+
+        # Ensure the kernel's env has normalized values
+        kwargs["env"]["KERNEL_UID"] = str(uid_int)
+        kwargs["env"]["KERNEL_GID"] = str(gid_int)
 
     def poll(self) -> bool | None:
         """Determines if container is still active.
