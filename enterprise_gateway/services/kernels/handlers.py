@@ -18,6 +18,8 @@ from tornado import web
 
 from ...mixins import CORSMixin, JSONErrorsMixin, TokenAuthorizationMixin
 
+MAX_ENV_VALUE_LENGTH = 4096
+
 
 class MainKernelHandler(
     TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, jupyter_server_handlers.MainKernelHandler
@@ -66,13 +68,17 @@ class MainKernelHandler(
             allowed_envs: list[str]
             allowed_envs = model["env"].keys() if self.client_envs == ["*"] else self.client_envs
             # Allow KERNEL_* args and those allowed by configuration.
-            env.update(
-                {
-                    key: value
-                    for key, value in model["env"].items()
-                    if key.startswith("KERNEL_") or key in allowed_envs
-                }
-            )
+            for key, value in model["env"].items():
+                if key.startswith("KERNEL_") or key in allowed_envs:
+                    if not isinstance(value, str):
+                        raise tornado.web.HTTPError(
+                            400, f"Environment variable '{key}' value must be a string"
+                        )
+                    if len(value) > MAX_ENV_VALUE_LENGTH:
+                        raise tornado.web.HTTPError(
+                            400, f"Environment variable '{key}' exceeds maximum length"
+                        )
+                    env[key] = value
 
             # If kernel_headers are configured, fetch each of those and include in start request
             kernel_headers = {}

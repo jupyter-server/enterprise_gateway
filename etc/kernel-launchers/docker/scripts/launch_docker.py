@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import sys
 
 import urllib3
@@ -26,6 +27,11 @@ def launch_docker_kernel(
     image_name = os.environ.get("KERNEL_IMAGE", None)
     if image_name is None:
         sys.exit("ERROR - KERNEL_IMAGE not found in environment - kernel launch terminating!")
+
+    if not re.match(
+        r'^[a-zA-Z0-9][a-zA-Z0-9._\-/]*(:[a-zA-Z0-9._\-]+)?(@sha256:[a-f0-9]+)?$', image_name
+    ):
+        sys.exit(f"ERROR - KERNEL_IMAGE contains invalid characters: {image_name}")
 
     # Container name is composed of KERNEL_USERNAME and KERNEL_ID
     container_name = os.environ.get("KERNEL_USERNAME", "") + "-" + kernel_id

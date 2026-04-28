@@ -1,26 +1,26 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: {{ kernel_resource_name }}
+  name: {{ kernel_resource_name | yaml_safe }}
 spec:
   restartPolicy:
     type: Never
   type: Python
   pythonVersion: "3"
   sparkVersion: 2.4.5
-  image: {{ kernel_image }}
+  image: {{ kernel_image | yaml_safe }}
   mainApplicationFile: "local:///usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py"
   arguments:
     - "--kernel-id"
-    - "{{ kernel_id }}"
+    - {{ kernel_id | yaml_safe }}
     - "--spark-context-initialization-mode"
-    - "{{ spark_context_initialization_mode }}"
+    - {{ spark_context_initialization_mode | yaml_safe }}
     - "--response-address"
-    - "{{ eg_response_address }}"
+    - {{ eg_response_address | yaml_safe }}
     - "--port-range"
-    - "{{ eg_port_range }}"
+    - {{ eg_port_range | yaml_safe }}
     - "--public-key"
-    - "{{ eg_public_key }}"
+    - {{ eg_public_key | yaml_safe }}
   driver:
     annotations:
       cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
@@ -30,9 +30,9 @@ spec:
 # e.g., helm install my-release spark-operator/spark-operator --namespace spark-operator --set webhook.enable=true
 #    - name: MY_DRIVER_ENV
 #      value: "my_driver_value"
-    serviceAccount: "{{ kernel_service_account_name }}"
+    serviceAccount: {{ kernel_service_account_name | yaml_safe }}
     labels:
-      kernel_id: "{{ kernel_id }}"
+      kernel_id: {{ kernel_id | yaml_safe }}
       app: enterprise-gateway
       component: kernel
     cores: 1
@@ -41,13 +41,13 @@ spec:
     volumeMounts:
       {% if kernel_volume_mounts is defined %}
         {% for mount in kernel_volume_mounts %}
-      - {{ mount }}
+      - {{ mount | yaml_safe }}
         {% endfor %}
       {% endif %}
     volumes:
       {% if kernel_volumes is defined %}
         {% for volume in kernel_volumes %}
-      - {{ volume }}
+      - {{ volume | yaml_safe }}
         {% endfor %}
       {% endif %}
   executor:
@@ -58,10 +58,10 @@ spec:
 #    - name: MY_EXECUTOR_ENV
 #      value: "my_executor_value"
     labels:
-      kernel_id: "{{ kernel_id }}"
+      kernel_id: {{ kernel_id | yaml_safe }}
       app: enterprise-gateway
       component: worker
-    image: {{ kernel_executor_image }}
+    image: {{ kernel_executor_image | yaml_safe }}
     instances: 2
     cores: 1
     coreLimit: 1000m
@@ -69,15 +69,15 @@ spec:
     volumeMounts:
       {% if kernel_volume_mounts is defined %}
         {% for mount in kernel_volume_mounts %}
-      - {{ mount }}
+      - {{ mount | yaml_safe }}
         {% endfor %}
       {% endif %}
     volumes:
       {% if kernel_volumes is defined %}
         {% for volume in kernel_volumes %}
-      - {{ volume }}
+      - {{ volume | yaml_safe }}
         {% endfor %}
       {% endif %}
 {% if kernel_sparkapp_config_map %}
-  sparkConfigMap: {{ kernel_sparkapp_config_map }}
+  sparkConfigMap: {{ kernel_sparkapp_config_map | yaml_safe }}
 {% endif %}

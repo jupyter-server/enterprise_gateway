@@ -10,10 +10,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ kernel_pod_name }}"
-  namespace: "{{ kernel_namespace }}"
+  name: {{ kernel_pod_name | yaml_safe }}
+  namespace: {{ kernel_namespace | yaml_safe }}
   labels:
-    kernel_id: "{{ kernel_id }}"
+    kernel_id: {{ kernel_id | yaml_safe }}
     app: enterprise-gateway
     component: kernel
     source: kernel-pod.yaml
@@ -21,7 +21,7 @@ metadata:
     cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
 spec:
   restartPolicy: Never
-  serviceAccountName: "{{ kernel_service_account_name }}"
+  serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
 # NOTE: that using runAsGroup requires that feature-gate RunAsGroup be enabled.
 # WARNING: Only using runAsUser w/o runAsGroup or NOT enabling the RunAsGroup feature-gate
 # will result in the new kernel pod's effective group of 0 (root)! although the user will
@@ -40,8 +40,8 @@ spec:
     fsGroup: 100
   {% endif %}
   containers:
-  - image: "{{ kernel_image }}"
-    name: "{{ kernel_pod_name }}"
+  - image: {{ kernel_image | yaml_safe }}
+    name: {{ kernel_pod_name | yaml_safe }}
     env:
 # Add any custom envs here that aren't already configured for the kernel's environment
 #    - name: MY_CUSTOM_ENV
@@ -51,42 +51,42 @@ spec:
       {% if kernel_cpus is defined or kernel_memory is defined or kernel_gpus is defined %}
       requests:
         {% if kernel_cpus is defined %}
-        cpu: "{{ kernel_cpus }}"
+        cpu: {{ kernel_cpus | yaml_safe }}
         {% endif %}
         {% if kernel_memory is defined %}
-        memory: "{{ kernel_memory }}"
+        memory: {{ kernel_memory | yaml_safe }}
         {% endif %}
         {% if kernel_gpus is defined %}
-        nvidia.com/gpu: "{{ kernel_gpus }}"
+        nvidia.com/gpu: {{ kernel_gpus | yaml_safe }}
         {% endif %}
       {% endif %}
       {% if kernel_cpus_limit is defined or kernel_memory_limit is defined or kernel_gpus_limit is defined %}
       limits:
         {% if kernel_cpus_limit is defined %}
-        cpu: "{{ kernel_cpus_limit }}"
+        cpu: {{ kernel_cpus_limit | yaml_safe }}
         {% endif %}
         {% if kernel_memory_limit is defined %}
-        memory: "{{ kernel_memory_limit }}"
+        memory: {{ kernel_memory_limit | yaml_safe }}
         {% endif %}
         {% if kernel_gpus_limit is defined %}
-        nvidia.com/gpu: "{{ kernel_gpus_limit }}"
+        nvidia.com/gpu: {{ kernel_gpus_limit | yaml_safe }}
         {% endif %}
       {% endif %}
     {% endif %}
     {% if kernel_working_dir %}
-    workingDir: "{{ kernel_working_dir }}"
+    workingDir: {{ kernel_working_dir | yaml_safe }}
     {% endif %}
     volumeMounts:
 # Define any "unconditional" mounts here, followed by "conditional" mounts that vary per client
     {% if kernel_volume_mounts %}
       {% for volume_mount in kernel_volume_mounts %}
-    - {{ volume_mount }}
+    - {{ volume_mount | yaml_safe }}
       {% endfor %}
     {% endif %}
   volumes:
 # Define any "unconditional" volumes here, followed by "conditional" volumes that vary per client
   {% if kernel_volumes %}
     {% for volume in kernel_volumes %}
-  - {{ volume }}
+  - {{ volume | yaml_safe }}
     {% endfor %}
   {% endif %}

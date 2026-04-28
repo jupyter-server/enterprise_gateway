@@ -2,6 +2,7 @@
 """Launch a custom operator resource."""
 import argparse
 import os
+import re
 import sys
 
 import urllib3
@@ -10,6 +11,24 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from kubernetes import client, config
 
 urllib3.disable_warnings()
+
+YAML_PARSED_KERNEL_VARS = {"KERNEL_VOLUME_MOUNTS", "KERNEL_VOLUMES"}
+
+
+def yaml_safe_str(value):
+    """Escape a value for safe inclusion in a YAML template.
+
+    Uses PyYAML's own serializer to produce properly escaped output:
+    - Strings are double-quoted with special characters escaped.
+    - Dicts/lists are serialized as YAML flow mappings/sequences.
+    - None, bools, and numbers are serialized to their YAML-canonical form.
+    """
+    if isinstance(value, str):
+        return yaml.dump(value, default_style='"', width=10000).strip()
+    if isinstance(value, (dict, list)):
+        return yaml.dump(value, default_flow_style=True, width=10000).strip()
+    # yaml.dump appends a document-end marker ("...\n") for scalars; strip it
+    return yaml.dump(value, width=10000).replace("\n...", "").strip()
 
 
 def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
@@ -27,6 +46,8 @@ def generate_kernel_custom_resource_yaml(kernel_crd_template, keywords):
             default=True,
         ),
     )
+    j_env.filters["yaml_safe"] = yaml_safe_str
+
     k8s_yaml = j_env.get_template("/" + kernel_crd_template + ".yaml.j2").render(**keywords)
     return k8s_yaml
 
@@ -70,11 +91,25 @@ def launch_custom_resource_kernel(
     )
     keywords["spark_context_initialization_mode"] = spark_context_init_mode
 
+    # Only parse YAML for variables that legitimately carry structured data (lists/dicts);
+    # treat all others as raw strings to prevent YAML injection attacks.
     for name, value in os.environ.items():
         if name.startswith("KERNEL_"):
-            keywords[name.lower()] = yaml.safe_load(value)
+            if name in YAML_PARSED_KERNEL_VARS:
+                parsed = yaml.safe_load(value)
+                if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
+                    sys.exit(
+                        f"ERROR - {name} must be a YAML list of mappings - "
+                        f"kernel launch terminating!"
+                    )
+                keywords[name.lower()] = parsed
+            else:
+                keywords[name.lower()] = value
 
     kernel_crd_template = keywords["kernel_crd_group"] + "-" + keywords["kernel_crd_version"]
+    if not re.match(r'^[a-z0-9][a-z0-9.\-]*-v[a-z0-9]+$', kernel_crd_template):
+        sys.exit(f"ERROR - Invalid CRD template name: {kernel_crd_template} - kernel launch terminating!")
+
     custom_resource_yaml = generate_kernel_custom_resource_yaml(kernel_crd_template, keywords)
 
     kernel_namespace = keywords["kernel_namespace"]
@@ -82,6 +117,8 @@ def launch_custom_resource_kernel(
     version = keywords["kernel_crd_version"]
     plural = keywords["kernel_crd_plural"]
     custom_resource_object = yaml.safe_load(custom_resource_yaml)
+    if not isinstance(custom_resource_object, dict) or "kind" not in custom_resource_object:
+        sys.exit("ERROR - Rendered CRD manifest is not a valid single-document YAML - kernel launch terminating!")
     if group == "sparkoperator.k8s.io":
         extend_operator_env(custom_resource_object, "driver")
         extend_operator_env(custom_resource_object, "executor")

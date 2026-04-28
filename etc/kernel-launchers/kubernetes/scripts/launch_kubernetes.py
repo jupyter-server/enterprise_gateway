@@ -15,6 +15,26 @@ urllib3.disable_warnings()
 
 KERNEL_POD_TEMPLATE_PATH = "/kernel-pod.yaml.j2"
 
+ALLOWED_K8S_KINDS = {"Pod", "Secret", "PersistentVolumeClaim", "PersistentVolume", "Service", "ConfigMap"}
+MAX_DOCUMENTS_PER_KIND = 1
+YAML_PARSED_KERNEL_VARS = {"KERNEL_VOLUME_MOUNTS", "KERNEL_VOLUMES"}
+
+
+def yaml_safe_str(value):
+    """Escape a value for safe inclusion in a YAML template.
+
+    Uses PyYAML's own serializer to produce properly escaped output:
+    - Strings are double-quoted with special characters escaped.
+    - Dicts/lists are serialized as YAML flow mappings/sequences.
+    - None, bools, and numbers are serialized to their YAML-canonical form.
+    """
+    if isinstance(value, str):
+        return yaml.dump(value, default_style='"', width=10000).strip()
+    if isinstance(value, (dict, list)):
+        return yaml.dump(value, default_flow_style=True, width=10000).strip()
+    # yaml.dump appends a document-end marker ("...\n") for scalars; strip it
+    return yaml.dump(value, width=10000).replace("\n...", "").strip()
+
 
 def generate_kernel_pod_yaml(keywords):
     """Return the kubernetes pod spec as a yaml string.
@@ -35,9 +55,8 @@ def generate_kernel_pod_yaml(keywords):
             default=True,
         ),
     )
-    # jinja2 template substitutes template variables with None though keywords doesn't
-    # contain corresponding item. Therefore, no need to check if any are left unsubstituted.
-    # Kubernetes API server will validate the pod spec instead.
+    j_env.filters["yaml_safe"] = yaml_safe_str
+
     k8s_yaml = j_env.get_template(KERNEL_POD_TEMPLATE_PATH).render(**keywords)
 
     return k8s_yaml
@@ -128,10 +147,20 @@ def launch_kubernetes_kernel(
     )
 
     # Walk env variables looking for names prefixed with KERNEL_.  When found, set corresponding keyword value
-    # with name in lower case.
+    # with name in lower case.  Only parse YAML for variables that legitimately carry structured data
+    # (lists/dicts); treat all others as raw strings to prevent YAML injection attacks.
     for name, value in os.environ.items():
         if name.startswith("KERNEL_"):
-            keywords[name.lower()] = yaml.safe_load(value)
+            if name in YAML_PARSED_KERNEL_VARS:
+                parsed = yaml.safe_load(value)
+                if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
+                    sys.exit(
+                        f"ERROR - {name} must be a YAML list of mappings - "
+                        f"kernel launch terminating!"
+                    )
+                keywords[name.lower()] = parsed
+            else:
+                keywords[name.lower()] = value
 
     # Substitute all template variable (wrapped with {{ }}) and generate `yaml` string.
     k8s_yaml = generate_kernel_pod_yaml(keywords)
@@ -146,7 +175,24 @@ def launch_kubernetes_kernel(
     pod_template = None
     pod_created = None
     kernel_namespace = keywords["kernel_namespace"]
-    k8s_objs = yaml.safe_load_all(k8s_yaml)
+    k8s_objs = list(yaml.safe_load_all(k8s_yaml))
+    kind_counts: Dict[str, int] = {}
+    for k8s_obj in k8s_objs:
+        if not k8s_obj:
+            continue
+        kind = k8s_obj.get("kind")
+        if kind not in ALLOWED_K8S_KINDS:
+            sys.exit(
+                f"ERROR - Unexpected resource kind '{kind}' in rendered manifest - "
+                f"kernel launch terminating!"
+            )
+        kind_counts[kind] = kind_counts.get(kind, 0) + 1
+    for kind, count in kind_counts.items():
+        if count > MAX_DOCUMENTS_PER_KIND:
+            sys.exit(
+                f"ERROR - Rendered manifest contains {count} '{kind}' documents "
+                f"(max {MAX_DOCUMENTS_PER_KIND}) - kernel launch terminating!"
+            )
     for k8s_obj in k8s_objs:
         if k8s_obj.get("kind"):
             if k8s_obj["kind"] == "Pod":
