@@ -83,7 +83,8 @@ jobs:
           pip install ".[test]"
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
-          ignore_links: "http://my-gateway-server.com:8888"
+          ignore_links: |-
+            http://my-gateway-server\.com:8888|https://docs\.openshift\.com/.*|https://docs\.redhat\.com/.*
 
   build_docs:
     runs-on: windows-latest
