@@ -15,7 +15,14 @@ urllib3.disable_warnings()
 
 KERNEL_POD_TEMPLATE_PATH = "/kernel-pod.yaml.j2"
 
-ALLOWED_K8S_KINDS = {"Pod", "Secret", "PersistentVolumeClaim", "PersistentVolume", "Service", "ConfigMap"}
+ALLOWED_K8S_KINDS = {
+    "Pod",
+    "Secret",
+    "PersistentVolumeClaim",
+    "PersistentVolume",
+    "Service",
+    "ConfigMap",
+}
 MAX_DOCUMENTS_PER_KIND = 1
 YAML_PARSED_KERNEL_VARS = {"KERNEL_VOLUME_MOUNTS", "KERNEL_VOLUMES"}
 
@@ -153,7 +160,9 @@ def launch_kubernetes_kernel(
         if name.startswith("KERNEL_"):
             if name in YAML_PARSED_KERNEL_VARS:
                 parsed = yaml.safe_load(value)
-                if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
+                if not isinstance(parsed, list) or not all(
+                    isinstance(item, dict) for item in parsed
+                ):
                     sys.exit(
                         f"ERROR - {name} must be a YAML list of mappings - "
                         f"kernel launch terminating!"

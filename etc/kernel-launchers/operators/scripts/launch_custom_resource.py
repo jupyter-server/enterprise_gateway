@@ -97,7 +97,9 @@ def launch_custom_resource_kernel(
         if name.startswith("KERNEL_"):
             if name in YAML_PARSED_KERNEL_VARS:
                 parsed = yaml.safe_load(value)
-                if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
+                if not isinstance(parsed, list) or not all(
+                    isinstance(item, dict) for item in parsed
+                ):
                     sys.exit(
                         f"ERROR - {name} must be a YAML list of mappings - "
                         f"kernel launch terminating!"
@@ -108,7 +110,9 @@ def launch_custom_resource_kernel(
 
     kernel_crd_template = keywords["kernel_crd_group"] + "-" + keywords["kernel_crd_version"]
     if not re.match(r'^[a-z0-9][a-z0-9.\-]*-v[a-z0-9]+$', kernel_crd_template):
-        sys.exit(f"ERROR - Invalid CRD template name: {kernel_crd_template} - kernel launch terminating!")
+        sys.exit(
+            f"ERROR - Invalid CRD template name: {kernel_crd_template} - kernel launch terminating!"
+        )
 
     custom_resource_yaml = generate_kernel_custom_resource_yaml(kernel_crd_template, keywords)
 
@@ -118,7 +122,9 @@ def launch_custom_resource_kernel(
     plural = keywords["kernel_crd_plural"]
     custom_resource_object = yaml.safe_load(custom_resource_yaml)
     if not isinstance(custom_resource_object, dict) or "kind" not in custom_resource_object:
-        sys.exit("ERROR - Rendered CRD manifest is not a valid single-document YAML - kernel launch terminating!")
+        sys.exit(
+            "ERROR - Rendered CRD manifest is not a valid single-document YAML - kernel launch terminating!"
+        )
     if group == "sparkoperator.k8s.io":
         extend_operator_env(custom_resource_object, "driver")
         extend_operator_env(custom_resource_object, "executor")
