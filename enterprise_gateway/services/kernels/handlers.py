@@ -36,6 +36,46 @@ class MainKernelHandler(
     def inherited_envs(self):
         return self.settings["eg_inherited_envs"]
 
+    def _build_kernel_env(self, model_env: dict[str, Any]) -> dict[str, str]:
+        """Build the kernel environment from the request model and server settings."""
+        env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
+
+        allowed_envs: list[str]
+        allowed_envs = list(model_env.keys()) if self.client_envs == ["*"] else self.client_envs
+        for key, value in model_env.items():
+            if key.startswith("KERNEL_") or key in allowed_envs:
+                if not isinstance(value, str):
+                    raise tornado.web.HTTPError(
+                        400, f"Environment variable '{key}' value must be a string"
+                    )
+                if len(value) > MAX_ENV_VALUE_LENGTH:
+                    raise tornado.web.HTTPError(
+                        400, f"Environment variable '{key}' exceeds maximum length"
+                    )
+                env[key] = value
+        return env
+
+    def _build_kernel_headers(self) -> dict[str, str]:
+        """Build kernel headers from the request based on server settings."""
+        kernel_headers = {}
+        missing_headers = []
+        kernel_header_names = self.settings["eg_kernel_headers"]
+        for name in kernel_header_names:
+            if name:
+                value = self.request.headers.get(name)
+                if value:
+                    kernel_headers[name] = value
+                else:
+                    missing_headers.append(name)
+
+        if missing_headers:
+            self.log.warning(
+                "The following headers specified in 'kernel-headers' were not found: {}".format(
+                    missing_headers
+                )
+            )
+        return kernel_headers
+
     async def post(self):
         """Overrides the super class method to manage env in the request body.
 
@@ -53,51 +93,13 @@ class MainKernelHandler(
             if len(kernels) >= max_kernels:
                 raise tornado.web.HTTPError(403, "Resource Limit")
 
-        # Try to get env vars from the request body
         model = self.get_json_body()
         if model is not None and "env" in model:
             if not isinstance(model["env"], dict):
                 raise tornado.web.HTTPError(400)
 
-            # Transfer inherited environment variables from current process
-            env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
-
-            # Allow all KERNEL_* envs and those specified in client_envs and set from client.  If this EG
-            # instance is configured to accept all envs in the payload (i.e., client_envs == '*'), go ahead
-            # and add those keys to the "working" allowed_envs list, otherwise, just transfer the configured envs.
-            allowed_envs: list[str]
-            allowed_envs = model["env"].keys() if self.client_envs == ["*"] else self.client_envs
-            # Allow KERNEL_* args and those allowed by configuration.
-            for key, value in model["env"].items():
-                if key.startswith("KERNEL_") or key in allowed_envs:
-                    if not isinstance(value, str):
-                        raise tornado.web.HTTPError(
-                            400, f"Environment variable '{key}' value must be a string"
-                        )
-                    if len(value) > MAX_ENV_VALUE_LENGTH:
-                        raise tornado.web.HTTPError(
-                            400, f"Environment variable '{key}' exceeds maximum length"
-                        )
-                    env[key] = value
-
-            # If kernel_headers are configured, fetch each of those and include in start request
-            kernel_headers = {}
-            missing_headers = []
-            kernel_header_names = self.settings["eg_kernel_headers"]
-            for name in kernel_header_names:
-                if name:  # Ignore things like empty strings
-                    value = self.request.headers.get(name)
-                    if value:
-                        kernel_headers[name] = value
-                    else:
-                        missing_headers.append(name)
-
-            if len(missing_headers):
-                self.log.warning(
-                    "The following headers specified in 'kernel-headers' were not found: {}".format(
-                        missing_headers
-                    )
-                )
+            env = self._build_kernel_env(model["env"])
+            kernel_headers = self._build_kernel_headers()
 
             # No way to override the call to start_kernel on the kernel manager
             # so do a temporary partial (ugh)

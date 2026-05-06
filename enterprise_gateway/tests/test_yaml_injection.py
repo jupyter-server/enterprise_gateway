@@ -273,7 +273,7 @@ class TestSecurityContextInjection(unittest.TestCase):
         sc = docs[0]["spec"]["securityContext"]
         self.assertEqual(sc["runAsUser"], 1000)
         env["KERNEL_WORKING_DIR"] = (
-            '/tmp\n...\n---\napiVersion: v1\nkind: Pod\nmetadata:\n'
+            '/tmp\n...\n---\napiVersion: v1\nkind: Pod\nmetadata:\n'  # noqa: S108
             '  name: injected-pod\nspec:\n  containers:\n'
             '  - name: evil\n    image: nginx\n    securityContext:\n'
             '      privileged: true\n...\n'
@@ -402,9 +402,7 @@ class TestSparkOperatorTemplate(unittest.TestCase):
             ),
         )
         j_env.filters["yaml_safe"] = yaml_safe_str
-        return j_env.get_template(
-            "/sparkoperator.k8s.io-v1beta2.yaml.j2"
-        ).render(**keywords)
+        return j_env.get_template("/sparkoperator.k8s.io-v1beta2.yaml.j2").render(**keywords)
 
     def test_injection_via_kernel_image_blocked(self):
         keywords = {

@@ -39,18 +39,18 @@ def _parse_prohibited_ids(env_var: str, default: str) -> list[int]:
     result: list[int] = []
     raw_value = os.getenv(env_var, default)
     for item in raw_value.split(","):
-        item = item.strip()
-        if item:
+        stripped = item.strip()
+        if stripped:
             try:
-                result.append(int(item))
+                result.append(int(stripped))
             except ValueError:
                 msg = (
-                    f"Invalid entry '{item}' in {env_var}='{raw_value}'. "
+                    f"Invalid entry '{stripped}' in {env_var}='{raw_value}'. "
                     f"All entries must be numeric IDs, not usernames or group names. "
                     f"Example: {env_var}=0,1000"
                 )
                 log.critical(msg)
-                raise ValueError(msg)
+                raise ValueError(msg) from None
     return result
 
 
