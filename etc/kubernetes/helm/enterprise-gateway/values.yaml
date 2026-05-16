@@ -89,6 +89,8 @@ kernel:
   shareGatewayNamespace: false
   # Timeout for kernel launching in seconds.
   launchTimeout: 60
+  infoTimeout: 60
+  requestTimeout: 60
   # Timeout for an idle kernel before its culled in seconds. Default is 1 hour.
   cullIdleTimeout: 3600
   # Whether to cull idle kernels with connecting clients
