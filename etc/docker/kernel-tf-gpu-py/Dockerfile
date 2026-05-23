@@ -1,5 +1,5 @@
-# Ubuntu:xenial
-ARG BASE_CONTAINER=tensorflow/tensorflow:2.9.1-gpu
+# Ubuntu 22.04, Python 3.10, CUDA 12.3
+ARG BASE_CONTAINER=tensorflow/tensorflow:2.20.0-gpu
 FROM $BASE_CONTAINER
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,12 +9,21 @@ RUN apt-get update && apt-get install -yq \
     libsm6 \
     libxext-dev \
     libxrender1 \
-    netcat \
     python3-dev \
+    python3-pip \
     tzdata \
     unzip && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --upgrade future pycryptodomex ipykernel
+    # apt's python3.10 upgrade wipes the TF-bundled pip; python3-pip above
+    # provides Ubuntu's pip compatible with the upgraded interpreter
+    # ipykernel 7 has asyncio rewrite affecting kernels to become idle
+    # jupyter_client/server/pyzmq capped to converge with the rest of the fleet
+    python3 -m pip install --upgrade \
+        future pycryptodomex \
+        "ipykernel<7" \
+        "jupyter_client<9" \
+        "jupyter_server<3" \
+        "pyzmq<28"
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 

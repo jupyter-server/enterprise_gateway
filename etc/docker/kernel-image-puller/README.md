@@ -19,6 +19,8 @@ There are a few points of configuration listed below - all of which are environm
 - `KIP_NUM_PULLERS` (`2`)
 - `KIP_NUM_RETRIES` (`3`)
 - `KIP_PULL_POLICY` (`IfNotPresent`)
-- `KIP_IMAGE_FETCHER` (`KernelSpecsFetcher`)
+- `KIP_IMAGE_FETCHER` (`KernelSpecsFetcher`) — default applied by `kernel_image_puller.py` via `os.getenv()`; not set as a Dockerfile `ENV`, so override at runtime with `-e KIP_IMAGE_FETCHER=…`.
+
+The image bundles `crictl` from the Kubic repositories so it can pull kernel images on Kubernetes nodes that use containerd or CRI-O instead of Docker.
 
 For more information, check our [repo](https://github.com/jupyter-server/enterprise_gateway) and [docs](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/).

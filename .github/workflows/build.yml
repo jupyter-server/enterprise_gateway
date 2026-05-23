@@ -14,13 +14,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11"]
+        python-version: ['3.10', '3.11']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           clean: true
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
       - name: Display dependency info
         run: |
           python --version
@@ -84,7 +89,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
           ignore_links: |-
-            http://my-gateway-server\.com:8888|https://docs\.openshift\.com/.*|https://docs\.redhat\.com/.*
+            http://my-gateway-server\.com:8888|https://docs\.openshift\.com/.*|https://docs\.redhat\.com/.*|https://docs\.conda\.io/.*
 
   build_docs:
     runs-on: windows-latest

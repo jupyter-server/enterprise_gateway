@@ -1,7 +1,7 @@
 ARG HUB_ORG
 ARG SPARK_VERSION
 
-ARG BASE_CONTAINER=${HUB_ORG}/demo-base:${SPARK_VERSION}
+ARG BASE_CONTAINER=${HUB_ORG}/demo-base@sha256:080d9e9411b722f1afb333c767c9f28bb831f7055a37da7a11b12170a158e6d9
 FROM $BASE_CONTAINER
 
 # An ARG declared before a FROM is outside of a build stage,
@@ -17,7 +17,9 @@ USER $NB_USER
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp/
-RUN pip install /tmp/jupyter_enterprise_gateway*.whl
+# ipykernel 7 has asyncio rewrite affecting kernels to become idle
+RUN pip install --upgrade "ipykernel<7" && \
+    pip install /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/
 

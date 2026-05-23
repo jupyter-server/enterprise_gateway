@@ -1,4 +1,4 @@
-This image adds support for [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster. It is currently built on jupyter/minimal-notebook as a base with Apache Spark 2.4.6 installed on top.
+This image adds support for [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster. It is built on `jupyter/minimal-notebook:2023-03-13` and installs Apache Spark `3.2.1`.
 
 **Note: If you're looking for the YARN-based image of this name, it has been moved to [elyra/enterprise-gateway-demo](https://hub.docker.com/r/elyra/enterprise-gateway-demo/).**
 
@@ -6,6 +6,7 @@ This image adds support for [Jupyter Enterprise Gateway](https://jupyter-enterpr
 
 - [Jupyter Enterprise Gateway](https://github.com/jupyter-server/enterprise_gateway)
 - Python/R/Toree kernels that can be launched and distributed across a managed cluster.
+- `ipykernel<7` is pinned before the Enterprise Gateway wheel install to keep kernel idle/busy transitions working under the process-proxy model
 
 # Basic Use
 

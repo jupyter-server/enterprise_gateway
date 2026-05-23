@@ -34,7 +34,9 @@ class RKernelBaseTestCase(TestBase):
         self.assertTrue(self.kernel.restart())
 
         error_result, has_error = self.kernel.execute("y = x + 1")
-        self.assertRegex(error_result, "Error in eval")
+        # Match both legacy ("Error in eval(expr, envir, enclos): object 'x' not found")
+        # and modern ("Error: object 'x' not found") IRkernel error formats.
+        self.assertRegex(error_result, r"Error.*object 'x' not found")
         self.assertEqual(has_error, True)
 
     def test_interrupt(self):
