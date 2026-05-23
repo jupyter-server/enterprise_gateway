@@ -99,6 +99,12 @@ USER root
 
 RUN conda install mamba -n base -c conda-forge && \
     mamba install --yes --quiet -c conda-forge \
+    # # ipykernel 7 has asyncio rewrite affecting kernels to become idle
+    'ipykernel<7' \
+    # # cap kernel-side jupyter stack for fleet convergence
+    # 'jupyter_client<9' \
+    # 'jupyter_server<3' \
+    # 'pyzmq<28' \
     'jupyter' \
     'r-devtools' \
     'r-stringr' \

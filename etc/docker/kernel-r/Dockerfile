@@ -3,6 +3,12 @@ ARG BASE_CONTAINER=quay.io/jupyter/r-notebook:r-4.5.2
 FROM $BASE_CONTAINER
 
 RUN conda install --quiet --yes \
+    # ipykernel 7 has asyncio rewrite affecting kernels to become idle
+    'ipykernel<7' \
+    # cap kernel-side jupyter stack for fleet convergence
+    'jupyter_client<9' \
+    'jupyter_server<3' \
+    'pyzmq<28' \
     'r-argparse' \
     pycryptodomex && \
     conda clean --all && \

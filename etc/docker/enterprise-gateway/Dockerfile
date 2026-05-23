@@ -34,7 +34,9 @@ RUN curl -s https://archive.apache.org/dist/spark/spark-${SPARK_VER}/spark-${SPA
 
 # Install Enterprise Gateway wheel and kernelspecs
 COPY jupyter_enterprise_gateway*.whl /tmp/
-RUN pip install /tmp/jupyter_enterprise_gateway*.whl && \
+# ipykernel 7 has asyncio rewrite affecting kernels to become idle
+RUN pip install --upgrade "ipykernel<7" && \
+    pip install /tmp/jupyter_enterprise_gateway*.whl && \
 	rm -f /tmp/jupyter_enterprise_gateway*.whl
 
 ADD jupyter_enterprise_gateway_kernelspecs*.tar.gz /usr/local/share/jupyter/kernels/

@@ -1,15 +1,14 @@
 # What this image Gives You
 
-- Ubuntu base image : bionic
-- Hadoop 2.7.7
-- Apache Spark 2.4.6
-- Java 1.8 runtime
-- Mini-conda latest (python 3.11) with R packages
-- Toree 0.4.0-incubating
-- `jovyan` service user, with system users `elyra`, `bob`, and `alice`. The jovyan uid is `1000` to match other jupyter
-  images.
-- Password-less ssh for service user
-- Users have HDFS folder setup at startup
+- Debian-based miniconda image (`continuumio/miniconda3:24.1.2-0`)
+- Hadoop `3.3.1`
+- Apache Spark `3.2.1` — version controlled by `SPARK_VERSION` in the top-level `Makefile` (currently `3.2.1`);
+- OpenJDK 11 runtime (`openjdk-11-jdk-headless`)
+- miniconda 24.1.2 (Python 3.11) with R packages (`r-devtools`, `r-stringr`, `r-argparse`)
+- Apache Toree `0.5.0-incubating`
+- `jovyan` service user (UID `1000`, matching upstream Jupyter images), with system users `elyra`, `bob`, and `alice`
+- Password-less SSH for the `jovyan` service user
+- HDFS home directories created at container startup for each system user
 
 # Basic Use
 
@@ -17,3 +16,7 @@ As of the 0.9.0 release of [Jupyter Enterprise Gateway](https://github.com/jupyt
 this image can be started as a separate YARN cluster to better demonstrate remote kernel capabilities. See section
 [Dual Mode](https://hub.docker.com/r/elyra/enterprise-gateway/#dual_mode) on the enterprise-gateway page for command
 usage.
+
+# Pinned dependencies
+
+This image's conda/mamba environment pins `ipykernel<7` to keep kernel idle/busy transitions working under the Enterprise Gateway process-proxy model.
