@@ -1,7 +1,7 @@
 # Installing the client
 
 In terms of Enterprise Gateway, the client application is typically JupyterLab or Jupyter Notebook which has an embedded Jupyter Server.
-These applications are then configured to connect to Enterprise Gateway and delegate the kernel management operations to the Gateway server [See Connecting to EG for more details](connecting-to-eg.html).
+These applications are then configured to connect to Enterprise Gateway and delegate the kernel management operations to the Gateway server ([see Connecting to EG for more details](connecting-to-eg.md)).
 
 To install Jupyter Server via `pip`:
 
