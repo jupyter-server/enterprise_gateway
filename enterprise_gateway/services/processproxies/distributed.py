@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
+import shlex
 import signal
 from socket import gethostbyname
 from subprocess import STDOUT
@@ -165,14 +165,14 @@ class DistributedProcessProxy(RemoteProcessProxy):
             cmd = ""
 
             for key, value in env_dict.items():
-                cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
+                cmd += f"export {shlex.quote(str(key))}={shlex.quote(str(value))};"
 
             for key, value in self.kernel_manager.kernel_spec.env.items():
-                cmd += "export {}={};".format(key, json.dumps(value).replace("'", "''"))
+                cmd += f"export {shlex.quote(str(key))}={shlex.quote(str(value))};"
 
             cmd += "nohup"
             for arg in argv_cmd:
-                cmd += f" {arg}"
+                cmd += f" {shlex.quote(str(arg))}"
 
             cmd += f" >> {self.kernel_log} 2>&1 & echo $!"  # return the process id
 

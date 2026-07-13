@@ -20,6 +20,17 @@ from ...mixins import CORSMixin, JSONErrorsMixin, TokenAuthorizationMixin
 
 MAX_ENV_VALUE_LENGTH = 4096
 
+# Characters that enable shell command execution (command substitution and
+# variable expansion) or command/line injection when a client-supplied env
+# value is interpolated into a remote command string.  Values are already
+# shell-quoted at the launch sink (see distributed.py `_build_startup_command`);
+# rejecting them here is defense-in-depth for the SSH/distributed launch path
+# and any future sink that forgets to quote.  Note: characters that are common
+# in legitimate values and neutralized by quoting (e.g. quotes, spaces, and the
+# JSON delimiters `{}[]:,` used by KERNEL_VOLUME_MOUNTS) are intentionally NOT
+# rejected here to avoid breaking supported deployments.
+PROHIBITED_ENV_VALUE_CHARS = frozenset("$`\n\r\x00")
+
 
 class MainKernelHandler(
     TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, jupyter_server_handlers.MainKernelHandler
@@ -51,6 +62,11 @@ class MainKernelHandler(
                 if len(value) > MAX_ENV_VALUE_LENGTH:
                     raise tornado.web.HTTPError(
                         400, f"Environment variable '{key}' exceeds maximum length"
+                    )
+                if PROHIBITED_ENV_VALUE_CHARS.intersection(value):
+                    # Deliberately do not echo the value; it may contain secrets.
+                    raise tornado.web.HTTPError(
+                        400, f"Environment variable '{key}' contains prohibited characters"
                     )
                 env[key] = value
         return env
