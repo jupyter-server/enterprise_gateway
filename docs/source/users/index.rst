@@ -12,7 +12,7 @@ Because Enterprise Gateway is a headless web server, it is typically accessed fr
 The following assumes an Enterprise Gateway server has been configured and deployed.  Please consult the `operators <../operators/index.html>`_ documentation to deploy and configure the Enterprise Gateway server.
 
 .. note::
-  There are two primary client applications that can use Enterprise Gateway, JupyterLab running on Jupyter Server and Jupyter Notebook.  When a reference to a *Jupyter server* (lowercase 'server') or *the server* is made, the reference applies to both Jupyter Server and Jupyter Notebook.  Generally speaking, the client-side behaviors are identical between the two, although references to Jupyter Server are preferred since it's more current.  If anything is different, that difference will be noted, otherwise, please assume discussion of the two are interchangeable.
+  There are two primary client applications that can use Enterprise Gateway, JupyterLab and Jupyter Notebook where both are running on top of Jupyter Server.  Generally speaking, the client-side behaviors are identical between the two, although references to Jupyter Server are preferred since it's more current.  If anything is different, that difference will be noted, otherwise, please assume discussion of the two are interchangeable.
 
 .. toctree::
    :maxdepth: 1
