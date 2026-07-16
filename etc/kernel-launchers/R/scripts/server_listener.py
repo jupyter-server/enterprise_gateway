@@ -5,9 +5,11 @@ import json
 import logging
 import os
 import random
+import select
 import socket
 import uuid
 from threading import Thread
+from typing import Any, Dict, Optional
 
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
@@ -169,30 +171,34 @@ def _get_candidate_port(lower_port, upper_port):
     return random.randint(lower_port, upper_port)
 
 
-def get_server_request(sock):
+def get_server_request(sock: socket.socket) -> Optional[Dict[str, Any]]:
     """Gets a request from the server and returns the corresponding dictionary.
 
     This code also exists in the Python kernel-launcher's launch_ipykernel.py script.
     """
-    conn = None
-    data = ""
-    request_info = None
+    conn: Optional[socket.socket] = None
     try:
-        conn, addr = sock.accept()
-        while True:
-            buffer = conn.recv(1024).decode("utf-8")
-            if not buffer:  # send is complete
-                request_info = json.loads(data)
-                break
-            data = data + buffer  # append what we received until we get no more...
-    except Exception as e:
-        if type(e) is not socket.timeout:
-            raise e
+        # Enterprise gateway establishes a new connection for every request.
+        # Wait until a new connection is made, before accepting and reading.
+        input_ready, _, except_ready = select.select([sock], [], [])
+        for sock_ready in input_ready:
+            conn, addr = sock_ready.accept()
+            logger.info(f"Accepted connection on control channel from {addr=}")
+            data: str = ""
+            while buffer := conn.recv(1024).decode("utf-8"):
+                data = data + buffer  # append what we received until we get no more...
+            return json.loads(data) if data else None
+
+        if except_ready:
+            logger.error("Control channel socket reported error state")
+
+    except Exception:
+        logger.exception("Control channel socket closed unexpectedly")
     finally:
         if conn:
             conn.close()
 
-    return request_info
+    return None
 
 
 def server_listener(sock, parent_pid):
