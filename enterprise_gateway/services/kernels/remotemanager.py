@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import signal
@@ -17,7 +18,8 @@ from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import KernelSpec
 from jupyter_server.services.kernels.kernelmanager import AsyncMappingKernelManager
 from tornado import web
-from traitlets import directional_link
+from traitlets import List as ListTrait
+from traitlets import default, directional_link
 from traitlets import log as traitlets_log
 from zmq import IO_THREADS, MAX_SOCKETS, Context
 
@@ -160,6 +162,24 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """
     Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy.
     """
+
+    kernel_launch_terminate_on_events_env = "EG_KERNEL_LAUNCH_TERMINATE_ON_EVENTS"
+    kernel_launch_terminate_on_events_default_value: ClassVar[list] = []
+    kernel_launch_terminate_on_events = ListTrait(
+        default_value=kernel_launch_terminate_on_events_default_value,
+        config=True,
+        help="""Comma-separated list of dictionaries, each describing an event by `type`, `reason`,
+         and `timeout_in_seconds` (e.g. [{"type": "Warning", "reason": "FailedMount", "timeout_in_seconds": 0}]).
+         Kernel pod events will be sampled during startup, and if an event described in this list is detected,
+         the kernel launch will be terminated after the set timeout. Only available for container kernels.
+         Make sure to provide the exact event type and reason as it appears in your container platform,
+         A guide to finding the event type and reason in kubernetes can be found here:
+        `https://www.bluematador.com/blog/kubernetes-events-explained`""",
+    )
+
+    @default("kernel_launch_terminate_on_events")
+    def _kernel_launch_terminate_on_events_default(self) -> list:
+        return json.loads(os.getenv(self.kernel_launch_terminate_on_events_env, "[]"))
 
     def _context_default(self) -> Context:
         """
