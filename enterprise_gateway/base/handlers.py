@@ -8,6 +8,7 @@ import json
 from typing import List
 
 import jupyter_server._version
+import prometheus_client
 from jupyter_server.base.handlers import APIHandler
 from tornado import web
 
@@ -31,6 +32,17 @@ class APIVersionHandler(TokenAuthorizationMixin, CORSMixin, JSONErrorsMixin, API
         )
 
 
+class PrometheusMetricsHandler(CORSMixin, web.RequestHandler):
+    """
+    Return prometheus metrics from this enterprise gateway
+    """
+
+    def get(self):
+        """Get the latest state of the Prometheus' metrics."""
+        self.set_header("Content-Type", prometheus_client.CONTENT_TYPE_LATEST)
+        self.write(prometheus_client.generate_latest(prometheus_client.REGISTRY))
+
+
 class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
     """
     Catches all requests and responds with 404 JSON messages.
@@ -48,4 +60,8 @@ class NotFoundHandler(JSONErrorsMixin, web.RequestHandler):
         raise web.HTTPError(404)
 
 
-default_handlers: List[tuple] = [(r"/api", APIVersionHandler), (r"/(.*)", NotFoundHandler)]
+default_handlers: List[tuple] = [
+    (r"/api", APIVersionHandler),
+    (r"/metrics", PrometheusMetricsHandler),
+    (r"/(.*)", NotFoundHandler),
+]

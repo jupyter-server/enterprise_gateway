@@ -37,6 +37,7 @@ from .services.sessions.kernelsessionmanager import (
     WebhookKernelSessionManager,
 )
 from .services.sessions.sessionmanager import SessionManager
+from .webapp import EnterpriseGatewayWebApp
 
 # Add additional command line aliases
 aliases = dict(base_aliases)
@@ -218,7 +219,7 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
         self.log.info(f"Using authorizer: {self.authorizer_class}")
         authorizer = self.authorizer_class(parent=self, log=self.log)
 
-        self.web_app = web.Application(
+        self.web_app = EnterpriseGatewayWebApp(
             handlers=handlers,
             kernel_manager=self.kernel_manager,
             session_manager=self.session_manager,
