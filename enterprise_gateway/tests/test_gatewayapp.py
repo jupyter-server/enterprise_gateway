@@ -2,11 +2,14 @@
 # Distributed under the terms of the Modified BSD License.
 """Tests for basic gateway app behavior."""
 
+import asyncio
 import logging
 import os
 import unittest
+from unittest.mock import AsyncMock
 
-from tornado.testing import AsyncHTTPTestCase, ExpectLog
+from tornado.escape import json_decode
+from tornado.testing import AsyncHTTPTestCase, AsyncTestCase, ExpectLog, gen_test
 
 from enterprise_gateway.enterprisegatewayapp import EnterpriseGatewayApp
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
@@ -42,6 +45,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         self.assertEqual(app.max_age, "5")
         self.assertEqual(app.base_url, "/fake/path")
         self.assertEqual(app.max_kernels, 1)
+        self.assertEqual(app.prespawn_count, 0)
         self.assertEqual(app.default_kernel_name, "fake_kernel")
         self.assertEqual(app.keyfile, "/test/fake.key")
         self.assertEqual(app.certfile, "/test/fake.crt")
@@ -68,6 +72,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["KG_MAX_AGE"] = "5"
         os.environ["KG_BASE_URL"] = "/fake/path"
         os.environ["KG_MAX_KERNELS"] = "1"
+        os.environ["KG_PRESPAWN_COUNT"] = "0"
         os.environ["KG_DEFAULT_KERNEL_NAME"] = "fake_kernel"
         os.environ["KG_KEYFILE"] = "/test/fake.key"
         os.environ["KG_CERTFILE"] = "/test/fake.crt"
@@ -91,6 +96,7 @@ class TestGatewayAppConfig(unittest.TestCase):
         os.environ["EG_MAX_AGE"] = "5"
         os.environ["EG_BASE_URL"] = "/fake/path"
         os.environ["EG_MAX_KERNELS"] = "1"
+        os.environ["EG_PRESPAWN_COUNT"] = "0"
         os.environ["EG_DEFAULT_KERNEL_NAME"] = "fake_kernel"
         os.environ["EG_KEYFILE"] = "/test/fake.key"
         os.environ["EG_CERTFILE"] = "/test/fake.crt"
@@ -101,6 +107,21 @@ class TestGatewayAppConfig(unittest.TestCase):
         )
 
         self._assert_envs_to_traitlets("EG_")
+
+    def test_init_configurables_without_event_loop(self):
+        """init_configurables runs before the IO loop exists, so it must not need one."""
+        # Same state tornado's AsyncTestCase.tearDown leaves behind, and the default
+        # on Python 3.14+, where get_event_loop() no longer creates a loop implicitly.
+        asyncio.set_event_loop(None)
+        app = EnterpriseGatewayApp()
+        app.init_configurables()
+
+    def test_prespawn_max_conflict(self):
+        """Server should error if prespawn count is greater than max allowed kernels."""
+        app = EnterpriseGatewayApp()
+        app.prespawn_count = 3
+        app.max_kernels = 2
+        self.assertRaises(RuntimeError, app.init_configurables)
 
     def test_ssl_options_no_config(self):
         app = EnterpriseGatewayApp()
@@ -158,6 +179,23 @@ class TestGatewayAppConfig(unittest.TestCase):
                 del sys.modules["test_auth_module"]
 
 
+class TestStartPrespawning(AsyncTestCase):
+    """Tests scheduling of kernel prespawning, without starting an HTTP server."""
+
+    @gen_test(timeout=10)
+    async def test_start_prespawning_prespawns_kernels(self):
+        """start_prespawning should prespawn prespawn_count kernels on the current loop."""
+        app = EnterpriseGatewayApp(log_level=logging.CRITICAL)
+        app.prespawn_count = 2
+        app.init_configurables()
+        app.kernel_manager.start_prespawned_kernel = AsyncMock(return_value="kernel-id")
+
+        app.start_prespawning()
+        await asyncio.wait_for(app.kernel_manager.prespawn_complete.wait(), timeout=5)
+
+        self.assertEqual(app.kernel_manager.start_prespawned_kernel.await_count, 2)
+
+
 class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     """Base class for integration style tests using HTTP/Websockets against an
     instance of the gateway app.
@@ -195,3 +233,22 @@ class TestGatewayAppBase(AsyncHTTPTestCase, ExpectLog):
     def setup_configurables(self):
         """Override to configure further settings, such as the personality."""
         pass
+
+
+class TestPrespawnGatewayApp(TestGatewayAppBase):
+    def setup_app(self):
+        self.app.prespawn_count = 1
+        self.app.max_kernels = 2  # Allow for prespawned kernel plus potential test kernel
+        self.app.list_kernels = True
+
+    @gen_test(timeout=10)
+    def test_prespawn_count(self):
+        """Server should launch given number of kernels on start."""
+        # The test harness never calls start(), so trigger prespawning directly
+        self.app.start_prespawning()
+        yield self.app.kernel_manager.prespawn_complete.wait()
+        response = yield self.http_client.fetch(self.get_url('/api/kernels'), method='GET')
+        self.assertEqual(response.code, 200)
+        kernels = json_decode(response.body)
+        # Should have 1 prespawned kernel
+        self.assertEqual(len(kernels), 1)
