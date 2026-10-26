@@ -128,6 +128,22 @@ def new_kernel_id(**kwargs: dict[str, Any] | None) -> str:
     return kernel_id
 
 
+def inherited_kernel_env(inherited_envs: list[str]) -> dict[str, str]:
+    """Returns the variables of this process's environment that kernels may inherit.
+
+    Parameters
+    ----------
+    inherited_envs : list of str
+        Names of the variables kernels are allowed to inherit (the ``inherited_envs`` setting).
+
+    Returns
+    -------
+    dict
+        Each allowed variable that is set in this process, with its value.
+    """
+    return {key: os.environ[key] for key in inherited_envs if key in os.environ}
+
+
 class TrackPendingRequests:
     """
      Simple class to track (increment/decrement) pending kernel start requests, both total and per user.
@@ -160,6 +176,16 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
     """
     Extends the AsyncMappingKernelManager with support for managing remote kernels via the process-proxy.
     """
+
+    prespawn_complete: asyncio.Event
+
+    def __init__(self, **kwargs: dict[str, Any] | None):
+        """Initialize the remote mapping kernel manager."""
+        super().__init__(**kwargs)
+        # Set once prespawn_kernels() has finished, whether or not any kernel started.
+        # Unlike a Future, an Event binds to the running loop on first use rather than at
+        # creation, so it can be built before Enterprise Gateway's IO loop exists.
+        self.prespawn_complete = asyncio.Event()
 
     def _context_default(self) -> Context:
         """
@@ -225,13 +251,119 @@ class RemoteMappingKernelManager(AsyncMappingKernelManager):
         # Check max kernel limits
         self._enforce_kernel_limits(username)
 
-        RemoteMappingKernelManager.pending_requests.increment(username)
-        try:
-            kernel_id = await super().start_kernel(*args, **kwargs)
-        finally:
-            RemoteMappingKernelManager.pending_requests.decrement(username)
+        kernel_id = await self._start_kernel_tracking_pending(username, *args, **kwargs)
         self.parent.kernel_session_manager.create_session(kernel_id, **kwargs)
         return kernel_id
+
+    async def _start_kernel_tracking_pending(
+        self, username: str, *args: list[Any] | None, **kwargs: dict[str, Any] | None
+    ) -> str:
+        """Starts a kernel, counting it as a pending request for `username` until it starts.
+
+        Kernel startup is asynchronous, so `_enforce_kernel_limits` counts pending requests too.
+        """
+        RemoteMappingKernelManager.pending_requests.increment(username)
+        try:
+            return await super().start_kernel(*args, **kwargs)
+        finally:
+            RemoteMappingKernelManager.pending_requests.decrement(username)
+
+    async def start_prespawned_kernel(self, **kwargs: dict[str, Any] | None) -> str:
+        """Starts a kernel ahead of any request for it (see `prespawn_kernels`).
+
+        Unlike `start_kernel`, the kernel belongs to no user: it is launched as user
+        ``prespawn``, skips the kernel limit checks (``prespawn_count`` is checked against
+        ``max_kernels`` at startup), and gets no kernel session.
+
+        Returns
+        -------
+        kernel_id : str
+            The uuid associated with the new kernel.
+        """
+        # Use the same default as regular kernel requests: the kernel manager's, which
+        # init_configurables sets from default_kernel_name only when that is configured.
+        # (The app's own default_kernel_name is '' when unset, which names no kernelspec.)
+        kwargs.setdefault('kernel_name', self.default_kernel_name)
+
+        # Pass the username the way kernel requests do, as KERNEL_USERNAME in env (which
+        # authorization and impersonation read); a kwarg would be passed on to Popen and
+        # fail the launch.  Like requests that carry an env, inherit only inherited_envs.
+        env = kwargs.setdefault('env', inherited_kernel_env(self.parent.inherited_envs))
+        env.setdefault('KERNEL_USERNAME', 'prespawn')
+        username = KernelSessionManager.get_kernel_username(**kwargs)
+        self.log.debug(
+            f"RemoteMappingKernelManager.start_prespawned_kernel: {kwargs['kernel_name']}, username: {username}"
+        )
+
+        # Prespawned kernels belong to no user, so skip the kernel limit checks and session creation
+        kernel_id = await self._start_kernel_tracking_pending(username, **kwargs)
+        self.log.info(f"Prespawned kernel {kernel_id} created successfully")
+        return kernel_id
+
+    async def prespawn_kernels(self, count: int | None) -> None:
+        """Starts ``count`` kernels ahead of any request for them.
+
+        The kernels start concurrently, and each one that fails to start is retried up to
+        two more times.  `prespawn_complete` is set when this finishes, whether or not any
+        kernel was started.
+
+        Parameters
+        ----------
+        count : int or None
+            Number of kernels to prespawn; ``None`` or 0 prespawns none.
+
+        Raises
+        ------
+        RuntimeError
+            If none of the kernels could be started.
+        """
+        try:
+            if not count:
+                self.log.info("No kernels to prespawn (prespawn_count=0)")
+                return
+
+            self.log.info(f"Prespawning {count} kernels...")
+            results = await asyncio.gather(
+                *(self._prespawn_kernel_with_retry(index) for index in range(count)),
+                return_exceptions=True,
+            )
+
+            failed_spawns = 0
+            for index, result in enumerate(results):
+                # BaseException, so a cancelled spawn (CancelledError) counts as a failure
+                if isinstance(result, BaseException):
+                    self.log.error(f"Failed to prespawn kernel {index}: {result}")
+                    failed_spawns += 1
+            self.log.info(
+                f"Prespawn completed: {count - failed_spawns} successful, {failed_spawns} failed"
+            )
+
+            if failed_spawns == count:
+                error_msg = "Failed to prespawn any kernels"
+                self.log.error(f"Error during kernel prespawning: {error_msg}")
+                raise RuntimeError(error_msg)
+        finally:
+            # Set even when prespawning fails, so anything awaiting it never waits forever
+            self.prespawn_complete.set()
+
+    async def _prespawn_kernel_with_retry(self, index: int, max_retries: int = 2) -> str:
+        """Starts one prespawned kernel, retrying up to ``max_retries`` times on failure."""
+        for attempt in range(max_retries + 1):
+            try:
+                kernel_id = await self.start_prespawned_kernel()
+                self.log.debug(f"Successfully prespawned kernel {index}: {kernel_id}")
+                return kernel_id
+            except Exception as e:
+                if attempt < max_retries:
+                    self.log.warning(
+                        f"Attempt {attempt + 1} to spawn kernel {index} failed: {e}. Retrying..."
+                    )
+                    await asyncio.sleep(1.0 * (attempt + 1))  # Linear backoff: 1s, then 2s
+                else:
+                    self.log.error(
+                        f"Failed to spawn kernel {index} after {max_retries + 1} attempts: {e}"
+                    )
+                    raise
 
     async def restart_kernel(self, kernel_id: str, now: bool = False) -> None:
         """Restart a kernel."""
