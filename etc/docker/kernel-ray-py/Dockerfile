@@ -1,13 +1,15 @@
-# Ray 2.50.0 with Python 3.11
-# rayproject/ray:2.50.0.714bc0-extra-py311-cpu
-ARG BASE_CONTAINER=rayproject/ray:2.50.0.714bc0-extra-py311-cpu
+# Ray with Python 3.11 (CPU); RAY_VERSION selects both the base image and
+# the matching ray[data] pin below
+ARG RAY_VERSION=2.58.0
+ARG BASE_CONTAINER=rayproject/ray:${RAY_VERSION}-extra-py311-cpu
 FROM $BASE_CONTAINER
+ARG RAY_VERSION
 
 # Add debugger support
 # ipykernel 7 has asyncio rewrite affecting kernels to become idle
 # jupyter_client/server/pyzmq capped to converge with the rest of the fleet
 RUN pip install --upgrade --no-cache-dir \
-    "ray[data]==2.50.0" \
+    "ray[data]==${RAY_VERSION}" \
     cffi \
     future \
     pycryptodomex \
