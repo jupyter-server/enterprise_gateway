@@ -115,6 +115,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
             self.container_name = pod_info.metadata.name
             if pod_info.status:
                 pod_status = pod_info.status.phase.lower()
+                self.log.debug(f">>> k8s.get_container_status: {pod_status}")
                 if pod_status == "running" and not self.assigned_host:
                     # Pod is running, capture IP
                     self.assigned_ip = pod_info.status.pod_ip
@@ -128,6 +129,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 f"Status: '{pod_status}', Pod IP: '{self.assigned_ip}', KernelID: '{self.kernel_id}'"
             )
 
+        self.log.debug(f">>> k8s.get_container_status: {pod_status}")
         return pod_status
 
     def delete_managed_object(self, termination_stati: list[str]) -> bool:

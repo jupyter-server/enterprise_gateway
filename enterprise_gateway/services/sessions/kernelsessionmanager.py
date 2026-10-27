@@ -94,6 +94,7 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
             Information used for the launch of the kernel
 
         """
+        self.log.debug(f">>> Creating new session for kernel {kernel_id}")
         km = self.kernel_manager.get_kernel(kernel_id)
 
         # Compose the kernel_session entry
@@ -103,11 +104,14 @@ reside.  This directory should exist.  (EG_PERSISTENCE_ROOT env var)""",
         kernel_session["kernel_name"] = km.kernel_name
 
         # Build the inner dictionaries: connection_info, process_proxy and add to kernel_session
+        self.log.debug(f">>> Getting connection info for kernel {kernel_id}")
         kernel_session["connection_info"] = km.get_connection_info()
         kernel_session["launch_args"] = kwargs.copy()
+        self.log.debug(f">>> Getting process info for kernel {kernel_id}")
         kernel_session["process_info"] = (
             km.process_proxy.get_process_info() if km.process_proxy else {}
         )
+        self.log.debug(f">>> Saving session {kernel_session}")
         self._save_session(kernel_id, kernel_session)
 
     def refresh_session(self, kernel_id: str) -> None:

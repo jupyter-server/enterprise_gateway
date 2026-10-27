@@ -73,6 +73,8 @@ spec:
           value: !!str {{ .Values.kernel.launchTimeout }}
         - name: EG_KERNEL_INFO_TIMEOUT
           value: !!str {{ .Values.kernel.infoTimeout }}
+        - name: EG_REQUEST_TIMEOUT
+          value: !!str {{ .Values.kernel.requestTimeout }}
         - name: EG_ALLOWED_KERNELS
           value: {{ toJson .Values.kernel.allowedKernels | squote }}
         - name: EG_DEFAULT_KERNEL_NAME
