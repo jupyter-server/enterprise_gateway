@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 open -a Docker
 
 minikube -p ray stop                              # this keep updating the existing cluster
