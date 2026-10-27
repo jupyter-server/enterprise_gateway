@@ -65,8 +65,6 @@ jobs:
           docker logs itest-yarn
           echo "==== Docker Container Status ===="
           docker ps -a
-          echo "==== Enterprise Gateway Log ===="
-          docker exec -it itest-yarn cat /usr/local/share/jupyter/enterprise-gateway.log || true
       - name: Run linters
         run: |
           make lint
