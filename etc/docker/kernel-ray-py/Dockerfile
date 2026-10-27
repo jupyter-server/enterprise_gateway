@@ -4,17 +4,17 @@ ARG BASE_CONTAINER=rayproject/ray:2.50.0.714bc0-extra-py311-cpu
 FROM $BASE_CONTAINER
 
 # Add debugger support
-RUN pip install --upgrade --no-cache-dir ipykernel
-
-RUN pip install --upgrade --no-cache-dir --upgrade \
-    "jupyter_client>=6.1,<7" \
-    "jupyter_server>=1.7,<2" \
-    "pyzmq>=20.0.0,<25" \
+# ipykernel 7 has asyncio rewrite affecting kernels to become idle
+# jupyter_client/server/pyzmq capped to converge with the rest of the fleet
+RUN pip install --upgrade --no-cache-dir \
     "ray[data]==2.50.0" \
-    ipykernel \
     cffi \
     future \
-    pycryptodomex
+    pycryptodomex \
+    "ipykernel<7" \
+    "jupyter_client<9" \
+    "jupyter_server<3" \
+    "pyzmq<28"
 
 ADD jupyter_enterprise_gateway_kernel_image_files*.tar.gz /usr/local/bin/
 
