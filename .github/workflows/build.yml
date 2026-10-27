@@ -16,12 +16,12 @@ jobs:
         python-version: ['3.10', '3.11']
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           clean: true
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - name: Set up JDK 11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '11'
@@ -35,7 +35,7 @@ jobs:
         run: |
           pip install ".[test]"
       - name: Build and install Jupyter Enterprise Gateway
-        uses: nick-invision/retry@v3.0.0
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 2
@@ -45,7 +45,7 @@ jobs:
         run: |
           pip freeze
       - name: Run unit tests
-        uses: nick-invision/retry@v3.0.0
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 3
           max_attempts: 1
@@ -77,7 +77,7 @@ jobs:
   link_check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           python_version: "3.11"
@@ -93,7 +93,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           python_version: "3.11"
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           python_version: "3.11"
