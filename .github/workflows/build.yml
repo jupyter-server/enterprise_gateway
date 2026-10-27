@@ -9,7 +9,6 @@ jobs:
     env:
       ASYNC_TEST_TIMEOUT: 60
       KERNEL_LAUNCH_TIMEOUT: 120
-      CONDA_HOME: /usr/share/miniconda
     strategy:
       fail-fast: false
       matrix:
@@ -30,7 +29,6 @@ jobs:
         run: |
           python --version
           pip --version
-          conda --version
       - name: Add SBT launcher
         uses: sbt/setup-sbt@v1
       - name: Install Python dependencies
