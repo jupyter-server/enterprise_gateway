@@ -486,6 +486,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "alt_yarn_endpoint",
             "yarn_endpoint_security_enabled",
             "conductor_endpoint",
+            "conductor_ha_allowed_hosts",
             "remote_hosts",
             "load_balancing_algorithm",
         ]

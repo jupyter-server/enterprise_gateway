@@ -129,6 +129,13 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     The http url for accessing the Conductor REST API. (EG_CONDUCTOR_ENDPOINT
     env var)
     Default: None
+--EnterpriseGatewayApp.conductor_ha_allowed_hosts=<list-item-1>...
+    DNS domains (e.g. corp.example.com, matching the domain and its
+    subdomains) and IPv4 CIDRs (e.g. 10.20.0.0/16) that client-supplied
+    KERNEL_CONDUCTOR_HA_ENDPOINTS failover hosts must belong to.  When
+    empty, failover hosts must be in the DNS domain of the Conductor
+    endpoint.  (EG_CONDUCTOR_HA_ALLOWED_HOSTS env var)
+    Default: []
 --EnterpriseGatewayApp.config_file=<Unicode>
     Full path of a config file.
     Default: ''

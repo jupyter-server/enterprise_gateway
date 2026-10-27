@@ -5,6 +5,13 @@ The Enterprise Gateway client software will also include _any_ environment varia
 There are several supported `KERNEL_` variables that the Enterprise Gateway server looks for and uses, but others can be sent to customize behaviors. The following kernel-specific environment variables are used by Enterprise Gateway. As mentioned above, all `KERNEL_` variables submitted in the kernel startup request's JSON body will be available to the kernel for its launch.
 
 ```text
+  KERNEL_CONDUCTOR_HA_ENDPOINTS=<from user> or None
+    Conductor only. Comma-separated list of Conductor (ascd) hostnames to fail over
+    to when the configured Conductor endpoint is unreachable.  Entries must be bare
+    hostnames or IPv4 addresses inside the trust boundary configured by the operator
+    via EG_CONDUCTOR_HA_ALLOWED_HOSTS (by default, the DNS domain of the Conductor
+    endpoint); otherwise the kernel start request fails with HTTP 400.
+
   KERNEL_GID=<from user> or 100
     Containers only. This value represents the group id in which the container will run.
     The default value is 100 representing the users group - which is how all kernel images

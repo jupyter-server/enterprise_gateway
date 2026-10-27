@@ -553,6 +553,20 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def _conductor_endpoint_default(self) -> Optional[str]:
         return os.getenv(self.conductor_endpoint_env, self.conductor_endpoint_default_value)
 
+    conductor_ha_allowed_hosts_env = "EG_CONDUCTOR_HA_ALLOWED_HOSTS"
+    conductor_ha_allowed_hosts = ListTrait(
+        config=True,
+        help="""DNS domains (e.g. corp.example.com, matching the domain and its
+                subdomains) and IPv4 CIDRs (e.g. 10.20.0.0/16) that client-supplied
+                KERNEL_CONDUCTOR_HA_ENDPOINTS failover hosts must belong to.  When
+                empty, failover hosts must be in the DNS domain of the Conductor
+                endpoint.  (EG_CONDUCTOR_HA_ALLOWED_HOSTS env var)""",
+    )
+
+    @default("conductor_ha_allowed_hosts")
+    def _conductor_ha_allowed_hosts_default(self) -> List[str]:
+        return os.getenv(self.conductor_ha_allowed_hosts_env, "").split(",")
+
     _log_formatter_cls = LogFormatter  # traitlet default is LevelFormatter
 
     @default("log_format")

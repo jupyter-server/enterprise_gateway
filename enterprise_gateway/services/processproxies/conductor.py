@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import os
 import re
@@ -13,11 +14,14 @@ import signal
 import socket
 import subprocess
 import time
+from collections.abc import Iterable
 from random import randint
 from typing import Any, ClassVar
+from urllib.parse import quote, urlsplit, urlunsplit
 
 from jupyter_client import localinterfaces
 from jupyter_server.utils import url_unescape
+from tornado.web import HTTPError
 
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import RemoteProcessProxy
@@ -26,6 +30,10 @@ pjoin = os.path.join
 local_ip = localinterfaces.public_ips()[0]
 poll_interval = float(os.getenv("EG_POLL_INTERVAL", "0.5"))
 max_poll_attempts = int(os.getenv("EG_MAX_POLL_ATTEMPTS", "10"))
+
+# Bound each curl invocation's TCP connect phase so a slow/blackholed failover host cannot
+# stall a kernel launch (the HA list is tried host-by-host, four times over).
+_CURL_CONNECT_TIMEOUT_SECONDS = int(os.getenv("EG_CONDUCTOR_CONNECT_TIMEOUT", "10"))
 
 
 class ConductorClusterProcessProxy(RemoteProcessProxy):
@@ -48,6 +56,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             "conductor_endpoint", kernel_manager.conductor_endpoint
         )
         self.ascd_endpoint = self.conductor_endpoint
+        self.conductor_ha_allowed_hosts = proxy_config.get(
+            "conductor_ha_allowed_hosts", kernel_manager.conductor_ha_allowed_hosts
+        )
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
@@ -170,10 +181,11 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         )
         sslconf = env_dict["KERNEL_CURL_SECURITY_OPT"].split()
         ascd_rest_url = env_dict["CONDUCTOR_REST_URL"]
-        ig_id = env_dict["KERNEL_SIG_ID"]
+        ig_id = quote(str(env_dict["KERNEL_SIG_ID"]), safe="")
         url = f"{ascd_rest_url}conductor/v1/instances?id={ig_id}&fields=outputs"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
+        _harden_curl_cmd(cmd)
         # Perform REST call
         try:
             process = subprocess.Popen(
@@ -505,6 +517,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         url = f"{self.conductor_endpoint}/v1/applications?driverid={driver_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
+        _harden_curl_cmd(cmd)
 
         # Perform REST call
         try:
@@ -536,6 +549,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         url = f"{self.conductor_endpoint}/v1/applications?applicationid={app_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
+        _harden_curl_cmd(cmd)
         # Perform REST call
         try:
             process = subprocess.Popen(
@@ -612,6 +626,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         url = f"{self.conductor_endpoint}/v1/submissions/kill/{self.driver_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "POST", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
+        _harden_curl_cmd(cmd)
 
         # Perform REST call
         try:
@@ -628,11 +643,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         return response
 
     def _performRestCall(self, cmd: list[str], url: str, HA_LIST: list[str]) -> tuple:  # noqa
+        _harden_curl_cmd(cmd)
         for HA in HA_LIST:
-            portcolon = url.rfind(":")
-            slash = url.find("://")
-            url = url[0 : slash + 3] + HA + url[portcolon:]
-            cmd[-1] = url
+            cmd[-1] = _replace_url_host(url, HA)
             self.log.debug(cmd)
             process = subprocess.Popen(
                 cmd,
@@ -676,18 +689,26 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             )
             self.log_and_raise(http_status_code=500, reason=reasonErr)
 
-        # Determine hostname of ascd_endpoint and setup the HA List
+        # Determine hostname of ascd_endpoint and setup the HA List.  The failover hosts are
+        # client-supplied and receive the credential-bearing requests below, so validate them
+        # before any request is sent.
         portcolon = self.ascd_endpoint.rfind(":")
         slash = self.ascd_endpoint.find("://")
         host = self.ascd_endpoint[slash + 3 : portcolon]
-        HA_LIST = env["KERNEL_CONDUCTOR_HA_ENDPOINTS"].split(",")
-        HA_LIST.insert(0, host)
+        HA_LIST = [
+            host,
+            *validate_conductor_ha_endpoints(
+                env.get("KERNEL_CONDUCTOR_HA_ENDPOINTS"), host, self.conductor_ha_allowed_hosts
+            ),
+        ]
 
         header = "Accept: application/json"
         authorization = "Authorization: Bearer %s" % jwt_token
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
         sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
-        url = "{}/auth/logon/jwt?topology={}".format(self.ascd_endpoint, env["KERNEL_TOPOLOGY"])
+        url = "{}/auth/logon/jwt?topology={}".format(
+            self.ascd_endpoint, quote(str(env["KERNEL_TOPOLOGY"]), safe="")
+        )
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
         output, stderr = self._performRestCall(cmd, url, HA_LIST)
@@ -710,7 +731,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
 
         # Get the Python path to use to make sure the right conda environment is used
         url = "{}/anaconda/instances/{}".format(
-            self.ascd_endpoint, env["KERNEL_ANACONDA_INST_UUID"]
+            self.ascd_endpoint, quote(str(env["KERNEL_ANACONDA_INST_UUID"]), safe="")
         )
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
@@ -732,7 +753,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         # Get instance group information we need
         url = "{}/instances?id={}&fields=sparkinstancegroup,outputs".format(
             self.ascd_endpoint,
-            env["KERNEL_IG_UUID"],
+            quote(str(env["KERNEL_IG_UUID"]), safe=""),
         )
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
@@ -768,3 +789,198 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 "value"
             ]
         return response
+
+
+# Conductor HA failover host validation.
+#
+# Every Conductor REST call carries a JWT or EGO PlatformToken, and when the primary ascd
+# host is unreachable the call is retried against each host in the client-supplied
+# KERNEL_CONDUCTOR_HA_ENDPOINTS.  Clients may name their own (e.g. their team's) Conductor
+# hosts, but those credentials must never reach a host outside the operator's trust
+# boundary (EG_CONDUCTOR_HA_ALLOWED_HOSTS), nor an internal address.
+
+
+def _harden_curl_cmd(cmd: list[str]) -> list[str]:
+    """Insert curl safety flags, in place, immediately after the ``curl`` program name.
+
+    ``--globoff`` stops curl from interpreting ``[...]``/``{...}`` in a (client-influenced)
+    URL as a glob that expands into many requests; ``--connect-timeout`` bounds each
+    connection attempt.  Returns ``cmd`` for convenience.
+    """
+    cmd[1:1] = ["--globoff", "--connect-timeout", str(_CURL_CONNECT_TIMEOUT_SECONDS)]
+    return cmd
+
+
+def _replace_url_host(url: str, host: str) -> str:
+    """Return ``url`` with its host replaced by ``host``, preserving port, path and query.
+
+    Done via urlsplit/urlunsplit rather than string surgery so that a ``:`` or ``@`` in the
+    (client-supplied) path or query cannot shift the authority curl connects to.  The port
+    comes from ``url`` (the operator-configured endpoint); ``host`` is a bare hostname.
+    """
+    parts = urlsplit(url)
+    netloc = f"{host}:{parts.port}" if parts.port is not None else host
+    return urlunsplit(parts._replace(netloc=netloc))
+
+
+# A failover host is spliced into the request URL in place of the primary host (see
+# _performRestCall), so it must be a bare RFC 1123 hostname (underscores tolerated for
+# legacy internal names) or IPv4 address.  A scheme, port, path, query, fragment or
+# userinfo would let the request reach a different host than the one validated.
+_HA_HOST_LABEL_RE = re.compile(r"(?!-)[a-z0-9_-]{1,63}(?<!-)")
+_HA_HOST_MAX_LENGTH = 253
+_THIS_NETWORK = ipaddress.IPv4Network("0.0.0.0/8")
+# Each failover host is tried, in turn, on every one of the four authenticated REST calls.
+# Cap the client-supplied list so a kernel launch cannot fan out into an unbounded number
+# of credential-bearing connection attempts.
+_MAX_HA_FAILOVER_HOSTS = 16
+
+
+def validate_conductor_ha_endpoints(
+    value: str | None,
+    primary_host: str,
+    allowed_hosts: str | Iterable[str] | None = None,
+) -> list[str]:
+    """Validate ``KERNEL_CONDUCTOR_HA_ENDPOINTS`` and return its failover hosts.
+
+    Each comma-separated entry must be a bare hostname or IPv4 address, must not be an
+    internal address (loopback, link-local, multicast, reserved or unspecified), and must
+    fall inside the trust boundary given by ``allowed_hosts``.  When ``allowed_hosts`` is
+    empty, the boundary is the DNS domain of ``primary_host``
+    (``ascd1.corp.example.com`` -> ``corp.example.com``).
+
+    Parameters
+    ----------
+    value:
+        Raw ``KERNEL_CONDUCTOR_HA_ENDPOINTS`` value.  ``None`` or empty means no failover
+        hosts.
+    primary_host:
+        Hostname of the operator-configured Conductor (ascd) endpoint.
+    allowed_hosts:
+        DNS domains (matching the domain and its subdomains) and IPv4 CIDRs, as a list or
+        a comma-separated string.
+
+    Returns
+    -------
+    list[str]
+        The validated, lowercased failover hosts, de-duplicated and with any entry equal
+        to ``primary_host`` removed, in the order given (may be empty).
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if any entry is malformed, an internal address, outside the trust boundary, or
+        if more than ``_MAX_HA_FAILOVER_HOSTS`` distinct failover hosts are supplied.
+    """
+    domains, networks = _ha_trust_boundary(primary_host, allowed_hosts)
+    primary = primary_host.strip().lower()
+    hosts: list[str] = []
+    seen = {primary}
+    for position, entry in enumerate((value or "").split(","), start=1):
+        host = entry.strip().lower()
+        if not host:
+            continue
+        # Error messages identify a malformed entry by position rather than echoing it:
+        # tornado %-formats the message when logging it.  Entries that pass this check
+        # are limited to [a-z0-9_.-] and are safe to echo.
+        if not _is_bare_hostname(host):
+            raise HTTPError(
+                400,
+                f"KERNEL_CONDUCTOR_HA_ENDPOINTS entry {position} is not a bare hostname or "
+                "IPv4 address",
+            )
+        ip = _parse_ipv4(host)
+        if _is_internal_address(host, ip):
+            raise HTTPError(
+                400, f"KERNEL_CONDUCTOR_HA_ENDPOINTS host '{host}' is an internal address"
+            )
+        if ip is None:
+            in_boundary = any(host == domain or host.endswith("." + domain) for domain in domains)
+        else:
+            in_boundary = any(ip in network for network in networks)
+        if not in_boundary:
+            raise HTTPError(
+                400,
+                f"KERNEL_CONDUCTOR_HA_ENDPOINTS host '{host}' is not an allowed Conductor "
+                "host (see EG_CONDUCTOR_HA_ALLOWED_HOSTS)",
+            )
+        # Drop duplicates and the primary host; both only add redundant failover attempts.
+        if host in seen:
+            continue
+        seen.add(host)
+        hosts.append(host)
+    if len(hosts) > _MAX_HA_FAILOVER_HOSTS:
+        raise HTTPError(
+            400,
+            f"KERNEL_CONDUCTOR_HA_ENDPOINTS specifies more than {_MAX_HA_FAILOVER_HOSTS} "
+            "failover hosts",
+        )
+    return hosts
+
+
+def _ha_trust_boundary(
+    primary_host: str, allowed_hosts: str | Iterable[str] | None
+) -> tuple[list[str], list[ipaddress.IPv4Network]]:
+    """Split ``allowed_hosts`` into DNS domains and IPv4 networks.
+
+    Falls back to the DNS domain of ``primary_host`` when no entries are configured.
+    """
+    if isinstance(allowed_hosts, str):
+        allowed_hosts = allowed_hosts.split(",")
+    domains: list[str] = []
+    networks: list[ipaddress.IPv4Network] = []
+    for raw_entry in allowed_hosts or []:
+        entry = raw_entry.strip().lower()
+        if not entry:
+            continue
+        try:
+            networks.append(ipaddress.IPv4Network(entry, strict=False))
+        except ValueError:
+            # Accept "corp.example.com", ".corp.example.com" and "*.corp.example.com".
+            domain = entry.removeprefix("*.").lstrip(".")
+            if domain:
+                domains.append(domain)
+    if not domains and not networks:
+        domains = _endpoint_domain(primary_host)
+    return domains, networks
+
+
+def _endpoint_domain(primary_host: str) -> list[str]:
+    """Return the DNS domain of the Conductor endpoint host as the default boundary.
+
+    An IP-literal, single-label or two-label endpoint yields no default, so that the
+    boundary is never wider than a registrable domain (e.g. ``example.com`` -> ``com``).
+    """
+    labels = primary_host.lower().split(".")
+    if _parse_ipv4(primary_host) is not None or len(labels) < 3:
+        return []
+    return [".".join(labels[1:])]
+
+
+def _is_bare_hostname(host: str) -> bool:
+    """Whether ``host`` is a bare (lowercase) hostname or IPv4 address."""
+    return len(host) <= _HA_HOST_MAX_LENGTH and all(
+        _HA_HOST_LABEL_RE.fullmatch(label) for label in host.split(".")
+    )
+
+
+def _parse_ipv4(host: str) -> ipaddress.IPv4Address | None:
+    """Return ``host`` as an IPv4 address, or ``None`` if it is a hostname."""
+    try:
+        return ipaddress.IPv4Address(host)
+    except ValueError:
+        return None
+
+
+def _is_internal_address(host: str, ip: ipaddress.IPv4Address | None) -> bool:
+    """Whether ``host`` names this machine or a non-unicast/special-purpose address."""
+    if ip is None:
+        return host == "localhost" or host.endswith(".localhost")
+    return (
+        ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+        or ip in _THIS_NETWORK
+    )

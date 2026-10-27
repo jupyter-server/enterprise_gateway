@@ -27,6 +27,10 @@ The following enumerates the set of per-kernel configuration overrides:
 - `port_range`: This process proxy configuration entry can be used to override `--EnterpriseGatewayApp.port_range`.
   Any values specified in the config dictionary override the globally defined values. These apply to all
   `RemoteProcessProxy` kernels.
+- `conductor_ha_allowed_hosts`: This process proxy configuration entry can be used to override
+  `--EnterpriseGatewayApp.conductor_ha_allowed_hosts`. Any values specified in the config dictionary override the
+  globally defined values. These apply to all `ConductorClusterProcessProxy` kernels. See
+  [High-availability (HA) Conductor endpoints](deploy-conductor.md#high-availability-ha-conductor-endpoints).
 
 ## Per-kernel environment overrides
 

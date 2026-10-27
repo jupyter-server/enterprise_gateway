@@ -145,6 +145,13 @@ without the use of an ssh key. The `EG_REMOTE_GSS_SSH` environment variable can 
 The list of [additional supported environment variables](config-add-env.md#additional-environment-variables).
 ```
 
+## Conductor HA endpoints
+
+Conductor kernels fail over to the client-supplied `KERNEL_CONDUCTOR_HA_ENDPOINTS` hosts using credential-bearing
+requests. Those hosts are restricted to the trust boundary configured by `EG_CONDUCTOR_HA_ALLOWED_HOSTS` (by
+default, the DNS domain of `EG_CONDUCTOR_ENDPOINT`). See
+[High-availability (HA) Conductor endpoints](deploy-conductor.md#high-availability-ha-conductor-endpoints).
+
 ## Securing Enterprise Gateway Server
 
 ### Using SSL for encrypted communication
