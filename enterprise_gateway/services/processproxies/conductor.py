@@ -24,7 +24,7 @@ from jupyter_server.utils import url_unescape
 from tornado.web import HTTPError
 
 from ..kernels.remotemanager import RemoteKernelManager
-from .processproxy import RemoteProcessProxy
+from .processproxy import RemoteProcessProxy, redaction_mask
 
 pjoin = os.path.join
 local_ip = localinterfaces.public_ips()[0]
@@ -202,7 +202,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 response = None
         except Exception as e:
             self.log.warning(
-                f"Getting instance group with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
+                f"Getting instance group with cmd '{_redact_cmd(cmd)}' failed with exception: '{e}'.  Continuing..."
             )
             return
 
@@ -529,7 +529,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = None if not response or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
-                f"Getting application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
+                f"Getting application with cmd '{_redact_cmd(cmd)}' failed with exception: '{e}'.  Continuing..."
             )
         return response
 
@@ -560,7 +560,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = None if response is None or not response["applist"] else response["applist"]
         except Exception as e:
             self.log.warning(
-                f"Getting application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
+                f"Getting application with cmd '{_redact_cmd(cmd)}' failed with exception: '{e}'.  Continuing..."
             )
         return response
 
@@ -637,7 +637,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             response = json.loads(output) if output else None
         except Exception as e:
             self.log.warning(
-                f"Termination of application with cmd '{cmd}' failed with exception: '{e}'.  Continuing..."
+                f"Termination of application with cmd '{_redact_cmd(cmd)}' failed with exception: '{e}'.  Continuing..."
             )
         self.log.debug(f"Kill response: {response}")
         return response
@@ -646,7 +646,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         _harden_curl_cmd(cmd)
         for HA in HA_LIST:
             cmd[-1] = _replace_url_host(url, HA)
-            self.log.debug(cmd)
+            self.log.debug(_redact_cmd(cmd))
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -714,7 +714,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         output, stderr = self._performRestCall(cmd, url, HA_LIST)
         if "Error" in output:
             reasonErr = "Failed to perform JWT Auth Logon. " + output.splitlines()[0]
-            self.log.warning(cmd)
+            self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         self.rest_credential = url_unescape(output)[1:-1]
 
@@ -726,7 +726,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         output, stderr = self._performRestCall(cmd, url, HA_LIST)
         if "Error" in output:
             reasonErr = "Failed to perform EGO Auth Logon. " + output.splitlines()[0]
-            self.log.warning(cmd)
+            self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
 
         # Get the Python path to use to make sure the right conda environment is used
@@ -740,7 +740,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         if response is None or not response["parameters"]["deploy_home"]["value"]:
             reasonErr = "Could not retrieve anaconda instance. Verify anaconda instance with id "
             reasonErr = reasonErr + env["KERNEL_ANACONDA_INST_UUID"] + " exists"
-            self.log.warning(cmd)
+            self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         else:
             env_dict["KERNEL_PYSPARK_PYTHON"] = (
@@ -766,7 +766,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 + env["KERNEL_IG_UUID"]
                 + " exists."
             )
-            self.log.warning(cmd)
+            self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         elif (
             response is None
@@ -778,7 +778,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
                 + env["KERNEL_IG_UUID"]
                 + " is started"
             )
-            self.log.warning(cmd)
+            self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         else:
             env_dict["KERNEL_SPARK_HOME"] = response[0]["sparkinstancegroup"]["sparkhomedir"]
@@ -809,6 +809,20 @@ def _harden_curl_cmd(cmd: list[str]) -> list[str]:
     """
     cmd[1:1] = ["--globoff", "--connect-timeout", str(_CURL_CONNECT_TIMEOUT_SECONDS)]
     return cmd
+
+
+def _redact_cmd(cmd: list[str]) -> list[str]:
+    """Return a copy of a curl command with Authorization header values masked.
+
+    Each authenticated Conductor call passes the credential as an ``Authorization: ...``
+    header argument.  The command is logged (at DEBUG, and at WARNING on failure), so the
+    header value is replaced with the redaction mask before logging to keep JWTs and EGO
+    PlatformTokens out of the logs.  The original list is not modified.
+    """
+    return [
+        f"Authorization: {redaction_mask}" if arg.lower().startswith("authorization:") else arg
+        for arg in cmd
+    ]
 
 
 def _replace_url_host(url: str, host: str) -> str:

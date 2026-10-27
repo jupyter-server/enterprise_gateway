@@ -152,6 +152,10 @@ requests. Those hosts are restricted to the trust boundary configured by `EG_CON
 default, the DNS domain of `EG_CONDUCTOR_ENDPOINT`). See
 [High-availability (HA) Conductor endpoints](deploy-conductor.md#high-availability-ha-conductor-endpoints).
 
+The `Authorization` header carrying the JWT or EGO PlatformToken on these calls is replaced with the redaction
+mask (`EG_REDACTION_MASK`, default `********`) wherever the Conductor process proxy logs the curl command, so these
+credentials are not written to the logs.
+
 ## Securing Enterprise Gateway Server
 
 ### Using SSL for encrypted communication
