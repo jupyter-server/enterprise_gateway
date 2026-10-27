@@ -235,6 +235,10 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
     Number of ports to try if the specified port is not available
     (EG_PORT_RETRIES env var)
     Default: 50
+--EnterpriseGatewayApp.prespawn_count=<Int>
+    Number of kernels of the default kernel specification to prespawn at
+    startup. No prespawn by default. (EG_PRESPAWN_COUNT env var)
+    Default: None
 --EnterpriseGatewayApp.remote_hosts=<list-item-1>...
     Bracketed comma-separated list of hosts on which DistributedProcessProxy
     kernels will be launched e.g., ['host1','host2']. (EG_REMOTE_HOSTS env var -

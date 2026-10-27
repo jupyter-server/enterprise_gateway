@@ -67,3 +67,4 @@ Jupyter Enterprise Gateway adheres to
    config-culling
    config-availability
    config-security
+   config-prespawn
