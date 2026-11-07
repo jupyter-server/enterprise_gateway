@@ -103,6 +103,17 @@ export EG_LOAD_BALANCING_ALGORITHM=least-connection
 
 A kernel's start request can specify a specific remote host on which to run by specifying that host in the `KERNEL_REMOTE_HOST` environment variable within the request's body. When specified, the configured load-balancing algorithm will be by-passed and the kernel will be started on the specified host.
 
+## Kernel environment on remote hosts
+
+When a kernel starts on a remote host, Enterprise Gateway exports the kernel's environment in the SSH command that launches the kernel specification's `argv`:
+
+- Values from the kernel creation request (`KERNEL_` variables and the variables allowed by `EG_CLIENT_ENVS`) are passed literally. The remote shell does not expand anything in them.
+- Values from the kernel specification's `env` stanza may reference variables of the remote environment, such as `${HOME}` or `${KERNEL_ID:-ERROR__NO__KERNEL_ID}`, and the remote shell expands them. Command substitution (`$(...)` or backticks) and arithmetic expansion (`$((...))` or `$[...]`) are not evaluated; they are passed literally.
+
+```{versionchanged} 3.4.0
+Command substitution and arithmetic expansion in kernel specification `env` values are no longer evaluated by the remote shell. Compute such values in the kernel's launch script instead.
+```
+
 ## YARN Client Mode
 
 YARN client mode kernel specifications can be considered _distributed mode kernels_. They just happen to use `spark-submit` from different nodes in the cluster but use the `DistributedProcessProxy` to manage their lifecycle.

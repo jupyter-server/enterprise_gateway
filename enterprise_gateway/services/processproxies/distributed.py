@@ -22,6 +22,40 @@ kernel_log_dir = os.getenv(
 )  # would prefer /var/log, but its only writable by root
 
 
+def _quote_kernelspec_env_value(value: str) -> str:
+    """Quote an operator-authored kernelspec env value for the remote shell.
+
+    Kernelspec env values may reference variables that the remote host is expected to
+    resolve, such as ``${HOME}/.local`` or ``${KERNEL_ID:-...}``.  The value is therefore
+    double-quoted so parameter expansion still happens, while command substitution
+    (``$(...)``, backticks), arithmetic expansion (``$((...))``, ``$[...]``) and quote
+    breakout are escaped and stay literal.
+
+    Client-supplied values must not use this function: they are quoted with
+    ``shlex.quote`` so nothing in them expands.  Arithmetic contexts inside a parameter
+    expansion (e.g. ``${HOME:$OFFSET}``) are still evaluated, so kernelspec authors
+    should not reference client variables there.
+
+    Parameters
+    ----------
+    value : str
+        The kernelspec env value, before template substitution.
+
+    Returns
+    -------
+    str
+        A double-quoted shell word.
+    """
+    escaped = (
+        value.replace("\\", "\\\\")  # first, so the escapes added below stay intact
+        .replace('"', '\\"')
+        .replace("`", "\\`")
+        .replace("$(", "\\$(")  # also covers $((
+        .replace("$[", "\\$[")
+    )
+    return f'"{escaped}"'
+
+
 class TrackKernelOnHost:
     """A class for tracking a kernel on a host."""
 
@@ -164,17 +198,20 @@ class DistributedProcessProxy(RemoteProcessProxy):
         else:  # Add additional envs, including those in kernelspec
             cmd = ""
 
+            # Client-supplied values are fully quoted so nothing in them expands.
             for key, value in env_dict.items():
                 cmd += f"export {shlex.quote(str(key))}={shlex.quote(str(value))};"
 
+            # Kernelspec values come from the operator and may reference the remote
+            # environment, so parameter expansion is preserved for them.
             for key, value in self.kernel_manager.kernel_spec.env.items():
-                cmd += f"export {shlex.quote(str(key))}={shlex.quote(str(value))};"
+                cmd += f"export {shlex.quote(str(key))}={_quote_kernelspec_env_value(str(value))};"
 
             cmd += "nohup"
             for arg in argv_cmd:
                 cmd += f" {shlex.quote(str(arg))}"
 
-            cmd += f" >> {self.kernel_log} 2>&1 & echo $!"  # return the process id
+            cmd += f" >> {shlex.quote(self.kernel_log)} 2>&1 & echo $!"  # return the process id
 
         return cmd
 

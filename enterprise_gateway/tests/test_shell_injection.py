@@ -32,6 +32,7 @@ from tornado import web
 
 from enterprise_gateway.services.kernels.handlers import MainKernelHandler
 from enterprise_gateway.services.kernels.remotemanager import RemoteKernelManager
+from enterprise_gateway.services.processproxies import distributed
 from enterprise_gateway.services.processproxies.distributed import DistributedProcessProxy
 from enterprise_gateway.services.processproxies.processproxy import (
     BaseProcessProxyABC,
@@ -40,6 +41,8 @@ from enterprise_gateway.services.processproxies.processproxy import (
 
 KERNELSPECS_DIR = Path(__file__).resolve().parents[2] / "etc" / "kernelspecs"
 BASH = shutil.which("bash")
+# Remote login shells differ, so the remote startup command is checked under each one present.
+SHELLS = [path for path in (shutil.which(name) for name in ("sh", "bash", "dash", "zsh")) if path]
 
 
 def _make_proxy(kernel_spec_env=None):
@@ -133,6 +136,191 @@ class TestDistributedStartupCommandInjection(unittest.TestCase):
         )
 
         self.assertEqual(result.stdout, value)
+
+    def _remote_value(self, cmd: str, name: str, shell: str = "/bin/sh") -> str:
+        """Run the export prefix as a remote login shell whose HOME is /home/remote."""
+        result = subprocess.run(
+            [shell, "-c", _exports_only(cmd) + f' printf %s "${name}"'],
+            env={"HOME": "/home/remote", "PATH": "/usr/bin:/bin"},
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout
+
+    def test_kernelspec_env_references_expand_on_remote_host(self):
+        """Kernelspec values such as ``${HOME}/.local`` are expanded by the remote shell."""
+        proxy = _make_proxy(
+            kernel_spec_env={
+                "SPEC_PATH": "${HOME}/.local/lib:/opt/lib",
+                "SPEC_BARE": "$HOME/bin",
+                "SPEC_OPTS": "--name ${KERNEL_ID:-ERROR__NO__KERNEL_ID}",
+            }
+        )
+        cmd = proxy._build_startup_command(["python"], env={"KERNEL_ID": "abc"})
+
+        for name, want in [
+            ("SPEC_PATH", "/home/remote/.local/lib:/opt/lib"),
+            ("SPEC_BARE", "/home/remote/bin"),
+            ("SPEC_OPTS", "--name abc"),
+        ]:
+            with self.subTest(name=name):
+                self.assertEqual(self._remote_value(cmd, name), want)
+
+    def test_kernelspec_env_cannot_run_commands(self):
+        """Only parameter expansion is live; no kernelspec value can run a command."""
+        cases = {
+            "command substitution": {"SPEC": "x$(touch {marker})"},
+            "backticks": {"SPEC": "x`touch {marker}`"},
+            "arithmetic expansion": {"SPEC": "$(( $(touch {marker}) ))"},
+            "substitution in a default": {"SPEC": "${{UNSET_VAR:-$(touch {marker})}}"},
+            "backticks in a default": {"SPEC": "${{UNSET_VAR:-`touch {marker}`}}"},
+            "quote breakout": {"SPEC": '"; touch {marker}; "'},
+            # An unescaped trailing backslash would swallow the closing quote.
+            "trailing backslash": {"SPEC_A": "x\\", "SPEC_B": ";touch {marker};#"},
+            # bash evaluates a variable's value as an arithmetic expression inside $[...].
+            "legacy arithmetic": {"SPEC": "$[KERNEL_EXPR]"},
+        }
+        for index, (label, spec_env) in enumerate(cases.items()):
+            for shell in SHELLS:
+                with self.subTest(case=label, shell=shell):
+                    marker = os.path.join(self._tmpdir, f"pwned-{index}-{os.path.basename(shell)}")
+                    proxy = _make_proxy(
+                        kernel_spec_env={
+                            key: value.format(marker=marker) for key, value in spec_env.items()
+                        }
+                    )
+                    env = {"KERNEL_ID": "abc", "KERNEL_EXPR": f"a[$(touch {marker})]"}
+                    cmd = proxy._build_startup_command(["python"], env=env)
+
+                    subprocess.run([shell, "-c", _exports_only(cmd) + " true"], check=True)
+
+                    self.assertFalse(os.path.exists(marker), f"{label} executed under {shell}")
+
+    def test_kernelspec_env_special_characters_survive_literally(self):
+        value = 'a "b" c\\d `e` $(f) $((1+2)) $[3]'
+        proxy = _make_proxy(kernel_spec_env={"SPEC": value})
+        cmd = proxy._build_startup_command(["python"], env={"KERNEL_ID": "abc"})
+
+        for shell in SHELLS:
+            with self.subTest(shell=shell):
+                self.assertEqual(self._remote_value(cmd, "SPEC", shell), value)
+
+    def test_client_env_references_stay_literal(self):
+        """Client values are never expanded by the remote shell, unlike kernelspec values."""
+        proxy = _make_proxy()
+        cmd = proxy._build_startup_command(
+            ["python"], env={"KERNEL_ID": "abc", "KERNEL_FOO": "${HOME}/x"}
+        )
+
+        self.assertEqual(self._remote_value(cmd, "KERNEL_FOO"), "${HOME}/x")
+
+    def test_kernel_log_dir_with_spaces_receives_kernel_output(self):
+        log_dir = os.path.join(self._tmpdir, "eg logs")
+        os.mkdir(log_dir)
+        proxy = _make_proxy()
+        with patch.object(distributed, "kernel_log_dir", log_dir):
+            cmd = proxy._build_startup_command(["echo", "started"], env={"KERNEL_ID": "abc"})
+
+        subprocess.run(["/bin/sh", "-c", cmd + "; wait"], check=True, capture_output=True)
+
+        log_file = os.path.join(log_dir, "kernel-abc.log")
+        self.assertTrue(os.path.exists(log_file), "kernel output went to the wrong path")
+        with open(log_file) as f:
+            self.assertIn("started", f.read())
+
+
+@unittest.skipIf(BASH is None, "bash is required to run the kernelspec launch scripts")
+class TestRemoteYarnClientLaunch(unittest.TestCase):
+    """Run the real yarn-client run.sh through the remote startup command.
+
+    YARN client kernels use DistributedProcessProxy.  On a remote host the exported
+    kernelspec env is expanded by the login shell and SPARK_OPTS is then re-parsed by
+    run.sh's ``eval``.  Accepted client options must only add spark-submit arguments,
+    and kernelspec references to the remote environment (``${HOME}``) must resolve.
+    """
+
+    KERNELSPEC = KERNELSPECS_DIR / "spark_python_yarn_client"
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        spark_bin = self.tmp / "spark" / "bin"
+        spark_bin.mkdir(parents=True)
+        stub = spark_bin / "spark-submit"
+        stub.write_text(
+            "#!/bin/sh\n"
+            'for a in "$@"; do printf "%s\\n" "$a"; done > "$ARGV_OUT"\n'
+            'printf %s "$PYTHONPATH" > "$PYTHONPATH_OUT"\n'
+        )
+        stub.chmod(0o755)
+        self.workdir = self.tmp / "work"
+        self.workdir.mkdir()
+        self.kernel_id = str(uuid.uuid4())
+        kernel_json = json.loads((self.KERNELSPEC / "kernel.json").read_text())
+        self.kernelspec_env = {**kernel_json["env"], "SPARK_HOME": str(self.tmp / "spark")}
+        self.argv = [str(self.KERNELSPEC / "bin" / "run.sh"), "--kernel-id", self.kernel_id]
+
+    def launch(self, extra_spark_opts):
+        """Build the remote startup command the way EG does and run it in a login-like shell."""
+        client_env = {"KERNEL_EXTRA_SPARK_OPTS": extra_spark_opts, "KERNEL_USERNAME": "alice"}
+        env_dict = {
+            # jupyter_client fills the kernelspec env from the request env before launch.
+            **{
+                key: string.Template(value).safe_substitute(client_env)
+                for key, value in self.kernelspec_env.items()
+            },
+            **client_env,
+            "KERNEL_ID": self.kernel_id,
+            "EG_IMPERSONATION_ENABLED": "False",
+            "ARGV_OUT": str(self.tmp / "argv.txt"),
+            "PYTHONPATH_OUT": str(self.tmp / "pythonpath.txt"),
+        }
+        proxy = _make_proxy(kernel_spec_env=self.kernelspec_env)
+        with patch.object(BaseProcessProxyABC, "ip_is_local", return_value=False), patch.object(
+            distributed, "kernel_log_dir", str(self.tmp)
+        ):
+            cmd = proxy._build_startup_command(self.argv, env=env_dict)
+
+        subprocess.run(
+            [BASH, "-c", cmd + "; wait"],
+            cwd=self.workdir,
+            env={"HOME": "/home/remote", "PATH": "/usr/bin:/bin"},
+            check=True,
+            capture_output=True,
+        )
+        return (self.tmp / "argv.txt").read_text().splitlines()
+
+    def test_kernelspec_pythonpath_uses_remote_home(self):
+        self.launch("")
+
+        pythonpath = (self.tmp / "pythonpath.txt").read_text()
+        self.assertTrue(
+            pythonpath.startswith("/home/remote/.local/lib/python3.8/site-packages:"), pythonpath
+        )
+
+    def test_client_options_reach_spark_submit_as_separate_arguments(self):
+        argv = self.launch("--conf spark.executor.memory=2g --num-executors 4")
+
+        self.assertEqual(argv[argv.index("--name") + 1], self.kernel_id)
+        self.assertEqual(
+            argv[-7:-3], ["--conf", "spark.executor.memory=2g", "--num-executors", "4"]
+        )
+
+    def test_accepted_values_only_add_arguments(self):
+        values = [
+            "--archives env.tgz#environment",
+            "--conf spark.a={x,y} --conf spark.b=~/x --conf spark.c=a!b",
+            "--conf spark.d=* --conf spark.e=a%b^c+d@e,f:g",
+            "",
+        ]
+        for value in values:
+            with self.subTest(value=value):
+                validate_eval_reaching_env({"KERNEL_EXTRA_SPARK_OPTS": value}, self.kernelspec_env)
+                argv = self.launch(value)
+                self.assertTrue(argv[-3].endswith("/scripts/launch_ipykernel.py"), argv[-3])
+                self.assertEqual(argv[-2:], ["--kernel-id", self.kernel_id])
+                self.assertEqual(os.listdir(self.workdir), [], "the remote command created files")
 
 
 def _make_handler(client_envs=None, inherited_envs=None):
