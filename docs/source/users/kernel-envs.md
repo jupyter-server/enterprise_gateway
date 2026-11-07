@@ -47,6 +47,10 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     docker run ... -e KERNEL_EXTRA_SPARK_OPTS=\"--conf spark.driver.memory=2g
     --conf spark.executor.memory=2g\" ... jupyterhub/k8s-singleuser-sample
 
+    Those quotes belong to the shell that sets the variable.  The value itself must
+    not contain shell syntax (; & | < > ( ) $ ` \ " ' or a word starting with #),
+    otherwise the kernel start request is rejected with HTTP 400.
+
     On Kubernetes, options that Enterprise Gateway manages itself - the pod namespace,
     service account, container images, pod template and the cluster/mode/user flags -
     may not be set here, and Spark volume options are held to the same type allowlist
@@ -177,6 +181,11 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     KERNEL_WORKING_DIR.  If EG_MIRROR_WORKING_DIRS is False, KERNEL_WORKING_DIR will
     not be available for use during the kernel's launch.  See also EG_MIRROR_WORKING_DIRS.
 ```
+
+Enterprise Gateway rejects `KERNEL_` values that contain shell syntax when they are used on a
+kernel launch command line. See
+[Client-supplied environment variables](../operators/config-security.md#client-supplied-environment-variables)
+for which variables are checked and how operators can extend the list.
 
 Enterprise Gateway checks some of these values against limits set by the operator before it starts a kernel, and
 rejects requests that go beyond them with HTTP 400. See

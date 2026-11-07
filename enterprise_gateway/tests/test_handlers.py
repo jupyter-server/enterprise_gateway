@@ -491,6 +491,19 @@ class TestDefaults(TestHandlers):
         ws.close()
 
     @gen_test
+    def test_kernel_env_shell_syntax_in_launch_options_rejected(self):
+        """Values that reach a launch script's eval get a 400 that does not echo the value."""
+        kernel_body = json.dumps(
+            {"name": "python", "env": {"KERNEL_EXTRA_SPARK_OPTS": "--conf spark.secret=s3cr3t;x"}}
+        )
+        response = yield self.http_client.fetch(
+            self.get_url("/api/kernels"), method="POST", body=kernel_body, raise_error=False
+        )
+        self.assertEqual(response.code, 400)
+        self.assertIn("KERNEL_EXTRA_SPARK_OPTS", response.body.decode())
+        self.assertNotIn("s3cr3t", response.body.decode())
+
+    @gen_test
     def test_kernel_defaults(self):
         """Kernel should start with env vars defined in request overriding env vars defined in kernelspec."""
 

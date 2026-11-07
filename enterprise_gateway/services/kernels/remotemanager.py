@@ -23,7 +23,12 @@ from zmq import IO_THREADS, MAX_SOCKETS, Context
 
 from enterprise_gateway.mixins import EnterpriseGatewayConfigMixin
 
-from ..processproxies.processproxy import BaseProcessProxyABC, LocalProcessProxy, RemoteProcessProxy
+from ..processproxies.processproxy import (
+    BaseProcessProxyABC,
+    LocalProcessProxy,
+    RemoteProcessProxy,
+    validate_eval_reaching_env,
+)
 from ..sessions.kernelsessionmanager import KernelSessionManager
 
 default_kernel_launch_timeout = float(os.getenv("EG_KERNEL_LAUNCH_TIMEOUT", "30"))
@@ -485,6 +490,7 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "allowed_kernel_volume_types",
             "allowed_kernel_images",
             "allowed_kernel_namespaces",
+            "eval_validated_envs",
             "yarn_endpoint",
             "alt_yarn_endpoint",
             "yarn_endpoint_security_enabled",
@@ -516,14 +522,17 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
 
     def _validate_client_env(self, **kwargs: dict[str, Any] | None) -> None:
         """
-        Lets the kernel's process proxy class reject client-supplied env values that it cannot
-        launch safely (see `BaseProcessProxyABC.validate_client_env`).  Values inherited unchanged
+        Rejects client-supplied env values that cannot be launched safely.  Values the kernel's
+        launch script would re-parse through `eval` are checked for every process proxy (see
+        `validate_eval_reaching_env`), then the kernel's process proxy class applies its own
+        checks (see `BaseProcessProxyABC.validate_client_env`).  Values inherited unchanged
         from the gateway's own environment are operator-controlled and therefore not checked.
 
         Raises
         ------
         tornado.web.HTTPError
-            400 if the process proxy rejects a value.
+            400 if a value that reaches `eval` contains shell syntax, or if the process proxy
+            rejects a value.
         """
         env = kwargs.get("env") or {}
         client_env = {
@@ -532,6 +541,15 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             if not (key in self.inherited_envs and os.environ.get(key) == value)
         }
         process_proxy_class, proxy_config = self._resolve_process_proxy()
+
+        # The eval check lives here rather than in the process proxy hook so that a proxy
+        # override that forgets to call super() cannot skip it.
+        extra_names = list(self.eval_validated_envs)
+        kernelspec_names = proxy_config.get("eval_validated_envs")
+        if kernelspec_names:  # comma-separated, like authorized_users
+            extra_names.extend(kernelspec_names.split(","))
+        validate_eval_reaching_env(client_env, self.kernel_spec.env, extra_names)
+
         process_proxy_class.validate_client_env(client_env, proxy_config, self)
 
     def _capture_user_overrides(self, **kwargs: dict[str, Any] | None) -> None:

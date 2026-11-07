@@ -110,6 +110,91 @@ local_ip = _get_local_ip()
 
 random.seed()
 
+# Characters bash's parser treats as operators, quoting or expansions.  The bundled
+# launch scripts (etc/kernelspecs/*/bin/run.sh) run `eval exec ...` over strings
+# that can contain client-supplied values, pasted in by jupyter_client's kernelspec
+# env templating, by the scripts themselves, or by process proxies.  A value
+# carrying these characters would be re-parsed as shell syntax, so it is rejected
+# (GHSA-j63f-r6hc-x235).  Whitespace stays allowed so multi-option values such as
+# KERNEL_EXTRA_SPARK_OPTS keep working.
+EVAL_PROHIBITED_CHARS = frozenset(";&|<>()$`\\\"'\n\r\x00")
+
+# A '#' that starts a word comments out the rest of the eval'd command line, which
+# would drop later arguments such as `--proxy-user` (impersonation).  A '#' inside a
+# word (e.g. `--archives env.tgz#env`) is literal and stays allowed.
+_EVAL_COMMENT_PATTERN = re.compile(r"(?:^|\s)#")
+
+# Values that EG's bundled launch scripts and process proxies paste into eval'd
+# strings whether or not the kernelspec references them.
+EVAL_REACHING_ENVS = frozenset(
+    {
+        "KERNEL_USERNAME",  # run.sh IMPERSONATION_OPTS, bootstrap-kernel.sh SPARK_OPTS
+        "KERNEL_EXTRA_SPARK_OPTS",  # kernelspec SPARK_OPTS
+        "KERNEL_SPARK_OPTS",  # conductor.py SPARK_OPTS
+        "KERNEL_SPARK_HOME",  # conductor.py copies it to SPARK_HOME
+        "KERNEL_PYSPARK_PYTHON",  # conductor.py SPARK_OPTS
+        "KERNEL_NOTEBOOK_MASTER_REST",  # conductor.py SPARK_OPTS
+        "KERNEL_CPUS",  # launch_kubernetes.py spark resource options
+        "KERNEL_MEMORY",
+        "KERNEL_CPUS_LIMIT",
+        "KERNEL_MEMORY_LIMIT",
+        "KERNEL_SPARK_CONTEXT_INIT_MODE",  # bootstrap-kernel.sh
+        "SPARK_HOME",  # read on the run.sh eval lines; client-settable via client_envs
+        "DASK_YARN_EXE",
+    }
+)
+
+# Kernelspec env entries the bundled launch scripts pass to eval: SPARK_OPTS,
+# LAUNCH_OPTS, DASK_OPTS, __TOREE_SPARK_OPTS__, __TOREE_OPTS__, ...
+_EVAL_OPTS_KEY_PATTERN = re.compile(r"(?:^|_)OPTS_*$")
+_ENV_REFERENCE_PATTERN = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def validate_eval_reaching_env(
+    client_env: Mapping[str, Any],
+    kernelspec_env: Mapping[str, Any] | None,
+    extra_names: Iterable[str] = (),
+) -> None:
+    """Reject client env values that a launch script would re-parse through ``eval``.
+
+    A client value reaches ``eval`` when EG's bundled scripts or process proxies paste
+    it into an eval'd string (``EVAL_REACHING_ENVS``), when the kernelspec references
+    it from an ``*_OPTS`` entry, when the client sets an ``*_OPTS`` variable directly,
+    or when the operator lists it in ``extra_names``.  Other values are not checked,
+    so structured values like ``KERNEL_VOLUME_MOUNTS`` may still contain quotes.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    kernelspec_env : Mapping[str, Any] | None
+        The kernelspec's ``env`` stanza, before template substitution.
+    extra_names : Iterable[str]
+        Operator-configured names to validate as well (empty names are ignored).
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if a value that reaches ``eval`` contains shell syntax.  The message names
+        the variable but never echoes its value, which may contain secrets.
+    """
+    reaching = set(EVAL_REACHING_ENVS)
+    reaching.update(name for name in extra_names if name)
+    for key, value in (kernelspec_env or {}).items():
+        if _EVAL_OPTS_KEY_PATTERN.search(key) and isinstance(value, str):
+            reaching.update(_ENV_REFERENCE_PATTERN.findall(value))
+
+    for key in sorted(client_env):
+        if key not in reaching and not _EVAL_OPTS_KEY_PATTERN.search(key):
+            continue
+        value = str(client_env[key])
+        if EVAL_PROHIBITED_CHARS.intersection(value) or _EVAL_COMMENT_PATTERN.search(value):
+            raise web.HTTPError(
+                400,
+                f"Environment variable '{key}' contains characters that are not allowed "
+                "in kernel launch options",
+            )
+
 
 def split_list_setting(value: str | Iterable[str] | None) -> list[str]:
     """Normalize a list-valued operator setting.

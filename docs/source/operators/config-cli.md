@@ -175,6 +175,12 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
 --EnterpriseGatewayApp.env_whitelist=<list-item-1>...
     DEPRECATED, use client_envs.
     Default: []
+--EnterpriseGatewayApp.eval_validated_envs=<list-item-1>...
+    Additional client environment variables to reject when they contain shell
+    syntax, for custom kernel launch scripts that pass them through `eval`.
+    Variables used by the bundled launch scripts are always checked.
+    (EG_EVAL_VALIDATED_ENVS env var)
+    Default: []
 --EnterpriseGatewayApp.expose_headers=<Unicode>
     Sets the Access-Control-Expose-Headers header. (EG_EXPOSE_HEADERS env var)
     Default: ''

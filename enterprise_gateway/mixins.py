@@ -475,6 +475,19 @@ class EnterpriseGatewayConfigMixin(Configurable):
     def _allowed_kernel_namespaces_default(self) -> List[str]:
         return os.getenv(self.allowed_kernel_namespaces_env, "").split(",")
 
+    eval_validated_envs_env = "EG_EVAL_VALIDATED_ENVS"
+    eval_validated_envs = ListTrait(
+        config=True,
+        help="""Additional client environment variables to reject when they contain shell
+                syntax, for custom kernel launch scripts that pass them through `eval`.
+                Variables used by the bundled launch scripts are always checked.
+                (EG_EVAL_VALIDATED_ENVS env var)""",
+    )
+
+    @default("eval_validated_envs")
+    def _eval_validated_envs_default(self) -> List[str]:
+        return os.getenv(self.eval_validated_envs_env, "").split(",")
+
     kernel_headers_env = "EG_KERNEL_HEADERS"
     kernel_headers = ListTrait(
         config=True,

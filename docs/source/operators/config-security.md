@@ -16,6 +16,43 @@ launch environment with the value of the gateway user.
 
 This value is then used within the _authorization_ and _impersonation_ functionality.
 
+## Client-supplied environment variables
+
+Clients send `KERNEL_` variables, and any variables allowed by `EG_CLIENT_ENVS`, in the kernel creation
+request. Enterprise Gateway rejects the request with HTTP 400 when one of these values:
+
+- is not a string, is longer than 4096 characters, or contains `$`, a backtick, a newline, a carriage
+  return or a NUL character; or
+- ends up on a command line that a kernel launch script passes to the shell's `eval`, and contains
+  any of `` ; & | < > ( ) $ ` \ " ' ``, a newline, a carriage return, a NUL character, or a word that
+  starts with `#`.
+
+The second check covers the variables that the bundled launch scripts and process proxies put on those
+command lines (for example `KERNEL_EXTRA_SPARK_OPTS`, `KERNEL_USERNAME`, `KERNEL_SPARK_OPTS`,
+`KERNEL_CPUS` and `KERNEL_MEMORY`), any variable referenced from an `*_OPTS` entry in the kernelspec's
+`env` stanza (such as `SPARK_OPTS` or `__TOREE_SPARK_OPTS__`), and any `*_OPTS` variable the client sets
+directly. Values inherited unchanged from the gateway's own environment (`EG_INHERITED_ENVS`) are not
+checked. Spaces are allowed, so `KERNEL_EXTRA_SPARK_OPTS` can still carry several options.
+
+If a custom launch script passes other client variables through `eval`, list them so they are checked
+too, as a comma-separated list:
+
+- for every kernel, with `EG_EVAL_VALIDATED_ENVS` (or `--EnterpriseGatewayApp.eval_validated_envs`);
+- for one kernelspec, with an `eval_validated_envs` entry in its process proxy `config` stanza:
+
+```json
+"metadata": {
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.yarn.YarnClusterProcessProxy",
+    "config": {
+      "eval_validated_envs": "KERNEL_MY_SPARK_CONF,KERNEL_MY_QUEUE"
+    }
+  }
+}
+```
+
+Error messages name the rejected variable but never include its value.
+
 ## Authorization
 
 By default, all users are authorized to start kernels. This behavior can be adjusted when situations arise where
