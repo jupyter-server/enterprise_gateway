@@ -9,9 +9,12 @@ import asyncio
 import os
 import shlex
 import signal
+from collections.abc import Iterable
 from socket import gethostbyname
 from subprocess import STDOUT
 from typing import Any, ClassVar
+
+from tornado import web
 
 from ..kernels.remotemanager import RemoteKernelManager
 from .processproxy import BaseProcessProxyABC, RemoteProcessProxy
@@ -54,6 +57,47 @@ def _quote_kernelspec_env_value(value: str) -> str:
         .replace("$[", "\\$[")
     )
     return f'"{escaped}"'
+
+
+def validate_remote_host(remote_host: str, allowed_hosts: Iterable[str]) -> str:
+    """Return the configured remote host that a client's ``KERNEL_REMOTE_HOST`` names.
+
+    Clients may pin a kernel to a host, but only to one of the kernel's configured remote
+    hosts (``EG_REMOTE_HOSTS`` or the kernelspec's ``remote_hosts``).  Otherwise a client
+    could make the gateway open SSH sessions, with its credentials, to any host.  Names
+    are compared ignoring case, surrounding whitespace and a trailing dot.
+
+    Parameters
+    ----------
+    remote_host : str
+        The host requested through ``KERNEL_REMOTE_HOST``.
+    allowed_hosts : Iterable[str]
+        The kernel's configured remote hosts.
+
+    Returns
+    -------
+    str
+        The matching entry, exactly as configured.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if ``remote_host`` is not one of ``allowed_hosts``.  The message does not
+        echo the requested value.
+    """
+    requested = _normalize_host(remote_host)
+    for host in allowed_hosts:
+        if _normalize_host(host) == requested:
+            return host
+    raise web.HTTPError(
+        400,
+        "KERNEL_REMOTE_HOST is not one of this kernel's remote hosts. Add the host to "
+        "EG_REMOTE_HOSTS or to the kernelspec's remote_hosts.",
+    )
+
+
+def _normalize_host(host: str) -> str:
+    return host.strip().rstrip(".").lower()
 
 
 class TrackKernelOnHost:
@@ -216,8 +260,14 @@ class DistributedProcessProxy(RemoteProcessProxy):
         return cmd
 
     def _determine_next_host(self, env_dict: dict) -> str:
-        """Simple round-robin index into list of hosts or use least-connection ."""
+        """
+        Return the host for this kernel: the host pinned by KERNEL_REMOTE_HOST, which must be
+        one of the configured remote hosts, else the next host by round-robin or least-connection.
+        """
         remote_host = env_dict.get("KERNEL_REMOTE_HOST")
+        if remote_host:
+            # Validate before the host is tracked, resolved or contacted.
+            remote_host = validate_remote_host(remote_host, self.hosts)
         if self.least_connection:
             next_host = DistributedProcessProxy.kernel_on_host.min_or_remote_host(remote_host)
             DistributedProcessProxy.kernel_on_host.add_kernel_id(next_host, self.kernel_id)

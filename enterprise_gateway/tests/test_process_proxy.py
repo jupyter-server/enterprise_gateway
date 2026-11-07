@@ -2,13 +2,21 @@
 # Distributed under the terms of the Modified BSD License.
 """Tests for process proxy functionality."""
 
+import asyncio
 import os
 import unittest
-from unittest.mock import Mock, patch
+import uuid
+from unittest.mock import AsyncMock, Mock, patch
 
 from tornado import web
 
+from enterprise_gateway.services.processproxies import distributed
 from enterprise_gateway.services.processproxies.container import _parse_prohibited_ids
+from enterprise_gateway.services.processproxies.distributed import (
+    DistributedProcessProxy,
+    TrackKernelOnHost,
+)
+from enterprise_gateway.services.processproxies.processproxy import RemoteProcessProxy
 
 # Mock Kubernetes configuration before importing the module
 with patch('kubernetes.config.load_incluster_config'), patch('kubernetes.config.load_kube_config'):
@@ -188,6 +196,94 @@ class TestContainerProxyProhibitedIds(unittest.TestCase):
         with self.assertRaises(web.HTTPError) as ctx:
             self.proxy._enforce_prohibited_ids(**kwargs)
         self.assertEqual(ctx.exception.status_code, 403)
+
+
+REMOTE_HOSTS = ["node1.example.com", "node2.example.com"]
+
+
+class TestDistributedRemoteHostSelection(unittest.TestCase):
+    """KERNEL_REMOTE_HOST may only pin a kernel to one of the configured remote hosts."""
+
+    def setUp(self):
+        # Host selection state lives on the classes; give each test a fresh copy.
+        self.start_patch(DistributedProcessProxy, "host_index", 0)
+        self.start_patch(TrackKernelOnHost, "_host_kernels", {})
+        self.start_patch(TrackKernelOnHost, "_kernel_host_mapping", {})
+
+    def start_patch(self, target, attribute, *args, **kwargs):
+        """Patch ``target.attribute`` for the rest of the test and return the patch."""
+        patcher = patch.object(target, attribute, *args, **kwargs)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def make_proxy(self, least_connection=False):
+        """Build a DistributedProcessProxy without the response manager or SSH setup."""
+        proxy = DistributedProcessProxy.__new__(DistributedProcessProxy)
+        proxy.hosts = list(REMOTE_HOSTS)
+        proxy.least_connection = least_connection
+        proxy.kernel_id = str(uuid.uuid4())
+        proxy.kernel_log = None
+        proxy.local_stdout = None
+        proxy.log = Mock()
+        if least_connection:
+            DistributedProcessProxy.kernel_on_host.init_host_kernels(proxy.hosts)
+        return proxy
+
+    def test_host_outside_pool_rejected(self):
+        for least_connection in (False, True):
+            with self.subTest(least_connection=least_connection):
+                proxy = self.make_proxy(least_connection)
+                with self.assertRaises(web.HTTPError) as ctx:
+                    proxy._determine_next_host({"KERNEL_REMOTE_HOST": "attacker.example.net"})
+                self.assertEqual(ctx.exception.status_code, 400)
+                # The rejection tells the operator which settings define the pool.
+                self.assertIn("EG_REMOTE_HOSTS", ctx.exception.log_message)
+                self.assertIn("remote_hosts", ctx.exception.log_message)
+
+    def test_host_in_pool_selected(self):
+        for least_connection in (False, True):
+            with self.subTest(least_connection=least_connection):
+                proxy = self.make_proxy(least_connection)
+                host = proxy._determine_next_host({"KERNEL_REMOTE_HOST": "node2.example.com"})
+                self.assertEqual(host, "node2.example.com")
+
+    def test_host_matched_ignoring_case_whitespace_and_trailing_dot(self):
+        for requested in ["NODE2.Example.COM", "node2.example.com.", " node2.example.com "]:
+            with self.subTest(requested=requested):
+                host = self.make_proxy()._determine_next_host({"KERNEL_REMOTE_HOST": requested})
+                self.assertEqual(host, "node2.example.com")
+
+    def test_without_requested_host_load_balancing_applies(self):
+        for env in ({}, {"KERNEL_REMOTE_HOST": ""}):
+            with self.subTest(env=env):
+                self.assertIn(self.make_proxy()._determine_next_host(env), REMOTE_HOSTS)
+
+    def test_rejected_host_never_receives_later_kernels(self):
+        """A rejected pin must not add its host to the least-connection pool."""
+        with self.assertRaises(web.HTTPError):
+            self.make_proxy(least_connection=True)._determine_next_host(
+                {"KERNEL_REMOTE_HOST": "attacker.example.net"}
+            )
+
+        # Enough concurrent kernels that a host with one tracked kernel would be picked.
+        chosen = [self.make_proxy(least_connection=True)._determine_next_host({}) for _ in range(6)]
+        self.assertEqual(set(chosen), set(REMOTE_HOSTS))
+
+    def test_rejected_host_is_never_resolved_or_contacted(self):
+        proxy = self.make_proxy()
+        env = {"KERNEL_ID": proxy.kernel_id, "KERNEL_REMOTE_HOST": "attacker.example.net"}
+        resolve = self.start_patch(distributed, "gethostbyname")
+        ssh = self.start_patch(DistributedProcessProxy, "_launch_remote_process")
+        # Base-class launch setup and the wait for the remote kernel are not under test.
+        self.start_patch(RemoteProcessProxy, "launch_process", new=AsyncMock())
+        self.start_patch(DistributedProcessProxy, "confirm_remote_startup", new=AsyncMock())
+
+        with self.assertRaises(web.HTTPError) as ctx:
+            asyncio.run(proxy.launch_process(["python"], env=env))
+
+        self.assertEqual(ctx.exception.status_code, 400)
+        resolve.assert_not_called()
+        ssh.assert_not_called()
 
 
 class TestKubernetesProcessProxy(unittest.TestCase):

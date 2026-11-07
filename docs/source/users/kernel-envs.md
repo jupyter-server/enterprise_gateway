@@ -115,7 +115,9 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
 
   KERNEL_REMOTE_HOST=<remote host name>
     DistributedProcessProxy only.  When specified, this value will override the
-    configured load-balancing algorithm.
+    configured load-balancing algorithm.  The host must be one of the kernel's
+    remote hosts (the kernelspec's remote_hosts entry, otherwise EG_REMOTE_HOSTS);
+    a request naming any other host is rejected with HTTP 400.
 
   KERNEL_SERVICE_ACCOUNT_NAME=<from user> or EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
     Kubernetes only.  This value represents the name of the service account that

@@ -103,6 +103,12 @@ export EG_LOAD_BALANCING_ALGORITHM=least-connection
 
 A kernel's start request can specify a specific remote host on which to run by specifying that host in the `KERNEL_REMOTE_HOST` environment variable within the request's body. When specified, the configured load-balancing algorithm will be by-passed and the kernel will be started on the specified host.
 
+The host must be one of the kernel's remote hosts: the `remote_hosts` entry of its kernel specification when present, otherwise `EG_REMOTE_HOSTS`. Host names are compared ignoring case and a trailing dot. Enterprise Gateway rejects a request that names any other host with HTTP 400.
+
+```{versionchanged} 3.4.0
+`KERNEL_REMOTE_HOST` must name one of the kernel's remote hosts. Previously a request could name any host, and Enterprise Gateway would connect to it over SSH with its own credentials. If clients pin kernels to other hosts, add those hosts to the remote hosts configuration; load balancing then uses them as well.
+```
+
 ## Kernel environment on remote hosts
 
 When a kernel starts on a remote host, Enterprise Gateway exports the kernel's environment in the SSH command that launches the kernel specification's `argv`:

@@ -51,6 +51,9 @@ too, as a comma-separated list:
 }
 ```
 
+For kernels that use the `DistributedProcessProxy`, `KERNEL_REMOTE_HOST` must also name one of the
+kernel's remote hosts (see [Pinning a kernel to a host](deploy-distributed.md#pinning-a-kernel-to-a-host)).
+
 Error messages name the rejected variable but never include its value.
 
 ## Authorization
