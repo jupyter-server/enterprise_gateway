@@ -35,6 +35,115 @@ max_poll_attempts = int(os.getenv("EG_MAX_POLL_ATTEMPTS", "10"))
 # stall a kernel launch (the HA list is tried host-by-host, four times over).
 _CURL_CONNECT_TIMEOUT_SECONDS = int(os.getenv("EG_CONDUCTOR_CONNECT_TIMEOUT", "10"))
 
+# curl SSL/TLS options permitted in KERNEL_CURL_SECURITY_OPT.  The value of this
+# client-supplied variable is split into individual curl arguments and spliced
+# into the curl command line (see the REST helpers below), so an unvalidated
+# value permits curl *argument* injection even though no shell is involved:
+# e.g. `-o`/`--output` to overwrite files, `-T`/`--upload-file` or `--data @file`
+# to exfiltrate local files, `-K`/`--config` to load an attacker-controlled
+# config, or a bare token that curl interprets as an extra URL.  We fail closed
+# with an allowlist of security-only options; operators needing an option not
+# listed here must add it explicitly.
+_CURL_SSL_BOOLEAN_OPTS = frozenset(
+    {
+        "-k",
+        "--insecure",
+        "--cert-status",
+        "--ssl",
+        "--ssl-reqd",
+        "--ssl-no-revoke",
+        "--ssl-revoke-best-effort",
+        "--ssl-allow-beast",
+        "--tlsv1",
+        "--tlsv1.0",
+        "--tlsv1.1",
+        "--tlsv1.2",
+        "--tlsv1.3",
+        "--sslv2",
+        "--sslv3",
+        "--proxy-insecure",
+    }
+)
+_CURL_SSL_VALUE_OPTS = frozenset(
+    {
+        "--cacert",
+        "--capath",
+        "--cert",
+        "-E",
+        "--cert-type",
+        "--ciphers",
+        "--tls13-ciphers",
+        "--crlfile",
+        "--key",
+        "--key-type",
+        "--pass",
+        "--pinnedpubkey",
+        "--tls-max",
+        "--curves",
+        "--proxy-cacert",
+        "--proxy-capath",
+        "--proxy-cert",
+        "--proxy-cert-type",
+        "--proxy-key",
+        "--proxy-key-type",
+        "--proxy-pass",
+        "--proxy-ciphers",
+    }
+)
+
+
+def validate_curl_security_opt(value: str) -> list[str]:
+    """Validate ``KERNEL_CURL_SECURITY_OPT`` and return it as a list of curl args.
+
+    The value is a space-separated list of curl SSL/TLS options.  Because the
+    tokens are spliced directly into a curl command line, only an allowlist of
+    security-related options (and their arguments) is permitted; anything else
+    is rejected to prevent curl argument injection.
+
+    Parameters
+    ----------
+    value:
+        Raw ``KERNEL_CURL_SECURITY_OPT`` value.
+
+    Returns
+    -------
+    list[str]
+        The validated, tokenized curl arguments (may be empty).
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if a token is a non-allowlisted option or a stray (URL-like) token,
+        or if the value ends with a value-option that is missing its argument.
+    """
+    tokens = value.split()
+    expect_arg = False
+    for token in tokens:
+        if expect_arg:
+            # Consume this token as the argument to the preceding value-option.
+            expect_arg = False
+            continue
+        if not token.startswith("-"):
+            # curl would treat a bare token as an additional URL to fetch.
+            raise HTTPError(400, "KERNEL_CURL_SECURITY_OPT contains an unexpected token")
+        opt = token.split("=", 1)[0]
+        if "=" in token:
+            if opt not in _CURL_SSL_VALUE_OPTS:
+                raise HTTPError(
+                    400, f"KERNEL_CURL_SECURITY_OPT contains a disallowed curl option: {opt}"
+                )
+        elif opt in _CURL_SSL_VALUE_OPTS:
+            expect_arg = True
+        elif opt not in _CURL_SSL_BOOLEAN_OPTS:
+            raise HTTPError(
+                400, f"KERNEL_CURL_SECURITY_OPT contains a disallowed curl option: {opt}"
+            )
+    if expect_arg:
+        # A trailing value-option would make curl consume the next fixed argument
+        # (e.g. "-b") as its value, turning the following token into an extra URL.
+        raise HTTPError(400, "KERNEL_CURL_SECURITY_OPT ends with an option missing its value")
+    return tokens
+
 
 class ConductorClusterProcessProxy(RemoteProcessProxy):
     """
@@ -179,7 +288,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         cookie_jar = pjoin(
             env_dict["KERNEL_NOTEBOOK_DATA_DIR"], env_dict["KERNEL_NOTEBOOK_COOKIE_JAR"]
         )
-        sslconf = env_dict["KERNEL_CURL_SECURITY_OPT"].split()
+        sslconf = validate_curl_security_opt(env_dict["KERNEL_CURL_SECURITY_OPT"])
         ascd_rest_url = env_dict["CONDUCTOR_REST_URL"]
         ig_id = quote(str(env_dict["KERNEL_SIG_ID"]), safe="")
         url = f"{ascd_rest_url}conductor/v1/instances?id={ig_id}&fields=outputs"
@@ -513,7 +622,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         header = "Accept: application/json"
         authorization = "Authorization: %s" % self.rest_credential
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
-        sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
+        sslconf = validate_curl_security_opt(env["KERNEL_CURL_SECURITY_OPT"])
         url = f"{self.conductor_endpoint}/v1/applications?driverid={driver_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
@@ -545,7 +654,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         header = "Accept: application/json"
         authorization = "Authorization: %s" % self.rest_credential
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
-        sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
+        sslconf = validate_curl_security_opt(env["KERNEL_CURL_SECURITY_OPT"])
         url = f"{self.conductor_endpoint}/v1/applications?applicationid={app_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "GET", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
@@ -622,7 +731,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         header = "Accept: application/json"
         authorization = "Authorization: %s" % self.rest_credential
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
-        sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
+        sslconf = validate_curl_security_opt(env["KERNEL_CURL_SECURITY_OPT"])
         url = f"{self.conductor_endpoint}/v1/submissions/kill/{self.driver_id}"
         cmd = ["curl", "-v", "-b", cookie_jar, "-X", "POST", "-H", header, "-H", authorization, url]
         cmd[2:2] = sslconf
@@ -705,7 +814,7 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
         header = "Accept: application/json"
         authorization = "Authorization: Bearer %s" % jwt_token
         cookie_jar = pjoin(env["KERNEL_NOTEBOOK_DATA_DIR"], env["KERNEL_NOTEBOOK_COOKIE_JAR"])
-        sslconf = env["KERNEL_CURL_SECURITY_OPT"].split()
+        sslconf = validate_curl_security_opt(env["KERNEL_CURL_SECURITY_OPT"])
         url = "{}/auth/logon/jwt?topology={}".format(
             self.ascd_endpoint, quote(str(env["KERNEL_TOPOLOGY"]), safe="")
         )
