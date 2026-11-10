@@ -21,16 +21,18 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     the root group id.  As a result, the setting of this value into the Security Context
     of the kernel pod is commented out in the kernel-pod.yaml file and must be enabled
     by the administrator.
-    Docker: Warning - This value is only added to the supplemental group ids.  As a result,
-    if used with KERNEL_UID, the resulting container will run as the root group with this
-    value listed in its supplemental groups.
+    Docker: The container runs with this value as its primary group (and lists it in
+    its supplemental groups).  Before 3.4.0 it was only added to the supplemental
+    groups, so containers whose image did not define KERNEL_UID ran as the root group.
 
   KERNEL_EXECUTOR_IMAGE=<from kernel.json process-proxy stanza> or KERNEL_IMAGE
     Kubernetees Spark only. This indicates the image that Spark on Kubernetes will use
     for the its executors.  Although this value could come from the user, its strongly
     recommended that the process-proxy stanza of the corresponding kernel's kernelspec
     (kernel.json) file be updated to include the image name.  If no image name is
-    provided, the value of KERNEL_IMAGE will be used.
+    provided, the value of KERNEL_IMAGE will be used.  A value from the user must be
+    a well-formed image reference and, if the operator has set
+    EG_ALLOWED_KERNEL_IMAGES, match one of its patterns.
 
   KERNEL_EXTRA_SPARK_OPTS=<from user>
     Spark only. This variable allows users to add additional spark options to the
@@ -45,6 +47,11 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     docker run ... -e KERNEL_EXTRA_SPARK_OPTS=\"--conf spark.driver.memory=2g
     --conf spark.executor.memory=2g\" ... jupyterhub/k8s-singleuser-sample
 
+    On Kubernetes, options that Enterprise Gateway manages itself - the pod namespace,
+    service account, container images, pod template and the cluster/mode/user flags -
+    may not be set here, and Spark volume options are held to the same type allowlist
+    as KERNEL_VOLUMES.  Such a value is rejected with HTTP 400.
+
   KERNEL_ID=<from user> or <system generated>
     This value represents the identifier used by the Jupyter framework to identify
     the kernel.  Although this value could be provided by the user, it is recommended
@@ -54,7 +61,10 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     Containers only. This indicates the image to use for the kernel in containerized
     environments - Kubernetes or Docker.  Although it can be provided by the user, it
     is strongly recommended that the process-proxy stanza of the corresponding kernel's
-    kernelspec (kernel.json) file be updated to include the image name.
+    kernelspec (kernel.json) file be updated to include the image name.  A value from
+    the user must be a well-formed image reference ([registry/]repository[:tag][@digest])
+    and, if the operator has set EG_ALLOWED_KERNEL_IMAGES, match one of its patterns.
+    Otherwise the request is rejected with HTTP 400.
 
   KERNEL_LAUNCH_TIMEOUT=<from user> or EG_KERNEL_LAUNCH_TIMEOUT
     Indicates the time (in seconds) to allow for a kernel's launch.  This value should
@@ -74,6 +84,12 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     Note that if the namespace is created by Enterprise Gateway, it will be removed
     upon the kernel's termination.  Otherwise, the Enterprise Gateway will not
     remove the namespace.
+
+    A namespace from the user must match one of the patterns the operator lists in
+    EG_ALLOWED_KERNEL_NAMESPACES (empty by default), otherwise the request is
+    rejected with HTTP 400.  Enterprise Gateway's own namespace, kube-* namespaces
+    and namespaces created for other kernels are always rejected.  To let
+    Enterprise Gateway create the namespace, do not send KERNEL_NAMESPACE.
 
   KERNEL_POD_NAME=<from user> or KERNEL_USERNAME-KERNEL_ID
     Kubernetes only. By default, Enterprise Gateway will use a kernel pod name whose
@@ -102,7 +118,10 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     Enterprise Gateway should equate with the kernel pod.  If Enterprise Gateway
     creates the kernel's namespace, it will be associated with the cluster role
     identified by EG_KERNEL_CLUSTER_ROLE.  If not provided, it will be derived
-    from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.
+    from EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.  A value from the user must be a
+    valid service account name (lowercase letters, digits, '-' and '.'), and a
+    non-default value is accepted only together with a user-provided
+    KERNEL_NAMESPACE; otherwise the request is rejected with HTTP 400.
 
   KERNEL_SPARKAPP_CONFIG_MAP=<from user> or None
     Spark k8s-operator only. The name of a Kubernetes ConfigMap which will be used to configure
@@ -133,7 +152,9 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     SparkApplication template as the kernel_volumes variable. Example:
     KERNEL_VOLUMES='[{"name": "my-vol", "persistentVolumeClaim": {"claimName": "my-pvc"}}]'
     See the kernel-pod.yaml.j2 and sparkoperator templates for how volumes
-    are rendered.
+    are rendered.  Each volume must use exactly one volume type that the
+    operator allows - by default emptyDir, persistentVolumeClaim, configMap or
+    secret.  Other types, such as hostPath, are rejected with HTTP 400.
 
   KERNEL_VOLUME_MOUNTS=<from user> or None
     Kubernetes and Spark Operator only. A JSON-formatted string defining
@@ -141,7 +162,9 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     is parsed via yaml.safe_load and passed to the kernel pod or
     SparkApplication template as the kernel_volume_mounts variable. Example:
     KERNEL_VOLUME_MOUNTS='[{"name": "my-vol", "mountPath": "/data"}]'
-    Must correspond to volumes defined via KERNEL_VOLUMES.
+    Must correspond to volumes defined via KERNEL_VOLUMES.  Only VolumeMount
+    fields (name, mountPath, readOnly, subPath, subPathExpr, mountPropagation,
+    recursiveReadOnly) are accepted.
 
   KERNEL_WORKING_DIR=<from user> or None
     Containers only.  This value should model the directory in which the active
@@ -154,3 +177,8 @@ There are several supported `KERNEL_` variables that the Enterprise Gateway serv
     KERNEL_WORKING_DIR.  If EG_MIRROR_WORKING_DIRS is False, KERNEL_WORKING_DIR will
     not be available for use during the kernel's launch.  See also EG_MIRROR_WORKING_DIRS.
 ```
+
+Enterprise Gateway checks some of these values against limits set by the operator before it starts a kernel, and
+rejects requests that go beyond them with HTTP 400. See
+[Client-selected kernel resources](../operators/config-security.md#client-selected-kernel-resources) for which values
+are checked and how operators change the limits.

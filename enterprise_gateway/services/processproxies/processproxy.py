@@ -20,6 +20,7 @@ import sys
 import time
 import warnings
 from calendar import timegm
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from socket import (
     AF_INET,
@@ -108,6 +109,39 @@ def _get_local_ip() -> str:
 local_ip = _get_local_ip()
 
 random.seed()
+
+
+def split_list_setting(value: str | Iterable[str] | None) -> list[str]:
+    """Normalize a list-valued operator setting.
+
+    Gateway-wide settings arrive as lists (traits), while kernelspec process-proxy
+    config values are comma-separated strings, like ``authorized_users``.
+
+    Parameters
+    ----------
+    value : str | Iterable[str] | None
+        The setting, as a comma-separated string or an iterable of entries.
+
+    Returns
+    -------
+    list[str]
+        The entries with surrounding whitespace removed and empty entries dropped.
+    """
+    if value is None:
+        return []
+    entries = value.split(",") if isinstance(value, str) else value
+    return [entry.strip() for entry in entries if entry and entry.strip()]
+
+
+def proxy_config_override(proxy_config: Mapping[str, Any], key: str, default: Any) -> Any:
+    """Return a per-kernelspec override, or ``default`` when it is absent or ``null``.
+
+    A kernelspec may set a process-proxy ``config`` value to ``null`` (for example to make the
+    override explicit in a templated spec); that means "inherit the gateway-wide setting", not
+    "no restriction", so a missing key and an explicit ``None`` both fall back to ``default``.
+    """
+    value = proxy_config.get(key)
+    return default if value is None else value
 
 
 class KernelChannel(Enum):
@@ -481,6 +515,39 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
             self.remote_user = None
         else:
             self.remote_user = _remote_user if _remote_user else getpass.getuser()
+
+    @classmethod  # noqa: B027 - deliberately a no-op default, not an abstract method
+    def validate_client_env(
+        cls,
+        client_env: Mapping[str, Any],
+        proxy_config: Mapping[str, Any],
+        kernel_manager: RemoteKernelManager,  # noqa: F821
+    ) -> None:
+        """
+        Rejects client-supplied env values that this process proxy cannot launch safely.
+
+        Called by `RemoteKernelManager.start_kernel` before the process proxy is constructed,
+        so a rejected request leaves no launch state (response-manager events, namespaces)
+        behind.  This base implementation accepts everything.  Overrides must call this
+        method via `super()` so that checks from parent classes still apply.
+
+        Parameters
+        ----------
+        client_env : Mapping[str, Any]
+            Environment values supplied by the client for this kernel.  Values inherited
+            unchanged from the gateway's environment are operator-controlled and excluded.
+
+        proxy_config : Mapping[str, Any]
+            The `config` stanza of the kernelspec's process-proxy entry.
+
+        kernel_manager : RemoteKernelManager
+            The kernel manager starting the kernel, which carries the gateway-wide settings.
+
+        Raises
+        ------
+        tornado.web.HTTPError
+            400 if a value is not permitted.
+        """
 
     @abc.abstractmethod
     async def launch_process(self, kernel_cmd: str, **kwargs: dict[str, Any] | None) -> None:

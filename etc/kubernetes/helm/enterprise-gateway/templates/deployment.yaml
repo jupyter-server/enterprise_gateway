@@ -79,6 +79,14 @@ spec:
           value: {{ .Values.kernel.defaultKernelName }}
         - name: EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME
           value: {{ .Values.kernel.defaultServiceAccountName }}
+        - name: EG_ALLOWED_KERNEL_VOLUME_TYPES
+          value: {{ join "," .Values.kernel.allowedVolumeTypes | quote }}
+        - name: EG_ALLOWED_KERNEL_IMAGES
+          value: {{ join "," .Values.kernel.allowedImages | quote }}
+        - name: EG_ALLOWED_KERNEL_NAMESPACES
+          value: {{ join "," .Values.kernel.allowedNamespaces | quote }}
+        - name: EG_KERNEL_NAMESPACE_POD_SECURITY
+          value: {{ .Values.kernel.namespacePodSecurity | quote }}
         # Optional authorization token passed in all requests
         {{- if .Values.authToken }}
         - name: EG_AUTH_TOKEN

@@ -68,7 +68,10 @@ def launch_docker_kernel(
     kwargs = {}
     kwargs["name"] = container_name
     kwargs["hostname"] = container_name
-    kwargs["user"] = user
+    # Pass the group with the user.  Otherwise Docker takes the primary group from the image's
+    # passwd entry, which is root (gid 0) for UIDs the image does not define - bypassing
+    # EG_PROHIBITED_GIDS.
+    kwargs["user"] = f"{user}:{group}" if user and group else user
     kwargs["labels"] = labels
 
     client = DockerClient.from_env()

@@ -64,6 +64,152 @@ User 'bob' is not in the set of users authorized to start kernel 'Spark - Python
 KERNEL_USERNAME is set to an appropriate value and retry the request.
 ```
 
+## Client-selected kernel resources
+
+Clients shape some resources of their kernels through `KERNEL_` variables in the kernel creation request (see
+[Kernel Environment Variables](../users/kernel-envs.md)). Some of these choices decide what a kernel can reach beyond
+its own container, so Enterprise Gateway checks them against limits the operator controls before it starts the kernel.
+A request that goes beyond these limits fails with HTTP 400, and the error message names the setting that would
+permit it. Values that the gateway passes on unchanged from its own environment (`EG_INHERITED_ENVS`) are not checked.
+These checks also run on a kernel restart, before the running kernel is shut down, so tightening a limit while a kernel
+is running causes a later restart to fail rather than leaving the kernel dead.
+
+### Kubernetes volumes
+
+`KERNEL_VOLUMES` and `KERNEL_VOLUME_MOUNTS` are added to the pod of Kubernetes kernels, and to the driver and executor
+pods of Spark Operator kernels. Each volume in `KERNEL_VOLUMES` must have a valid name and exactly one volume type,
+taken from the allowed list. By default, the allowed types are `emptyDir`, `persistentVolumeClaim`, `configMap` and
+`secret`. Types are matched exactly, so `HostPath` does not match `hostPath`. Entries in `KERNEL_VOLUME_MOUNTS` may
+only use the fields of a Kubernetes `VolumeMount` (`name`, `mountPath`, `readOnly`, `subPath`, `subPathExpr`,
+`mountPropagation` and `recursiveReadOnly`).
+
+```{versionchanged} 3.4.0
+Earlier releases accepted any volume type. Clients that use other types, such as `hostPath`, `nfs` or `csi`, are now
+rejected until the operator allows them.
+```
+
+To change the allowed types for every kernel, set `EG_ALLOWED_KERNEL_VOLUME_TYPES` (or
+`--EnterpriseGatewayApp.allowed_kernel_volume_types`, or the Helm value `kernel.allowedVolumeTypes`) to a comma-separated list, or to `*` to allow any type. An empty
+value allows none. To change them for one kernelspec, add an `allowed_volume_types` entry to its process proxy `config`
+stanza. That entry replaces the gateway-wide list:
+
+```json
+"metadata": {
+  "process_proxy": {
+    "class_name": "enterprise_gateway.services.processproxies.k8s.KubernetesProcessProxy",
+    "config": {
+      "image_name": "elyra/kernel-py:VERSION",
+      "allowed_volume_types": "emptyDir,persistentVolumeClaim,nfs"
+    }
+  }
+}
+```
+
+```{warning}
+Types such as `hostPath`, `gitRepo` and `flexVolume` give a kernel access to the node it runs on. Only allow them
+when everyone who can reach the gateway is trusted with that access. A `secret` volume can mount any Secret in the
+kernel's namespace: with the default per-kernel namespaces that is limited to the kernel's own namespace, but with
+`EG_SHARED_NAMESPACE=True` kernels run in the gateway's namespace, so remove `secret` from the list in that case.
+```
+
+### Container images
+
+Clients can choose the image of a container-based kernel (Kubernetes, Spark Operator, Docker and Docker Swarm) with
+`KERNEL_IMAGE`, and the image of Spark executors with `KERNEL_EXECUTOR_IMAGE`. These values must be well-formed image
+references (`[registry/]repository[:tag][@digest]`, with a lowercase repository).
+
+By default, any well-formed image is accepted. Kernels run client code by design, but an image chosen by the client
+can also bring software the operator has not vetted, such as setuid binaries or programs that do not run a kernel at
+all. To restrict images, set `EG_ALLOWED_KERNEL_IMAGES` (or `--EnterpriseGatewayApp.allowed_kernel_images`, or the Helm
+value `kernel.allowedImages`) to a comma-separated list of repository patterns:
+
+```bash
+EG_ALLOWED_KERNEL_IMAGES="elyra/*,registry.example.com/data-science/*"
+```
+
+Patterns use shell-style wildcards (`*` and `?`) and match the image's repository, so tags and digests are not part of
+the match. Repositories are compared the way Docker resolves them, with the registry and the path matched separately so
+that a wildcard in the registry part cannot cross the `/` into the path: `elyra/*` matches `elyra/kernel-py:3.3.0` and
+`docker.io/elyra/kernel-py` but not `elyra.example.com/kernel-py`; `python` matches the official `python` image;
+`docker.io/*` matches any Docker Hub image; and a registry wildcard such as `*.dkr.ecr.us-west-2.amazonaws.com/*`
+matches only hosts in that domain, not `evil.com/x.dkr.ecr.us-west-2.amazonaws.com/y`. A registry name includes any
+port. The images configured for the kernel
+(`image_name` and `executor_image_name` in its kernelspec, or `EG_KERNEL_IMAGE` and `EG_KERNEL_EXECUTOR_IMAGE`) are
+always allowed. A kernelspec can replace the gateway-wide list with an `allowed_images` entry in its process proxy
+`config` stanza.
+
+### Kubernetes namespaces
+
+By default, Enterprise Gateway creates a namespace for each Kubernetes or Spark Operator kernel and deletes it when the
+kernel stops. Clients can instead name an existing namespace with `KERNEL_NAMESPACE` (and its service account with
+`KERNEL_SERVICE_ACCOUNT_NAME`). Enterprise Gateway can create pods in any namespace, so the namespace a client names
+decides which service accounts, secrets and volumes its kernel can use. A client-supplied namespace is therefore
+accepted only if it matches `EG_ALLOWED_KERNEL_NAMESPACES` (or `--EnterpriseGatewayApp.allowed_kernel_namespaces`, or
+the Helm value `kernel.allowedNamespaces`), a comma-separated list of namespace names or shell-style patterns:
+
+```bash
+EG_ALLOWED_KERNEL_NAMESPACES="team-*,data-science"
+```
+
+The list is empty by default, so every client-supplied namespace is rejected until the operator lists it. Kernels that
+do not set `KERNEL_NAMESPACE` are not affected. A kernelspec can replace the gateway-wide list with an
+`allowed_namespaces` entry in its process proxy `config` stanza.
+
+Some namespaces are always rejected, even when the list is `*`:
+
+- the namespace Enterprise Gateway runs in (`EG_NAMESPACE`), including when `EG_SHARED_NAMESPACE=True`. In that
+  mode, kernels are placed in the gateway's namespace without the client naming it.
+- `kube-*` namespaces, such as `kube-system`.
+- namespaces that Enterprise Gateway created for another kernel that has not stopped yet. Enterprise Gateway confirms
+  this against the Kubernetes API (the namespace carries a `kernel_id` label), so it holds across gateway replicas and
+  restarts, not only within the process that created the namespace.
+
+`KERNEL_SERVICE_ACCOUNT_NAME` must be a valid service account name, and a client may set a non-default account only
+together with a client-supplied `KERNEL_NAMESPACE`. Without a namespace the kernel runs in a namespace Enterprise
+Gateway chooses (a per-kernel namespace, or the gateway's own when `EG_SHARED_NAMESPACE=True`), where it falls back to
+`EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME`; this stops a client from running the kernel as the gateway's own service
+account. The service account itself is not checked, so only list namespaces whose service accounts every client may
+use.
+
+````{versionchanged} 3.4.0
+Earlier releases accepted any `KERNEL_NAMESPACE`. Installations that pre-create kernel namespaces must now list them in
+`EG_ALLOWED_KERNEL_NAMESPACES` before upgrading, or kernel creation requests that name them will fail with an error
+like:
+
+```text
+KERNEL_NAMESPACE 'team-a' is not permitted. Enterprise Gateway only launches kernels into client-specified
+namespaces that match EG_ALLOWED_KERNEL_NAMESPACES (or allowed_namespaces in the kernelspec's process-proxy
+config). Ask your Enterprise Gateway operator to add it, or omit KERNEL_NAMESPACE so Enterprise Gateway creates
+a namespace for the kernel.
+```
+````
+
+```{note}
+The allowed list decides which namespaces clients may use, not which client may use which namespace.
+`KERNEL_USERNAME` is supplied by the client, so any client that can reach the gateway can name any listed namespace.
+```
+
+### Spark options
+
+On Spark-on-Kubernetes kernels, the bundled kernelspecs append the client's `KERNEL_EXTRA_SPARK_OPTS` to their
+`spark-submit` command after the options that place the driver pod (namespace, service account, container images, pod
+labels). Because a later `--conf` wins, Enterprise Gateway rejects (HTTP 400) a `KERNEL_EXTRA_SPARK_OPTS` that sets any
+of the options it manages itself: `spark.kubernetes.namespace`, `spark.kubernetes.authenticate.*`, the driver/executor
+`container.image`, `podTemplateFile` and `secrets` keys, and the `--master`, `--deploy-mode` and `--proxy-user` flags.
+Spark volume options (`spark.kubernetes.{driver,executor}.volumes.<type>.*`) are held to the same type allowlist as
+[Kubernetes volumes](#kubernetes-volumes). Options such as driver and executor memory and cores remain available.
+
+### Pod Security for kernel namespaces
+
+The checks above cover what clients send to Enterprise Gateway. A kernel can also create pods itself: the
+`kernel-controller` role lets it create pods in its namespace, which Spark drivers need for their executors. To keep
+those pods off the node, Enterprise Gateway labels the namespaces it creates to enforce the Kubernetes `baseline`
+[Pod Security Standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/), which rejects host
+paths, host namespaces and privileged containers. Set `EG_KERNEL_NAMESPACE_POD_SECURITY` (Helm value `kernel.namespacePodSecurity`) to
+`privileged`, `baseline` or `restricted` to change the standard, or to an empty value to add no labels. Namespaces created outside Enterprise
+Gateway, such as those listed in `EG_ALLOWED_KERNEL_NAMESPACES`, are not labeled by it, so label them yourself (see
+[Kubernetes namespaces](deploy-kubernetes.md#namespaces)).
+
 ## User Impersonation
 
 The Enterprise Gateway server leverages other technologies to implement user impersonation when launching kernels. This

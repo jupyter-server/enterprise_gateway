@@ -72,6 +72,10 @@ To indicate that a given kernel should be launched as a Docker Swarm service int
 
 Along with the `class_name:` entry, this process proxy stanza should also include a proxy configuration stanza which specifies the docker image to associate with the kernel's service container. If this entry is not provided, the Enterprise Gateway implementation will use a default entry of `elyra/kernel-py:VERSION`. In either case, this value is made available to the rest of the parameters used to launch the kernel by way of an environment variable: `KERNEL_IMAGE`.
 
+```{tip}
+Clients can request a different image with `KERNEL_IMAGE`. To restrict which images they can choose, set `EG_ALLOWED_KERNEL_IMAGES` (see [Container images](config-security.md#container-images)).
+```
+
 ```{note}
 _The use of `VERSION` in docker image tags is a placeholder for the appropriate version-related image tag.  When kernelspecs are built via the Enterprise Gateway Makefile, `VERSION` is replaced with the appropriate version denoting the target release.  A full list of available image tags can be found in the dockerhub repository corresponding to each image._
 ```

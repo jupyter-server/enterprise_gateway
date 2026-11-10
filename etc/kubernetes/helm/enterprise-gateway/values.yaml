@@ -111,6 +111,22 @@ kernel:
   # Service account name to use for kernel pods when no service account is specified.
   # This service account should exist in the namespace where kernel pods are launched.
   defaultServiceAccountName: default
+  # Volume types clients may use in KERNEL_VOLUMES. Use ["*"] to allow any type.
+  # Types such as hostPath give a kernel access to the node it runs on.
+  allowedVolumeTypes:
+    - emptyDir
+    - persistentVolumeClaim
+    - configMap
+    - secret
+  # Repository patterns (e.g. "elyra/*", "registry.example.com/team/*") that client-supplied
+  # KERNEL_IMAGE and KERNEL_EXECUTOR_IMAGE values must match. When empty, any image is allowed.
+  allowedImages: []
+  # Namespace patterns (e.g. "team-*") that clients may select with KERNEL_NAMESPACE. When empty,
+  # client-selected namespaces are rejected and Enterprise Gateway creates one per kernel.
+  allowedNamespaces: []
+  # Pod Security Standard enforced on the namespaces Enterprise Gateway creates for kernels:
+  # privileged, baseline or restricted. Use "" to add no Pod Security labels.
+  namespacePodSecurity: baseline
 
 kernelspecs:
   # Optional custom data image containing kernelspecs to use.

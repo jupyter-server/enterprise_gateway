@@ -26,6 +26,14 @@ Besides those environment variables associated with configurable options, the fo
     not set this valuem, Enterprise Gateway will then use 'cluster-admin'.  It is
     recommended this value be set to something other than 'cluster-admin'.
 
+  EG_KERNEL_NAMESPACE_POD_SECURITY=baseline
+    Kubernetes only.  The Pod Security Standard (privileged, baseline or restricted)
+    that Enterprise Gateway enforces on the namespaces it creates for kernels, by
+    labeling them for Pod Security Admission.  Kernels can create pods in their
+    namespace, and 'baseline' keeps those pods from using host paths, host
+    namespaces or privileged containers.  Use an empty value to add no labels.
+    Invalid values prevent Enterprise Gateway from starting Kubernetes kernels.
+
   EG_KERNEL_LAUNCH_TIMEOUT=30
     The time (in seconds) Enterprise Gateway will wait for a kernel's startup
     completion status before deeming the startup a failure, at which time a second

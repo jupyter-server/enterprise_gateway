@@ -482,6 +482,9 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             "max_kernels_per_user",
             "client_envs",
             "inherited_envs",
+            "allowed_kernel_volume_types",
+            "allowed_kernel_images",
+            "allowed_kernel_namespaces",
             "yarn_endpoint",
             "alt_yarn_endpoint",
             "yarn_endpoint_security_enabled",
@@ -504,9 +507,32 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
              keyword arguments that are passed down to build the kernel_cmd
              and launching the kernel (e.g. Popen kwargs).
         """
+        # Validate before the process proxy exists: constructing and launching it creates state
+        # (response-manager events, Kubernetes namespaces) that a rejected request would leave behind.
+        self._validate_client_env(**kwargs)
         self._get_process_proxy()
         self._capture_user_overrides(**kwargs)
         await super().start_kernel(**kwargs)
+
+    def _validate_client_env(self, **kwargs: dict[str, Any] | None) -> None:
+        """
+        Lets the kernel's process proxy class reject client-supplied env values that it cannot
+        launch safely (see `BaseProcessProxyABC.validate_client_env`).  Values inherited unchanged
+        from the gateway's own environment are operator-controlled and therefore not checked.
+
+        Raises
+        ------
+        tornado.web.HTTPError
+            400 if the process proxy rejects a value.
+        """
+        env = kwargs.get("env") or {}
+        client_env = {
+            key: value
+            for key, value in env.items()
+            if not (key in self.inherited_envs and os.environ.get(key) == value)
+        }
+        process_proxy_class, proxy_config = self._resolve_process_proxy()
+        process_proxy_class.validate_client_env(client_env, proxy_config, self)
 
     def _capture_user_overrides(self, **kwargs: dict[str, Any] | None) -> None:
         """
@@ -611,6 +637,11 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
             Any options specified here will overwrite those used to launch the
             kernel.
         """
+        # Re-validate the launch env before anything is shut down, so a restart that is no
+        # longer permitted (e.g. the operator tightened an allowlist) fails with HTTP 400 and
+        # leaves the running kernel in place rather than killing it on a now-rejected relaunch.
+        if self._launch_args is not None:
+            self._validate_client_env(**{**self._launch_args, **kwargs})
         kernel_id = self.kernel_id or os.path.basename(self.connection_file).replace(
             "kernel-", ""
         ).replace(".json", "")
@@ -750,17 +781,22 @@ class RemoteKernelManager(EnterpriseGatewayConfigMixin, AsyncIOLoopKernelManager
         specified in the kernelspec, a LocalProcessProxy stanza is fabricated and
         instantiated.
         """
-        process_proxy_cfg = get_process_proxy_config(self.kernel_spec)
-        process_proxy_class_name = process_proxy_cfg.get("class_name")
+        process_proxy_class, proxy_config = self._resolve_process_proxy()
         self.log.debug(
             "Instantiating kernel '{}' with process proxy: {}".format(
-                self.kernel_spec.display_name, process_proxy_class_name
+                self.kernel_spec.display_name,
+                f"{process_proxy_class.__module__}.{process_proxy_class.__name__}",
             )
         )
-        process_proxy_class = import_item(process_proxy_class_name)
-        self.process_proxy = process_proxy_class(
-            kernel_manager=self, proxy_config=process_proxy_cfg.get("config")
-        )
+        self.process_proxy = process_proxy_class(kernel_manager=self, proxy_config=proxy_config)
+
+    def _resolve_process_proxy(self) -> tuple[type[BaseProcessProxyABC], dict[str, Any]]:
+        """
+        Returns the process proxy class named by the kernelspec and its `config` stanza.
+        """
+        process_proxy_cfg = get_process_proxy_config(self.kernel_spec)
+        process_proxy_class = import_item(process_proxy_cfg.get("class_name"))
+        return process_proxy_class, process_proxy_cfg.get("config") or {}
 
     # When this class is used by an EnterpriseGatewayApp instance, it will be able to
     # access the app's configuration using the traitlet parent chain.

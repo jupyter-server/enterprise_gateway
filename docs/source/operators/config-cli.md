@@ -79,6 +79,25 @@ EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp) options
 --EnterpriseGatewayApp.allow_origin=<Unicode>
     Sets the Access-Control-Allow-Origin header. (EG_ALLOW_ORIGIN env var)
     Default: ''
+--EnterpriseGatewayApp.allowed_kernel_images=<list-item-1>...
+    Repository patterns (e.g. registry.example.com/team/*, elyra/*) that
+    client-supplied KERNEL_IMAGE and KERNEL_EXECUTOR_IMAGE values must match.
+    The images configured for a kernel are always allowed.  When empty, any
+    well-formed image is allowed.  (EG_ALLOWED_KERNEL_IMAGES env var)
+    Default: []
+--EnterpriseGatewayApp.allowed_kernel_namespaces=<list-item-1>...
+    Kubernetes namespace patterns (e.g. team-*, data-science) that clients may
+    select with KERNEL_NAMESPACE.  When empty, client-selected namespaces are
+    rejected and Enterprise Gateway creates a namespace for each kernel.  The
+    gateway's own namespace and kube-* namespaces are never allowed.
+    (EG_ALLOWED_KERNEL_NAMESPACES env var)
+    Default: []
+--EnterpriseGatewayApp.allowed_kernel_volume_types=<list-item-1>...
+    Kubernetes volume types (e.g. emptyDir, persistentVolumeClaim) that clients
+    may use in KERNEL_VOLUMES.  Use '*' to allow any type.  Types such as
+    hostPath or gitRepo give a kernel access to the node it runs on.
+    (EG_ALLOWED_KERNEL_VOLUME_TYPES env var)
+    Default: ['emptyDir', 'persistentVolumeClaim', 'configMap', 'secret']
 --EnterpriseGatewayApp.alt_yarn_endpoint=<Unicode>
     The http url specifying the alternate YARN Resource Manager.  This value
     should be set when YARN Resource Managers are configured for high

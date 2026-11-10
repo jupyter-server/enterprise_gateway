@@ -489,6 +489,10 @@ can override them with helm's `--set` or `--values` options. Always use `--set` 
 | `kernel.clusterRole`                       | Kernel cluster role created by this chart. Used if no KERNEL_NAMESPACE is provided by client.                                                                                                                                                    | `kernel-controller`                                                            |
 | `kernel.shareGatewayNamespace`             | Will start kernels in the same namespace as EG if True.                                                                                                                                                                                          | `false`                                                                        |
 | `kernel.defaultServiceAccountName`         | Service account name to use for kernel pods when no service account is specified. This service account should exist in the namespace where kernel pods are launched.                                                                             | `default`                                                                      |
+| `kernel.allowedVolumeTypes`                | Volume types clients may use in KERNEL_VOLUMES (`*` allows any). See [Kubernetes volumes](config-security.md#kubernetes-volumes).                                                                                                                | `{emptyDir,persistentVolumeClaim,configMap,secret}`                            |
+| `kernel.allowedImages`                     | Repository patterns that client-supplied KERNEL_IMAGE values must match. Empty allows any image. See [Container images](config-security.md#container-images).                                                                                    | `[]`                                                                           |
+| `kernel.allowedNamespaces`                 | Namespace patterns clients may select with KERNEL_NAMESPACE. Empty rejects client-selected namespaces. See [Kubernetes namespaces](config-security.md#kubernetes-namespaces).                                                                    | `[]`                                                                           |
+| `kernel.namespacePodSecurity`              | Pod Security Standard enforced on namespaces Enterprise Gateway creates (`privileged`, `baseline`, `restricted`, or `""` for none).                                                                                                              | `baseline`                                                                     |
 | `kernel.launchTimeout`                     | Timeout for kernel launching in seconds.                                                                                                                                                                                                         | `60`                                                                           |
 | `kernel.cullIdleTimeout`                   | Idle timeout in seconds. Default is 1 hour.                                                                                                                                                                                                      | `3600`                                                                         |
 | `kernel.cullConnected`                     | Whether to cull idle kernels that still have clients connected.                                                                                                                                                                                  | `false`                                                                        |
@@ -557,10 +561,34 @@ The primary namespace is created prior to the initial Helm deployment (e.g., `en
 
 By default, kernel namespaces are created when the respective kernel is launched. At that time, the kernel namespace name is computed from the kernel username (`KERNEL_USERNAME`) and its kernel ID (`KERNEL_ID`) just like the kernel pod name. Upon a kernel's termination, this namespace - provided it was created by Enterprise Gateway - will be deleted.
 
+Enterprise Gateway labels the namespaces it creates to enforce the Kubernetes
+[`baseline` Pod Security Standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/). Kernels can
+create pods in their own namespace (Spark drivers create their executors there), and the `baseline` standard keeps those
+pods from using host paths, host namespaces or privileged containers. To use a different standard, set
+`EG_KERNEL_NAMESPACE_POD_SECURITY` (Helm value `kernel.namespacePodSecurity`) to `privileged`, `baseline` or `restricted`, or to an empty value to add no labels.
+Namespaces you create yourself, including the Enterprise Gateway namespace when `EG_SHARED_NAMESPACE` is set, are not
+labeled by Enterprise Gateway; label them as shown in the [example custom namespace](#example-custom-namespace).
+
+```{versionchanged} 3.4.0
+Namespaces created by Enterprise Gateway now enforce the `baseline` Pod Security Standard. Custom kernel pod templates
+that use host paths, host networking or privileged containers must set `EG_KERNEL_NAMESPACE_POD_SECURITY=privileged`.
+```
+
 Installations wishing to pre-create the kernel namespace can do so by conveying the name of the kernel namespace via `KERNEL_NAMESPACE` in the `env` portion of the kernel creation request. (They must also provide the namespace's service account name via `KERNEL_SERVICE_ACCOUNT_NAME` - see next section.) When `KERNEL_NAMESPACE` is set, Enterprise Gateway will not attempt to create a kernel-specific namespace, nor will it attempt its deletion. As a result, kernel namespace lifecycle management is the user's responsibility.
 
+Enterprise Gateway only accepts a client-supplied `KERNEL_NAMESPACE` that matches `EG_ALLOWED_KERNEL_NAMESPACES`
+(Helm value `kernel.allowedNamespaces`), a comma-separated list of namespace names or shell-style patterns (for example, `team-*,data-science`). Any other
+namespace is rejected with HTTP 400. The Enterprise Gateway namespace, `kube-*` namespaces, and namespaces that
+Enterprise Gateway created for other kernels are always rejected. See
+[Kubernetes namespaces](config-security.md#kubernetes-namespaces).
+
+```{versionchanged} 3.4.0
+Earlier releases accepted any `KERNEL_NAMESPACE`. Installations that pre-create kernel namespaces must now list them in
+`EG_ALLOWED_KERNEL_NAMESPACES` before upgrading, or kernel creation requests that name them will fail.
+```
+
 ```{tip}
-If you need to associate resources to users, one suggestion is to create a namespace per user and set `KERNEL_NAMESPACE = KERNEL_USERNAME` on the client (see [Kernel Environment Variables](../users/kernel-envs.md)).
+If you need to associate resources to users, one suggestion is to create a namespace per user, named with a common prefix such as `user-alice`, and have the client set `KERNEL_NAMESPACE` to `user-` followed by its `KERNEL_USERNAME` (see [Kernel Environment Variables](../users/kernel-envs.md)). A single pattern, `user-*`, in `EG_ALLOWED_KERNEL_NAMESPACES` then covers every user's namespace. Note that `KERNEL_USERNAME` is supplied by the client, so this convention does not stop one user from naming another user's namespace.
 ```
 
 Although **not recommended**, installations requiring everything in the same namespace - Enterprise Gateway and all its kernels - can do so by setting the helm chart value `kernel.shareGatewayNamespace` to `true` - which is then set into the `EG_SHARED_NAMESPACE` env. When set, all kernels will run in the Enterprise Gateway namespace, essentially eliminating all aspects of isolation between kernel instances (and resources).
@@ -583,7 +611,7 @@ As noted above, installations wishing to pre-create their own kernel namespaces 
 
 #### Example Custom Namespace
 
-Here's an example of the creation of a custom namespace (`kernel-ns`) with its own service account (`kernel-sa`) and role binding (`kernel-controller`) that references the cluster-scoped role (`kernel-controller`) and includes appropriate labels to help with administration and analysis:
+Here's an example of the creation of a custom namespace (`kernel-ns`) with its own service account (`kernel-sa`) and role binding (`kernel-controller`) that references the cluster-scoped role (`kernel-controller`) and includes appropriate labels to help with administration and analysis. The `pod-security.kubernetes.io` labels apply the same Pod Security Standard that Enterprise Gateway applies to the namespaces it creates. Remember to add the namespace to `EG_ALLOWED_KERNEL_NAMESPACES` so clients can use it:
 
 ```yaml
 apiVersion: v1
@@ -593,6 +621,9 @@ metadata:
   labels:
     app: enterprise-gateway
     component: kernel
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -870,6 +901,10 @@ When defined, these variables are then substituted into the appropriate location
 To indicate that a given kernel should be launched into a Kubernetes configuration, the kernel.json file's `metadata` stanza must include a `process_proxy` stanza indicating a `class_name:` of `KubernetesProcessProxy`. This ensures the appropriate lifecycle management will take place relative to a Kubernetes environment.
 
 Along with the `class_name:` entry, this process proxy stanza should also include a proxy configuration stanza which specifies the container image to associate with the kernel's pod. If this entry is not provided, the Enterprise Gateway implementation will use a default entry of `elyra/kernel-py:VERSION`. In either case, this value is made available to the rest of the parameters used to launch the kernel by way of an environment variable: `KERNEL_IMAGE`.
+
+```{tip}
+Clients can request a different image with `KERNEL_IMAGE`. To restrict which images they can choose, set `EG_ALLOWED_KERNEL_IMAGES` (see [Container images](config-security.md#container-images)).
+```
 
 _(Please note that the use of `VERSION` in docker image tags is a placeholder for the appropriate version-related image tag. When kernelspecs are built via the Enterprise Gateway Makefile, `VERSION` is replaced with the appropriate version denoting the target release. A full list of available image tags can be found in the dockerhub repository corresponding to each image.)_
 

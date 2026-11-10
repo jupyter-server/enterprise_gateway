@@ -6,16 +6,20 @@
 from __future__ import annotations
 
 import abc
+import fnmatch
 import logging
 import os
+import re
 import signal
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 import urllib3  # docker ends up using this and it causes lots of noise, so turn off warnings
 from jupyter_client import localinterfaces
+from tornado import web
 
 from ..kernels.remotemanager import RemoteKernelManager
-from .processproxy import RemoteProcessProxy
+from .processproxy import RemoteProcessProxy, proxy_config_override, split_list_setting
 
 log = logging.getLogger(__name__)
 
@@ -66,6 +70,136 @@ mirror_working_dirs = bool(os.getenv("EG_MIRROR_WORKING_DIRS", "false").lower() 
 default_kernel_image = os.getenv("EG_KERNEL_IMAGE")
 default_kernel_executor_image = os.getenv("EG_KERNEL_EXECUTOR_IMAGE")
 
+# Container image references: [registry[:port]/]repository[:tag][@digest], following the
+# grammar of github.com/distribution/reference.  Repository path components are lowercase.
+_PATH_COMPONENT = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+_DOMAIN_COMPONENT = r"[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?"
+_DOMAIN = rf"(?:{_DOMAIN_COMPONENT}(?:\.{_DOMAIN_COMPONENT})*|\[[a-fA-F0-9:]+\])(?::[0-9]+)?"
+_IMAGE_REFERENCE_PATTERN = re.compile(
+    rf"(?P<name>(?:{_DOMAIN}/)?{_PATH_COMPONENT}(?:/{_PATH_COMPONENT})*)"
+    r"(?::(?P<tag>[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}))?"
+    r"(?:@(?P<digest>[A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*:[0-9A-Fa-f]{32,}))?"
+)
+_MAX_IMAGE_NAME_LENGTH = 255
+
+
+def validate_kernel_images(
+    client_env: Mapping[str, Any],
+    allowed_images: str | Iterable[str] | None,
+    configured_images: Iterable[str] = (),
+) -> None:
+    """Reject client-supplied kernel images that are malformed or not allowed.
+
+    ``KERNEL_IMAGE`` and ``KERNEL_EXECUTOR_IMAGE`` select the container image a kernel runs.
+    Each must be a well-formed image reference.  When ``allowed_images`` is set, the image's
+    repository must also match one of its patterns (GHSA-hchm-85c7-pr3j).  Patterns are
+    shell-style globs (``*``, ``?``) over the repository, normalized the way Docker does:
+    ``elyra/*`` means ``docker.io/elyra/*`` and ``python`` means ``docker.io/library/python``.
+    Tags and digests are not part of the match.  ``configured_images`` (the operator's own
+    images for this kernel) are always allowed, so clients that echo them keep working.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    allowed_images : str | Iterable[str] | None
+        Repository patterns, as a list or comma-separated string.  Empty allows any
+        well-formed image; ``*`` does the same explicitly.
+    configured_images : Iterable[str]
+        Image references configured by the operator for this kernel.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if an image reference is malformed (the value is not echoed) or does not match
+        an allowed pattern.
+    """
+    patterns = split_list_setting(allowed_images)
+    configured = {_canonical_reference(image) for image in configured_images if image}
+    for name in ("KERNEL_IMAGE", "KERNEL_EXECUTOR_IMAGE"):
+        if name not in client_env:
+            continue
+        image = client_env[name]
+        reference = _canonical_reference(image)
+        if reference is None:
+            raise web.HTTPError(
+                400,
+                f"{name} is not a valid container image reference "
+                "([registry/]repository[:tag][@digest], with a lowercase repository)",
+            )
+        if not patterns or "*" in patterns or reference in configured:
+            continue
+        img_domain, img_path = _split_repository(_IMAGE_REFERENCE_PATTERN.fullmatch(image)["name"])
+        if not any(_repository_matches(img_domain, img_path, pattern) for pattern in patterns):
+            raise web.HTTPError(
+                400,
+                f"{name} '{image}' is not allowed. Allowed images: {', '.join(patterns)}. "
+                "To permit it, ask your Enterprise Gateway operator to add a matching pattern to "
+                "EG_ALLOWED_KERNEL_IMAGES (or to allowed_images in the kernelspec's process-proxy "
+                "config).",
+            )
+
+
+def _repository_matches(img_domain: str, img_path: str, pattern: str) -> bool:
+    """Match an image's (domain, path) against an allowlist pattern.
+
+    The pattern is canonicalized the same way, then matched part-by-part, so a ``*`` in the
+    registry part cannot cross the ``/`` into the path and let another registry imitate the
+    pattern (for example ``*.example.com/*`` must not accept ``evil.com/x.example.com/y``).
+    """
+    pat_domain, pat_path = _split_repository(pattern)
+    return fnmatch.fnmatchcase(img_domain, pat_domain) and fnmatch.fnmatchcase(img_path, pat_path)
+
+
+def _has_glob(value: str) -> bool:
+    """Whether ``value`` contains an ``fnmatch`` wildcard."""
+    return any(char in value for char in "*?[")
+
+
+def _split_repository(name: str) -> tuple[str, str]:
+    """Split ``name`` into Docker's explicit (registry, path), as in ``splitDockerDomain``.
+
+    As in Docker, the first component names a registry only if it contains '.' or ':', is
+    'localhost', or is not lowercase; otherwise the repository is on Docker Hub, so
+    ``elyra.evil.com/x`` is a different registry while ``elyra/x`` is ``docker.io/elyra/x``.
+    Docker's ``library/`` prefix for a bare official image (``python`` -> ``library/python``)
+    is applied only to literal names, not to a wildcard path, so ``docker.io/*`` keeps meaning
+    all of Docker Hub rather than only its official images.
+    """
+    first, separator, rest = name.partition("/")
+    if separator and (
+        "." in first or ":" in first or first == "localhost" or first.lower() != first
+    ):
+        domain, path = first, rest
+    else:
+        domain, path = "docker.io", name
+    if domain == "index.docker.io":  # legacy name of Docker Hub
+        domain = "docker.io"
+    if domain == "docker.io" and "/" not in path and not _has_glob(path):
+        path = f"library/{path}"
+    return domain, path
+
+
+def _canonical_repository(name: str) -> str:
+    """Return ``name`` with Docker's default registry and namespace made explicit."""
+    domain, path = _split_repository(name)
+    return f"{domain}/{path}"
+
+
+def _canonical_reference(image: Any) -> str | None:
+    """Return the canonical form of an image reference, or None if it is malformed."""
+    if not isinstance(image, str):
+        return None
+    match = _IMAGE_REFERENCE_PATTERN.fullmatch(image)
+    if match is None or len(match["name"]) > _MAX_IMAGE_NAME_LENGTH:
+        return None
+    reference = _canonical_repository(match["name"])
+    if match["tag"] or not match["digest"]:
+        reference += f":{match['tag'] or 'latest'}"
+    if match["digest"]:
+        reference += f"@{match['digest']}"
+    return reference
+
 
 class ContainerProcessProxy(RemoteProcessProxy):
     """
@@ -77,6 +211,27 @@ class ContainerProcessProxy(RemoteProcessProxy):
         super().__init__(kernel_manager, proxy_config)
         self.container_name = ""
         self.assigned_node_ip = None
+
+    @classmethod
+    def validate_client_env(
+        cls,
+        client_env: Mapping[str, Any],
+        proxy_config: Mapping[str, Any],
+        kernel_manager: RemoteKernelManager,
+    ) -> None:
+        """Rejects client-supplied kernel images that are malformed or not allowed."""
+        super().validate_client_env(client_env, proxy_config, kernel_manager)
+        configured_images = (
+            proxy_config.get("image_name", default_kernel_image),
+            proxy_config.get("executor_image_name", default_kernel_executor_image),
+        )
+        validate_kernel_images(
+            client_env,
+            proxy_config_override(
+                proxy_config, "allowed_images", kernel_manager.allowed_kernel_images
+            ),
+            configured_images,
+        )
 
     def _determine_kernel_images(self, **kwargs: dict[str, Any] | None) -> None:
         """

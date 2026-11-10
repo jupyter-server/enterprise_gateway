@@ -5,18 +5,24 @@
 
 from __future__ import annotations
 
+import fnmatch
 import logging
 import os
 import re
+import shlex
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 import kubernetes
 import urllib3
+import yaml
 from kubernetes import client, config
+from tornado import web
 
 from ..kernels.remotemanager import RemoteKernelManager
 from ..sessions.kernelsessionmanager import KernelSessionManager
 from .container import ContainerProcessProxy
+from .processproxy import proxy_config_override, split_list_setting
 
 urllib3.disable_warnings()
 
@@ -31,7 +37,451 @@ kernel_cluster_role = os.environ.get("EG_KERNEL_CLUSTER_ROLE", "cluster-admin")
 share_gateway_namespace = bool(os.environ.get("EG_SHARED_NAMESPACE", "False").lower() == "true")
 kpt_dir = os.environ.get("EG_POD_TEMPLATE_DIR", "/tmp")  # noqa
 
+POD_SECURITY_LEVELS = ("privileged", "baseline", "restricted")
+
+
+def pod_security_labels(level: str) -> dict[str, str]:
+    """Return the Pod Security Admission labels that enforce ``level`` on a namespace.
+
+    Kernels can create pods in the namespace Enterprise Gateway creates for them (Spark
+    drivers create executors), which no gateway-side check sees.  Enforcing a Pod Security
+    Standard on the namespace keeps those pods from using host paths, host namespaces or
+    privileged containers.
+
+    Parameters
+    ----------
+    level : str
+        A Pod Security Standard (privileged, baseline or restricted), or empty to add no
+        labels and leave the namespace to the cluster's default policy.
+
+    Returns
+    -------
+    dict[str, str]
+        The enforce, warn and audit labels for ``level``.
+
+    Raises
+    ------
+    ValueError
+        If ``level`` is not a Pod Security Standard.  This fails startup rather than
+        silently creating unprotected namespaces.
+    """
+    if not level:
+        return {}
+    if level not in POD_SECURITY_LEVELS:
+        msg = (
+            f"Invalid EG_KERNEL_NAMESPACE_POD_SECURITY value '{level}'. Use one of "
+            f"{', '.join(POD_SECURITY_LEVELS)}, or an empty value to add no labels."
+        )
+        raise ValueError(msg)
+    return {f"pod-security.kubernetes.io/{mode}": level for mode in ("enforce", "warn", "audit")}
+
+
+kernel_namespace_pod_security_labels = pod_security_labels(
+    os.environ.get("EG_KERNEL_NAMESPACE_POD_SECURITY", "baseline").strip()
+)
+
 config.load_incluster_config()
+
+# Fields of a Kubernetes VolumeMount.  Like volume types, field names are matched exactly:
+# API servers that decoded field names case-insensitively would accept "MountPropagation".
+VOLUME_MOUNT_FIELDS = frozenset(
+    {
+        "name",
+        "mountPath",
+        "readOnly",
+        "subPath",
+        "subPathExpr",
+        "mountPropagation",
+        "recursiveReadOnly",
+    }
+)
+
+_DNS1123_LABEL_PATTERN = re.compile(r"[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?")
+_DNS1123_SUBDOMAIN_PATTERN = re.compile(
+    r"(?=.{1,253}$)[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
+)
+# Volume types and field names are camelCase identifiers.  Anything else is never echoed
+# back to the client.
+_FIELD_NAME_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9]{0,62}")
+
+# Namespaces this gateway created for kernels and has not deleted yet.  Clients must not
+# launch into them (GHSA-hchm-85c7-pr3j): a pod there gets the owning kernel's service
+# account permissions, can mount its secrets and volumes, and passes its network policies.
+# Namespaces are registered as soon as they exist, so kernels still starting are covered.
+_managed_kernel_namespaces: set[str] = set()
+
+
+def validate_kernel_namespace(
+    client_env: Mapping[str, Any],
+    allowed_namespaces: str | Iterable[str] | None,
+    gateway_namespace: str,
+    managed_namespaces: Iterable[str],
+) -> None:
+    """Reject a client-supplied kernel namespace unless the operator allows it.
+
+    Enterprise Gateway can create pods in any namespace, so a client that picks the
+    namespace (``KERNEL_NAMESPACE``) also picks which service accounts, secrets and volumes
+    its kernel can use.  A client-supplied namespace must match ``allowed_namespaces``
+    (shell-style patterns), which is empty by default.  The gateway's own namespace,
+    ``kube-*`` namespaces, and namespaces the gateway created for other kernels are always
+    rejected, even when ``*`` is allowed (GHSA-hchm-85c7-pr3j).  Kernels that do not set
+    ``KERNEL_NAMESPACE`` are not affected.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    allowed_namespaces : str | Iterable[str] | None
+        Namespace patterns clients may use, as a list or comma-separated string.
+    gateway_namespace : str
+        The namespace Enterprise Gateway runs in.
+    managed_namespaces : Iterable[str]
+        Namespaces Enterprise Gateway created for kernels and has not deleted.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the namespace is malformed (the value is not echoed), reserved, owned by
+        another kernel, or not allowed.
+    """
+    if "KERNEL_NAMESPACE" not in client_env:
+        return
+    namespace = client_env["KERNEL_NAMESPACE"]
+    if not isinstance(namespace, str) or not _DNS1123_LABEL_PATTERN.fullmatch(namespace):
+        raise web.HTTPError(
+            400,
+            "KERNEL_NAMESPACE must be a valid Kubernetes namespace name (lowercase letters, "
+            "digits and '-', at most 63 characters)",
+        )
+    omit_hint = "Or omit KERNEL_NAMESPACE so Enterprise Gateway creates a namespace for the kernel."
+    if namespace == gateway_namespace or namespace.startswith("kube-"):
+        owner = "Enterprise Gateway" if namespace == gateway_namespace else "Kubernetes"
+        raise web.HTTPError(
+            400,
+            f"KERNEL_NAMESPACE '{namespace}' is reserved for {owner} and cannot be used for "
+            f"kernels. {omit_hint}",
+        )
+    patterns = split_list_setting(allowed_namespaces)
+    if not any(fnmatch.fnmatchcase(namespace, pattern) for pattern in patterns):
+        raise web.HTTPError(
+            400,
+            f"KERNEL_NAMESPACE '{namespace}' is not permitted. Enterprise Gateway only launches "
+            "kernels into client-specified namespaces that match EG_ALLOWED_KERNEL_NAMESPACES "
+            "(or allowed_namespaces in the kernelspec's process-proxy config). Ask your "
+            "Enterprise Gateway operator to add it, or omit KERNEL_NAMESPACE so Enterprise "
+            "Gateway creates a namespace for the kernel.",
+        )
+    if namespace in managed_namespaces:
+        raise web.HTTPError(
+            400,
+            f"KERNEL_NAMESPACE '{namespace}' cannot be used: Enterprise Gateway created it for "
+            f"another kernel. {omit_hint}",
+        )
+
+
+# Label that Enterprise Gateway sets on every namespace it creates for a kernel.  A client
+# namespace carrying it was created by the gateway (possibly on another replica, or before a
+# restart) and must not be reused -- see ``_create_kernel_namespace``.
+_EG_NAMESPACE_OWNERSHIP_LABEL = "kernel_id"
+
+
+def reject_client_namespace_owned_by_eg(client_env: Mapping[str, Any]) -> None:
+    """Reject a client namespace that the Kubernetes API shows the gateway created.
+
+    ``_managed_kernel_namespaces`` only records namespaces created by *this* process, so a
+    second replica, or the same gateway after a restart, would not recognize its own kernel
+    namespaces.  This confirms against the API that a client-supplied ``KERNEL_NAMESPACE``
+    does not carry the gateway's per-kernel label before reusing it (GHSA-hchm-85c7-pr3j).
+
+    The check is positive: the namespace is rejected only when the API confirms the label.
+    A missing namespace (404) is allowed -- the client owns its lifecycle -- and a transient
+    API error is logged and allowed, leaving the allowlist as the primary gate.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the namespace carries the gateway's per-kernel label.
+    """
+    namespace = client_env.get("KERNEL_NAMESPACE")
+    if not namespace:
+        return
+    try:
+        read_namespace = client.CoreV1Api().read_namespace(name=namespace)
+    except client.rest.ApiException as err:
+        if err.status == 404:
+            return
+        logging.getLogger(__name__).warning(
+            "Could not read namespace '%s' to confirm ownership (status %s); allowing it on the "
+            "basis of the allowlist.",
+            namespace,
+            err.status,
+        )
+        return
+    except Exception as err:  # never fail a launch on a transient namespace lookup error
+        logging.getLogger(__name__).warning(
+            "Could not read namespace '%s' to confirm ownership (%s); allowing it on the basis "
+            "of the allowlist.",
+            namespace,
+            err,
+        )
+        return
+    metadata = getattr(read_namespace, "metadata", None)
+    labels = getattr(metadata, "labels", None) or {}
+    if _EG_NAMESPACE_OWNERSHIP_LABEL in labels:
+        raise web.HTTPError(
+            400,
+            f"KERNEL_NAMESPACE '{namespace}' was created by Enterprise Gateway for another "
+            "kernel and cannot be reused. Omit KERNEL_NAMESPACE so Enterprise Gateway creates a "
+            "namespace for the kernel, or use a namespace you manage yourself.",
+        )
+
+
+def validate_kernel_service_account(
+    client_env: Mapping[str, Any], default_service_account: str
+) -> None:
+    """Reject an unsafe client-supplied ``KERNEL_SERVICE_ACCOUNT_NAME``.
+
+    The name must be a valid Kubernetes service account name.  In addition, a non-default
+    account is honored only when the client also supplies a ``KERNEL_NAMESPACE`` (which the
+    namespace check has confirmed is operator-allowed and is not the gateway's own).  Without
+    a client namespace the kernel lands in a namespace Enterprise Gateway chooses -- a
+    per-kernel namespace, or the gateway's own namespace when ``EG_SHARED_NAMESPACE`` is set --
+    so letting the client name the account there would, in shared mode, run the kernel as the
+    gateway's own service account (GHSA-hchm-85c7-pr3j).
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    default_service_account : str
+        The account Enterprise Gateway uses when the client supplies none
+        (``EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME``).
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the name is malformed, or a non-default account is set without a client
+        namespace.  The value is not echoed.
+    """
+    if "KERNEL_SERVICE_ACCOUNT_NAME" not in client_env:
+        return
+    account = client_env["KERNEL_SERVICE_ACCOUNT_NAME"]
+    if not isinstance(account, str) or not _DNS1123_SUBDOMAIN_PATTERN.fullmatch(account):
+        raise web.HTTPError(
+            400,
+            "KERNEL_SERVICE_ACCOUNT_NAME must be a valid Kubernetes service account name "
+            "(lowercase letters, digits, '-' and '.', at most 253 characters)",
+        )
+    if "KERNEL_NAMESPACE" not in client_env and account != default_service_account:
+        raise web.HTTPError(
+            400,
+            "KERNEL_SERVICE_ACCOUNT_NAME may only be set together with an allowlisted "
+            "KERNEL_NAMESPACE. Without a namespace, Enterprise Gateway runs the kernel with "
+            "EG_DEFAULT_KERNEL_SERVICE_ACCOUNT_NAME.",
+        )
+
+
+# Spark-submit options that the bundled Spark-on-Kubernetes kernelspecs set themselves, as
+# EG-controlled values, before appending the client's KERNEL_EXTRA_SPARK_OPTS.  Because a later
+# ``--conf`` wins, a client value could otherwise re-point the driver pod's namespace, service
+# account, image or pod template (GHSA-hchm-85c7-pr3j).  Matched per dotted component so that a
+# wildcard does not cross a '.' boundary.
+_FORBIDDEN_SPARK_CONF_PATTERNS = (
+    "spark.kubernetes.namespace",
+    "spark.kubernetes.authenticate.*",
+    "spark.kubernetes.container.image",
+    "spark.kubernetes.driver.container.image",
+    "spark.kubernetes.executor.container.image",
+    "spark.kubernetes.driver.podtemplatefile",
+    "spark.kubernetes.executor.podtemplatefile",
+    "spark.kubernetes.driver.secrets.*",
+    "spark.kubernetes.executor.secrets.*",
+    "spark.kubernetes.driver.secretkeyref.*",
+    "spark.kubernetes.executor.secretkeyref.*",
+)
+
+# Spark-submit flags that would move the kernel off its intended cluster, mode or identity.
+_FORBIDDEN_SPARK_FLAGS = frozenset({"--master", "--deploy-mode", "--proxy-user"})
+
+
+def _spark_conf_key_matches(key: str, pattern: str) -> bool:
+    """Match a dotted Spark conf key against a pattern component-by-component.
+
+    Unlike a plain ``fnmatch`` over the whole key, a ``*`` component matches exactly one
+    conf-key component, so ``spark.kubernetes.authenticate.*`` does not spill across dots.
+    """
+    key_parts = key.split(".")
+    pattern_parts = pattern.split(".")
+    if pattern_parts[-1] == "*":  # trailing '*' covers one-or-more remaining components
+        if len(key_parts) < len(pattern_parts):
+            return False
+        key_parts = key_parts[: len(pattern_parts) - 1] + ["*"]
+    if len(key_parts) != len(pattern_parts):
+        return False
+    return all(pp in ("*", kp) for pp, kp in zip(pattern_parts, key_parts))
+
+
+def validate_kernel_extra_spark_opts(
+    client_env: Mapping[str, Any], allowed_volume_types: str | Iterable[str] | None
+) -> None:
+    """Reject ``KERNEL_EXTRA_SPARK_OPTS`` that override EG-controlled Spark settings.
+
+    The bundled Spark-on-Kubernetes kernelspecs append the client's ``KERNEL_EXTRA_SPARK_OPTS``
+    to their ``spark-submit`` options after setting the pod namespace, service account, image and
+    labels.  A later ``--conf`` would win, so a client value could place the driver pod in any
+    namespace (as any service account) or mount the node (GHSA-hchm-85c7-pr3j).  This rejects the
+    EG-controlled ``--conf`` keys and the cluster/mode/identity flags, and holds Spark volume
+    options to the same type allowlist as ``KERNEL_VOLUMES``.  Options such as driver/executor
+    memory and cores stay allowed.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    allowed_volume_types : str | Iterable[str] | None
+        Volume types clients may use, as for :func:`validate_kernel_volumes`.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the value cannot be parsed or sets a forbidden option.
+    """
+    value = client_env.get("KERNEL_EXTRA_SPARK_OPTS")
+    if not value:
+        return
+    try:
+        tokens = shlex.split(str(value))
+    except ValueError as err:
+        raise web.HTTPError(
+            400, "KERNEL_EXTRA_SPARK_OPTS could not be parsed as shell options"
+        ) from err
+
+    allowed_types_lower = {t.lower() for t in split_list_setting(allowed_volume_types)}
+    conf_values: list[str] = []
+    index = 0
+    while index < len(tokens):
+        arg = tokens[index]
+        if arg in _FORBIDDEN_SPARK_FLAGS:
+            raise web.HTTPError(400, f"KERNEL_EXTRA_SPARK_OPTS may not set '{arg}'")
+        if arg == "--conf" and index + 1 < len(tokens):
+            conf_values.append(tokens[index + 1])
+            index += 2
+            continue
+        if arg.startswith("--conf="):
+            conf_values.append(arg[len("--conf=") :])
+        index += 1
+
+    for conf in conf_values:
+        key = conf.split("=", 1)[0].strip()
+        lowered = key.lower()
+        if any(
+            _spark_conf_key_matches(lowered, pattern) for pattern in _FORBIDDEN_SPARK_CONF_PATTERNS
+        ):
+            raise web.HTTPError(
+                400,
+                f"KERNEL_EXTRA_SPARK_OPTS may not set the Spark configuration key '{key}'; it is "
+                "managed by Enterprise Gateway",
+            )
+        parts = lowered.split(".")
+        if "volumes" in parts:
+            type_index = parts.index("volumes") + 1
+            vol_type = parts[type_index] if type_index < len(parts) else ""
+            if "*" not in allowed_types_lower and vol_type not in allowed_types_lower:
+                original_type = key.split(".")[type_index] if type_index < len(parts) else ""
+                raise web.HTTPError(
+                    400,
+                    f"KERNEL_EXTRA_SPARK_OPTS requests a Spark volume of type '{original_type}', "
+                    "which is not allowed. See EG_ALLOWED_KERNEL_VOLUME_TYPES.",
+                )
+
+
+def validate_kernel_volumes(
+    client_env: Mapping[str, Any], allowed_volume_types: str | Iterable[str] | None
+) -> None:
+    """Reject client-supplied volumes whose type the operator has not allowed.
+
+    ``KERNEL_VOLUMES`` and ``KERNEL_VOLUME_MOUNTS`` are rendered into the kernel pod (or
+    SparkApplication) as-is.  A volume type such as ``hostPath`` or ``gitRepo`` gives the
+    kernel access to the node it runs on, so each volume must use exactly one source whose
+    type is in ``allowed_volume_types`` (GHSA-hchm-85c7-pr3j).  Types are matched exactly,
+    so case variants such as ``HostPath`` are rejected.
+
+    Parameters
+    ----------
+    client_env : Mapping[str, Any]
+        Environment values supplied by the client for this kernel.
+    allowed_volume_types : str | Iterable[str] | None
+        Volume types clients may use, as a list or comma-separated string.  ``*`` allows
+        any type; an empty value allows none.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if a value is not a YAML list of mappings, a volume is malformed or uses a type
+        that is not allowed, or a volume mount has an unsupported field.  The message names
+        the volume and type only when they are well-formed identifiers.
+    """
+    allowed = set(split_list_setting(allowed_volume_types))
+
+    if "KERNEL_VOLUMES" in client_env:
+        for index, volume in enumerate(_load_mapping_list("KERNEL_VOLUMES", client_env)):
+            name = volume.get("name")
+            if not isinstance(name, str) or not _DNS1123_LABEL_PATTERN.fullmatch(name):
+                raise web.HTTPError(
+                    400,
+                    f"KERNEL_VOLUMES entry {index} must have a 'name' that is a valid Kubernetes "
+                    "volume name (lowercase letters, digits and '-', at most 63 characters)",
+                )
+            sources = [key for key in volume if key != "name"]
+            if len(sources) != 1:
+                raise web.HTTPError(
+                    400, f"KERNEL_VOLUMES volume '{name}' must define exactly one volume source"
+                )
+            volume_type = sources[0]
+            if "*" not in allowed and volume_type not in allowed:
+                raise web.HTTPError(
+                    400,
+                    f"KERNEL_VOLUMES volume '{name}' uses volume type {_quoted(volume_type)}, "
+                    f"which is not allowed. Allowed types: {', '.join(sorted(allowed)) or 'none'}. "
+                    "To permit it, ask your Enterprise Gateway operator to add it to "
+                    "EG_ALLOWED_KERNEL_VOLUME_TYPES (or to allowed_volume_types in the "
+                    "kernelspec's process-proxy config).",
+                )
+
+    if "KERNEL_VOLUME_MOUNTS" in client_env:
+        for index, mount in enumerate(_load_mapping_list("KERNEL_VOLUME_MOUNTS", client_env)):
+            for field in mount:
+                if field not in VOLUME_MOUNT_FIELDS:
+                    raise web.HTTPError(
+                        400,
+                        f"KERNEL_VOLUME_MOUNTS entry {index} has unsupported field "
+                        f"{_quoted(field)}. Supported fields: "
+                        f"{', '.join(sorted(VOLUME_MOUNT_FIELDS))}.",
+                    )
+
+
+def _load_mapping_list(name: str, client_env: Mapping[str, Any]) -> list[dict]:
+    """Parse ``client_env[name]`` the way the kernel launchers do: a YAML list of mappings."""
+    value = client_env[name]
+    try:
+        parsed = yaml.safe_load(value) if isinstance(value, str) else None
+    except yaml.YAMLError:
+        parsed = None
+    if not isinstance(parsed, list) or not all(isinstance(item, dict) for item in parsed):
+        raise web.HTTPError(400, f"{name} must be a YAML list of mappings")
+    return parsed
+
+
+def _quoted(identifier: Any) -> str:
+    """Quote ``identifier`` for an error message, or describe it if it is not safe to echo."""
+    if isinstance(identifier, str) and _FIELD_NAME_PATTERN.fullmatch(identifier):
+        return f"'{identifier}'"
+    return "(unprintable name)"
 
 
 def get_subject_class():
@@ -72,6 +522,31 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         self.kernel_pod_name = None
         self.kernel_namespace = None
         self.delete_kernel_namespace = False
+
+    @classmethod
+    def validate_client_env(
+        cls,
+        client_env: Mapping[str, Any],
+        proxy_config: Mapping[str, Any],
+        kernel_manager: RemoteKernelManager,
+    ) -> None:
+        """Rejects client-supplied Kubernetes resources the operator has not allowed."""
+        super().validate_client_env(client_env, proxy_config, kernel_manager)
+        allowed_volume_types = proxy_config_override(
+            proxy_config, "allowed_volume_types", kernel_manager.allowed_kernel_volume_types
+        )
+        validate_kernel_volumes(client_env, allowed_volume_types)
+        validate_kernel_extra_spark_opts(client_env, allowed_volume_types)
+        validate_kernel_namespace(
+            client_env,
+            proxy_config_override(
+                proxy_config, "allowed_namespaces", kernel_manager.allowed_kernel_namespaces
+            ),
+            enterprise_gateway_namespace,
+            _managed_kernel_namespaces,
+        )
+        reject_client_namespace_owned_by_eg(client_env)
+        validate_kernel_service_account(client_env, default_kernel_service_account_name)
 
     async def launch_process(
         self, kernel_cmd: str, **kwargs: dict[str, Any] | None
@@ -193,6 +668,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 v1_status = client.CoreV1Api().delete_namespace(
                     name=self.kernel_namespace, body=body
                 )
+                _managed_kernel_namespaces.discard(self.kernel_namespace)
                 status = None
                 if v1_status:
                     status = v1_status.status
@@ -358,7 +834,12 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         namespace = self.kernel_pod_name
 
         # create the namespace ...
-        labels = {"app": "enterprise-gateway", "component": "kernel", "kernel_id": self.kernel_id}
+        labels = {
+            "app": "enterprise-gateway",
+            "component": "kernel",
+            "kernel_id": self.kernel_id,
+            **kernel_namespace_pod_security_labels,
+        }
         namespace_metadata = client.V1ObjectMeta(name=namespace, labels=labels)
         body = client.V1Namespace(metadata=namespace_metadata)
 
@@ -366,6 +847,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         try:
             client.CoreV1Api().create_namespace(body=body)
             self.delete_kernel_namespace = True
+            _managed_kernel_namespaces.add(namespace)
             self.log.info(f"Created kernel namespace: {namespace}")
 
             # Now create a RoleBinding for this namespace for the default ServiceAccount.  We'll reference
@@ -381,6 +863,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                 self.delete_kernel_namespace = (
                     True  # okay if ns already exists and restarting, still mark for delete
                 )
+                _managed_kernel_namespaces.add(namespace)
                 self.log.info(f"Re-using kernel namespace: {namespace}")
             else:
                 if self.delete_kernel_namespace:
@@ -392,6 +875,7 @@ class KubernetesProcessProxy(ContainerProcessProxy):
                         grace_period_seconds=0, propagation_policy="Background"
                     )
                     client.CoreV1Api().delete_namespace(name=namespace, body=body)
+                    _managed_kernel_namespaces.discard(namespace)
                     self.log.warning(f"Deleted kernel namespace: {namespace}")
                 else:
                     reason = f"Error occurred creating namespace '{namespace}': {err}"
@@ -449,3 +933,5 @@ class KubernetesProcessProxy(ContainerProcessProxy):
         super().load_process_info(process_info)
         self.kernel_namespace = process_info["kernel_ns"]
         self.delete_kernel_namespace = process_info["delete_ns"]
+        if self.delete_kernel_namespace:  # restored kernel owns the namespace EG created for it
+            _managed_kernel_namespaces.add(self.kernel_namespace)

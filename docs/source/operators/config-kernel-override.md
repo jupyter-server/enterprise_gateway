@@ -31,6 +31,25 @@ The following enumerates the set of per-kernel configuration overrides:
   `--EnterpriseGatewayApp.conductor_ha_allowed_hosts`. Any values specified in the config dictionary override the
   globally defined values. These apply to all `ConductorClusterProcessProxy` kernels. See
   [High-availability (HA) Conductor endpoints](deploy-conductor.md#high-availability-ha-conductor-endpoints).
+- `allowed_volume_types`: This process proxy configuration entry can be used to override
+  `--EnterpriseGatewayApp.allowed_kernel_volume_types` with a comma-separated list of volume types. Any values
+  specified in the config dictionary override the globally defined values. These apply to all
+  `KubernetesProcessProxy` kernels, including Spark Operator kernels. See
+  [Kubernetes volumes](config-security.md#kubernetes-volumes).
+- `allowed_images`: This process proxy configuration entry can be used to override
+  `--EnterpriseGatewayApp.allowed_kernel_images` with a comma-separated list of repository patterns. Any values
+  specified in the config dictionary override the globally defined values. These apply to all container-based
+  kernels (Kubernetes, Spark Operator, Docker and Docker Swarm). See
+  [Container images](config-security.md#container-images).
+- `allowed_namespaces`: This process proxy configuration entry can be used to override
+  `--EnterpriseGatewayApp.allowed_kernel_namespaces` with a comma-separated list of namespace patterns. Any values
+  specified in the config dictionary override the globally defined values. These apply to all
+  `KubernetesProcessProxy` kernels, including Spark Operator kernels. See
+  [Kubernetes namespaces](config-security.md#kubernetes-namespaces).
+
+For the `allowed_volume_types`, `allowed_images` and `allowed_namespaces` overrides above, a `null` value means
+"inherit the gateway-wide setting" rather than "no restriction". To widen or narrow a kernel, give the override an
+explicit value (an empty string removes all entries).
 
 ## Per-kernel environment overrides
 

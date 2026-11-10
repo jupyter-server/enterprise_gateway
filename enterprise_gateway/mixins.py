@@ -431,6 +431,50 @@ class EnterpriseGatewayConfigMixin(Configurable):
             ","
         )
 
+    allowed_kernel_volume_types_env = "EG_ALLOWED_KERNEL_VOLUME_TYPES"
+    allowed_kernel_volume_types_default_value = "emptyDir,persistentVolumeClaim,configMap,secret"
+    allowed_kernel_volume_types = ListTrait(
+        default_value=allowed_kernel_volume_types_default_value.split(","),
+        config=True,
+        help="""Kubernetes volume types (e.g. emptyDir, persistentVolumeClaim) that clients may
+                use in KERNEL_VOLUMES.  Use '*' to allow any type.  Types such as hostPath or
+                gitRepo give a kernel access to the node it runs on.
+                (EG_ALLOWED_KERNEL_VOLUME_TYPES env var)""",
+    )
+
+    @default("allowed_kernel_volume_types")
+    def _allowed_kernel_volume_types_default(self) -> List[str]:
+        return os.getenv(
+            self.allowed_kernel_volume_types_env, self.allowed_kernel_volume_types_default_value
+        ).split(",")
+
+    allowed_kernel_images_env = "EG_ALLOWED_KERNEL_IMAGES"
+    allowed_kernel_images = ListTrait(
+        config=True,
+        help="""Repository patterns (e.g. registry.example.com/team/*, elyra/*) that
+                client-supplied KERNEL_IMAGE and KERNEL_EXECUTOR_IMAGE values must match.  The
+                images configured for a kernel are always allowed.  When empty, any well-formed
+                image is allowed.  (EG_ALLOWED_KERNEL_IMAGES env var)""",
+    )
+
+    @default("allowed_kernel_images")
+    def _allowed_kernel_images_default(self) -> List[str]:
+        return os.getenv(self.allowed_kernel_images_env, "").split(",")
+
+    allowed_kernel_namespaces_env = "EG_ALLOWED_KERNEL_NAMESPACES"
+    allowed_kernel_namespaces = ListTrait(
+        config=True,
+        help="""Kubernetes namespace patterns (e.g. team-*, data-science) that clients may
+                select with KERNEL_NAMESPACE.  When empty, client-selected namespaces are
+                rejected and Enterprise Gateway creates a namespace for each kernel.  The
+                gateway's own namespace and kube-* namespaces are never allowed.
+                (EG_ALLOWED_KERNEL_NAMESPACES env var)""",
+    )
+
+    @default("allowed_kernel_namespaces")
+    def _allowed_kernel_namespaces_default(self) -> List[str]:
+        return os.getenv(self.allowed_kernel_namespaces_env, "").split(",")
+
     kernel_headers_env = "EG_KERNEL_HEADERS"
     kernel_headers = ListTrait(
         config=True,
