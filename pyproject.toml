@@ -205,4 +205,4 @@ ignore-property-decorators=true
 ignore-nested-functions=true
 ignore-nested-classes=true
 fail-under=100
-exclude = ["docs", "*/tests", "*/itests","conftest"]
+exclude = ["docs", "*/tests", "*/itests","conftest", ".worktrees"]
