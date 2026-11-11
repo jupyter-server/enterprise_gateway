@@ -19,6 +19,7 @@ from jupyter_core.application import JupyterApp, base_aliases
 from jupyter_server.serverapp import random_ports
 from jupyter_server.utils import url_path_join
 from tornado import httpserver, web
+from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from traitlets.config import Configurable
 from zmq.eventloop import ioloop
@@ -133,6 +134,11 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             kernel_manager=self.kernel_manager,
             config=self.config,  # required to get command-line options visible
         )
+
+        if self.prespawn_count and self.max_kernels and self.max_kernels < self.prespawn_count:
+            msg = f"The number of kernels to prespawn {self.prespawn_count} is greater than the maximum number of kernels allowed {self.max_kernels}."
+            self.log.warning(msg)
+            raise RuntimeError(msg)
 
         # For B/C purposes, check if session persistence is enabled.  If so, and availability
         # mode is not enabled, go ahead and default availability mode to 'multi-instance'.
@@ -325,6 +331,8 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
 
         self.io_loop = ioloop.IOLoop.current()
 
+        self.start_prespawning()
+
         if sys.platform != "win32":
             signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
@@ -338,6 +346,19 @@ class EnterpriseGatewayApp(EnterpriseGatewayConfigMixin, JupyterApp):
             signal.signal(signal.SIGINT, signal.SIG_IGN)
         finally:
             self.shutdown()
+
+    def start_prespawning(self) -> None:
+        """Schedules prespawning of ``prespawn_count`` kernels on the current IO loop.
+
+        Returns immediately; the kernels are spawned once the loop runs, and
+        `kernel_manager.prespawn_complete` is set when that has finished.  Does nothing
+        when ``prespawn_count`` isn't set.
+        """
+        if not self.prespawn_count or self.prespawn_count <= 0:
+            return
+        # Tornado keeps a reference to the resulting task and logs any exception it raises.
+        # Use tornado's IOLoop directly: zmq.eventloop.ioloop is deprecated and warns.
+        IOLoop.current().add_callback(self.kernel_manager.prespawn_kernels, self.prespawn_count)
 
     def shutdown(self) -> None:
         """Shuts down all running kernels."""

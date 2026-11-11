@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import json
-import os
 from functools import partial
 from typing import Any
 
@@ -17,6 +16,7 @@ from jupyter_client.jsonutil import date_default
 from tornado import web
 
 from ...mixins import CORSMixin, JSONErrorsMixin, TokenAuthorizationMixin
+from .remotemanager import inherited_kernel_env
 
 MAX_ENV_VALUE_LENGTH = 4096
 
@@ -49,7 +49,7 @@ class MainKernelHandler(
 
     def _build_kernel_env(self, model_env: dict[str, Any]) -> dict[str, str]:
         """Build the kernel environment from the request model and server settings."""
-        env = {key: value for key, value in os.environ.items() if key in self.inherited_envs}
+        env = inherited_kernel_env(self.inherited_envs)
 
         allowed_envs: list[str]
         allowed_envs = list(model_env.keys()) if self.client_envs == ["*"] else self.client_envs
