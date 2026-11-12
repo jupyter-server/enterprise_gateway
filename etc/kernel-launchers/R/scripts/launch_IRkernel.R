@@ -214,16 +214,18 @@ if (!is.null(response_address) && str_length(response_address) > 0){
     launch_args <- commandArgs(trailingOnly = FALSE)
     file_option <- "--file="
     script_path <- sub(file_option, "", launch_args[grep(file_option, launch_args)])
-    listener_file <- paste(sep="/", dirname(script_path), "server_listener.py")
+    listener_dir <- dirname(script_path)
 
     # Launch the server listener logic in an async manner and poll for the existence of
     # the connection file before continuing.  Should there be an issue, the server
     # will terminate the launcher, so there's no need for a timeout.
     python_cmd <- Sys.getenv("PYSPARK_PYTHON", "python")  # If present, use the same python specified for Spark
 
+    # Import via sys.path rather than imp.load_source: the imp module was removed in Python 3.12.
     svr_listener_cmd <- stringr::str_interp(gsub("\n[:space:]*" , "",
-                paste(python_cmd,"-c \"import os, sys, imp;
-                gl = imp.load_source('setup_server_listener', '${listener_file}');
+                paste(python_cmd,"-c \"import sys;
+                sys.path.insert(0, '${listener_dir}');
+                import server_listener as gl;
                 gl.setup_server_listener(conn_filename='${connection_file}', parent_pid='${pid}',
                 lower_port=${lower_port}, upper_port=${upper_port},
                 response_addr='${response_address}', kernel_id='${kernel_id}', public_key='${public_key}')\"")))
