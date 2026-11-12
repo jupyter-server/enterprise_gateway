@@ -1,8 +1,10 @@
-ARG BASE_CONTAINER=continuumio/miniconda3:24.1.2-0
+# Ubuntu 24.04 based: still packages openjdk-8, which Toree 0.5 needs to interrupt cells
+# (on Java 11 it ignores interrupts) and Spark 3.2 / Hadoop 3.3 support. Debian 12+ dropped
+# it, and the previous Debian 11 base is archived.
+ARG BASE_CONTAINER=condaforge/miniforge3:26.9.4-2
 FROM $BASE_CONTAINER
 
 ARG SPARK_VERSION
-ARG SPARKR_VERSION=3.1.2
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
@@ -52,7 +54,7 @@ RUN dpkg --purge --force-depends ca-certificates-java \
     libxrender1 \
     openssh-server \
     openssh-client \
-    openjdk-11-jdk-headless \
+    openjdk-8-jdk-headless \
     ca-certificates-java \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -60,12 +62,14 @@ RUN dpkg --purge --force-depends ca-certificates-java \
 RUN ln -s $(readlink -f /usr/bin/javac | sed "s:/bin/javac::") ${JAVA_HOME}
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen
+    locale-gen en_US.UTF-8
 
 ADD fix-permissions /usr/local/bin/fix-permissions
 # Create jovyan user with UID=1000 and in the 'users' group
 # and make sure these dirs are writable by the `users` group.
-RUN groupadd wheel -g 11 && \
+# The Ubuntu base ships an 'ubuntu' user holding UID 1000; remove it so jovyan can take it.
+RUN (! id -u ubuntu >/dev/null 2>&1 || userdel -r ubuntu) && \
+    groupadd wheel -g 11 && \
     echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su && \
     useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
     mkdir -p /usr/hdp/current && \
@@ -97,8 +101,15 @@ RUN cd /usr/hdp/current && ln -s ./hadoop-$HADOOP_VER hadoop && ln -s ./spark-$S
 
 USER root
 
-RUN conda install mamba -n base -c conda-forge && \
-    mamba install --yes --quiet -c conda-forge \
+# Use conda rather than mamba here: the Python downgrade re-links the installed noarch
+# packages, and mamba 2.x fails on that ("Cannot find a valid extracted directory cache")
+# because the base image ships without a package cache.
+RUN conda install --yes -c conda-forge \
+    # # keep the previous base's Python: pyspark 3.2 imports distutils (removed in 3.12)
+    'python=3.11' \
+    # # without these, the Python downgrade also rolls conda back to 23.x
+    'conda>=26.9' \
+    'mamba>=2.9' \
     # # ipykernel 7 has asyncio rewrite affecting kernels to become idle
     'ipykernel<7' \
     # # cap kernel-side jupyter stack for fleet convergence
@@ -109,20 +120,14 @@ RUN conda install mamba -n base -c conda-forge && \
     'r-devtools' \
     'r-stringr' \
     'r-argparse' && \
-    mamba clean -y --all &&\
+    conda clean -y --all && \
     fix-permissions $ANACONDA_HOME && \
     fix-permissions /home/$NB_USER
 
 USER $NB_UID
 
-#Package ‘SparkR’ currently supports 3.1.2, so we'll set its own ARG
-#https://cran.r-project.org/src/contrib/Archive/SparkR/
-
 RUN Rscript -e 'install.packages("IRkernel", repos="https://mirror.las.iastate.edu/CRAN/", lib="/opt/conda/lib/R/library")' \
-            -e 'IRkernel::installspec(prefix = "/usr/local")' \
-            -e 'download.file(url = "https://cran.r-project.org/src/contrib/Archive/SparkR/SparkR_$SPARKR_VERSION.tar.gz", destfile = "SparkR_$SPARKR_VERSION.tar.gz")' \
-            -e 'install.packages(pkgs="SparkR_$SPARKR_VERSION.tar.gz", type="source", repos=NULL, lib="/opt/conda/lib/R/library")' \
-            -e 'unlink("SparkR_$SPARKR_VERSION.tar.gz")'
+            -e 'IRkernel::installspec(prefix = "/usr/local")'
 
 # SETUP HADOOP CONFIGS
 RUN sed -i '/^export JAVA_HOME/ s:.*:export JAVA_HOME=/usr/lib/jvm/java\nexport HADOOP_HOME=/usr/hdp/current/hadoop\nexport HADOOP_HOME=/usr/hdp/current/hadoop\n:' $HADOOP_HOME/etc/hadoop/hadoop-env.sh

@@ -1,10 +1,10 @@
 # What this image Gives You
 
-- Debian-based miniconda image (`continuumio/miniconda3:24.1.2-0`)
+- Ubuntu 24.04-based Miniforge image (`condaforge/miniforge3:26.9.4-2`, conda-forge channel only)
 - Hadoop `3.3.1`
 - Apache Spark `3.2.1` — version controlled by `SPARK_VERSION` in the top-level `Makefile` (currently `3.2.1`);
-- OpenJDK 11 runtime (`openjdk-11-jdk-headless`)
-- miniconda 24.1.2 (Python 3.11) with R packages (`r-devtools`, `r-stringr`, `r-argparse`)
+- OpenJDK 8 runtime (`openjdk-8-jdk-headless`); Apache Toree 0.5 can't interrupt cells on Java 11
+- Python 3.11 (pinned for Spark 3.2) with R packages (`r-devtools`, `r-stringr`, `r-argparse`); SparkR comes from the Spark distribution
 - Apache Toree `0.5.0-incubating`
 - `jovyan` service user (UID `1000`, matching upstream Jupyter images), with system users `elyra`, `bob`, and `alice`
 - Password-less SSH for the `jovyan` service user
