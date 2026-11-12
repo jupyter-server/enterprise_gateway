@@ -10,7 +10,8 @@ version: "3.5"
 # 3. We only use one replica since session affinity is another point of investigation in Swarm
 services:
   enterprise-gateway:
-    image: elyra/enterprise-gateway:dev
+    # EG_IMAGE may be an image ID: Swarm re-pulls tag references (replacing local builds with the registry image).
+    image: ${EG_IMAGE:-elyra/enterprise-gateway:dev}
     user: root
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -28,6 +29,16 @@ services:
       - "EG_MIRROR_WORKING_DIRS=${EG_MIRROR_WORKING_DIRS:-False}"
       - "EG_RESPONSE_PORT=${EG_RESPONSE_PORT:-8877}"
       - "KG_PORT=${KG_PORT:-8888}"
+    # The base image's healthcheck expects a jupyter server runtime file EG never writes,
+    # causing Swarm to kill the task as unhealthy. Probe EG instead, via /api/swagger.json,
+    # which (unlike /api) doesn't require EG_AUTH_TOKEN.
+    # (Can be removed once the image includes the HEALTHCHECK from its Dockerfile.)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://localhost:$${EG_PORT:-8888}/api/swagger.json || exit 1"]
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
     networks:
       - "enterprise-gateway"
     labels:
@@ -41,7 +52,8 @@ services:
         component: "enterprise-gateway"
 
   enterprise-gateway-proxy:
-    image: haproxy:alpine
+    # Pinned: floating tags have changed the image layout (non-root user, entrypoint path) underneath us.
+    image: haproxy:3.4-alpine
     ports:
       - ${KG_PORT:-8888}:8888
       - 9088:9088
@@ -52,7 +64,8 @@ services:
       - /bin/sh
       - -c
       - |
-        cat <<EOF > /usr/local/etc/haproxy/haproxy.cfg
+        # haproxy image runs as non-root and can't write /usr/local/etc/haproxy, so use /tmp
+        cat <<EOF > /tmp/haproxy.cfg
         global
           maxconn 4096
           daemon
@@ -102,7 +115,7 @@ services:
           cookie SRVID insert dynamic
           server-template enterprise-gateway 2 enterprise-gateway:8888 check resolvers docker
         EOF
-        exec /docker-entrypoint.sh haproxy -f /usr/local/etc/haproxy/haproxy.cfg
+        exec docker-entrypoint.sh haproxy -f /tmp/haproxy.cfg
 
 networks:
   enterprise-gateway:
