@@ -1,7 +1,8 @@
 ARG HUB_ORG
 ARG SPARK_VERSION
 
-ARG BASE_CONTAINER=${HUB_ORG}/demo-base@sha256:080d9e9411b722f1afb333c767c9f28bb831f7055a37da7a11b12170a158e6d9
+# demo-base:3.2.1 (miniforge3 / Ubuntu 24.04, Java 8, arm64 + amd64), pinned by its index digest
+ARG BASE_CONTAINER=${HUB_ORG}/demo-base@sha256:15d8abfa4fa45897d931f05ebcb5cb82040698a22a96dba186d4c6f165d3ad34
 FROM $BASE_CONTAINER
 
 # An ARG declared before a FROM is outside of a build stage,

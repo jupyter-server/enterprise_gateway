@@ -1,6 +1,6 @@
 Built on [elyra/demo-base](https://hub.docker.com/r/elyra/demo-base/), this image adds support for [Jupyter Enterprise Gateway](https://jupyter-enterprise-gateway.readthedocs.io/en/latest/) to better demonstrate running Python, R and Scala kernels in YARN-cluster mode.
 
-The base image is referenced by digest (`elyra/demo-base@sha256:080d9e94…`) rather than by the mutable `:3.2.1` tag, so this image's contents stay reproducible even if the upstream tag is rebuilt. To pick up an updated `demo-base`, bump the digest in `etc/docker/enterprise-gateway-demo/Dockerfile` deliberately and re-run the integration suite (`make itest-yarn-debug`) before merging.
+The base image is referenced by digest (`elyra/demo-base@sha256:15d8abfa…`) rather than by the mutable `:3.2.1` tag, so this image's contents stay reproducible even if the upstream tag is rebuilt. To pick up an updated `demo-base`, bump the digest in `etc/docker/enterprise-gateway-demo/Dockerfile` deliberately and re-run the integration suite (`make itest-yarn-debug`) before merging.
 
 # What it Gives You
 
