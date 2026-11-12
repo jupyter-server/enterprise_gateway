@@ -523,6 +523,22 @@ def test_docker_kernel_without_gid_keeps_uid_only(launch_docker):
     assert docker_client.containers.run.call_args.kwargs["user"] == "1000"
 
 
+@pytest.mark.parametrize("swarm", [False, True])
+@pytest.mark.parametrize("server_path", [None, "/usr/bin"])
+def test_docker_kernel_uses_image_path(launch_docker, swarm, server_path):
+    """The gateway does not forward its PATH to kernels; either way the image PATH is used."""
+    module, docker_client = launch_docker
+    module.swarm_mode = swarm
+    kernel_env = {"KERNEL_IMAGE": "elyra/kernel-py:3.3.0"}
+    if server_path is not None:
+        kernel_env["PATH"] = server_path
+    with patch.dict(os.environ, kernel_env, clear=True):
+        module.launch_docker_kernel("kid", "0..0", "10.0.0.1:8877", "pubkey", "none", None)
+    launch = docker_client.services.create if swarm else docker_client.containers.run
+    env_kwarg = "env" if swarm else "environment"
+    assert "PATH" not in launch.call_args.kwargs[env_kwarg]
+
+
 # ---------------------------------------------------------------------------
 # KERNEL_NAMESPACE / KERNEL_SERVICE_ACCOUNT_NAME
 # ---------------------------------------------------------------------------
