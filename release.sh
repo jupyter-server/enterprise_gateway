@@ -12,21 +12,26 @@ usage: release.sh [--release-prepare | --release-publish]
 DESCRIPTION
 Perform necessary tasks for a Jupyter Enterprise Gateway release
 
-release-prepare: This form creates a release tag and builds the release distribution artifacts.
+release-prepare: This form bumps the version, commits and tags the release, builds the release
+distribution artifacts and Docker images, then moves to the next development version. Unless
+--dryRun is given, it also uploads the wheel and sdist to PyPI, pushes the Docker images, and
+pushes the commits and the tag.
 
 --release-prepare --currentVersion="2.0.0.dev0" --releaseVersion="2.0.0" --developmentVersion="2.1.0.dev1" --previousVersion="2.0.0rc2" [--tag="v2.0.0"] [--gitCommitHash="a874b73"]
 
-release-publish: Publish the release distribution artifacts to PyPI.
+release-publish: Rebuild the release distribution artifacts from a release tag or commit, for
+example to attach them to the GitHub release. Nothing is uploaded or pushed.
 
---release-publish --tag="v2.0.0"
+--release-publish --gitTag="v2.0.0" | --gitCommitHash="a874b73"
 
 OPTIONS
 --currentVersion     - Current development version
---releaseVersion     - Release identifier used when publishing
+--releaseVersion     - Release identifier to prepare
 --developmentVersion - Release identifier used for next development cycle
 --previousVersion    - Release identifier left in download links from previous release
 --tag                - Release Tag identifier used when taging the release, default 'v$releaseVersion'
---gitCommitHash      - Release tag or commit to build from, default master HEAD
+--gitTag             - Release tag to rebuild the artifacts from (release-publish)
+--gitCommitHash      - Commit to build from, default HEAD of the default branch
 --dryRun             - Dry run only, mostly used for testing.
 
 EXAMPLES
@@ -147,13 +152,16 @@ fi
 GIT_REF=${GIT_REF:-HEAD}
 if [[ "$RELEASE_PUBLISH" == "true" && "$GIT_TAG" ]]; then
     GIT_REF="tags/$GIT_TAG"
+    # Publishing only takes the tag, so derive the tag and version shown below from it
+    RELEASE_TAG=${RELEASE_TAG:-$GIT_TAG}
+    RELEASE_VERSION=${RELEASE_VERSION:-${GIT_TAG#v}}
 fi
 
 BASE_DIR=$(pwd)
 WORK_DIR=$(pwd)/build/release
 SOURCE_DIR=$(pwd)/build/release/enterprise_gateway
 
-if [ -z "$RELEASE_TAG" ]; then
+if [[ -z "$RELEASE_TAG" && -n "$RELEASE_VERSION" ]]; then
   RELEASE_TAG="v$RELEASE_VERSION"
 fi
 
@@ -283,11 +291,10 @@ fi
 
 
 if [[ "$RELEASE_PUBLISH" == "true" ]]; then
-    echo "Publishing release $RELEASE_VERSION"
-    # Checkout code
+    echo "Rebuilding release artifacts from $GIT_REF"
+    # Checkout code (checkout_code checks out $GIT_REF, the release tag or commit)
     checkout_code
     cd $SOURCE_DIR
-    git checkout $RELEASE_TAG
     git clean -d -f -x
 
     make clean dist docs
