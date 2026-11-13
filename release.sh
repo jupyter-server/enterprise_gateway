@@ -212,6 +212,9 @@ function update_version_to_release {
 
     # Update documentation - this is a one-way change since links will not be valid in dev "releases".
     find docs/source -name "*.md" -type f -exec sed -i .bak "s@$PREVIOUS_VERSION@$RELEASE_VERSION@g" {} \;
+
+    # Remove the sed backups so they are not packaged into the sdist or the Helm chart
+    find . -name "*.bak" -type f -delete
 }
 
 function update_version_to_development {
@@ -233,6 +236,9 @@ function update_version_to_development {
     # Update Docker compose version
     sed -i .bak "s@elyra/enterprise-gateway:$RELEASE_VERSION@elyra/enterprise-gateway:dev@g" etc/docker/docker-compose.yml
     sed -i .bak "s@elyra/kernel-image-puller:$RELEASE_VERSION@elyra/kernel-image-puller:dev@g" etc/docker/docker-compose.yml
+
+    # Remove the sed backups so they are not packaged into the development build artifacts
+    find . -name "*.bak" -type f -delete
 }
 
 if [[ "$RELEASE_PREPARE" == "true" ]]; then
