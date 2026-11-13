@@ -169,7 +169,7 @@ EG_ALLOWED_KERNEL_IMAGES="elyra/*,registry.example.com/data-science/*"
 
 Patterns use shell-style wildcards (`*` and `?`) and match the image's repository, so tags and digests are not part of
 the match. Repositories are compared the way Docker resolves them, with the registry and the path matched separately so
-that a wildcard in the registry part cannot cross the `/` into the path: `elyra/*` matches `elyra/kernel-py:3.3.0` and
+that a wildcard in the registry part cannot cross the `/` into the path: `elyra/*` matches `elyra/kernel-py:3.4.0` and
 `docker.io/elyra/kernel-py` but not `elyra.example.com/kernel-py`; `python` matches the official `python` image;
 `docker.io/*` matches any Docker Hub image; and a registry wildcard such as `*.dkr.ecr.us-west-2.amazonaws.com/*`
 matches only hosts in that domain, not `evil.com/x.dkr.ecr.us-west-2.amazonaws.com/y`. A registry name includes any

@@ -11,7 +11,7 @@ version: "3.5"
 services:
   enterprise-gateway:
     # EG_IMAGE may be an image ID: Swarm re-pulls tag references (replacing local builds with the registry image).
-    image: ${EG_IMAGE:-elyra/enterprise-gateway:dev}
+    image: ${EG_IMAGE:-elyra/enterprise-gateway:3.4.0}
     user: root
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
