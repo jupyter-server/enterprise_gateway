@@ -109,6 +109,11 @@ validate_port_range <- function(port_range){
 }
 
 # Check arguments
+# argparse shells out to Python, which it only looks for on PATH. Kernels launched by
+# the gateway may have no PATH, so use the interpreter the server listener uses below.
+if (nzchar(Sys.getenv("PYSPARK_PYTHON"))) {
+    options(python_cmd = Sys.getenv("PYSPARK_PYTHON"))
+}
 parser <- argparse::ArgumentParser(description="Parse Arguments for R Launcher")
 parser$add_argument("--kernel-id", nargs='?',
        help="the id associated with the launched kernel")

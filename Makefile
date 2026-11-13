@@ -249,8 +249,17 @@ PREP_TIMEOUT?=180
 itest-docker-prep:
 	@-docker service rm enterprise-gateway_enterprise-gateway enterprise-gateway_enterprise-gateway-proxy
 	@-docker swarm leave --force
+	# The old swarm's network is torn down asynchronously and would take the new stack's network with it
+	@(attempts=0; while docker network inspect enterprise-gateway >/dev/null 2>&1; do \
+		if [ $$attempts -ge 30 ]; then echo "Network 'enterprise-gateway' still present after swarm leave; giving up."; exit 1; fi; \
+		sleep 1; attempts=$$((attempts+1)); done)
 	# Check if swarm mode is active, if not attempt to create the swarm
 	@(docker info | grep -q 'Swarm: active'; if [ $$? -eq 1 ]; then docker swarm init; fi;)
 	@echo "Starting enterprise-gateway swarm service (run \`docker service logs enterprise-gateway_enterprise-gateway\` to see service log)..."
-	@KG_PORT=${ITEST_DOCKER_PORT} EG_DOCKER_NETWORK=enterprise-gateway docker stack deploy -c etc/docker/docker-compose.yml enterprise-gateway
+	# Deploy the local build by image ID: Swarm pulls tag references on every task start, which would replace
+	# a locally built elyra/enterprise-gateway:$(TAG) with the published image of the same tag.
+	# --resolve-image never keeps the CLI from pinning the registry digest as well.
+	@EG_IMAGE=$$(docker image inspect --format '{{.Id}}' elyra/enterprise-gateway:$(TAG)) && \
+		KG_PORT=${ITEST_DOCKER_PORT} EG_DOCKER_NETWORK=enterprise-gateway EG_IMAGE=$$EG_IMAGE \
+		docker stack deploy --resolve-image never -c etc/docker/docker-compose.yml enterprise-gateway
 	@(r="1"; attempts=0; while [ "$$r" == "1" -a $$attempts -lt $(PREP_TIMEOUT) ]; do echo "Waiting for enterprise-gateway to start..."; sleep 2; ((attempts++)); docker service logs enterprise-gateway_enterprise-gateway 2>&1 |grep --regexp "Jupyter Enterprise Gateway .* is available at http"; r=$$?; done; if [ $$attempts -ge $(PREP_TIMEOUT) ]; then echo "Wait for startup timed out!"; exit 1; fi;)

@@ -57,4 +57,11 @@ CMD ["/usr/local/bin/start-enterprise-gateway.sh"]
 
 EXPOSE 8888
 
+# Override the base image healthcheck, which looks for a jupyter server runtime file
+# that Enterprise Gateway never writes. EG_PORT defaults to 8888 in start-enterprise-gateway.sh.
+# Probe /api/swagger.json: unlike /api, it isn't guarded by EG_AUTH_TOKEN, so the probe
+# works in token-authenticated deployments without putting the token on a command line.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=3 \
+    CMD curl -fsS -o /dev/null http://localhost:${EG_PORT:-8888}/api/swagger.json || exit 1
+
 WORKDIR /usr/local/bin
