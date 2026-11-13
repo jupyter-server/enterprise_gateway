@@ -57,9 +57,9 @@ def launch_docker_kernel(
     # Since the environment is specific to the kernel (per env stanza of kernelspec, KERNEL_ and EG_CLIENT_ENVS)
     # just add the env here.
     param_env.update(os.environ)
-    param_env.pop(
-        "PATH"
-    )  # Let the image PATH be used.  Since this is relative to images, we're probably safe.
+    # Let the image PATH be used.  Since this is relative to images, we're probably safe.
+    # The gateway doesn't forward its PATH to kernels, so it's usually absent here.
+    param_env.pop("PATH", None)
 
     user = param_env.get("KERNEL_UID")
     group = param_env.get("KERNEL_GID")
