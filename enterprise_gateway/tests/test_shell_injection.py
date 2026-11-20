@@ -438,6 +438,18 @@ class TestEvalReachingEnvValidation(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 400)
         return ctx.exception
 
+    def test_kernel_anaconda_env_is_eval_reaching(self):
+        # KERNEL_ANACONDA_ENV is recomputed into KERNEL_PYSPARK_PYTHON (SPARK_OPTS) by the
+        # Conductor proxy, so a shell metacharacter in it must be rejected at the boundary
+        # (GHSA-99mg-9x9r-5fj4).
+        with self.assertRaises(web.HTTPError) as ctx:
+            validate_eval_reaching_env({"KERNEL_ANACONDA_ENV": "x|touch /tmp/pwned|y"}, None)
+        self.assertEqual(ctx.exception.status_code, 400)
+
+    def test_clean_kernel_anaconda_env_passes(self):
+        # A normal conda env name has no eval-dangerous characters and must pass.
+        validate_eval_reaching_env({"KERNEL_ANACONDA_ENV": "py39"}, None)
+
     def test_shell_syntax_rejected_in_extra_spark_opts(self):
         for char in self.SHELL_SYNTAX_CHARS:
             with self.subTest(char=repr(char)):

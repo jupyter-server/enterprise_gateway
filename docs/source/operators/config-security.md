@@ -352,6 +352,14 @@ The `Authorization` header carrying the JWT or EGO PlatformToken on these calls 
 mask (`EG_REDACTION_MASK`, default `********`) wherever the Conductor process proxy logs the curl command, so these
 credentials are not written to the logs.
 
+```{versionchanged} 3.5.0
+`KERNEL_ANACONDA_ENV` (IBM Spectrum Conductor kernels) must be a conda environment name:
+it must start with a letter, digit or underscore and contain only letters, digits, `.`, `_`
+or `-`. Earlier releases concatenated the raw value into the Spark launch command, so a value
+containing shell metacharacters, whitespace or `/` could run commands on the Enterprise Gateway
+host. Such values are now rejected with HTTP 400.
+```
+
 ## Securing Enterprise Gateway Server
 
 ### Using SSL for encrypted communication

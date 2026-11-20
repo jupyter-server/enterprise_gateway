@@ -133,6 +133,7 @@ EVAL_REACHING_ENVS = frozenset(
         "KERNEL_SPARK_OPTS",  # conductor.py SPARK_OPTS
         "KERNEL_SPARK_HOME",  # conductor.py copies it to SPARK_HOME
         "KERNEL_PYSPARK_PYTHON",  # conductor.py SPARK_OPTS
+        "KERNEL_ANACONDA_ENV",  # conductor.py recomputes it into KERNEL_PYSPARK_PYTHON (SPARK_OPTS)
         "KERNEL_NOTEBOOK_MASTER_REST",  # conductor.py SPARK_OPTS
         "KERNEL_CPUS",  # launch_kubernetes.py spark resource options
         "KERNEL_MEMORY",
