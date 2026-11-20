@@ -20,7 +20,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "docker>=3.6.0.dev0",
+  "docker>=3.5.0",
   "future",
   "jinja2>=3.1",
   "jupyter_client>=6.1.12,<7",  # Remove cap once EG supports kernel provisioners
@@ -91,6 +91,9 @@ src = "enterprise_gateway/_version.py"
 
 [[tool.tbump.file]]
 src = "pyproject.toml"
+# Only the project version: without a search pattern tbump rewrites every occurrence of the
+# current version in this file, including dependency floors that happen to match it.
+search = 'version = "{current_version}"'
 
 [[tool.tbump.file]]
 src = "Makefile"
