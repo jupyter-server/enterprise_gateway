@@ -308,6 +308,16 @@ Should impersonation be disabled after granting the gateway user elevated privil
 will run as the gateway user **regardless of the value of KERNEL_USERNAME**.
 ```
 
+```{versionchanged} 3.5.0
+`KERNEL_USERNAME` must be a single identifier token: it must start with a letter, digit or
+underscore and otherwise contain only letters, digits, `.`, `_`, `@` or `-`. Values containing
+whitespace or shell metacharacters are rejected with HTTP 400 before authorization. Earlier
+releases compared the raw value against `unauthorized_users`, so a value such as `root ` (with a
+trailing space) could evade the denylist and then be collapsed back to `root` by the impersonation
+launch scripts. Entries in `EG_UNAUTHORIZED_USERS` and `EG_AUTHORIZED_USERS` (and their kernelspec
+overrides) now have surrounding whitespace trimmed, so `root, hdfs` denies both `root` and `hdfs`.
+```
+
 ## SSH Tunneling
 
 Jupyter Enterprise Gateway is configured to perform SSH tunneling on the five ZeroMQ kernel sockets as well as the
