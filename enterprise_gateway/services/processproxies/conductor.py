@@ -145,6 +145,44 @@ def validate_curl_security_opt(value: str) -> list[str]:
     return tokens
 
 
+# A conda environment name is a single path component spliced into
+# KERNEL_PYSPARK_PYTHON (".../anaconda/envs/<name>/bin/python"), which reaches the
+# Conductor launch script's `eval exec` through SPARK_OPTS. Restrict it to a safe
+# identifier so no shell metacharacter, whitespace or path separator can be injected
+# (GHSA-99mg-9x9r-5fj4).
+_ANACONDA_ENV_PATTERN = re.compile(r"\A[A-Za-z0-9_][A-Za-z0-9._-]*\Z")
+_ANACONDA_ENV_MAX_LENGTH = 256
+
+
+def validate_conductor_anaconda_env(value: str) -> None:
+    """Reject a KERNEL_ANACONDA_ENV that is not a safe conda environment name.
+
+    A valid name starts with a letter, digit or underscore and otherwise contains only
+    letters, digits, ``.``, ``_`` or ``-``. This forbids shell metacharacters, whitespace
+    (which would word-split under ``eval``) and ``/`` (path traversal out of the envs
+    directory).
+
+    Parameters
+    ----------
+    value:
+        Raw ``KERNEL_ANACONDA_ENV`` value supplied by the client.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the value is empty, too long, or contains disallowed characters. The
+        message names the variable and the allowed grammar but never echoes the value,
+        which may carry an injection payload.
+    """
+    if not value or len(value) > _ANACONDA_ENV_MAX_LENGTH or not _ANACONDA_ENV_PATTERN.match(value):
+        raise HTTPError(
+            400,
+            "KERNEL_ANACONDA_ENV contains characters that are not allowed; it must start "
+            "with a letter, digit or underscore and contain only letters, digits, '.', "
+            "'_' or '-'",
+        )
+
+
 class ConductorClusterProcessProxy(RemoteProcessProxy):
     """
     Kernel lifecycle management for Conductor clusters.
@@ -852,6 +890,9 @@ class ConductorClusterProcessProxy(RemoteProcessProxy):
             self.log.warning(_redact_cmd(cmd))
             self.log_and_raise(http_status_code=500, reason=reasonErr)
         else:
+            # Reject an unsafe conda env name before it is spliced into
+            # KERNEL_PYSPARK_PYTHON -> SPARK_OPTS -> run.sh `eval exec` (GHSA-99mg-9x9r-5fj4).
+            validate_conductor_anaconda_env(env["KERNEL_ANACONDA_ENV"])
             env_dict["KERNEL_PYSPARK_PYTHON"] = (
                 response["parameters"]["deploy_home"]["value"]
                 + "/anaconda/envs/"
