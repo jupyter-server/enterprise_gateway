@@ -450,6 +450,18 @@ class TestEvalReachingEnvValidation(unittest.TestCase):
         # A normal conda env name has no eval-dangerous characters and must pass.
         validate_eval_reaching_env({"KERNEL_ANACONDA_ENV": "py39"}, None)
 
+    def test_kernel_launchers_dir_is_eval_reaching(self):
+        # KERNEL_LAUNCHERS_DIR is expanded into PROG_HOME and eval-exec'd by the Kubernetes
+        # Spark run.sh scripts, which run on the gateway host, so a shell metacharacter in it
+        # must be rejected at the boundary (GHSA-m434-r2pf-qr3g).
+        self.assert_rejected({"KERNEL_LAUNCHERS_DIR": "/x|touch /tmp/pwned|y"})
+
+    def test_clean_kernel_launchers_dir_passes(self):
+        # A normal absolute launcher path has no eval-dangerous characters and must pass.
+        validate_eval_reaching_env(
+            {"KERNEL_LAUNCHERS_DIR": "/usr/local/bin/kernel-launchers"}, None
+        )
+
     def test_shell_syntax_rejected_in_extra_spark_opts(self):
         for char in self.SHELL_SYNTAX_CHARS:
             with self.subTest(char=repr(char)):

@@ -56,6 +56,14 @@ kernel's remote hosts (see [Pinning a kernel to a host](deploy-distributed.md#pi
 
 Error messages name the rejected variable but never include its value.
 
+```{versionchanged} 3.5.0
+`KERNEL_LAUNCHERS_DIR` is now validated as a launch option: a value containing shell
+metacharacters is rejected with HTTP 400. On Spark-on-Kubernetes kernels the gateway expands
+this client-supplied variable into the local `spark-submit` launcher command (`run.sh`), which
+it runs on the Enterprise Gateway host, so earlier releases allowed a crafted value to run
+commands on that host.
+```
+
 ## Authorization
 
 By default, all users are authorized to start kernels. This behavior can be adjusted when situations arise where
