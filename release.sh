@@ -183,11 +183,36 @@ function checkout_code {
     mkdir -p $WORK_DIR
     cd $WORK_DIR
     # Checkout code
-    git clone git@github.com:jupyter/enterprise_gateway.git
+    git clone git@github.com:jupyter-server/enterprise_gateway.git
     cd enterprise_gateway
     git checkout $GIT_REF
     git_hash=`git rev-parse --short HEAD`
     echo "Checked out Jupyter Enterprise Gateway git hash $git_hash"
+}
+
+# Point the docs' references to the previous release at the new release.
+#
+# Only rewrites the forms below, never every occurrence of the version string: a blanket
+# replace also rewrote "{versionchanged} X.Y.Z" notes (which must keep the version a
+# change landed in) and mangled example IPs, ports and YARN application IDs.
+#   - release download links:      releases/download/v<prev>/
+#   - kernelspec tarball names:    jupyter_enterprise_gateway_kernelspecs-<prev>.tar.gz
+#   - prose naming the release:    "relative to the <prev> release"
+#   - published image tags:        elyra/<image>:<prev>
+# Must be run from the root of the checkout.
+function update_doc_version_references {
+    # Escape the dots so the version matches literally rather than as a regex wildcard
+    local prev_re=${PREVIOUS_VERSION//./\\.}
+    # Version must not continue past the match, e.g. "3.0.0" must not match "3.0.0rc2"
+    local end='\([^0-9A-Za-z.]\)'
+
+    find docs/source -name "*.md" -type f -exec sed -i .bak \
+        -e "s@releases/download/v$prev_re/@releases/download/v$RELEASE_VERSION/@g" \
+        -e "s@_kernelspecs-$prev_re\.tar\.gz@_kernelspecs-$RELEASE_VERSION.tar.gz@g" \
+        -e "s@relative to the $prev_re release@relative to the $RELEASE_VERSION release@g" \
+        -e "s@\(elyra/[a-z0-9-]*\):$prev_re$end@\1:$RELEASE_VERSION\2@g" \
+        -e "s@\(elyra/[a-z0-9-]*\):$prev_re\$@\1:$RELEASE_VERSION@g" \
+        {} \;
 }
 
 function update_version_to_release {
@@ -211,7 +236,7 @@ function update_version_to_release {
     sed -i .bak "s@elyra/kernel-image-puller:dev@elyra/kernel-image-puller:$RELEASE_VERSION@g" etc/docker/docker-compose.yml
 
     # Update documentation - this is a one-way change since links will not be valid in dev "releases".
-    find docs/source -name "*.md" -type f -exec sed -i .bak "s@$PREVIOUS_VERSION@$RELEASE_VERSION@g" {} \;
+    update_doc_version_references
 
     # Remove the sed backups so they are not packaged into the sdist or the Helm chart
     find . -name "*.bak" -type f -delete
