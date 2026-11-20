@@ -140,6 +140,7 @@ EVAL_REACHING_ENVS = frozenset(
         "KERNEL_CPUS_LIMIT",
         "KERNEL_MEMORY_LIMIT",
         "KERNEL_SPARK_CONTEXT_INIT_MODE",  # bootstrap-kernel.sh
+        "KERNEL_LAUNCHERS_DIR",  # k8s spark run.sh PROG_HOME, eval-exec'd on the gateway host
         "SPARK_HOME",  # read on the run.sh eval lines; client-settable via client_envs
         "DASK_YARN_EXE",
     }
