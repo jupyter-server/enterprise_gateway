@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jupyter_enterprise_gateway"
-version = "3.5.0"
+version = "3.6.0.dev0"
 description = "A web server for spawning and communicating with remote Jupyter kernels"
 license = { file = "LICENSE.md" }
 keywords = ["Interactive","Interpreter","Kernel", "Web", "Cloud"]
@@ -20,7 +20,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "docker>=3.5.0",
+  "docker>=3.6.0.dev0",
   "future",
   "jinja2>=3.1",
   "jupyter_client>=6.1.12,<7",  # Remove cap once EG supports kernel provisioners
@@ -76,7 +76,7 @@ max-statements = 60
 include = ["enterprise_gateway"]
 
 [tool.tbump.version]
-current = "3.5.0"
+current = "3.6.0.dev0"
 regex = '''
   (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
   ((?P<channel>a|b|rc|.dev)(?P<release>\d+))?

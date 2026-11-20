@@ -3,4 +3,4 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-__version__ = "3.5.0"
+__version__ = "3.6.0.dev0"
