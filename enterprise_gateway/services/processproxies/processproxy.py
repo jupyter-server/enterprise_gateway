@@ -196,6 +196,47 @@ def validate_eval_reaching_env(
             )
 
 
+# KERNEL_USERNAME is pasted into sudo/--proxy-user options and re-parsed by the
+# launch scripts' eval, so it must be a single safe token. Rejecting whitespace also
+# closes the denylist bypass where "root " slips past the unauthorized_users check and
+# eval word-splitting collapses it back to "root" (GHSA-vjjc-h367-2gx3).
+_KERNEL_USERNAME_PATTERN = re.compile(r"\A[A-Za-z0-9_][A-Za-z0-9._@-]*\Z")
+_KERNEL_USERNAME_MAX_LENGTH = 256
+
+
+def validate_kernel_username(username: str) -> None:
+    """Reject a KERNEL_USERNAME that is not a single safe identifier token.
+
+    A valid username starts with a letter, digit or underscore and otherwise contains
+    only letters, digits, ``.``, ``_``, ``@`` or ``-``. This forbids whitespace (which
+    would both evade the ``unauthorized_users`` denylist and splice extra arguments into
+    the impersonation command) and shell metacharacters.
+
+    Parameters
+    ----------
+    username : str
+        The resolved KERNEL_USERNAME value.
+
+    Raises
+    ------
+    tornado.web.HTTPError
+        400 if the value is empty, too long, or contains disallowed characters. The
+        message names the variable and the allowed grammar but never echoes the value,
+        which may carry an injection payload.
+    """
+    if (
+        not username
+        or len(username) > _KERNEL_USERNAME_MAX_LENGTH
+        or not _KERNEL_USERNAME_PATTERN.match(username)
+    ):
+        raise web.HTTPError(
+            400,
+            "KERNEL_USERNAME contains characters that are not allowed; it must start with "
+            "a letter, digit or underscore and contain only letters, digits, '.', '_', "
+            "'@' or '-'",
+        )
+
+
 def split_list_setting(value: str | Iterable[str] | None) -> list[str]:
     """Normalize a list-valued operator setting.
 
@@ -559,12 +600,12 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         self.unauthorized_users = self.kernel_manager.unauthorized_users
         if proxy_config.get("unauthorized_users"):
             self.unauthorized_users = self.unauthorized_users.union(
-                proxy_config.get("unauthorized_users").split(",")
+                split_list_setting(proxy_config.get("unauthorized_users"))
             )
 
         # Let authorized users override global value - if set on kernelspec...
         if proxy_config.get("authorized_users"):
-            self.authorized_users = set(proxy_config.get("authorized_users").split(","))
+            self.authorized_users = set(split_list_setting(proxy_config.get("authorized_users")))
         else:
             self.authorized_users = self.kernel_manager.authorized_users
 
@@ -962,6 +1003,10 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
         has a value and is present in the environment (again, for use by kernelspecs).  If unset, KERNEL_USERNAME
         will be defaulted to the current user.
 
+        The resolved KERNEL_USERNAME is first validated against an allowed-identifier grammar.  A value
+        containing whitespace or other disallowed characters raises HTTP error 400 (Bad Request) before any
+        of the authorization checks run.
+
         Authorization is performed by comparing the value of KERNEL_USERNAME with each value in the set of
         unauthorized users.  If any (case-sensitive) matches are found, HTTP error 403 (Forbidden) will be raised
         - preventing the launch of the kernel.  If the authorized_users set is non-empty, it is then checked to
@@ -979,6 +1024,10 @@ class BaseProcessProxyABC(metaclass=abc.ABCMeta):
 
         # Ensure KERNEL_USERNAME is set
         kernel_username = KernelSessionManager.get_kernel_username(**kwargs)
+
+        # Reject a username that is not a single safe token before it reaches the denylist
+        # check and the launch scripts' eval (GHSA-vjjc-h367-2gx3).
+        validate_kernel_username(kernel_username)
 
         # Now perform authorization checks
         if kernel_username in self.unauthorized_users:

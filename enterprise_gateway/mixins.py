@@ -660,9 +660,8 @@ class EnterpriseGatewayConfigMixin(Configurable):
 
     @default("unauthorized_users")
     def _unauthorized_users_default(self) -> Set[str]:
-        return os.getenv(self.unauthorized_users_env, self.unauthorized_users_default_value).split(
-            ","
-        )
+        raw = os.getenv(self.unauthorized_users_env, self.unauthorized_users_default_value)
+        return {entry.strip() for entry in raw.split(",") if entry.strip()}
 
     # Authorized users
     authorized_users_env = "EG_AUTHORIZED_USERS"
@@ -679,7 +678,9 @@ class EnterpriseGatewayConfigMixin(Configurable):
     @default("authorized_users")
     def _authorized_users_default(self) -> Set[str]:
         au_env = os.getenv(self.authorized_users_env)
-        return au_env.split(",") if au_env is not None else []
+        if au_env is None:
+            return set()
+        return {entry.strip() for entry in au_env.split(",") if entry.strip()}
 
     # Authorized origin
     authorized_origin_env = "EG_AUTHORIZED_ORIGIN"
