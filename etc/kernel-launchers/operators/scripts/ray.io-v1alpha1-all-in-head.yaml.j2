@@ -3,10 +3,10 @@ kind: RayCluster
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-    ray.io/cluster-name: "{{ kernel_resource_name }}"
+    ray.io/cluster-name: {{ kernel_resource_name | yaml_safe }}
   annotations:
     ray.io/ft-enabled: "false"  # Disable GCS FT for faster startup
-  name: {{ kernel_resource_name }}
+  name: {{ kernel_resource_name | yaml_safe }}
 spec:
     enableInTreeAutoscaling: true
     autoscalerOptions:
@@ -32,30 +32,30 @@ spec:
       template:
         metadata:
           labels:
-            kernel_id: "{{ kernel_id }}"
+            kernel_id: {{ kernel_id | yaml_safe }}
             app: enterprise-gateway
             component: kernel
           annotations:
             cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         spec:
           restartPolicy: OnFailure
-          serviceAccountName: "{{ kernel_service_account_name }}"
+          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
 #          nodeSelector:
 #            node.kubernetes.io/instance-type: m5d.8xlarge
           containers:
           # Combined Ray head + Jupyter kernel container
           - name: ray-head
-            image: {{ kernel_image }}
+            image: {{ kernel_image | yaml_safe }}
             securityContext:
               allowPrivilegeEscalation: false
               runAsUser: 0
             resources:
               limits:
-                cpu: {{ kernel_head_num_cpu_limit | default(3)}}
-                memory: {{ kernel_head_memory_limit | default("6Gi")}}
+                cpu: {{ kernel_head_num_cpu_limit | default(3) | yaml_safe }}
+                memory: {{ kernel_head_memory_limit | default("6Gi") | yaml_safe }}
               requests:
-                cpu: {{ kernel_head_num_cpu_request | default(2)}}
-                memory: {{ kernel_head_memory_request | default("4Gi")}}
+                cpu: {{ kernel_head_num_cpu_request | default(2) | yaml_safe }}
+                memory: {{ kernel_head_memory_request | default("4Gi") | yaml_safe }}
             env:
               - name: RAY_ADDRESS
                 value: "127.0.0.1:6379"
@@ -64,19 +64,19 @@ spec:
               - name: RAY_TMPDIR
                 value: "/tmp/ray"
               - name: SERVE_URI
-                value: "{{ kernel_serve_url }}"
+                value: {{ kernel_serve_url | default("") | yaml_safe }}
               - name: BUILD_URI
-                value: "{{ kernel_build_url }}"
+                value: {{ kernel_build_url | default("") | yaml_safe }}
               - name: EG_LOG_LEVEL
                 value: "0"
               - name: KERNEL_ID
-                value: "{{ kernel_id }}"
+                value: {{ kernel_id | yaml_safe }}
               - name: EG_RESPONSE_ADDRESS
-                value: "{{ eg_response_address }}"
+                value: {{ eg_response_address | yaml_safe }}
               - name: EG_PORT_RANGE
-                value: "{{ eg_port_range }}"
+                value: {{ eg_port_range | yaml_safe }}
               - name: EG_PUBLIC_KEY
-                value: "{{ eg_public_key }}"
+                value: {{ eg_public_key | yaml_safe }}
             volumeMounts:
               - name: ray-logs
                 mountPath: /tmp/ray
@@ -216,33 +216,33 @@ spec:
     workerGroupSpecs:
     - replicas: 1
       minReplicas: 1
-      maxReplicas:  {{ kernel_num_cpu_worker or 1 }}
+      maxReplicas: {{ (kernel_num_cpu_worker or 1) | int(1) }}
       groupName: cpu-group
       rayStartParams:
         block: 'true'
       template:
         metadata:
           annotations:
-           ray.io/compute-image: {{ kernel_image }}
+           ray.io/compute-image: {{ kernel_image | yaml_safe }}
            cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         spec:
-          serviceAccountName: "{{ kernel_service_account_name }}"
+          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
 #          nodeSelector:
-#            node.kubernetes.io/instance-type: {{ kernel_cpu_instance_type | default("m5d.8xlarge")}}
+#            node.kubernetes.io/instance-type: {{ kernel_cpu_instance_type | default("m5d.8xlarge") | yaml_safe }}
           initContainers:
           - name: init
             image: busybox:1.28
             command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
           containers:
           - name: ray-cpu-worker
-            image: {{ kernel_image }}
+            image: {{ kernel_image | yaml_safe }}
             resources:
               limits:
-                cpu: {{ kernel_cpu_worker_num_cpu_limit | default(2)}}
-                memory: {{ kernel_cpu_worker_num_memory_limit | default("4Gi")}}
+                cpu: {{ kernel_cpu_worker_num_cpu_limit | default(2) | yaml_safe }}
+                memory: {{ kernel_cpu_worker_num_memory_limit | default("4Gi") | yaml_safe }}
               requests:
-                cpu: {{ kernel_cpu_worker_num_cpu_request | default("1")}}
-                memory: {{ kernel_cpu_worker_num_memory_request | default("2Gi")}}
+                cpu: {{ kernel_cpu_worker_num_cpu_request | default("1") | yaml_safe }}
+                memory: {{ kernel_cpu_worker_num_memory_request | default("2Gi") | yaml_safe }}
             volumeMounts:
               - name: ray-logs
                 mountPath: /tmp/ray
@@ -281,34 +281,34 @@ spec:
 ##########################################
 #    - replicas: 0
 #      minReplicas:  0
-#      maxReplicas: {{ kernel_num_gpu_worker or 0 }}
+#      maxReplicas: {{ (kernel_num_gpu_worker or 0) | int(0) }}
 #      groupName: gpu-group
 #      rayStartParams:
 #        block: 'true'
 #      template:
 #        spec:
-#          serviceAccountName: "{{ kernel_service_account_name }}"
+#          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
 ##          nodeSelector:
-##            node.kubernetes.io/instance-type: {{ kernel_gpu_instance_type | default("g5.4xlarge")}}
+##            node.kubernetes.io/instance-type: {{ kernel_gpu_instance_type | default("g5.4xlarge") | yaml_safe }}
 #          initContainers:
 #          - name: init
 #            image: busybox:1.28
 #            command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
 #          containers:
 #          - name: ray-gpu-worker
-#            image: {{ kernel_image }}
+#            image: {{ kernel_image | yaml_safe }}
 #            env:
 #              - name: PIP_INDEX_URL
 #                value: https://pypi.org
 #            resources:
 #              limits:
-#                cpu: {{ kernel_gpu_worker_num_cpu_limit | default(1)}}
-#                memory: {{ kernel_gpu_worker_num_memory_limit | default("1Gi")}}
-#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0)}}
+#                cpu: {{ kernel_gpu_worker_num_cpu_limit | default(1) | yaml_safe }}
+#                memory: {{ kernel_gpu_worker_num_memory_limit | default("1Gi") | yaml_safe }}
+#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0) | yaml_safe }}
 #              requests:
-#                cpu: {{kernel_gpu_worker_num_cpu_request | default(0)}}
-#                memory: {{ kernel_gpu_worker_num_memory_request | default("512Mi")}}
-#                nvidia.com/gpu:  {{ kernel_gpu_worker_num_gpu | default(0)}}
+#                cpu: {{ kernel_gpu_worker_num_cpu_request | default(0) | yaml_safe }}
+#                memory: {{ kernel_gpu_worker_num_memory_request | default("512Mi") | yaml_safe }}
+#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0) | yaml_safe }}
 #            securityContext:
 #              allowPrivilegeEscalation: false
 #              runAsUser: 0

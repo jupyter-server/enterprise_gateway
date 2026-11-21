@@ -70,6 +70,19 @@ def _head_container(cluster: dict, name: str = "ray-head") -> dict:
     return next(c for c in containers if c["name"] == name)
 
 
+def _walk(node):
+    """Yield every mapping key and scalar value of a parsed YAML document."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield key
+            yield from _walk(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk(item)
+    else:
+        yield node
+
+
 # ---------------------------------------------------------------------------
 # Head node probes
 # ---------------------------------------------------------------------------
@@ -133,3 +146,73 @@ def test_head_probe_reports_gcs_health(fake_ray_head_tools, probe, head_state, e
         command, env=env, capture_output=True, text=True, timeout=30, check=False
     )
     assert (result.returncode == 0) is expect_ready, result.stderr
+
+
+# ---------------------------------------------------------------------------
+# YAML injection through interpolated values
+# ---------------------------------------------------------------------------
+
+# Breaks out of a quoted or plain YAML scalar if interpolated raw.
+INJECTION_PAYLOAD = 'x"\ninjected: true\n#'
+
+# Values interpolated into the Ray templates. KERNEL_* ones can come from the client.
+RAY_STRING_KEYWORDS = [
+    "kernel_resource_name",
+    "kernel_id",
+    "kernel_service_account_name",
+    "kernel_image",
+    "kernel_head_num_cpu_limit",
+    "kernel_head_memory_limit",
+    "kernel_head_num_cpu_request",
+    "kernel_head_memory_request",
+    "kernel_cpu_worker_num_cpu_limit",
+    "kernel_cpu_worker_num_memory_limit",
+    "kernel_cpu_worker_num_cpu_request",
+    "kernel_cpu_worker_num_memory_request",
+    "kernel_serve_url",
+    "kernel_build_url",
+    "eg_response_address",
+    "eg_port_range",
+    "eg_public_key",
+]
+
+
+@pytest.mark.parametrize("template", RAY_TEMPLATES)
+@pytest.mark.parametrize("keyword", RAY_STRING_KEYWORDS)
+def test_value_with_yaml_syntax_stays_a_single_string(template, keyword):
+    values = list(_walk(_render(template, **{keyword: INJECTION_PAYLOAD})))
+    assert "injected" not in values
+    assert INJECTION_PAYLOAD in values
+
+
+# Interpolated only on commented-out template lines (GPU worker group, nodeSelectors).
+# Jinja renders those lines too, so a raw newline in the value would escape the YAML comment.
+COMMENTED_LINE_KEYWORDS = [
+    "kernel_cpu_instance_type",
+    "kernel_gpu_instance_type",
+    "kernel_num_gpu_worker",
+    "kernel_gpu_worker_num_cpu_limit",
+    "kernel_gpu_worker_num_cpu_request",
+    "kernel_gpu_worker_num_gpu",
+    "kernel_gpu_worker_num_memory_limit",
+    "kernel_gpu_worker_num_memory_request",
+]
+
+
+@pytest.mark.parametrize("template", RAY_TEMPLATES)
+@pytest.mark.parametrize("keyword", COMMENTED_LINE_KEYWORDS)
+def test_value_on_commented_line_cannot_escape_the_comment(template, keyword):
+    assert "injected" not in list(_walk(_render(template, **{keyword: INJECTION_PAYLOAD})))
+
+
+@pytest.mark.parametrize("template", RAY_TEMPLATES)
+def test_worker_max_replicas_cannot_inject_yaml(template):
+    cluster = _render(template, kernel_num_cpu_worker=INJECTION_PAYLOAD)
+    assert "injected" not in list(_walk(cluster))
+    assert isinstance(cluster["spec"]["workerGroupSpecs"][0]["maxReplicas"], int)
+
+
+@pytest.mark.parametrize("template", RAY_TEMPLATES)
+def test_worker_max_replicas_honors_client_value(template):
+    cluster = _render(template, kernel_num_cpu_worker="3")
+    assert cluster["spec"]["workerGroupSpecs"][0]["maxReplicas"] == 3
