@@ -38,11 +38,17 @@ The following environment variables may be useful for troubleshooting:
     to be left around in order to troubleshoot issues.  Remember to set back to 'True'
     to restore normal operation.
 
-  EG_SOCKET_TIMEOUT=5.0
-    The time (in seconds) the enterprise gateway will wait on its connection
-    file socket waiting on return from a remote kernel launcher.  Upon timeout, the
-    operation will be retried immediately, until the overall time limit has been
-    exceeded.
+  EG_SOCKET_TIMEOUT=0.005
+    The timeout (in seconds) for two socket operations: checking the response socket
+    for connection information sent by remote kernel launchers, and connecting to a
+    kernel launcher's communication port to deliver signal and shutdown requests.
+    Both run on the gateway's event loop, and each idle check of the response socket
+    blocks the loop for the full timeout, so values much larger than the default slow
+    down all request handling.  If the communication port is slow to accept
+    connections (for example, with tunneling enabled), signal requests can time out;
+    the gateway then logs a warning and falls back to signaling the kernel's process
+    ID directly (over SSH when the kernel runs on another host).  Raise the value in
+    small steps.
 
   EG_SSH_LOG_LEVEL=WARNING
     By default, the paramiko ssh library is too verbose for its logging.  This
