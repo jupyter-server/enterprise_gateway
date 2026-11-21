@@ -23,6 +23,9 @@ rules:
   - apiGroups: ["sparkoperator.k8s.io"]
     resources: ["sparkapplications", "sparkapplications/status", "scheduledsparkapplications", "scheduledsparkapplications/status"]
     verbs: ["get", "watch", "list", "create", "delete"]
+  - apiGroups: ["ray.io"]
+    resources: ["rayclusters", "rayclusters/status", "rayjobs", "rayjobs/status", "rayservices", "rayservices/status"]
+    verbs: ["get", "watch", "list", "create", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -43,6 +46,6 @@ rules:
     resources: ["configmaps"]
     verbs: ["list", "create"]
   - apiGroups: [""]
-    resources: ["services", "persistentvolumeclaims"]
+    resources: ["services", "persistentvolumes", "persistentvolumeclaims"]
     verbs: ["list"]
 {{- end }}

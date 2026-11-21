@@ -1,0 +1,230 @@
+apiVersion: ray.io/v1alpha1
+kind: RayCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+    ray.io/cluster-name: {{ kernel_resource_name | yaml_safe }}
+  annotations:
+    ray.io/ft-enabled: "false"  # Disable GCS FT for faster startup
+  name: {{ kernel_resource_name | yaml_safe }}
+spec:
+    enableInTreeAutoscaling: true
+    autoscalerOptions:
+      upscalingMode: Aggressive
+      idleTimeoutSeconds: 3600
+      resources:
+        limits:
+          cpu: 1
+          memory: "1Gi"
+        requests:
+          cpu: 1
+          memory: "1Gi"
+##########################################
+## HEAD Node group spec
+##########################################
+    headGroupSpec:
+      serviceType: ClusterIP # optional
+      # the following params are used to complete the ray start: ray start --head --block --port=6379 ...
+      rayStartParams:
+        disable-usage-stats: 'true'
+        dashboard-host: '0.0.0.0'
+        block: 'true'
+      template:
+        metadata:
+          labels:
+            kernel_id: {{ kernel_id | yaml_safe }}
+            app: enterprise-gateway
+            component: kernel
+          annotations:
+            cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
+#          nodeSelector:
+#            node.kubernetes.io/instance-type: m5d.8xlarge
+          containers:
+          # The Ray head container
+          - name: ray-head
+            image: {{ kernel_image | yaml_safe }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsUser: 0
+            resources:
+              limits:
+                cpu: {{ kernel_head_num_cpu_limit | default(2) | yaml_safe }}
+                memory: {{ kernel_head_memory_limit | default("4Gi") | yaml_safe }}
+              requests:
+                cpu: {{ kernel_head_num_cpu_request | default(2) | yaml_safe }}
+                memory: {{ kernel_head_memory_request | default("4Gi") | yaml_safe }}
+            ports:
+            - containerPort: 6379
+              name: gcs
+            - containerPort: 8000
+              name: serve
+            - containerPort: 8265
+              name: dashboard
+            - containerPort: 10001
+              name: client
+            - containerPort: 44217
+              name: as-metrics # autoscaler
+            - containerPort: 44227
+              name: dash-metrics # dashboard
+            startupProbe:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check GCS port 6379
+                  nc -z localhost 6379 || exit 1
+                  # Check GCS health through the dashboard (/api/cluster_status reports
+                  # autoscaler state, not GCS health)
+                  wget -q -O- --timeout=5 http://localhost:8265/api/gcs_healthz 2>/dev/null | grep -q success || exit 1
+                  # Check dashboard port 8265
+                  wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
+              initialDelaySeconds: 15
+              periodSeconds: 5
+              timeoutSeconds: 5
+              failureThreshold: 24
+              successThreshold: 1
+            readinessProbe:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - |
+                  # Check GCS port 6379
+                  nc -z localhost 6379 || exit 1
+                  # Check GCS health through the dashboard (/api/cluster_status reports
+                  # autoscaler state, not GCS health)
+                  wget -q -O- --timeout=5 http://localhost:8265/api/gcs_healthz 2>/dev/null | grep -q success || exit 1
+                  # Check dashboard port 8265
+                  wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
+              initialDelaySeconds: 0
+              periodSeconds: 10
+              timeoutSeconds: 3
+              failureThreshold: 3
+              successThreshold: 1
+            livenessProbe:
+              httpGet:
+                path: /
+                port: 8265
+              initialDelaySeconds: 30
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 3
+              successThreshold: 1
+          - name: ray-kernel
+            image: {{ kernel_image | yaml_safe }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsUser: 0
+            env:
+              # The kernel has no raylet of its own, so a plain ray.init() goes through the
+              # head's Ray Client server (port 10001) instead of attaching to the GCS directly.
+              - name: RAY_ADDRESS
+                value: "ray://127.0.0.1:10001"
+              - name: RAY_PORT
+                value: "6379"
+              - name: SERVE_URI
+                value: {{ kernel_serve_url | default("") | yaml_safe }}
+              - name: BUILD_URI
+                value: {{ kernel_build_url | default("") | yaml_safe }}
+              - name: EG_LOG_LEVEL
+                value: "0"
+#              - name: PIP_INDEX_URL
+#                value: https://pypi.org
+            # Exec form, no shell: each value is a separate argument and is never re-parsed.
+            command:
+              - python
+              - /usr/local/bin/kernel-launchers/python/scripts/launch_ipykernel.py
+              - "--kernel-id"
+              - {{ kernel_id | yaml_safe }}
+              - "--response-address"
+              - {{ eg_response_address | yaml_safe }}
+              - "--port-range"
+              - {{ eg_port_range | yaml_safe }}
+              - "--public-key"
+              - {{ eg_public_key | yaml_safe }}
+##########################################
+## CPU Workers group specs
+##########################################
+    workerGroupSpecs:
+    - replicas: 1
+      minReplicas: 1
+      maxReplicas: {{ (kernel_num_cpu_worker or 1) | int(1) }}
+      groupName: cpu-group
+      rayStartParams:
+        block: 'true'
+      template:
+        metadata:
+          annotations:
+           ray.io/compute-image: {{ kernel_image | yaml_safe }}
+           cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        spec:
+          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
+#          nodeSelector:
+#            node.kubernetes.io/instance-type: {{ kernel_cpu_instance_type | default("m5d.8xlarge") | yaml_safe }}
+          initContainers:
+          - name: init
+            image: busybox:1.28
+            command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
+          containers:
+          - name: ray-cpu-worker
+            image: {{ kernel_image | yaml_safe }}
+#            env:
+#              - name: PIP_INDEX_URL
+#                value: https://pypi.org
+            resources:
+              limits:
+                cpu: {{ kernel_cpu_worker_num_cpu_limit | default(1) | yaml_safe }}
+                memory: {{ kernel_cpu_worker_num_memory_limit | default("1Gi") | yaml_safe }}
+              requests:
+                cpu: {{ kernel_cpu_worker_num_cpu_request | default("500m") | yaml_safe }}
+                memory: {{ kernel_cpu_worker_num_memory_request | default("1Gi") | yaml_safe }}
+#            volumeMounts:
+#            - name: ray-logs
+#              mountPath: /tmp/ray
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsUser: 0
+ #         volumes:
+ #           - name: ray-logs
+ #             hostPath:
+ #               path: "/mnt/data"
+##########################################
+## GPU Workers node groups
+##########################################
+#    - replicas: 0
+#      minReplicas:  0
+#      maxReplicas: {{ (kernel_num_gpu_worker or 0) | int(0) }}
+#      groupName: gpu-group
+#      rayStartParams:
+#        block: 'true'
+#      template:
+#        spec:
+#          serviceAccountName: {{ kernel_service_account_name | yaml_safe }}
+##          nodeSelector:
+##            node.kubernetes.io/instance-type: {{ kernel_gpu_instance_type | default("g5.4xlarge") | yaml_safe }}
+#          initContainers:
+#          - name: init
+#            image: busybox:1.28
+#            command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
+#          containers:
+#          - name: ray-gpu-worker
+#            image: {{ kernel_image | yaml_safe }}
+#            env:
+#              - name: PIP_INDEX_URL
+#                value: https://pypi.org
+#            resources:
+#              limits:
+#                cpu: {{ kernel_gpu_worker_num_cpu_limit | default(1) | yaml_safe }}
+#                memory: {{ kernel_gpu_worker_num_memory_limit | default("1Gi") | yaml_safe }}
+#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0) | yaml_safe }}
+#              requests:
+#                cpu: {{ kernel_gpu_worker_num_cpu_request | default(0) | yaml_safe }}
+#                memory: {{ kernel_gpu_worker_num_memory_request | default("512Mi") | yaml_safe }}
+#                nvidia.com/gpu: {{ kernel_gpu_worker_num_gpu | default(0) | yaml_safe }}
+#            securityContext:
+#              allowPrivilegeEscalation: false
+#              runAsUser: 0
