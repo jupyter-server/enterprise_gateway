@@ -79,8 +79,9 @@ spec:
                 - |
                   # Check GCS port 6379
                   nc -z localhost 6379 || exit 1
-                  # Check Ray API cluster status (verifies GCS is ready)
-                  wget -q -O- --timeout=5 http://localhost:8265/api/cluster_status 2>/dev/null | grep -q "ALIVE" || exit 1
+                  # Check GCS health through the dashboard (/api/cluster_status reports
+                  # autoscaler state, not GCS health)
+                  wget -q -O- --timeout=5 http://localhost:8265/api/gcs_healthz 2>/dev/null | grep -q success || exit 1
                   # Check dashboard port 8265
                   wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
               initialDelaySeconds: 15
@@ -96,8 +97,9 @@ spec:
                 - |
                   # Check GCS port 6379
                   nc -z localhost 6379 || exit 1
-                  # Check Ray API cluster status (verifies GCS is ready)
-                  wget -q -O- --timeout=5 http://localhost:8265/api/cluster_status 2>/dev/null | grep -q "ALIVE" || exit 1
+                  # Check GCS health through the dashboard (/api/cluster_status reports
+                  # autoscaler state, not GCS health)
+                  wget -q -O- --timeout=5 http://localhost:8265/api/gcs_healthz 2>/dev/null | grep -q success || exit 1
                   # Check dashboard port 8265
                   wget -q --spider --timeout=30 http://localhost:8265/ || exit 1
               initialDelaySeconds: 0
