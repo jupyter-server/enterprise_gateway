@@ -9,6 +9,8 @@ Built on `tensorflow/tensorflow:2.20.0-gpu`, which provides:
 - CUDA 12.3
 - TensorFlow 2.20 with GPU support
 
+The base image is published for `linux/amd64` only, so this image is too.
+
 The image installs `python3-pip` from Ubuntu's apt repositories because `apt-get install python3-dev` shadows the `pip` shipped inside the TensorFlow base image; `python3 -m pip` is then used for all subsequent Python installs in the Dockerfile.
 
 # What it Gives You
