@@ -33,3 +33,24 @@ fi
 ```{tip}
 Remember that any options set via the command-line will not be available for [dynamic configuration funtionality](config-dynamic.md#dynamic-configurables).
 ```
+
+## Prespawning kernels at startup
+
+To have Enterprise Gateway start kernels as soon as it launches, set `prespawn_count`. Enabling `list_kernels` lets clients find those kernels:
+
+```bash
+#!/bin/bash
+
+LOG=/var/log/enterprise_gateway.log
+PIDFILE=/var/run/enterprise_gateway.pid
+
+# Start Enterprise Gateway with 3 prespawned kernels that clients can find by listing kernels
+jupyter enterprisegateway --ip=0.0.0.0 --port_retries=0 --log-level=INFO --EnterpriseGatewayApp.prespawn_count=3 --EnterpriseGatewayApp.list_kernels=True > $LOG 2>&1 &
+if [ "$?" -eq 0 ]; then
+  echo $! > $PIDFILE
+else
+  exit 1
+fi
+```
+
+This starts 3 kernels of the default kernel specification in the background. They aren't handed out to new kernel requests: clients find them by listing kernels and connect to them by kernel id. See [Kernel Prespawning](config-prespawn.md) for details and limitations.

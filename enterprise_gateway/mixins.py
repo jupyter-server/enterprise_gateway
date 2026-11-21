@@ -347,6 +347,19 @@ class EnterpriseGatewayConfigMixin(Configurable):
 
     # End CORS headers
 
+    prespawn_count_env = "EG_PRESPAWN_COUNT"
+    prespawn_count = Integer(
+        None,
+        config=True,
+        allow_none=True,
+        help="Number of kernels of the default kernel specification to prespawn at startup. No prespawn by default. (EG_PRESPAWN_COUNT env var)",
+    )
+
+    @default("prespawn_count")
+    def _prespawn_count_default(self) -> Optional[int]:
+        val = os.getenv(self.prespawn_count_env, os.getenv("KG_PRESPAWN_COUNT"))
+        return val if val is None else int(val)
+
     max_kernels_env = "EG_MAX_KERNELS"
     max_kernels = Integer(
         None,
