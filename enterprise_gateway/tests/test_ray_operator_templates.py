@@ -30,9 +30,8 @@ def _load_operator_launcher():
 launcher = _load_operator_launcher()
 
 # RayOperatorProcessProxy sets KERNEL_CRD_GROUP=ray.io and KERNEL_CRD_VERSION=v1alpha1, so the
-# launcher renders this template. The all-in-head variant ships next to it.
+# launcher renders this template.
 RAY_TEMPLATE = "ray.io-v1alpha1"
-RAY_TEMPLATES = [RAY_TEMPLATE, "ray.io-v1alpha1-all-in-head"]
 
 
 def _keywords(**overrides) -> dict:
@@ -177,10 +176,9 @@ RAY_STRING_KEYWORDS = [
 ]
 
 
-@pytest.mark.parametrize("template", RAY_TEMPLATES)
 @pytest.mark.parametrize("keyword", RAY_STRING_KEYWORDS)
-def test_value_with_yaml_syntax_stays_a_single_string(template, keyword):
-    values = list(_walk(_render(template, **{keyword: INJECTION_PAYLOAD})))
+def test_value_with_yaml_syntax_stays_a_single_string(keyword):
+    values = list(_walk(_render(RAY_TEMPLATE, **{keyword: INJECTION_PAYLOAD})))
     assert "injected" not in values
     assert INJECTION_PAYLOAD in values
 
@@ -199,20 +197,17 @@ COMMENTED_LINE_KEYWORDS = [
 ]
 
 
-@pytest.mark.parametrize("template", RAY_TEMPLATES)
 @pytest.mark.parametrize("keyword", COMMENTED_LINE_KEYWORDS)
-def test_value_on_commented_line_cannot_escape_the_comment(template, keyword):
-    assert "injected" not in list(_walk(_render(template, **{keyword: INJECTION_PAYLOAD})))
+def test_value_on_commented_line_cannot_escape_the_comment(keyword):
+    assert "injected" not in list(_walk(_render(RAY_TEMPLATE, **{keyword: INJECTION_PAYLOAD})))
 
 
-@pytest.mark.parametrize("template", RAY_TEMPLATES)
-def test_worker_max_replicas_cannot_inject_yaml(template):
-    cluster = _render(template, kernel_num_cpu_worker=INJECTION_PAYLOAD)
+def test_worker_max_replicas_cannot_inject_yaml():
+    cluster = _render(RAY_TEMPLATE, kernel_num_cpu_worker=INJECTION_PAYLOAD)
     assert "injected" not in list(_walk(cluster))
     assert isinstance(cluster["spec"]["workerGroupSpecs"][0]["maxReplicas"], int)
 
 
-@pytest.mark.parametrize("template", RAY_TEMPLATES)
-def test_worker_max_replicas_honors_client_value(template):
-    cluster = _render(template, kernel_num_cpu_worker="3")
+def test_worker_max_replicas_honors_client_value():
+    cluster = _render(RAY_TEMPLATE, kernel_num_cpu_worker="3")
     assert cluster["spec"]["workerGroupSpecs"][0]["maxReplicas"] == 3
