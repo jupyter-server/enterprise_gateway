@@ -12,7 +12,6 @@ spec:
     autoscalerOptions:
       upscalingMode: Aggressive
       idleTimeoutSeconds: 3600
-      imagePullPolicy: Always
       resources:
         limits:
           cpu: 1
@@ -47,7 +46,6 @@ spec:
           # Combined Ray head + Jupyter kernel container
           - name: ray-head
             image: {{ kernel_image }}
-            imagePullPolicy: Always
             securityContext:
               allowPrivilegeEscalation: false
               runAsUser: 0
@@ -238,7 +236,6 @@ spec:
           containers:
           - name: ray-cpu-worker
             image: {{ kernel_image }}
-            imagePullPolicy: Always
             resources:
               limits:
                 cpu: {{ kernel_cpu_worker_num_cpu_limit | default(2)}}
@@ -300,7 +297,6 @@ spec:
 #          containers:
 #          - name: ray-gpu-worker
 #            image: {{ kernel_image }}
-#            imagePullPolicy: Always
 #            env:
 #              - name: PIP_INDEX_URL
 #                value: https://pypi.org
