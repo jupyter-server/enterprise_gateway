@@ -5,8 +5,8 @@
     "process_proxy": {
       "class_name": "enterprise_gateway.services.processproxies.ray_operator.RayOperatorProcessProxy",
       "config": {
-        "image_name": "lresende/kernel-ray-py:VERSION",
-        "executor_image_name": "lresende/kernel-ray-py:VERSION"
+        "image_name": "elyra/kernel-ray-py:VERSION",
+        "executor_image_name": "elyra/kernel-ray-py:VERSION"
       }
     }
   },
