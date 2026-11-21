@@ -1,5 +1,9 @@
 This image enables the use of a Scala ([Apache Toree](https://toree.apache.org/)) kernel launched from [Jupyter Enterprise Gateway](http://jupyter-enterprise-gateway.readthedocs.io/en/latest/) within a Kubernetes or Docker Swarm cluster. It is built on `elyra/spark` — the Spark version is controlled by `SPARK_VERSION` in the top-level `Makefile` (currently `3.2.1`). Note: The ability to use the kernel within Spark within a Docker Swarm configuration probably won't yield the expected results.
 
+The image is published for `linux/amd64` only, because `elyra/spark` is. Docker hosts with amd64 emulation, such as Docker Desktop on Apple silicon, can still run it.
+
+The kernel and Spark run on a Java 8 runtime (Eclipse Temurin), set as `JAVA_HOME`, instead of the Java 11 that `elyra/spark` ships: Apache Toree 0.5 ignores interrupts on Java 11.
+
 # What it Gives You
 
 - Scala (Toree) kernel support

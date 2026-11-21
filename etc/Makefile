@@ -144,6 +144,12 @@ FILES_kernel-r := ../dist/jupyter_enterprise_gateway_kernel_image_files*
 FILES_kernel-spark-r := ../dist/jupyter_enterprise_gateway_kernel_image_files*
 FILES_kernel-scala := ../dist/jupyter_enterprise_gateway_kernel_image_files*
 
+# Images whose base image is published for linux/amd64 only (elyra/spark, tensorflow/tensorflow:*-gpu).
+# Every build of them targets amd64: an arm64 build would reuse the amd64 base and label x86_64 binaries
+# as arm64. Docker hosts with amd64 emulation (e.g. Docker Desktop on Apple silicon) still run them.
+PLATFORMS_kernel-scala := linux/amd64
+PLATFORMS_kernel-tf-gpu-py := linux/amd64
+
 # Generate image creation targets for each entry in $(DOCKER_IMAGES).  Switch 'eval' to 'info' to see what is produced.
 define BUILD_IMAGE
 $1: ../.image-$1
@@ -155,16 +161,16 @@ ifdef MULTIARCH_BUILD
 	@echo "starting buildx builder for $1"
 	-@(docker buildx rm $1)
 	(docker buildx create --use --name $1)
-	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform $(PLATFORM_ARCHS) --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
+	(cd ../build/docker/$1; docker buildx build ${NO_CACHE} --platform $(or $(PLATFORMS_$1),$(PLATFORM_ARCHS)) --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) . --push)
 	@echo "remove builder instance $1"
 	-(docker buildx rm $1)
 else ifeq ($(TARGET_ARCH), $(filter $(TARGET_ARCH), $(SUPPORTED_ARCHS)))
-	@echo "Building docker image for $(TARGET_ARCH)"
-	(cd ../build/docker/$1; docker build ${NO_CACHE} --platform ${TARGET_ARCH} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
+	@echo "Building docker image for $(or $(PLATFORMS_$1),$(TARGET_ARCH))"
+	(cd ../build/docker/$1; docker build ${NO_CACHE} --platform $(or $(PLATFORMS_$1),$(TARGET_ARCH)) --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 else
-	@echo "TARGET_ARCH not defined or not in supported platforms: $(PLATFORM_ARCHS). Building docker image for default platform"
-	(cd ../build/docker/$1; docker build ${NO_CACHE} --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
+	@echo "TARGET_ARCH not defined or not in supported platforms: $(PLATFORM_ARCHS). Building docker image for $(or $(PLATFORMS_$1),the default platform)"
+	(cd ../build/docker/$1; docker build ${NO_CACHE} $(if $(PLATFORMS_$1),--platform $(PLATFORMS_$1)) --build-arg HUB_ORG=${HUB_ORG} --build-arg TAG=${TAG} --build-arg SPARK_VERSION=${SPARK_VERSION} -t $(HUB_ORG)/$1:$(TAG) .)
 	@-docker images $(HUB_ORG)/$1:$(TAG)
 endif
 	@touch ../.image-$1
