@@ -120,8 +120,10 @@ spec:
               allowPrivilegeEscalation: false
               runAsUser: 0
             env:
+              # The kernel has no raylet of its own, so a plain ray.init() goes through the
+              # head's Ray Client server (port 10001) instead of attaching to the GCS directly.
               - name: RAY_ADDRESS
-                value: "127.0.0.1:6379"
+                value: "ray://127.0.0.1:10001"
               - name: RAY_PORT
                 value: "6379"
               - name: SERVE_URI
