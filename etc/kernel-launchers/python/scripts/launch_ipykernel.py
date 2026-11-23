@@ -12,6 +12,7 @@ import tempfile
 import uuid
 from multiprocessing import Process
 from threading import Thread
+from typing import Any, Dict, List, Optional
 
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
@@ -290,7 +291,6 @@ def prepare_comm_socket(lower_port, upper_port):
         f"Signal socket bound to host: {sock.getsockname()[0]}, port: {sock.getsockname()[1]}"
     )
     sock.listen(1)
-    sock.settimeout(5)
     return sock
 
 
@@ -344,30 +344,24 @@ def _get_candidate_port(lower_port, upper_port):
     return random.randint(lower_port, upper_port)
 
 
-def get_server_request(sock):
+def get_server_request(sock: socket.socket) -> Optional[Dict[str, Any]]:
     """Gets a request from the server and returns the corresponding dictionary.
 
     This code also exists in the R kernel-launcher's server_listener.py script.
     """
-    conn = None
-    data = ""
-    request_info = None
-    try:
-        conn, addr = sock.accept()
-        while True:
-            buffer = conn.recv(1024).decode("utf-8")
-            if not buffer:  # send is complete
-                request_info = json.loads(data)
-                break
-            data = data + buffer  # append what we received until we get no more...
-    except Exception as e:
-        if type(e) is not socket.timeout:
-            raise e
-    finally:
-        if conn:
-            conn.close()
-
-    return request_info
+    # Errors on the listening socket propagate, otherwise server_listener would spin on them.
+    conn, addr = sock.accept()
+    with conn:
+        try:
+            chunks: List[bytes] = []
+            while chunk := conn.recv(1024):
+                chunks.append(chunk)
+            # Decode once, since a multibyte character can span two recv() chunks.
+            data = b"".join(chunks).decode("utf-8")
+            return json.loads(data) if data else None
+        except (OSError, ValueError) as e:
+            logger.warning(f"Ignoring malformed communication port request from {addr}: {e}")
+            return None
 
 
 def cancel_spark_jobs(sig, frame):
